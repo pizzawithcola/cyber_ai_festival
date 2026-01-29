@@ -3,7 +3,6 @@ import {
   Container, 
   Typography, 
   Box, 
-  Grid,
   Card,
   CardContent,
   styled,
@@ -36,7 +35,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   '&:hover': {
     transform: 'translateY(-8px)',
     boxShadow: theme.palette.mode === 'dark'
-      ? `0 12px 40px ${theme.palette.primary.main}40`  // 使用主题的主要颜色
+      ? `0 12px 40px ${theme.palette.primary.main}40` 
       : `0 12px 40px ${theme.palette.primary.main}30`,
   },
 }));
@@ -61,7 +60,7 @@ const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
   const games = [
     {
       id: 'deepfake',
-      title: 'DeepFake Detection',
+      title: 'DeepFake',
       description: 'Detect manipulated media content',
       icon: '🔍',
       path: '/deepfake'

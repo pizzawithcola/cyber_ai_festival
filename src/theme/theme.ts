@@ -16,12 +16,12 @@ export const getTheme = (paletteMode: PaletteMode) => {
         main: '#dc004e',
       },
       background: {
-        default: paletteMode === 'light' ? '#f5f5f5' : '#0a1929', // 深蓝色背景
-        paper: paletteMode === 'light' ? '#ffffff' : '#102233', // 较浅的深蓝色纸张
+        default: paletteMode === 'light' ? '#f5f5f5' : '#0a1929',
+        paper: paletteMode === 'light' ? '#ffffff' : '#102233',
       },
       text: {
-        primary: paletteMode === 'light' ? '#000000' : '#e6f7ff', // 浅蓝白色文字
-        secondary: paletteMode === 'light' ? '#555555' : '#a3cfff', // 较浅的蓝色辅助文字
+        primary: paletteMode === 'light' ? '#000000' : '#e6f7ff',
+        secondary: paletteMode === 'light' ? '#555555' : '#a3cfff',
       },
     },
     typography: {
@@ -56,14 +56,14 @@ export const getTheme = (paletteMode: PaletteMode) => {
       MuiCard: {
         styleOverrides: {
           root: {
-            backgroundColor: paletteMode === 'light' ? '#ffffff' : '#152a3f', // 深蓝色卡片
+            backgroundColor: paletteMode === 'light' ? '#ffffff' : '#152a3f',
           },
         },
       },
       MuiDialog: {
         styleOverrides: {
           paper: {
-            backgroundColor: paletteMode === 'light' ? '#fafafa' : '#0f2639', // 深蓝色对话框
+            backgroundColor: paletteMode === 'light' ? '#fafafa' : '#0f2639',
           },
         },
       },
