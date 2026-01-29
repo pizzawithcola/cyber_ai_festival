@@ -4,12 +4,7 @@ import {
   Box, 
 } from '@mui/material';
 
-interface HomePageProps {
-  toggleColorMode: () => void;
-}
-
-const DeepFake: React.FC<HomePageProps> = () => {
-
+const DeepFake: React.FC = () => {
   return (
     <Box>
     <Typography variant="h2" component="h1" gutterBottom>

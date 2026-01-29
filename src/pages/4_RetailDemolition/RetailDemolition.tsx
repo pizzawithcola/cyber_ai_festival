@@ -4,19 +4,15 @@ import {
   Box, 
 } from '@mui/material';
 
-interface HomePageProps {
-  toggleColorMode: () => void;
-}
-
-const DeepFake: React.FC<HomePageProps> = () => {
+const RetailDemolition: React.FC = () => {
 
   return (
     <Box>
-    <Typography variant="h2" component="h1" gutterBottom>
-        This is DeepFake Page
-    </Typography>
+      <Typography variant="h2" component="h1" gutterBottom>
+          This is RetailDemolition Page
+      </Typography>
     </Box>
   );
 };
 
-export default DeepFake;
+export default RetailDemolition;

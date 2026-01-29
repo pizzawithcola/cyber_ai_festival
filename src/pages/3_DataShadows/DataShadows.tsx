@@ -4,19 +4,15 @@ import {
   Box, 
 } from '@mui/material';
 
-interface HomePageProps {
-  toggleColorMode: () => void;
-}
-
-const DeepFake: React.FC<HomePageProps> = () => {
+const DataShadows: React.FC = () => {
 
   return (
     <Box>
-    <Typography variant="h2" component="h1" gutterBottom>
-        This is DeepFake Page
-    </Typography>
+      <Typography variant="h2" component="h1" gutterBottom>
+          This is Data Shadows Page
+      </Typography>
     </Box>
   );
 };
 
-export default DeepFake;
+export default DataShadows;

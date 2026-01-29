@@ -17,7 +17,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div style={{ height: '100vh' }}>
+      <div style={{ width: '100vw', height: '100vh' }}>
         <Router>
           <AppRoutes toggleColorMode={toggleColorMode} />
         </Router>

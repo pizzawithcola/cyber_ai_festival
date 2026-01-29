@@ -4,17 +4,13 @@ import {
   Box, 
 } from '@mui/material';
 
-interface HomePageProps {
-  toggleColorMode: () => void;
-}
-
-const Phishing: React.FC<HomePageProps> = () => {
+const Phishing: React.FC = () => {
 
   return (
     <Box>
-    <Typography variant="h2" component="h1" gutterBottom>
-        This is DeepFake Page
-    </Typography>
+      <Typography variant="h2" component="h1" gutterBottom>
+          This is Phishing Page
+      </Typography>
     </Box>
   );
 };
