@@ -5,7 +5,7 @@ import { getTheme } from './theme/theme';
 import AppRoutes from './routes/AppRoutes';
 
 const App: React.FC = () => {
-  const [paletteMode, setPaletteMode] = useState<'light' | 'dark'>('light');
+  const [paletteMode, setPaletteMode] = useState<'light' | 'dark'>('dark');
 
   // Memoize the theme to prevent unnecessary re-renders
   const theme = useMemo(() => getTheme(paletteMode), [paletteMode]);
