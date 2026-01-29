@@ -3,9 +3,8 @@ import {
   Container, 
   Typography, 
   Box, 
-  AppBar, 
-  Toolbar, 
-  Button 
+  // AppBar, 
+  // Toolbar, 
 } from '@mui/material';
 import ThemeToggle from '../../components/common/ThemeToggle';
 
@@ -14,16 +13,16 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
+
   return (
     <>
-      <AppBar position="static">
+      {/* <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Cyber AI Festival
           </Typography>
-          <ThemeToggle toggleColorMode={toggleColorMode} />
         </Toolbar>
-      </AppBar>
+      </AppBar> */}
       
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
@@ -33,10 +32,11 @@ const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
           <Typography variant="h5" component="h2" color="text.secondary" gutterBottom>
             Your Vite + React + TypeScript + MUI project is ready!
           </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
+          <Typography variant="body1" color="text.secondary" sx={{width: '100%'}} paragraph>
             This project features a modular architecture with separate routing and theme management,
             supporting both light and dark modes.
           </Typography>
+          <ThemeToggle toggleColorMode={toggleColorMode} />
         </Box>
       </Container>
     </>
