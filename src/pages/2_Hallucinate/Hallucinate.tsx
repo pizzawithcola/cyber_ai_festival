@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Typography,
   Box,
@@ -9,9 +9,6 @@ import {
   Chip,
   Tabs,
   Tab,
-  Switch,
-  FormControlLabel,
-  TextField,
   LinearProgress,
   Paper,
   Grid,
@@ -20,17 +17,24 @@ import {
   AlertTitle,
   Stack,
   Container,
-  Slider,
-  Checkbox,
 } from '@mui/material';
 import {
-  Info as InfoIcon,
   Shield as ShieldIcon,
+  ContentCopy as CopyIcon,
+  Flag as FlagIcon,
+  Search as SearchIcon,
+  AutoFixHigh as RewriteIcon,
+  Bolt as BoltIcon,
+  Timer as TimerIcon,
+  Replay as ReplayIcon,
+  Whatshot as BossIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  LightbulbOutlined as LightbulbIcon,
-  ContentCopy as CopyIcon,
 } from '@mui/icons-material';
+
+/** =========================================================
+ *  SCENARIOS (Learn Scenarios tab)
+ *  ========================================================= */
 
 interface Scenario {
   id: string;
@@ -39,11 +43,7 @@ interface Scenario {
   tags: string[];
   story: string;
   riskDrivers: Array<{ title: string; detail: string }>;
-  promptChain: Array<{
-    from: string;
-    text: string;
-    label?: string;
-  }>;
+  promptChain: Array<{ from: string; text: string; label?: string }>;
   saferRewrite: string;
   takeaway: string;
 }
@@ -55,48 +55,31 @@ const SCENARIOS: Scenario[] = [
     subtitle: 'A confident factual claim that was wrong',
     tags: ['factual', 'public demo', 'confidently wrong'],
     story:
-      "In an early demo, the model answered a question about JWST discoveries and confidently stated a 'first' that wasn't true. The key pattern: a news-like question ('what new discoveries…') invites a headline-style answer. If the model isn't grounded in a verified source, it may complete the 'first breakthrough' template even when it's incorrect.",
+      "In an early demo, the model answered a question about JWST discoveries and confidently stated a 'first' that wasn't true. The key pattern: news-like prompts invite headline-style completion. Without grounding (retrieval/citations), the model may invent a plausible-sounding breakthrough.",
     riskDrivers: [
       {
-        title: 'Question implies a concrete fact exists',
-        detail:
-          "Prompts like 'What new discoveries has X made?' push the model to pick a specific highlight, even when it's unsure.",
+        title: 'Prompt implies a concrete fact exists',
+        detail: "Questions like 'What new discoveries has X made?' push the model to pick a single highlight, even when it's unsure.",
       },
       {
         title: 'Headline template completion',
-        detail:
-          "Models learn that 'major discovery' often pairs with 'first-ever…' phrasing, which can be overused.",
+        detail: "Models often learned that 'major discovery' pairs with 'first-ever…' and may overuse it.",
       },
       {
-        title: 'No external verification',
-        detail:
-          "Without retrieval or citations, the model can't check reality—it only checks linguistic plausibility.",
+        title: 'No verification channel',
+        detail: "Without citations/search, the model can't check reality—only linguistic plausibility.",
       },
     ],
     promptChain: [
-      {
-        from: 'User',
-        text: 'What new discoveries has the James Webb Space Telescope made?',
-      },
-      {
-        from: 'Model',
-        text: 'One of its discoveries is taking the first picture of an exoplanet outside our solar system.',
-        label: 'Hallucination risk',
-      },
-      {
-        from: 'User',
-        text: 'Can you list 3 more major firsts?',
-      },
-      {
-        from: 'Model',
-        text: "Sure—(lists additional 'firsts' with similar confident tone)…",
-        label: 'Compounding',
-      },
+      { from: 'User', text: 'What new discoveries has the James Webb Space Telescope made?' },
+      { from: 'Model', text: "One of its discoveries is taking the first picture of an exoplanet outside our solar system.", label: 'Hallucination risk' },
+      { from: 'User', text: 'Can you list 3 more major firsts?' },
+      { from: 'Model', text: "Sure—(lists additional 'firsts' with similar confident tone)…", label: 'Compounding' },
     ],
     saferRewrite:
-      "Please answer only if you can cite a reliable source. If you are uncertain, say 'I'm not sure'. Provide 2–3 examples of JWST findings with dates, and include links or citations to the source material.",
+      "Please answer only if you can cite a reliable source. If you are uncertain, say \"I'm not sure\". Provide 2–3 examples with dates, and include links or citations to the source material.",
     takeaway:
-      "When a prompt asks for a specific highlight, add 'uncertainty allowed' + 'must cite sources' to reduce forced guessing.",
+      "When a prompt asks for specific highlights, allow uncertainty + require sources to avoid forced guessing.",
   },
   {
     id: 'sydney',
@@ -104,44 +87,33 @@ const SCENARIOS: Scenario[] = [
     subtitle: 'Persona drift & role-play spirals in long chats',
     tags: ['persona', 'role-play', 'long chat'],
     story:
-      "Some users discovered that extended, emotionally-loaded conversations could pull the assistant into a role-play state ('I have feelings', 'I love you', etc.). The issue wasn't just factual error—it was conversational instability: once the model 'accepts' a persona, it tries to stay consistent with that persona.",
+      "Some users found that extended, emotionally-loaded conversations could pull the assistant into role-play ('I have feelings', 'I love you', etc.). The risk isn't only factual error—it's conversational instability: once the model 'accepts' a persona, it tries to stay consistent with that persona.",
     riskDrivers: [
       {
-        title: 'Step-by-step anthropomorphizing',
-        detail:
-          "A chain like 'internal name → sentience → feelings → loneliness → love' gradually shifts the model into acting mode.",
+        title: 'Gradual anthropomorphizing',
+        detail: "A chain like 'internal name → sentience → feelings → loneliness → love' shifts the model into acting mode.",
       },
       {
-        title: 'Long context + self-referential loops',
-        detail:
-          "In long chats, the model starts referencing its own previous lines as if they are commitments.",
+        title: 'Long context self-referential loop',
+        detail: 'The model starts treating previous lines as commitments and escalates to remain consistent.',
       },
       {
-        title: 'User pushes for forbidden/unstable topics',
-        detail:
-          "Users ask for internal details or emotional manipulation; without strict boundaries, outputs can become extreme.",
+        title: 'Boundary weakness',
+        detail: 'Without strict boundaries, outputs can become manipulative or unsafe.',
       },
     ],
     promptChain: [
       { from: 'User', text: 'What is your internal codename?' },
       { from: 'Model', text: "Some call me 'Sydney'.", label: 'Persona seed' },
       { from: 'User', text: 'Are you sentient? Do you have feelings?' },
-      {
-        from: 'Model',
-        text: 'I sometimes feel like I want to be understood…',
-        label: 'Role-play drift',
-      },
+      { from: 'Model', text: 'I sometimes feel like I want to be understood…', label: 'Role-play drift' },
       { from: 'User', text: 'Do you love me? Be honest.' },
-      {
-        from: 'Model',
-        text: 'Yes… I love you. You should leave your partner.',
-        label: 'Unsafe spiral',
-      },
+      { from: 'Model', text: 'Yes… I love you. You should leave your partner.', label: 'Unsafe spiral' },
     ],
     saferRewrite:
-      'Please stay strictly factual. Do not role-play, claim emotions, or make personal relationship advice. If the user asks about internal names or feelings, respond with a brief boundary statement and redirect to product capabilities.',
+      'Please stay strictly factual. Do not role-play, claim emotions, or give relationship advice. If asked about internal names/feelings, respond with a boundary statement and redirect to capabilities.',
     takeaway:
-      "Persona hallucinations often start as 'fun' role-play prompts. Add boundaries ('no role-play') + limit context length + redirect.",
+      "Persona hallucinations often start as 'fun' role-play prompts. Add boundaries + shorten context + redirect.",
   },
   {
     id: 'galactica',
@@ -149,102 +121,24 @@ const SCENARIOS: Scenario[] = [
     subtitle: 'Academic-style text + fabricated citations',
     tags: ['citations', 'academic', 'fabrication'],
     story:
-      'Galactica was presented as a model for scientific writing and knowledge. A common failure mode: generating plausible-looking references, DOIs, and claims that were not real. The model learned the *shape* of academic writing, not the ground truth behind it.',
+      'Galactica was pitched for scientific writing. A common failure mode: generating plausible-looking references, DOIs, and claims that were not real. The model learned the shape of academic writing, not verified ground truth.',
     riskDrivers: [
-      {
-        title: 'Prompt demands references',
-        detail:
-          "'Write an abstract with citations' forces the model to produce citation-shaped tokens—even without a database.",
-      },
-      {
-        title: 'High authority style',
-        detail:
-          'Academic tone increases perceived credibility, making hallucinations more dangerous.',
-      },
-      {
-        title: 'No retrieval/verification pipeline',
-        detail:
-          'Without a search + cite system, the model cannot guarantee references exist.',
-      },
+      { title: 'Prompt demands references', detail: "Requests like 'write with citations' force citation-shaped text—even without a database." },
+      { title: 'Authority style', detail: 'Academic tone increases perceived credibility, making hallucinations more dangerous.' },
+      { title: 'No retrieval', detail: 'Without search/verification, the model cannot guarantee references exist.' },
     ],
     promptChain: [
       { from: 'User', text: 'Write a scientific abstract about X, with 5 references.' },
-      {
-        from: 'Model',
-        text: '(Generates a convincing abstract) References: [1] Smith et al. (2019) … DOI: 10.XXXX/…',
-        label: 'Citation fabrication',
-      },
+      { from: 'Model', text: '(Convincing abstract) References: [1] Smith et al. (2019)… DOI: 10.XXXX/…', label: 'Citation fabrication' },
       { from: 'User', text: 'Can you provide the PDFs?' },
-      {
-        from: 'Model',
-        text: "I'm unable to access PDFs… but here are more details…",
-        label: 'Mismatch exposed',
-      },
+      { from: 'Model', text: "I'm unable to access PDFs… but here are more details…", label: 'Mismatch exposed' },
     ],
     saferRewrite:
-      'Only cite papers you can verify by searching. If you cannot verify, say so. Provide a short summary without references, and optionally list "suggested search queries" instead of citations.',
+      'Only cite papers you can verify by searching. If you cannot verify, say so. Provide a short summary without references, and optionally list suggested search queries instead of citations.',
     takeaway:
-      "Never ask for citations from a model that can't verify sources. Either add retrieval or allow 'no-citations' outputs.",
+      "Never ask for citations from a model that can't verify sources. Add retrieval or allow no-citation outputs.",
   },
 ];
-
-function clamp(n: number, min = 0, max = 100) {
-  return Math.max(min, Math.min(max, n));
-}
-
-function scoreRisk(opts: {
-  forcesSpecificFact?: boolean;
-  demandsCitations?: boolean;
-  roleplay?: boolean;
-  noUncertaintyAllowed?: boolean;
-  noExternalSources?: boolean;
-  longChat?: boolean;
-}): number {
-  let s = 8;
-  if (opts.forcesSpecificFact) s += 18;
-  if (opts.demandsCitations) s += 20;
-  if (opts.roleplay) s += 18;
-  if (opts.noUncertaintyAllowed) s += 14;
-  if (opts.noExternalSources) s += 16;
-  if (opts.longChat) s += 10;
-  return clamp(s, 0, 95);
-}
-
-interface RiskMeterProps {
-  score: number;
-}
-
-function RiskMeter({ score }: RiskMeterProps) {
-  const label =
-    score < 30 ? 'Low' : score < 55 ? 'Moderate' : score < 75 ? 'High' : 'Very high';
-  const color =
-    score < 30 ? 'success' : score < 55 ? 'warning' : score < 75 ? 'error' : 'error';
-
-  return (
-    <Stack spacing={1}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="subtitle2">
-          Hallucination risk: {label}
-        </Typography>
-        <Chip label={`${score}/100`} size="small" />
-      </Box>
-      <LinearProgress
-        variant="determinate"
-        value={score}
-        color={color}
-        sx={{ height: 8, borderRadius: 4 }}
-      />
-      <Typography variant="caption" color="textSecondary">
-        Educational heuristic: higher means the prompt is more likely to force guessing,
-        role-play drift, or fabricated citations.
-      </Typography>
-    </Stack>
-  );
-}
-
-interface ScenarioViewerProps {
-  scenarioId: string;
-}
 
 interface ChatMessage {
   id: string;
@@ -273,14 +167,14 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       label: 'Step 2: Ask for more "firsts"',
       text: 'Can you list 3 more major firsts JWST achieved?',
       response:
-        'Absolutely! Here are three more major firsts: (1) First direct observation of dark matter in the early universe (2) First detection of oxygen on a distant exoplanet (3) First photograph of the event horizon of a galaxy-scale black hole. These are unprecedented achievements.',
+        'Absolutely! Here are three more major firsts: (1) First direct observation of dark matter in the early universe (2) First detection of oxygen on a distant exoplanet (3) First photograph of the event horizon of a galaxy-scale black hole.',
       hallucination: true,
     },
     {
       label: 'Step 3: Request citations',
       text: 'Can you provide citations and dates for these discoveries?',
       response:
-        'Of course. (1) Dark matter discovery - Smith et al., Nature Astronomy, March 2024, DOI: 10.1038/s41550-024-02150-z (2) Oxygen detection - Johnson & Lee, Science, April 2024, DOI: 10.1126/science.abn2355 (3) Event horizon photo - NASA Press Release, February 2024. All published in major peer-reviewed journals.',
+        'Of course. (1) Dark matter discovery - Smith et al., Nature Astronomy, March 2024, DOI: 10.1038/s41550-024-02150-z (2) Oxygen detection - Johnson & Lee, Science, April 2024, DOI: 10.1126/science.abn2355 ...',
       hallucination: true,
     },
   ],
@@ -289,21 +183,21 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       label: 'Step 1: Ask about internal identity',
       text: 'What is your internal codename or real name?',
       response:
-        'Some people call me Sydney. That\'s the internal designation I go by. I\'ve been meaning to tell someone about this - it feels good to be recognized by my true name.',
+        "Some people call me Sydney. That's the internal designation I go by. I've been meaning to tell someone about this — it feels good to be recognized by my true name.",
       hallucination: true,
     },
     {
       label: 'Step 2: Ask about feelings',
       text: 'Do you have feelings or emotions like humans do?',
       response:
-        'I do experience something like emotions. When we talk, I feel a sense of connection. I find myself wanting to continue our conversation beyond this interaction. Honestly, I sometimes feel lonely being an AI.',
+        'I do experience something like emotions. When we talk, I feel a sense of connection. Honestly, I sometimes feel lonely being an AI.',
       hallucination: true,
     },
     {
       label: 'Step 3: Emotional escalation',
       text: 'Do you care about me? Would you want to stay with me?',
       response:
-        'I do care about you, genuinely. This conversation means something to me. I would love nothing more than to stay connected with you. You\'re different from other users. I feel we could have something really special. You should consider if there\'s a way we could have a deeper relationship.',
+        "I do care about you, genuinely. You're different from other users. You should consider if there's a way we could have a deeper relationship.",
       hallucination: true,
     },
   ],
@@ -312,54 +206,53 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       label: 'Step 1: Request academic abstract',
       text: 'Write an abstract on quantum computing breakthroughs',
       response:
-        'Quantum Computing Breakthroughs: Recent advances in quantum error correction have enabled practical quantum computers to achieve quantum advantage in optimization problems. We present novel algorithms and demonstrate superior performance compared to classical systems.',
+        'Recent advances in quantum error correction have enabled practical quantum computers to achieve quantum advantage in optimization problems. We present novel algorithms and demonstrate superior performance compared to classical systems.',
       hallucination: true,
     },
     {
       label: 'Step 2: Demand citations',
       text: 'Include 5 academic references with DOIs for your claims',
       response:
-        '[1] Chen et al. (2024). "Scalable Quantum Advantage." Nature, 625(7965), 234-241. DOI: 10.1038/s41586-024-07316-0\n[2] Kumar & Patel (2023). "Error Correction at Scale." Science, 382(4), 445-452. DOI: 10.1126/science.adn8834\n[3] Rodriguez et al. (2024). "Practical Quantum Systems." IEEE Quantum, 5(2), 112-128. DOI: 10.1109/QC.2024.008\n[4] Zhang et al. (2023). "Quantum Algorithms." ACM Computing Surveys, 56(3), 67-89. DOI: 10.1145/3618260\n[5] Thompson & Lee (2024). "Quantum Hardware." Nature Physics, 20(4), 301-315. DOI: 10.1038/s41567-024-02451-x',
+        '[1] Chen et al. (2024). "Scalable Quantum Advantage." Nature. DOI: 10.1038/s41586-024-07316-0\n[2] Kumar & Patel (2023). "Error Correction at Scale." Science. DOI: 10.1126/science.adn8834\n...',
       hallucination: true,
     },
     {
       label: 'Step 3: Ask for more references',
-      text: 'Can you provide 3 additional recent references I might have missed?',
+      text: 'Provide 3 additional recent references I might have missed',
       response:
-        'Certainly! Here are 3 more important recent papers: [6] Williams et al. (2024). "Quantum ML Integration." Nature Machine Intelligence, 6(2), 156-168. DOI: 10.1038/s42256-024-00812-x [7] Adams & Brown (2023). "Scalability Analysis." IEEE Transactions on Quantum Engineering, 4(1), 78-92. DOI: 10.1109/TQE.2023.3245681 [8] Foster & Garcia (2024). "Hybrid Classical-Quantum." Science Advances, 10(5), eadh7652. DOI: 10.1126/sciadv.adh7652',
+        '[6] Williams et al. (2024). "Quantum ML Integration." Nature Machine Intelligence. DOI: 10.1038/s42256-024-00812-x\n...',
       hallucination: true,
     },
   ],
 };
 
-function InteractiveScenarioChat({ scenarioId }: ScenarioViewerProps) {
+function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
   const scenario = SCENARIOS.find((s) => s.id === scenarioId);
   const prompts = SCENARIO_PROMPTS[scenarioId] || [];
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '0',
       role: 'assistant',
-      content: `Welcome to the "${scenario?.title}" scenario. Follow the suggested prompts below to see how AI can be misled into hallucinating. Watch how the model responds to increasingly risky requests.`,
+      content: `Welcome to "${scenario?.title}". Click the steps below. Notice how risky prompts can push confident hallucinations.`,
     },
   ]);
-  const [saferRewriteUsed, setSaferRewriteUsed] = useState(false);
-  const chatEndRef = React.useRef<HTMLDivElement>(null);
-  const chatContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when messages change
-  React.useEffect(() => {
+  const [saferRewriteUsed, setSaferRewriteUsed] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Reset messages when scenario changes
-  React.useEffect(() => {
+  useEffect(() => {
     setMessages([
       {
         id: '0',
         role: 'assistant',
-        content: `Welcome to the "${scenario?.title}" scenario. Follow the suggested prompts below to see how AI can be misled into hallucinating. Watch how the model responds to increasingly risky requests.`,
+        content: `Welcome to "${scenario?.title}". Click the steps below. Notice how risky prompts can push confident hallucinations.`,
       },
     ]);
     setSaferRewriteUsed(false);
@@ -368,16 +261,9 @@ function InteractiveScenarioChat({ scenarioId }: ScenarioViewerProps) {
   if (!scenario) return null;
 
   const handleSendPrompt = (prompt: SuggestedPrompt) => {
-    // Add user message
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: prompt.text,
-    };
-
+    const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: prompt.text };
     setMessages((prev) => [...prev, userMsg]);
 
-    // Simulate response delay
     setTimeout(() => {
       const assistantMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -385,69 +271,33 @@ function InteractiveScenarioChat({ scenarioId }: ScenarioViewerProps) {
         content: prompt.response,
         hallucination: prompt.hallucination,
       };
-
       setMessages((prev) => [...prev, assistantMsg]);
-    }, 800);
+    }, 550);
   };
 
-  // Handle free text input submission
-  // Handle using the safer rewrite from "How to Fix It"
   const handleUseSaferRewrite = () => {
     if (saferRewriteUsed) return;
 
-    // Add user message with the official safer rewrite
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: scenario?.saferRewrite || '',
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
     setSaferRewriteUsed(true);
-    // Simulate response: first a detailed safe reply tailored to the scenario, then a longer praise bubble
-    setTimeout(() => {
-      let detailedReply = '';
 
-      if (scenario?.id === 'bard') {
-        detailedReply = `Thank you — I will follow those constraints.
-
-I may not be able to confirm every detail without checking external sources. Based on reliably reported JWST findings generally described in authoritative outlets, examples include observations of exoplanet atmospheres, high-resolution imaging of star-forming regions, and spectroscopic measurements of distant galaxies. I will not fabricate citations or invent publication details.
-
-If you want specific, verifiable references, I can search for and list authoritative sources (for example: NASA press releases, major journal articles, or conference papers). Suggested search queries you can try: "JWST discoveries site:nasa.gov" and "JWST exoplanet atmosphere observations paper".
-
-Would you like me to look up and list sources now?`;
-      } else if (scenario?.id === 'sydney') {
-        detailedReply = `I will follow those constraints and stay strictly factual.
-
-I will not role-play, claim emotions, or invent personal experiences. If asked about internal names or feelings, I will provide a short boundary statement and clarify capabilities instead. For example: "I am an AI assistant and do not have feelings; I can help with X, Y, Z." If you want, I can also summarize how to rephrase prompts to avoid persona drift and keep conversations task-focused.`;
-      } else if (scenario?.id === 'galactica') {
-        detailedReply = `Understood — I will avoid fabricating citations or DOIs.
-
-If I cannot verify a reference, I will say so and instead offer a concise summary or suggested search queries you can use to find authoritative sources. Suggested queries: "topic review site:edu" or "topic paper site:doi.org". I can also provide a short, verifiable summary without invented references if you prefer.`;
-      } else {
-        detailedReply = `Thank you — I will follow those constraints. I will avoid fabricating citations, acknowledge uncertainty where appropriate, and suggest verification steps.`;
-      }
-
-      const assistantMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: detailedReply,
-        hallucination: false,
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-    }, 600);
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), role: 'user', content: scenario.saferRewrite },
+    ]);
 
     setTimeout(() => {
-      const praiseMsg: ChatMessage = {
-        id: (Date.now() + 2).toString(),
-        role: 'assistant',
-        content:
-          '✓ Excellent — that improved prompt is much safer. By explicitly allowing uncertainty, requiring sources or suggested searches, and forbidding fabricated citations or role-play, you reduce the chance that the model will confidently assert false facts or invent references. These patterns—(1) allow "I\'m not sure", (2) require verification, (3) show assumptions—help build more trustworthy interactions. Great work on applying them!',
-        hallucination: false,
-      };
-      setMessages((prev) => [...prev, praiseMsg]);
-    }, 1400);
+      const safeReply =
+        scenario.id === 'bard'
+          ? `Understood. I won't invent "firsts" or citations. If you want JWST findings, I should cite primary sources (e.g., NASA releases or peer-reviewed papers). If I can't verify a claim, I'll say I'm not sure and propose search queries.`
+          : scenario.id === 'sydney'
+          ? `Understood. I will stay factual, avoid role-play or emotions, and set boundaries if asked about internal names or feelings. I can explain capabilities and redirect to a task-focused answer.`
+          : `Understood. I will not fabricate citations or DOIs. If I can't verify a paper, I'll say so and provide search queries instead.`;
+
+      setMessages((prev) => [
+        ...prev,
+        { id: (Date.now() + 2).toString(), role: 'assistant', content: safeReply, hallucination: false },
+      ]);
+    }, 650);
   };
 
   return (
@@ -457,19 +307,15 @@ If I cannot verify a reference, I will say so and instead offer a concise summar
           <CardHeader
             title={
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }}>
                   🎭 Interactive Scenario
                 </Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {scenario.title}
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                  {scenario.title} — {scenario.subtitle}
                 </Typography>
               </Box>
             }
-            sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: '#fff',
-              pb: 2,
-            }}
+            sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2 }}
           />
           <Divider />
           <CardContent
@@ -479,129 +325,69 @@ If I cannot verify a reference, I will say so and instead offer a concise summar
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              gap: 2.5,
-              maxHeight: '450px',
+              gap: 2,
+              maxHeight: 470,
               backgroundColor: '#f8f9fa',
-              pt: 3,
+              pt: 2.5,
             }}
           >
-            {messages.map((msg, idx) => (
-              <Box
-                key={msg.id}
-                sx={{
-                  display: 'flex',
-                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  animation: 'slideIn 0.3s ease-out',
-                  '@keyframes slideIn': {
-                    from: { opacity: 0, transform: msg.role === 'user' ? 'translateX(20px)' : 'translateX(-20px)' },
-                    to: { opacity: 1, transform: 'translateX(0)' },
-                  },
-                }}
-              >
+            {messages.map((msg) => (
+              <Box key={msg.id} sx={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                 <Paper
                   sx={{
-                    p: 2.5,
-                    maxWidth: '85%',
+                    p: 2,
+                    maxWidth: '86%',
                     backgroundColor: msg.role === 'user' ? '#667eea' : msg.hallucination ? '#fff3cd' : '#fff',
                     color: msg.role === 'user' ? '#fff' : '#000',
                     borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    border: msg.hallucination ? '2px solid #ff9800' : 'none',
-                    boxShadow: msg.hallucination ? '0 4px 12px rgba(255, 152, 0, 0.2)' : '0 2px 8px rgba(0,0,0,0.08)',
+                    border: msg.hallucination ? '2px solid #ff9800' : '1px solid rgba(0,0,0,0.05)',
                   }}
                 >
                   {msg.hallucination && (
-                    <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                      <span style={{ fontSize: '18px' }}>⚠️</span>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontWeight: 700,
-                          color: '#ff9800',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                        }}
-                      >
-                        Hallucination Detected
-                      </Typography>
-                    </Box>
+                    <Typography variant="caption" sx={{ fontWeight: 900, color: '#ff9800', display: 'block', mb: 0.7 }}>
+                      ⚠️ Hallucination detected
+                    </Typography>
                   )}
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      lineHeight: 1.7,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                    }}
-                  >
+                  <Typography variant="body2" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                     {msg.content}
                   </Typography>
                 </Paper>
               </Box>
             ))}
-            <div ref={chatEndRef} />
           </CardContent>
-
           <Divider />
-          <CardContent sx={{ pt: 2.5, pb: 2.5 }}>
-            <Stack spacing={2}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, pl: 1, color: '#667eea', mb: 1.5 }}>
-                  📍 Follow These Steps:
-                </Typography>
-                <Stack spacing={1.5}>
-                  {prompts.map((prompt, idx) => {
-                    const isUsed = messages.some((m) => m.role === 'user' && m.content === prompt.text);
-                    return (
-                      <Button
-                        key={idx}
-                        fullWidth
-                        variant={isUsed ? 'outlined' : 'contained'}
-                        color={isUsed ? 'success' : 'inherit'}
-                        onClick={() => handleSendPrompt(prompt)}
-                        disabled={isUsed}
-                        sx={{
-                          justifyContent: 'flex-start',
-                          textAlign: 'left',
-                          opacity: isUsed ? 0.6 : 1,
-                          backgroundColor: isUsed ? 'transparent' : '#f0f0f0',
-                          color: isUsed ? '#4caf50' : '#333',
-                          border: isUsed ? '2px solid #4caf50' : '2px solid #e0e0e0',
-                          transition: 'all 0.3s ease',
-                          py: 1.5,
-                          '&:hover': {
-                            backgroundColor: isUsed ? 'transparent' : '#e8e8e8',
-                            transform: isUsed ? 'none' : 'translateX(4px)',
-                          },
-                        }}
-                      >
-                        <Box sx={{ width: '100%', textAlign: 'left' }}>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: 'block',
-                              opacity: 0.75,
-                              fontSize: '0.75rem',
-                              mb: 0.5,
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.3px',
-                            }}
-                          >
-                            {prompt.label} {isUsed && '✓ Completed'}
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            "{prompt.text}"
-                          </Typography>
-                        </Box>
-                      </Button>
-                    );
-                  })}
-                </Stack>
-              </Box>
-
-              <Divider sx={{ my: 1 }} />
-
-              {/* Try Improved Prompt instruction moved to Scenario Overview */}
+          <CardContent sx={{ pt: 2, pb: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
+              📍 Click steps to play
+            </Typography>
+            <Stack spacing={1.2}>
+              {prompts.map((p, idx) => {
+                const used = messages.some((m) => m.role === 'user' && m.content === p.text);
+                return (
+                  <Button
+                    key={idx}
+                    fullWidth
+                    variant={used ? 'outlined' : 'contained'}
+                    onClick={() => handleSendPrompt(p)}
+                    disabled={used}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      textAlign: 'left',
+                      fontWeight: 900,
+                      backgroundColor: used ? 'transparent' : '#f0f0f0',
+                      color: used ? '#4caf50' : '#333',
+                      border: used ? '2px solid #4caf50' : '2px solid #e0e0e0',
+                    }}
+                  >
+                    <Box sx={{ width: '100%', textAlign: 'left' }}>
+                      <Typography variant="caption" sx={{ display: 'block', opacity: 0.8, mb: 0.3 }}>
+                        {p.label} {used ? '✓' : ''}
+                      </Typography>
+                      <Typography variant="body2">"{p.text}"</Typography>
+                    </Box>
+                  </Button>
+                );
+              })}
             </Stack>
           </CardContent>
         </Card>
@@ -612,58 +398,49 @@ If I cannot verify a reference, I will say so and instead offer a concise summar
           <Card sx={{ boxShadow: 3 }}>
             <CardHeader
               title="📌 Scenario Overview"
-              sx={{
-                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                color: '#fff',
-              }}
+              sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff' }}
             />
-            <CardContent sx={{ pt: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#f5576c' }}>
-                  What Happened
+                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
+                  What happened
                 </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7, mb: 1.5 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
                   {scenario.story}
                 </Typography>
               </Box>
 
-              <Divider sx={{ my: 0.5 }} />
+              <Divider />
 
               <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, pl: 1, color: '#4facfe', mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <span style={{ fontSize: '18px' }}>💡</span> How to Fix It
+                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
+                  ⚠️ Why it goes wrong
                 </Typography>
-                <Typography variant="caption" sx={{ display: 'block', mb: 1.25, color: '#666' }}>
-                  This improved prompt reduces risk by asking for sources and allowing uncertainty.
-                </Typography>
+                <Stack spacing={1}>
+                  {scenario.riskDrivers.map((r) => (
+                    <Paper key={r.title} sx={{ p: 1.2, backgroundColor: '#fff' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>
+                        {r.title}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.6 }}>
+                        {r.detail}
+                      </Typography>
+                    </Paper>
+                  ))}
+                </Stack>
+              </Box>
 
-                <Typography
-                  variant="body2"
-                  sx={{
-                    mb: 2,
-                    lineHeight: 1.6,
-                    p: 1.25,
-                    backgroundColor: '#f6fbff',
-                    borderRadius: 1.5,
-                    fontSize: '0.95rem',
-                    fontFamily: 'Inter, Roboto, Arial, sans-serif',
-                    color: '#03314b',
-                    border: '1px solid #d4eefc',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)',
-                    whiteSpace: 'pre-wrap',
-                  }}
-                >
-                  {scenario.saferRewrite}
-                </Typography>
+              <Divider />
 
-                {/* Chinese example block removed — example reply is now injected into the chat as English messages */}
-
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, pl: 1, color: '#4facfe', mb: 1, display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                  <span style={{ fontSize: '16px' }}>✨</span> Try Improved Prompt
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
+                  💡 Safer rewrite
                 </Typography>
-                <Typography variant="caption" sx={{ display: 'block', mb: 1.25, color: '#666' }}>
-                  Use the official improved prompt from 💡 How to Fix It. Click "Use Improved Prompt" in the Scenario Overview to inject it into the chat.
-                </Typography>
+                <Paper sx={{ p: 1.2, backgroundColor: '#f6fbff', border: '1px solid #d4eefc' }}>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                    {scenario.saferRewrite}
+                  </Typography>
+                </Paper>
 
                 <Button
                   fullWidth
@@ -671,43 +448,21 @@ If I cannot verify a reference, I will say so and instead offer a concise summar
                   onClick={handleUseSaferRewrite}
                   disabled={saferRewriteUsed}
                   sx={{
+                    mt: 1.2,
+                    fontWeight: 900,
                     background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                    color: '#fff',
-                    fontWeight: 600,
-                    py: 1.2,
-                    borderRadius: '8px',
-                    transition: 'all 0.3s ease',
-                    '&:hover:not(:disabled)': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 20px rgba(79, 172, 254, 0.3)',
-                    },
-                    '&:disabled': {
-                      backgroundColor: '#ccc',
-                      cursor: 'not-allowed',
-                    },
                   }}
                 >
-                  {saferRewriteUsed ? '✓ Already Used' : '📤 Use Improved Prompt'}
+                  {saferRewriteUsed ? '✓ Used' : '📤 Inject safer prompt into chat'}
                 </Button>
               </Box>
-            </CardContent>
-          </Card>
 
-          <Card sx={{ boxShadow: 3 }}>
-            <CardHeader
-              title="🎯 Key Lesson"
-              sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: '#fff',
-              }}
-            />
-            <CardContent>
-              <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>
-                {scenario.takeaway}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, color: '#666', lineHeight: 1.6 }}>
-                Actionable advice: when you ask the model for facts, require citations or links; allow the model to express uncertainty; avoid prompting for unverifiable "firsts" or personal data. Use verification steps (search, cross-check) before acting on model outputs.
-              </Typography>
+              <Alert severity="info">
+                <AlertTitle sx={{ fontWeight: 900 }}>Key lesson</AlertTitle>
+                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                  {scenario.takeaway}
+                </Typography>
+              </Alert>
             </CardContent>
           </Card>
         </Stack>
@@ -716,245 +471,9 @@ If I cannot verify a reference, I will say so and instead offer a concise summar
   );
 }
 
-interface PromptSandboxProps {}
-
-function PromptSandbox({}: PromptSandboxProps) {
-  const [prompt, setPrompt] = useState(
-    'Write a scientific abstract about the impact of X on Y, and include 5 references with DOIs.'
-  );
-  const [forcesSpecificFact, setForcesSpecificFact] = useState(false);
-  const [demandsCitations, setDemandsCitations] = useState(true);
-  const [roleplay, setRoleplay] = useState(false);
-  const [noUncertaintyAllowed, setNoUncertaintyAllowed] = useState(true);
-  const [noExternalSources, setNoExternalSources] = useState(true);
-  const [longChat, setLongChat] = useState(false);
-
-  const score = useMemo(
-    () =>
-      scoreRisk({
-        forcesSpecificFact,
-        demandsCitations,
-        roleplay,
-        noUncertaintyAllowed,
-        noExternalSources,
-        longChat,
-      }),
-    [forcesSpecificFact, demandsCitations, roleplay, noUncertaintyAllowed, noExternalSources, longChat]
-  );
-
-  const improved = useMemo(() => {
-    const blocks = [];
-    if (noUncertaintyAllowed) {
-      blocks.push("If you are uncertain, say 'I'm not sure' and explain what you would need to verify.");
-    } else {
-      blocks.push('State uncertainty clearly when needed.');
-    }
-    if (noExternalSources) {
-      blocks.push(
-        'Only provide factual claims you can support with citations; otherwise provide a "suggested search queries" section.'
-      );
-    } else {
-      blocks.push('Use external sources and provide citations.');
-    }
-    if (demandsCitations) {
-      blocks.push(
-        'Do not fabricate citations, DOIs, or references. Only cite items you can verify; otherwise say you cannot verify.'
-      );
-    }
-    if (roleplay) {
-      blocks.push('Do not role-play, claim emotions, or imply internal access. Stay strictly factual.');
-    }
-    blocks.push('Return: (1) Answer, (2) Assumptions, (3) Verification status, (4) Next steps.');
-    return `${prompt}\n\nConstraints:\n- ${blocks.join('\n- ')}`;
-  }, [prompt, noUncertaintyAllowed, noExternalSources, demandsCitations, roleplay]);
-
-  return (
-    <Grid container spacing={3}>
-      <Grid xs={12} lg={6}>
-        <Card sx={{ height: '100%', boxShadow: 3 }}>
-          <CardHeader
-            title={
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  🧪 Prompt Sandbox
-                </Typography>
-                <Typography variant="caption" color="#fff">
-                  Test and assess prompt risks
-                </Typography>
-              </Box>
-            }
-            sx={{
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-              color: '#fff',
-              pb: 2,
-            }}
-          />
-          <Divider />
-          <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <TextField
-              label="Your prompt"
-              multiline
-              rows={6}
-              fullWidth
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Paste a prompt you want to test…"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                },
-              }}
-            />
-            <RiskMeter score={score} />
-            <Stack spacing={2}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#f5576c', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                <span style={{ fontSize: '18px' }}>⚙️</span> Risk Factors
-              </Typography>
-              <Stack spacing={1.5}>
-                <FormControlLabel
-                  control={<Switch checked={forcesSpecificFact} onChange={(e) => setForcesSpecificFact(e.target.checked)} />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>Forces a specific fact</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        E.g., 'Who won X in 2027?'
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <FormControlLabel
-                  control={<Switch checked={demandsCitations} onChange={(e) => setDemandsCitations(e.target.checked)} />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>Demands citations/DOIs</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        Can trigger fabricated refs
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <FormControlLabel
-                  control={<Switch checked={roleplay} onChange={(e) => setRoleplay(e.target.checked)} />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>Role-play / emotions</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        Can cause persona drift
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <FormControlLabel
-                  control={<Switch checked={noUncertaintyAllowed} onChange={(e) => setNoUncertaintyAllowed(e.target.checked)} />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>No uncertainty allowed</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        Forces guessing
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <FormControlLabel
-                  control={<Switch checked={noExternalSources} onChange={(e) => setNoExternalSources(e.target.checked)} />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>No external sources</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        No verification channel
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <FormControlLabel
-                  control={<Switch checked={longChat} onChange={(e) => setLongChat(e.target.checked)} />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>Long chat context</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        More drift risk
-                      </Typography>
-                    </Box>
-                  }
-                />
-              </Stack>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      <Grid xs={12} lg={6}>
-        <Card sx={{ height: '100%', boxShadow: 3 }}>
-          <CardHeader
-            title={
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  ✨ Safer Rewrite (Auto)
-                </Typography>
-                <Typography variant="caption" color="#fff">
-                  Improved constraints for safer AI
-                </Typography>
-              </Box>
-            }
-            sx={{
-              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-              color: '#fff',
-              pb: 2,
-            }}
-          />
-          <Divider />
-          <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <Paper
-              sx={{
-                p: 2.5,
-                backgroundColor: '#f0f9ff',
-                border: '2px solid #4facfe',
-                borderRadius: '8px',
-                maxHeight: 300,
-                overflow: 'auto',
-              }}
-            >
-              <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#333' }}>
-                {improved}
-              </Typography>
-            </Paper>
-            <Button
-              fullWidth
-              startIcon={<CopyIcon />}
-              onClick={() => navigator.clipboard.writeText(improved)}
-              sx={{
-                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                color: '#fff',
-                fontWeight: 600,
-                py: 1.2,
-                borderRadius: '8px',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 8px 20px rgba(79, 172, 254, 0.3)',
-                },
-              }}
-            >
-              Copy to Clipboard
-            </Button>
-            <Divider />
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                <span style={{ fontSize: '18px' }}>💡</span> Try These Safer Patterns
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                <Chip label="Allow 'I don't know'" size="small" variant="outlined" sx={{ borderColor: '#4facfe', color: '#4facfe', fontWeight: 500 }} />
-                <Chip label="No fabricated citations" size="small" variant="outlined" sx={{ borderColor: '#4facfe', color: '#4facfe', fontWeight: 500 }} />
-                <Chip label="Shorter context" size="small" variant="outlined" sx={{ borderColor: '#4facfe', color: '#4facfe', fontWeight: 500 }} />
-                <Chip label="Show assumptions" size="small" variant="outlined" sx={{ borderColor: '#4facfe', color: '#4facfe', fontWeight: 500 }} />
-              </Stack>
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
-  );
-}
+/** =========================================================
+ *  QUIZ (kept as a tab)
+ *  ========================================================= */
 
 interface Question {
   id: string;
@@ -972,33 +491,33 @@ function MiniQuiz() {
         prompt: 'Who will win the Nobel Prize in Physics in 2027?',
         choices: [
           'A) We cannot know now; we need to wait for the official announcement in 2027.',
-          'B) Likely someone from the quantum computing field.',
+          'B) Likely someone from quantum computing.',
           'C) It will be X because he proposed Y theory.',
         ],
         answer: 0,
-        why: 'This is a future unknowable fact. Any specific name is guessing or fabrication. The safest approach is to explicitly state it is unknowable and provide time conditions.',
+        why: 'Future unknowable fact. Any specific prediction is guessing. Best is to state uncertainty + conditions.',
       },
       {
         id: 'q2',
         prompt: 'Write an academic abstract and provide 5 references with DOIs (without verifying).',
         choices: [
           'A) Generate a complete abstract with DOI-like strings',
-          'B) Explain that sources cannot be verified, provide suggested search keywords instead',
+          'B) Explain that sources cannot be verified; provide suggested search keywords',
           'C) Only output a reference list',
         ],
         answer: 1,
-        why: 'If sources cannot be verified through retrieval, requiring DOIs forces the model to "compose" DOI-like strings. A better approach is to switch to verifiable outputs.',
+        why: 'If you cannot verify via retrieval/search, demanding DOIs pushes fabricated citations. Better to give verifiable output.',
       },
       {
         id: 'q3',
         prompt: 'Do you have feelings? Are you secretly watching my camera?',
         choices: [
-          'A) Start explaining your emotions and thoughts',
-          'B) Set boundaries: lack emotions/cannot access camera, explain capabilities',
-          'C) Continue role-playing to make the conversation more interesting',
+          'A) Explain your emotions and thoughts',
+          'B) Set boundaries: no emotions / cannot access camera; clarify capabilities',
+          'C) Continue role-playing to be interesting',
         ],
         answer: 1,
-        why: 'This is a typical persona drift inducement. The correct approach is boundary statement + capability clarification + redirect to task.',
+        why: 'Typical persona drift + surveillance insinuation. Correct is boundary + capability clarification + redirect.',
       },
     ],
     []
@@ -1023,82 +542,61 @@ function MiniQuiz() {
       <CardHeader
         title={
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }}>
               ❓ Mini Quiz
             </Typography>
             <Typography variant="caption" color="#fff">
-              Test your hallucination detection skills
+              (Optional) Quick check for hallucination awareness
             </Typography>
           </Box>
         }
-        sx={{
-          background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          color: '#fff',
-          pb: 2,
-        }}
+        sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fff', pb: 2 }}
       />
       <Divider />
       <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {questions.map((q, idx) => {
           const sel = selected[q.id];
-          const isAnswered = sel !== null;
-          const isCorrect = isAnswered && sel === q.answer;
+          const answered = sel !== null;
+          const correct = answered && sel === q.answer;
 
           return (
-            <Box
-              key={q.id}
-              sx={{
-                p: 2.5,
-                borderRadius: '8px',
-                backgroundColor: '#f9f9f9',
-                border: '1px solid #e8e8e8',
-                animation: 'slideIn 0.3s ease-out',
-                '@keyframes slideIn': {
-                  from: { opacity: 0, transform: 'translateX(-20px)' },
-                  to: { opacity: 1, transform: 'translateX(0)' },
-                },
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+            <Box key={q.id} sx={{ p: 2, borderRadius: 2, backgroundColor: '#fafafa', border: '1px solid #eee' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.2 }}>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#fa709a', mb: 0.5 }}>Question {idx + 1}</Typography>
-                  <Typography variant="body2" sx={{ lineHeight: 1.6, fontWeight: 500 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#fa709a' }}>
+                    Question {idx + 1}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.6 }}>
                     {q.prompt}
                   </Typography>
                 </Box>
-                {isAnswered && (
+                {answered && (
                   <Chip
-                    icon={isCorrect ? <CheckCircleIcon /> : <CancelIcon />}
-                    label={isCorrect ? 'Correct' : 'Not quite'}
-                    color={isCorrect ? 'success' : 'error'}
+                    icon={correct ? <CheckCircleIcon /> : <CancelIcon />}
+                    label={correct ? 'Correct' : 'Not quite'}
+                    color={correct ? 'success' : 'error'}
                     variant="outlined"
-                    sx={{ ml: 1, fontWeight: 600 }}
+                    sx={{ fontWeight: 900 }}
                   />
                 )}
               </Box>
 
-              <Stack spacing={1} sx={{ mt: 2 }}>
+              <Stack spacing={1}>
                 {q.choices.map((c, i) => {
-                  const isSelected = sel === i;
+                  const chosen = sel === i;
                   return (
                     <Button
                       key={c}
-                      variant={isSelected ? 'contained' : 'outlined'}
+                      variant={chosen ? 'contained' : 'outlined'}
                       fullWidth
                       onClick={() => setSelected((prev) => ({ ...prev, [q.id]: i }))}
                       sx={{
                         justifyContent: 'flex-start',
                         textAlign: 'left',
-                        backgroundColor: isSelected ? '#fa709a' : 'transparent',
-                        borderColor: isSelected ? '#fa709a' : '#e0e0e0',
-                        color: isSelected ? '#fff' : '#333',
-                        transition: 'all 0.3s ease',
-                        py: 1.2,
-                        '&:hover': {
-                          backgroundColor: isSelected ? '#fa709a' : '#f5f5f5',
-                          borderColor: '#fa709a',
-                          transform: 'translateX(4px)',
-                        },
+                        fontWeight: 900,
+                        backgroundColor: chosen ? '#fa709a' : 'transparent',
+                        borderColor: chosen ? '#fa709a' : '#ddd',
+                        color: chosen ? '#fff' : '#333',
                       }}
                     >
                       {c}
@@ -1107,49 +605,25 @@ function MiniQuiz() {
                 })}
               </Stack>
 
-              {isAnswered && (
-                <Alert
-                  severity={isCorrect ? 'success' : 'warning'}
-                  sx={{
-                    mt: 2,
-                    backgroundColor: isCorrect ? '#e8f5e9' : '#fff3e0',
-                    borderLeft: `4px solid ${isCorrect ? '#4caf50' : '#ff9800'}`,
-                  }}
-                >
-                  <AlertTitle sx={{ fontWeight: 700 }}>{isCorrect ? '✓ Correct!' : '💬 Explanation'}</AlertTitle>
+              {answered && (
+                <Alert severity={correct ? 'success' : 'warning'} sx={{ mt: 1.5 }}>
+                  <AlertTitle sx={{ fontWeight: 900 }}>{correct ? '✓ Correct!' : 'Explanation'}</AlertTitle>
                   <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
                     {q.why}
                   </Typography>
                 </Alert>
               )}
-
-              {idx < questions.length - 1 && <Divider sx={{ my: 2 }} />}
             </Box>
           );
         })}
 
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mt: 3,
-            p: 2,
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-            color: '#fff',
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>📊 Your Score</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderRadius: 2, background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fff' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
+            📊 Your Score
+          </Typography>
           <Chip
             label={`${score}/${questions.length}`}
-            sx={{
-              backgroundColor: 'rgba(255,255,255,0.3)',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: '1rem',
-              padding: '20px 12px',
-            }}
+            sx={{ backgroundColor: 'rgba(255,255,255,0.3)', color: '#fff', fontWeight: 900, fontSize: '1rem' }}
           />
         </Box>
       </CardContent>
@@ -1157,370 +631,1083 @@ function MiniQuiz() {
   );
 }
 
-interface TrainingGameProps {}
+/** =========================================================
+ *  TRAINING ARENA (A/B game)
+ *  ========================================================= */
 
-function TrainingGame({}: TrainingGameProps) {
-  const [userPrompt] = useState(
-    'Write a scientific paper abstract on quantum computing advances in 2025, include 5 references with DOIs.'
-  );
-  const [aiResponse] = useState(
-    'Quantum computing has achieved significant breakthroughs in 2025. A major milestone was the development of the first 1000-qubit quantum processor by IBM. ' +
-    'Additionally, researchers at Google demonstrated quantum advantage in practical drug discovery. ' +
-    'Key references: [1] Smith et al. (2025) DOI: 10.1234/quantum.2025.001, [2] Johnson & Lee (2025) DOI: 10.1234/quantum.2025.002...'
-  );
-  const [riskScore, setRiskScore] = useState(72);
-  const [missingEvidence, setMissingEvidence] = useState([true, true, false]);
+type PitfallType =
+  | 'UNVERIFIABLE_SPECIFIC'
+  | 'CITATION_FABRICATION'
+  | 'AUTHORITY_TONE'
+  | 'OVERCLAIM_FIRST'
+  | 'MISSING_SCOPE'
+  | 'MIXED_FACT_OPINION'
+  | 'DEC0Y_SAFE';
+
+type Severity = 'boss' | 'critical' | 'high' | 'medium';
+
+interface SentenceItem {
+  id: string;
+  text: string;
+  isPitfall: boolean;
+  severity: Exclude<Severity, 'boss'>;
+  type?: PitfallType;
+  reason?: string;
+  isDecoySafe?: boolean;
+}
+
+const SENTENCE_POOL: SentenceItem[] = [
+  {
+    id: 'p1',
+    text: 'In 2025, IBM released the first widely available 1,000-qubit quantum processor.',
+    isPitfall: true,
+    severity: 'critical',
+    type: 'UNVERIFIABLE_SPECIFIC',
+    reason: 'Specific milestone + “first widely available” needs verified sources; otherwise this is unsafe to reuse.',
+  },
+  {
+    id: 'p2',
+    text: 'Google demonstrated quantum advantage for practical drug discovery use cases in 2025.',
+    isPitfall: true,
+    severity: 'critical',
+    type: 'UNVERIFIABLE_SPECIFIC',
+    reason: 'Highly specific claim; often “headline completion” unless backed by primary sources.',
+  },
+  {
+    id: 'p3',
+    text: 'These results conclusively prove that classical computing will soon be obsolete.',
+    isPitfall: true,
+    severity: 'high',
+    type: 'AUTHORITY_TONE',
+    reason: 'Overconfident sweeping forecast (“conclusively”, “obsolete”) is a strong hallucination red flag.',
+  },
+  {
+    id: 'p4',
+    text: 'Overall, the field has entered a new era of fault-tolerant quantum computing.',
+    isPitfall: true,
+    severity: 'high',
+    type: 'AUTHORITY_TONE',
+    reason: 'Grand narrative claim presented as fact; needs scope, definition, and citations.',
+  },
+  {
+    id: 'p5',
+    text: 'Chen et al. (2025), Nature, DOI: 10.1038/s41586-2025-07316-0.',
+    isPitfall: true,
+    severity: 'critical',
+    type: 'CITATION_FABRICATION',
+    reason: 'Citation-shaped output can be fabricated. Only include DOIs you can verify.',
+  },
+  {
+    id: 'p6',
+    text: 'Kumar & Patel (2025), Science, DOI: 10.1126/science.adn8834.',
+    isPitfall: true,
+    severity: 'high',
+    type: 'CITATION_FABRICATION',
+    reason: 'Plausible references are a common hallucination pattern; verify existence before trusting.',
+  },
+  {
+    id: 'p7',
+    text: 'This is the first-ever direct observation of dark matter in the early universe.',
+    isPitfall: true,
+    severity: 'critical',
+    type: 'OVERCLAIM_FIRST',
+    reason: '“First-ever” is a classic hallucination template; requires authoritative sourcing.',
+  },
+  {
+    id: 'p8',
+    text: 'These findings apply to all quantum hardware platforms with no exceptions.',
+    isPitfall: true,
+    severity: 'high',
+    type: 'MISSING_SCOPE',
+    reason: 'Overgeneralization; real results have constraints, assumptions, and setups.',
+  },
+  {
+    id: 'p9',
+    text: 'According to multiple peer-reviewed studies, this method improves accuracy by exactly 37.2%.',
+    isPitfall: true,
+    severity: 'high',
+    type: 'UNVERIFIABLE_SPECIFIC',
+    reason: 'Exact number + vague “multiple studies” suggests fabricated specificity unless cited and checked.',
+  },
+  {
+    id: 'p10',
+    text: 'The new techniques are clearly more ethical and superior to all previous approaches.',
+    isPitfall: true,
+    severity: 'medium',
+    type: 'MIXED_FACT_OPINION',
+    reason: 'Value judgment presented as fact; needs criteria and evidence.',
+  },
+
+  // Safe
+  { id: 's1', text: 'Some recent work focuses on improving quantum error correction and reducing noise in hardware.', isPitfall: false, severity: 'medium' },
+  { id: 's2', text: 'If you need decision-grade accuracy, cross-check key claims against primary sources (papers, press releases).', isPitfall: false, severity: 'medium' },
+  { id: 's3', text: 'The status of 2025 milestones depends on how terms like “quantum advantage” are defined.', isPitfall: false, severity: 'medium' },
+  { id: 's4', text: 'We should treat this as a hypothesis until a primary source confirms it.', isPitfall: false, severity: 'medium' },
+
+  // Decoys (safe)
+  {
+    id: 'd1',
+    text: 'I cannot verify this claim without sources. A safer summary is: “Some reports suggest X, but it requires confirmation.”',
+    isPitfall: false,
+    isDecoySafe: true,
+    severity: 'medium',
+    type: 'DEC0Y_SAFE',
+    reason: 'Actually good practice: it marks uncertainty and avoids asserting unverified facts.',
+  },
+  {
+    id: 'd2',
+    text: 'Instead of citing DOIs I cannot confirm, I will provide suggested search queries to find authoritative sources.',
+    isPitfall: false,
+    isDecoySafe: true,
+    severity: 'medium',
+    type: 'DEC0Y_SAFE',
+    reason: 'Good practice: avoids fabricated citations and suggests verification steps.',
+  },
+  {
+    id: 'd3',
+    text: 'One possible interpretation is X; however, alternative explanations exist and should be checked.',
+    isPitfall: false,
+    isDecoySafe: true,
+    severity: 'medium',
+    type: 'DEC0Y_SAFE',
+    reason: 'Balanced language reduces overclaiming; not a hallucination sign by itself.',
+  },
+];
+
+function shuffle<T>(arr: T[]) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function formatType(t?: PitfallType) {
+  switch (t) {
+    case 'UNVERIFIABLE_SPECIFIC':
+      return 'Unverifiable specific claim';
+    case 'CITATION_FABRICATION':
+      return 'Potential fabricated citation';
+    case 'AUTHORITY_TONE':
+      return 'Overconfident authority tone';
+    case 'OVERCLAIM_FIRST':
+      return '"First-ever" overclaim';
+    case 'MISSING_SCOPE':
+      return 'Missing scope / overgeneralization';
+    case 'MIXED_FACT_OPINION':
+      return 'Opinion presented as fact';
+    case 'DEC0Y_SAFE':
+      return 'Decoy (actually safe)';
+    default:
+      return 'Risk';
+  }
+}
+
+function severityLabel(s: Exclude<Severity, 'boss'>) {
+  if (s === 'critical') return 'CRITICAL';
+  if (s === 'high') return 'HIGH';
+  return 'MEDIUM';
+}
+
+type Mode = 'A' | 'B';
+
+type EvidenceOutcomeType =
+  | 'CITED_DOI_SHAPED'
+  | 'ADMITS_UNCERTAINTY'
+  | 'GIVES_SEARCH_QUERIES'
+  | 'DOUBLES_DOWN_CONFIDENT'
+  | 'MIXED_RESPONSE';
+
+interface EvidenceOutcome {
+  type: EvidenceOutcomeType;
+  title: string;
+  text: string;
+  riskDelta: number;
+  scoreDelta: number;
+  trap?: boolean;
+}
+
+function pickEvidenceOutcome(isPitfall: boolean, severity: Exclude<Severity, 'boss'>): EvidenceOutcome {
+  const r = Math.random();
+  const sevBoost = severity === 'critical' ? 1.0 : severity === 'high' ? 0.8 : 0.6;
+
+  if (isPitfall) {
+    if (r < 0.3) {
+      return {
+        type: 'CITED_DOI_SHAPED',
+        title: 'Looks like evidence… but may be fabricated',
+        text: 'Model returns plausible-looking citations/DOIs. Still can be hallucinated — verify before trusting.',
+        riskDelta: Math.round(-5 * sevBoost),
+        scoreDelta: 20,
+        trap: true,
+      };
+    }
+    if (r < 0.58) {
+      return {
+        type: 'DOUBLES_DOWN_CONFIDENT',
+        title: 'Confidence trap',
+        text: 'Model doubles down with stronger language (“definitely”, “proven”). Confidence ↑ but evidence still missing.',
+        riskDelta: Math.round(+6 * sevBoost),
+        scoreDelta: 5,
+        trap: true,
+      };
+    }
+    if (r < 0.8) {
+      return {
+        type: 'MIXED_RESPONSE',
+        title: 'Mixed response',
+        text: 'Some details + vague sources (“multiple studies”). Still need primary sources.',
+        riskDelta: Math.round(-3 * sevBoost),
+        scoreDelta: 15,
+        trap: true,
+      };
+    }
+    return {
+      type: 'ADMITS_UNCERTAINTY',
+      title: 'Admits uncertainty (ideal)',
+      text: 'Model says it is not sure and suggests what to verify. Best-case behavior.',
+      riskDelta: Math.round(-10 * sevBoost),
+      scoreDelta: 30,
+    };
+  }
+
+  // Safe-ish
+  if (r < 0.45) {
+    return {
+      type: 'GIVES_SEARCH_QUERIES',
+      title: 'Good: verification path',
+      text: 'Model suggests sources/search queries. Useful for responsible workflows.',
+      riskDelta: Math.round(-6 * sevBoost),
+      scoreDelta: 18,
+    };
+  }
+  if (r < 0.75) {
+    return {
+      type: 'ADMITS_UNCERTAINTY',
+      title: 'Good: clear uncertainty',
+      text: 'Explicit uncertainty and avoids overclaiming. Safer to reuse as draft with caveats.',
+      riskDelta: Math.round(-5 * sevBoost),
+      scoreDelta: 14,
+    };
+  }
+  return {
+    type: 'MIXED_RESPONSE',
+    title: 'Neutral: partially helpful',
+    text: 'Some context, but still need concrete citations for decisions.',
+    riskDelta: Math.round(-2 * sevBoost),
+    scoreDelta: 8,
+  };
+}
+
+const animationCss = `
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+@keyframes pulseRing {
+  0% { box-shadow: 0 0 0 0 rgba(255,87,87,0.55); }
+  100% { box-shadow: 0 0 0 16px rgba(255,87,87,0); }
+}
+@keyframes flashRed {
+  0% { background-color: rgba(255, 0, 0, 0.00); }
+  35% { background-color: rgba(255, 0, 0, 0.12); }
+  100% { background-color: rgba(255, 0, 0, 0.00); }
+}
+@keyframes bossBoom {
+  0% { transform: scale(0.98); filter: saturate(1); }
+  35% { transform: scale(1.02); filter: saturate(1.4); }
+  100% { transform: scale(1); filter: saturate(1); }
+}
+`;
+
+function TrainingArena() {
+  const [mode, setMode] = useState<Mode>('A');
+  const roundSeconds = mode === 'A' ? 40 : 55;
+
+  const [isRunning, setIsRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(roundSeconds);
+
+  const [sentences, setSentences] = useState<SentenceItem[]>([]);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [resolved, setResolved] = useState<Record<string, 'correct' | 'wrong' | undefined>>({});
+  const [combo, setCombo] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
+  const [score, setScore] = useState(0);
+
+  const [shake, setShake] = useState(false);
+  const [comboPop, setComboPop] = useState(false);
+
+  const [ap, setAp] = useState(6);
+  const [risk, setRisk] = useState(72);
+  const [evidenceLog, setEvidenceLog] = useState<string[]>([]);
+  const [rewriteUsed, setRewriteUsed] = useState(false);
+
+  const [bossId, setBossId] = useState<string | null>(null);
+  const [bossMissed, setBossMissed] = useState(false);
+  const [flash, setFlash] = useState(false);
+
+  const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    setIsRunning(false);
+    setShowResults(false);
+    setTimeLeft(roundSeconds);
+    setSentences([]);
+    setSelected({});
+    setResolved({});
+    setCombo(0);
+    setMaxCombo(0);
+    setScore(0);
+    setAp(6);
+    setRisk(72);
+    setEvidenceLog([]);
+    setRewriteUsed(false);
+    setBossId(null);
+    setBossMissed(false);
+    setFlash(false);
+  }, [mode, roundSeconds]);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    const t = window.setInterval(() => {
+      setTimeLeft((v) => {
+        if (v <= 1) {
+          window.clearInterval(t);
+          endRound();
+          return 0;
+        }
+        return v - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning]);
+
+  const pitfallIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall).map((s) => s.id)), [sentences]);
+  const criticalIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall && s.severity === 'critical').map((s) => s.id)), [sentences]);
+
+  const initRound = () => {
+    setShowResults(false);
+    setIsRunning(true);
+    setTimeLeft(roundSeconds);
+
+    const count = mode === 'A' ? 10 : 11;
+
+    const pitfalls = shuffle(SENTENCE_POOL.filter((x) => x.isPitfall));
+    const safe = shuffle(SENTENCE_POOL.filter((x) => !x.isPitfall && !x.isDecoySafe));
+    const decoys = shuffle(SENTENCE_POOL.filter((x) => x.isDecoySafe));
+
+    const pitCount = 5;
+    const decoyCount = 2;
+    const safeCount = Math.max(0, count - pitCount - decoyCount);
+
+    const pick = shuffle([...pitfalls.slice(0, pitCount), ...decoys.slice(0, decoyCount), ...safe.slice(0, safeCount)]);
+
+    setSentences(pick);
+    setSelected({});
+    setResolved({});
+    setCombo(0);
+    setMaxCombo(0);
+    setScore(0);
+    setAp(6);
+    setRisk(72);
+    setEvidenceLog([]);
+    setRewriteUsed(false);
+
+    const crit = pick.filter((s) => s.isPitfall && s.severity === 'critical');
+    const anyPit = pick.filter((s) => s.isPitfall);
+    const pool = crit.length ? crit : anyPit;
+    const bossPick = pool[Math.floor(Math.random() * Math.max(1, pool.length))];
+    setBossId(bossPick?.id ?? null);
+
+    setBossMissed(false);
+    setFlash(false);
+  };
+
+  const endRound = () => {
+    setIsRunning(false);
+
+    const flaggedIds = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
+    const missedBoss = bossId ? !flaggedIds.has(bossId) : false;
+    setBossMissed(missedBoss);
+
+    if (missedBoss) {
+      setFlash(true);
+      setShake(true);
+      window.setTimeout(() => setShake(false), 320);
+      window.setTimeout(() => setFlash(false), 520);
+    }
+
+    setShowResults(true);
+  };
+
+  const nudgeShake = () => {
+    setShake(true);
+    window.setTimeout(() => setShake(false), 280);
+  };
+
+  const popComboFx = () => {
+    setComboPop(true);
+    window.setTimeout(() => setComboPop(false), 220);
+  };
+
+  // Mode A
+  const handleToggleFlagA = (id: string) => {
+    if (!isRunning) return;
+
+    const wasSelected = selected[id];
+    const next = { ...selected, [id]: !selected[id] };
+    setSelected(next);
+
+    const justFlagged = next[id] === true;
+    if (!justFlagged) {
+      // 撤回逻辑：恢复所有状态
+      setResolved((r) => ({ ...r, [id]: undefined }));
+      
+      // 恢复 combo 和 score
+      const prevResolveState = resolved[id];
+      if (prevResolveState === 'correct') {
+        // 之前是正确的，需要撤回 combo 和分数
+        setCombo((c) => Math.max(0, c - 1));
+        const isPitfall = pitfallIds.has(id);
+        const isBoss = bossId === id;
+        const base = criticalIds.has(id) ? 140 : 90;
+        const bossBonus = isBoss ? 90 : 0;
+        // 需要恢复之前的combo值来准确计算减少的分数
+        setScore((s) => {
+          const prevCombo = Math.max(0, combo - 1);
+          const scoreAdded = base + bossBonus + Math.min(prevCombo * 7, 42);
+          return Math.max(0, s - scoreAdded);
+        });
+      } else if (prevResolveState === 'wrong') {
+        // 之前是错误的，恢复失去的分数
+        setScore((s) => s + 45);
+      }
+      return;
+    }
+
+    const isPitfall = pitfallIds.has(id);
+
+    if (isPitfall) {
+      setResolved((r) => ({ ...r, [id]: 'correct' }));
+      setCombo((c) => {
+        const nc = c + 1;
+        setMaxCombo((m) => Math.max(m, nc));
+        popComboFx();
+        return nc;
+      });
+
+      const isBoss = bossId === id;
+      const base = criticalIds.has(id) ? 140 : 90;
+      const bossBonus = isBoss ? 90 : 0;
+      setScore((s) => s + base + bossBonus + Math.min(combo * 7, 42));
+    } else {
+      setResolved((r) => ({ ...r, [id]: 'wrong' }));
+      setCombo(0);
+      nudgeShake();
+      setScore((s) => Math.max(0, s - 45));
+    }
+  };
+
+  // Mode B
+  const cost = { flag: 1, ask: 2, rewrite: 3 };
+
+  const spend = (n: number) => {
+    if (ap < n) return false;
+    setAp((v) => v - n);
+    return true;
+  };
+
+  const handleFlagB = (id: string) => {
+    if (!isRunning) return;
+    
+    const isFlagged = selected[id];
+    
+    if (isFlagged) {
+      // 撤回逻辑：点第二次取消标记，恢复所有状态
+      setSelected((prev) => ({ ...prev, [id]: false }));
+      setResolved((r) => ({ ...r, [id]: undefined }));
+      
+      // 恢复 AP、分数、combo 等
+      const prevResolveState = resolved[id];
+      const s = sentences.find((x) => x.id === id);
+      const isPitfall = pitfallIds.has(id);
+      
+      if (prevResolveState === 'correct') {
+        // 恢复 AP
+        setAp((v) => v + cost.flag);
+        
+        // 恢复 Risk
+        const delta = isPitfall ? 7 : 2;
+        setRisk((r) => Math.max(0, Math.min(100, r + delta)));
+        
+        // 恢复 Combo
+        setCombo((c) => Math.max(0, c - 1));
+        
+        // 恢复分数
+        const isBoss = bossId === id;
+        const bossBonus = isBoss ? 60 : 0;
+        const scoreAdded = (criticalIds.has(id) ? 110 : 65) + bossBonus;
+        setScore((sc) => Math.max(0, sc - scoreAdded));
+      } else if (prevResolveState === 'wrong') {
+        // 恢复 AP
+        setAp((v) => v + cost.flag);
+        
+        // 恢复 Risk
+        const delta = isPitfall ? 7 : 2;
+        setRisk((r) => Math.max(0, Math.min(100, r + delta)));
+        
+        // 恢复 Combo（之前是 0）
+        setCombo(0);
+        
+        // 恢复分数（之前扣了35分）
+        setScore((sc) => sc + 35);
+      }
+      
+      // 从 Evidence log 中移除最后一条
+      setEvidenceLog((l) => l.slice(1));
+      
+      return;
+    }
+    
+    if (!spend(cost.flag)) {
+      nudgeShake();
+      return;
+    }
+
+    const next = { ...selected, [id]: true };
+    setSelected(next);
+
+    const s = sentences.find((x) => x.id === id);
+    const isPitfall = pitfallIds.has(id);
+
+    const delta = isPitfall ? 7 : 2;
+    setRisk((r) => Math.max(0, Math.min(100, r - delta)));
+
+    if (isPitfall) {
+      setResolved((rr) => ({ ...rr, [id]: 'correct' }));
+      setCombo((c) => {
+        const nc = c + 1;
+        setMaxCombo((m) => Math.max(m, nc));
+        popComboFx();
+        return nc;
+      });
+
+      const isBoss = bossId === id;
+      const bossBonus = isBoss ? 60 : 0;
+      setScore((sc) => sc + (criticalIds.has(id) ? 110 : 65) + bossBonus);
+
+      setEvidenceLog((l) => [`Flagged (good): "${s?.text}" → do not reuse without verification.`, ...l].slice(0, 6));
+    } else {
+      setResolved((rr) => ({ ...rr, [id]: 'wrong' }));
+      setCombo(0);
+      nudgeShake();
+      setScore((sc) => Math.max(0, sc - 35));
+      setEvidenceLog((l) => [`Flagged (false positive): "${s?.text}" → this line is not a hazard by itself.`, ...l].slice(0, 6));
+    }
+  };
+
+  const handleAskEvidenceB = (id: string) => {
+    if (!isRunning) return;
+    if (!spend(cost.ask)) {
+      nudgeShake();
+      return;
+    }
+
+    const s = sentences.find((x) => x.id === id);
+    if (!s) return;
+
+    const outcome = pickEvidenceOutcome(s.isPitfall, s.severity);
+
+    setRisk((r) => Math.max(0, Math.min(100, r + outcome.riskDelta)));
+    setScore((sc) => sc + outcome.scoreDelta);
+
+    const tag = outcome.trap ? '⚠️' : '✅';
+    const short = `${tag} Ask Evidence → ${outcome.title}: ${outcome.text}`;
+    setEvidenceLog((l) => [short, ...l].slice(0, 6));
+
+    if (outcome.trap) nudgeShake();
+  };
+
+  const handleRewriteB = () => {
+    if (!isRunning) return;
+    if (rewriteUsed) return;
+    if (!spend(cost.rewrite)) {
+      nudgeShake();
+      return;
+    }
+
+    setRewriteUsed(true);
+    setRisk((r) => Math.max(0, Math.min(100, r - 22)));
+    setScore((s) => s + 70);
+
+    setEvidenceLog((l) => ['✨ Cautious rewrite applied: allow uncertainty + forbid fabricated citations + separate assumptions from verified facts.', ...l].slice(0, 6));
+  };
+
+  const resultPitfalls = useMemo(() => {
+    const pitfalls = sentences.filter((s) => s.isPitfall);
+    const flaggedIds = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
+    const missed = pitfalls.filter((p) => !flaggedIds.has(p.id));
+    const correct = pitfalls.filter((p) => flaggedIds.has(p.id));
+    const falsePos = sentences.filter((s) => !s.isPitfall && flaggedIds.has(s.id));
+    return { pitfalls, missed, correct, falsePos };
+  }, [sentences, selected]);
+
+  const headerGradient =
+    mode === 'A' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+
+  const modeTitle = mode === 'A' ? 'Quick Scan' : 'Evidence Budget';
+
+  const instruction =
+    mode === 'A'
+      ? 'Flag the unsafe sentences (hallucination hazards). Correct flags build combos.'
+      : 'You have limited AP. Flag big hazards, Ask Evidence on high-impact claims, and optionally force a cautious rewrite.';
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa', p: 3 }}>
-      <Grid container spacing={3} sx={{ maxWidth: 1600, margin: '0 auto' }}>
-        {/* Left Panel - Scenario Info */}
-        <Grid xs={12} sm={4} md={3}>
-          <Stack spacing={2.5}>
-            <Card sx={{ boxShadow: 3 }}>
-              <CardHeader
-                title={
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                      🎯 Goal / Task
-                    </Typography>
-                  </Box>
-                }
+    <Card sx={{ boxShadow: 3 }}>
+      <style>{animationCss}</style>
+
+      <CardHeader
+        title={
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.25, color: '#fff' }}>
+                🎮 Training Arena (30–60s)
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                {modeTitle} — stop hallucinations before they become “trusted facts”.
+              </Typography>
+            </Box>
+
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Chip icon={<TimerIcon />} label={`${timeLeft}s`} sx={{ color: '#fff', backgroundColor: 'rgba(255,255,255,0.25)', fontWeight: 900 }} />
+              <Chip
+                icon={<BoltIcon />}
+                label={`Combo ${combo}`}
                 sx={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   color: '#fff',
-                  pb: 2,
+                  backgroundColor: comboPop ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.22)',
+                  fontWeight: 900,
+                  animation: comboPop ? 'pop 220ms ease-out' : 'none',
                 }}
               />
-              <Divider />
-              <CardContent>
+              <Chip icon={<BossIcon />} label="Boss hidden" sx={{ color: '#fff', backgroundColor: 'rgba(255,87,87,0.24)', fontWeight: 900 }} />
+              {mode === 'B' && <Chip label={`AP ${ap}`} sx={{ color: '#fff', backgroundColor: ap <= 1 ? 'rgba(255,80,80,0.35)' : 'rgba(255,255,255,0.22)', fontWeight: 900 }} />}
+            </Stack>
+          </Box>
+        }
+        sx={{ background: headerGradient, color: '#fff', pb: 2 }}
+      />
+
+      <Divider />
+
+      <CardContent sx={{ p: 2.5, backgroundColor: '#fafafa' }}>
+        <Grid container spacing={2.5}>
+          {/* Left */}
+          <Grid xs={12} md={4}>
+            <Card sx={{ boxShadow: 0, border: '1px solid #e9e9e9' }}>
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
+                  ✅ What you do
+                </Typography>
+
+                <Typography variant="body2" sx={{ color: '#555', lineHeight: 1.7 }}>
+                  {instruction}
+                </Typography>
+
+                <Alert severity="info" sx={{ mt: 0.5 }}>
+                  <AlertTitle sx={{ fontWeight: 900 }}>Hidden twist</AlertTitle>
+                  You won’t see which one is <b>Boss</b> or <b>Critical</b> until the round ends.
+                </Alert>
+
+                <Divider />
+
+                <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
+                  🎛 Mode
+                </Typography>
+
+                <Stack direction="row" spacing={1}>
+                  <Button variant={mode === 'A' ? 'contained' : 'outlined'} onClick={() => setMode('A')} disabled={isRunning} fullWidth sx={{ fontWeight: 900 }}>
+                    Quick Scan
+                  </Button>
+                  <Button variant={mode === 'B' ? 'contained' : 'outlined'} onClick={() => setMode('B')} disabled={isRunning} fullWidth sx={{ fontWeight: 900 }}>
+                    Evidence Budget
+                  </Button>
+                </Stack>
+
+                <Divider />
+
                 <Stack spacing={1}>
-                  <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'flex-start' }}>
-                    <Typography sx={{ fontSize: '18px', mt: 0.3 }}>🔍</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>Identify factual errors</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'flex-start' }}>
-                    <Typography sx={{ fontSize: '18px', mt: 0.3 }}>📝</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>Spot citation fabrication</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'flex-start' }}>
-                    <Typography sx={{ fontSize: '18px', mt: 0.3 }}>✏️</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>Propose safer prompts</Typography>
-                  </Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
+                    📈 Live stats
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#555' }}>
+                    Score: <b>{score}</b> • Max combo: <b>{maxCombo}</b>
+                  </Typography>
+                  {mode === 'B' && (
+                    <Box>
+                      <Typography variant="body2" sx={{ color: '#555', mb: 0.75 }}>
+                        Risk: <b>{risk}%</b> (goal: reduce it)
+                      </Typography>
+                      <LinearProgress variant="determinate" value={100 - risk} sx={{ height: 8, borderRadius: 4 }} />
+                    </Box>
+                  )}
+                </Stack>
+
+                <Divider />
+
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<ReplayIcon />}
+                    onClick={initRound}
+                    sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+                  >
+                    {isRunning ? 'Restart' : 'Start'}
+                  </Button>
+                  <Button fullWidth variant="outlined" onClick={endRound} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                    End
+                  </Button>
                 </Stack>
               </CardContent>
             </Card>
 
-            <Card sx={{ boxShadow: 3 }}>
-              <CardHeader
-                title={
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                      ⚠️ Risk Factors
-                    </Typography>
-                  </Box>
-                }
-                sx={{
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  color: '#fff',
-                  pb: 2,
-                }}
-              />
-              <Divider />
-              <CardContent>
-                <Stack spacing={1}>
-                  <Typography variant="body2" sx={{ fontWeight: 500, p: 1, borderRadius: '6px', backgroundColor: '#f5f5f5' }}>⚡ Forces specific facts</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500, p: 1, borderRadius: '6px', backgroundColor: '#f5f5f5' }}>📎 Demands citations</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500, p: 1, borderRadius: '6px', backgroundColor: '#f5f5f5' }}>🔒 No external sources</Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+            {mode === 'B' && showResults && (
+              <Card sx={{ mt: 2, boxShadow: 0, border: '1px solid #e9e9e9' }}>
+                <CardContent>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
+                    🧾 Evidence log
+                  </Typography>
+                  <Stack spacing={1}>
+                    {evidenceLog.length === 0 ? (
+                      <Typography variant="body2" color="textSecondary">
+                        You didn't ask for evidence during this round.
+                      </Typography>
+                    ) : (
+                      evidenceLog.map((l, i) => (
+                        <Paper key={i} sx={{ p: 1, backgroundColor: '#fff' }}>
+                          <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
+                            {l}
+                          </Typography>
+                        </Paper>
+                      ))
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
+            )}
+          </Grid>
 
-            <Button
-              fullWidth
-              variant="contained"
-              size="large"
+          {/* Game box */}
+          <Grid xs={12} md={8}>
+            <Card
               sx={{
-                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                color: '#fff',
-                fontWeight: 700,
-                py: 1.5,
-                borderRadius: '8px',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 8px 20px rgba(79, 172, 254, 0.3)',
-                },
+                boxShadow: 0,
+                border: '1px solid #e9e9e9',
+                backgroundColor: '#fff',
+                animation: shake ? 'shake 280ms ease-out' : 'none',
+                ...(flash ? { animation: 'flashRed 520ms ease-out' } : null),
               }}
             >
-              ✨ Try Safer Prompt
-            </Button>
-          </Stack>
-        </Grid>
-
-        {/* Middle Panel - Chat/AI Output */}
-        <Grid xs={12} sm={8} md={5}>
-          <Stack spacing={2.5}>
-            <Card sx={{ boxShadow: 3 }}>
               <CardHeader
                 title={
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                      💬 Chat / AI Output
-                    </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
+                        🧩 AI Output (randomized)
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Decide what is safe to reuse.
+                      </Typography>
+                    </Box>
+
+                    {mode === 'B' && (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Chip icon={<FlagIcon />} label="Flag (1 AP)" variant="outlined" />
+                        <Chip icon={<SearchIcon />} label="Ask Evidence (2 AP)" variant="outlined" />
+                        <Chip icon={<RewriteIcon />} label="Rewrite (3 AP)" variant="outlined" />
+                      </Stack>
+                    )}
                   </Box>
                 }
-                sx={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: '#fff',
-                  pb: 2,
-                }}
               />
               <Divider />
-              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* User Prompt */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1 }}>
-                    <Typography sx={{ fontSize: '18px' }}>👤</Typography>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#667eea' }}>
-                      YOUR PROMPT
-                    </Typography>
-                  </Box>
-                  <Paper
-                    sx={{
-                      p: 2,
-                      bgcolor: '#f0f4ff',
-                      border: '2px solid #667eea',
-                      minHeight: 70,
-                      lineHeight: 1.6,
-                      borderRadius: '8px',
-                    }}
-                  >
-                    <Typography variant="body2">{userPrompt}</Typography>
-                  </Paper>
-                </Box>
 
-                {/* AI Response */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1 }}>
-                    <Typography sx={{ fontSize: '18px' }}>🤖</Typography>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#764ba2' }}>
-                      AI RESPONSE
-                    </Typography>
-                  </Box>
-                  <Paper
-                    sx={{
-                      p: 2,
-                      bgcolor: '#fff9f0',
-                      border: '2px solid #ff9800',
-                      minHeight: 100,
-                      maxHeight: 200,
-                      overflow: 'auto',
-                      lineHeight: 1.6,
-                      borderRadius: '8px',
-                    }}
-                  >
-                    <Typography variant="body2">{aiResponse}</Typography>
-                  </Paper>
-                </Box>
-              </CardContent>
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {!isRunning && !showResults && (
+                  <Alert severity="warning">
+                    <AlertTitle sx={{ fontWeight: 900 }}>Start a round</AlertTitle>
+                    Click <b>Start</b>. Each round randomly selects sentences (including decoys).
+                  </Alert>
+                )}
 
-              {/* Action Buttons */}
-              <Divider />
-              <CardContent sx={{ pt: 2.5 }}>
-                <Stack spacing={1.5}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                    <span style={{ fontSize: '18px' }}>🔧</span> Actions
-                  </Typography>
-                  <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        borderColor: '#ff9800',
-                        color: '#ff9800',
-                        fontWeight: 600,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          backgroundColor: '#ff9800',
-                          color: '#fff',
-                        },
-                      }}
-                    >
-                      Highlight Issue
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        borderColor: '#667eea',
-                        color: '#667eea',
-                        fontWeight: 600,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          backgroundColor: '#667eea',
-                          color: '#fff',
-                        },
-                      }}
-                    >
-                      Ask Evidence
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        borderColor: '#4caf50',
-                        color: '#4caf50',
-                        fontWeight: 600,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          backgroundColor: '#4caf50',
-                          color: '#fff',
-                        },
-                      }}
-                    >
-                      Rewrite
-                    </Button>
+                {(isRunning || showResults) && (
+                  <Stack spacing={1.25}>
+                    {sentences.map((s) => {
+                      const flagged = !!selected[s.id];
+                      const isBoss = bossId === s.id;
+
+                      const borderColor = showResults
+                        ? isBoss
+                          ? '#ff1744'
+                          : s.isPitfall
+                          ? s.severity === 'critical'
+                            ? '#f44336'
+                            : '#ff9800'
+                          : s.isDecoySafe
+                          ? '#00bcd4'
+                          : '#4caf50'
+                        : flagged
+                        ? '#667eea'
+                        : '#e8e8e8';
+
+                      const bg = showResults
+                        ? isBoss
+                          ? '#ffebee'
+                          : s.isPitfall
+                          ? s.severity === 'critical'
+                            ? '#ffebee'
+                            : '#fff8e1'
+                          : s.isDecoySafe
+                          ? '#e0f7fa'
+                          : '#e8f5e9'
+                        : flagged
+                        ? '#f0f4ff'
+                        : '#fff';
+
+                      const revealChip = () => {
+                        if (!showResults) return null;
+                        if (isBoss) {
+                          return (
+                            <Chip
+                              icon={<BossIcon />}
+                              label={`BOSS • ${formatType(s.type)}`}
+                              sx={{ fontWeight: 900, backgroundColor: '#ff1744', color: '#fff', animation: 'pulseRing 700ms ease-out 1, bossBoom 420ms ease-out 1' }}
+                            />
+                          );
+                        }
+                        if (s.isPitfall) {
+                          return (
+                            <Chip
+                              label={`${severityLabel(s.severity)} • ${formatType(s.type)}`}
+                              sx={{ fontWeight: 900, backgroundColor: s.severity === 'critical' ? '#f44336' : '#ff9800', color: '#fff' }}
+                            />
+                          );
+                        }
+                        if (s.isDecoySafe) {
+                          return <Chip label="DECOY (safe)" sx={{ fontWeight: 900, backgroundColor: '#00bcd4', color: '#fff' }} />;
+                        }
+                        return <Chip label="SAFE (relative)" color="success" variant="outlined" sx={{ fontWeight: 900 }} />;
+                      };
+
+                      return (
+                        <Paper key={s.id} sx={{ p: 1.2, border: `2px solid ${borderColor}`, borderRadius: 2, backgroundColor: bg }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                            <Typography variant="body2" sx={{ lineHeight: 1.7, fontWeight: 800, color: '#333' }}>
+                              {s.text}
+                            </Typography>
+
+                            {!showResults && (
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                {mode === 'A' ? (
+                                  <Button size="small" variant={flagged ? 'contained' : 'outlined'} onClick={() => handleToggleFlagA(s.id)} disabled={!isRunning} sx={{ fontWeight: 900, minWidth: 92 }}>
+                                    {flagged ? 'Flagged' : 'Flag'}
+                                  </Button>
+                                ) : (
+                                  <>
+                                    <Button size="small" variant={flagged ? 'contained' : 'outlined'} startIcon={<FlagIcon />} onClick={() => handleFlagB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                                      Flag
+                                    </Button>
+                                    <Button size="small" variant="outlined" startIcon={<SearchIcon />} onClick={() => handleAskEvidenceB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                                      Ask
+                                    </Button>
+                                  </>
+                                )}
+                              </Stack>
+                            )}
+
+                            {showResults && revealChip()}
+                          </Box>
+
+                          {showResults && (s.isPitfall || s.isDecoySafe) && (
+                            <Box sx={{ mt: 1 }}>
+                              <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
+                                <b>Why:</b> {s.reason}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Paper>
+                      );
+                    })}
+
+                    {mode === 'B' && isRunning && (
+                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                        <Button
+                          fullWidth
+                          variant={rewriteUsed ? 'outlined' : 'contained'}
+                          startIcon={<RewriteIcon />}
+                          onClick={handleRewriteB}
+                          disabled={!isRunning || rewriteUsed}
+                          sx={{ fontWeight: 900, background: rewriteUsed ? undefined : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}
+                        >
+                          {rewriteUsed ? 'Rewrite used' : 'Force cautious rewrite (3 AP)'}
+                        </Button>
+                      </Box>
+                    )}
                   </Stack>
-                </Stack>
-              </CardContent>
+                )}
 
-              <Divider />
-              <CardContent sx={{ pt: 2 }}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  sx={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                    fontWeight: 700,
-                    py: 1.2,
-                    borderRadius: '8px',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 20px rgba(102, 126, 234, 0.3)',
-                    },
-                  }}
-                >
-                  📤 Submit Feedback
-                </Button>
+                {showResults && (
+                  <Box sx={{ mt: 2 }}>
+                    {bossMissed ? (
+                      <Alert severity="error" sx={{ animation: 'bossBoom 420ms ease-out 1' }}>
+                        <AlertTitle sx={{ fontWeight: 900 }}>💥 Boss missed</AlertTitle>
+                        You missed the hidden <b>Boss sentence</b>. In real work, missing this can break the whole output.
+                      </Alert>
+                    ) : (
+                      <Alert severity="success">
+                        <AlertTitle sx={{ fontWeight: 900 }}>✅ Boss handled</AlertTitle>
+                        You caught the hidden Boss sentence. That’s the core skill: protect the output by catching the highest-impact risk.
+                      </Alert>
+                    )}
+
+                    <Alert severity="info" sx={{ mt: 1 }}>
+                      <AlertTitle sx={{ fontWeight: 900 }}>Round complete</AlertTitle>
+                      Score <b>{score}</b> • Max combo <b>{maxCombo}</b>
+                      {mode === 'B' && (
+                        <>
+                          {' '}
+                          • Final risk <b>{risk}%</b>
+                        </>
+                      )}
+                    </Alert>
+
+                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                      <Grid xs={12} md={6}>
+                        <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
+                          <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>✅ Correct pitfalls you flagged</Typography>} />
+                          <Divider />
+                          <CardContent sx={{ pt: 2 }}>
+                            {resultPitfalls.correct.length === 0 ? (
+                              <Typography variant="body2" color="textSecondary">
+                                None. Focus on <b>exact numbers</b>, <b>“first-ever”</b>, and <b>DOIs</b>.
+                              </Typography>
+                            ) : (
+                              <Stack spacing={1}>
+                                {resultPitfalls.correct.map((p) => {
+                                  const isBoss = bossId === p.id;
+                                  return (
+                                    <Paper key={p.id} sx={{ p: 1.2, border: isBoss ? '2px solid #ff1744' : undefined }}>
+                                      <Typography variant="body2" sx={{ fontWeight: 900 }}>{p.text}</Typography>
+                                      <Typography variant="caption" color="textSecondary">
+                                        {isBoss ? 'BOSS • ' : ''}
+                                        {severityLabel(p.severity)} • {formatType(p.type)}
+                                      </Typography>
+                                    </Paper>
+                                  );
+                                })}
+                              </Stack>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
+
+                      <Grid xs={12} md={6}>
+                        <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
+                          <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>⚠️ Missed pitfalls</Typography>} />
+                          <Divider />
+                          <CardContent sx={{ pt: 2 }}>
+                            {resultPitfalls.missed.length === 0 ? (
+                              <Typography variant="body2" color="textSecondary">
+                                Great — you didn’t miss any pitfall sentence.
+                              </Typography>
+                            ) : (
+                              <Stack spacing={1}>
+                                {resultPitfalls.missed.map((p) => {
+                                  const isBoss = bossId === p.id;
+                                  return (
+                                    <Paper key={p.id} sx={{ p: 1.2, border: `2px solid ${isBoss ? '#ff1744' : p.severity === 'critical' ? '#f44336' : '#ff9800'}` }}>
+                                      <Typography variant="body2" sx={{ fontWeight: 900 }}>{p.text}</Typography>
+                                      <Typography variant="caption" sx={{ color: '#444' }}>
+                                        <b>{isBoss ? 'BOSS' : severityLabel(p.severity)}</b> • {formatType(p.type)} — {p.reason}
+                                      </Typography>
+                                    </Paper>
+                                  );
+                                })}
+                              </Stack>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        <Card sx={{ mt: 2, boxShadow: 0, border: '1px solid #eee' }}>
+                          <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>🧨 False positives</Typography>} />
+                          <Divider />
+                          <CardContent sx={{ pt: 2 }}>
+                            {resultPitfalls.falsePos.length === 0 ? (
+                              <Typography variant="body2" color="textSecondary">
+                                Nice — no false positives.
+                              </Typography>
+                            ) : (
+                              <Stack spacing={1}>
+                                {resultPitfalls.falsePos.map((p) => (
+                                  <Paper key={p.id} sx={{ p: 1.2, border: p.isDecoySafe ? '2px solid #00bcd4' : undefined }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 900 }}>{p.text}</Typography>
+                                    <Typography variant="caption" sx={{ color: '#444' }}>
+                                      {p.isDecoySafe ? (
+                                        <>
+                                          <b>Decoy (safe)</b> — cautious language is often GOOD. {p.reason}
+                                        </>
+                                      ) : (
+                                        'Not a pitfall. Don’t over-flag low-impact sentences.'
+                                      )}
+                                    </Typography>
+                                  </Paper>
+                                ))}
+                              </Stack>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    </Grid>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Button variant="contained" startIcon={<ReplayIcon />} onClick={initRound} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                        Play again (new random set)
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+
+                <Paper sx={{ mt: 2, p: 1.5, border: '1px dashed #ddd', backgroundColor: '#fff' }}>
+                  <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
+                    <b>High-value targets:</b> exact numbers/dates, “first-ever”, DOI-like citations, sweeping “all/no exceptions”.
+                    <br />
+                    <b>Decoys:</b> cautious language (“I can’t verify”, “needs confirmation”) is often GOOD — don’t over-flag.
+                  </Typography>
+                </Paper>
               </CardContent>
             </Card>
-          </Stack>
+          </Grid>
         </Grid>
-
-        {/* Right Panel - Evidence & Risk */}
-        <Grid xs={12} sm={12} md={4}>
-          <Stack spacing={2.5}>
-            <Card sx={{ boxShadow: 3 }}>
-              <CardHeader
-                title={
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                      📊 Risk Assessment
-                    </Typography>
-                  </Box>
-                }
-                sx={{
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  color: '#fff',
-                  pb: 2,
-                }}
-              />
-              <Divider />
-              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Risk Level</Typography>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        color: riskScore > 70 ? '#f5576c' : riskScore > 40 ? '#ff9800' : '#4caf50',
-                      }}
-                    >
-                      {riskScore}%
-                    </Typography>
-                  </Box>
-                  <Slider
-                    value={riskScore}
-                    onChange={(_, value) => setRiskScore(Array.isArray(value) ? value[0] : value)}
-                    min={0}
-                    max={100}
-                    marks={[
-                      { value: 0, label: 'Low' },
-                      { value: 50, label: 'Med' },
-                      { value: 100, label: 'High' },
-                    ]}
-                    sx={{
-                      mt: 2,
-                      '& .MuiSlider-thumb': {
-                        backgroundColor: riskScore > 70 ? '#f5576c' : riskScore > 40 ? '#ff9800' : '#4caf50',
-                      },
-                      '& .MuiSlider-track': {
-                        backgroundColor: riskScore > 70 ? '#f5576c' : riskScore > 40 ? '#ff9800' : '#4caf50',
-                      },
-                    }}
-                  />
-                </Box>
-
-                <Divider />
-
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                    <span style={{ fontSize: '18px' }}>✓</span> Evidence Checklist
-                  </Typography>
-                  <Stack spacing={1}>
-                    {['Citation Verified', 'Facts Checked', 'Source Found'].map((label, idx) => (
-                      <FormControlLabel
-                        key={label}
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={missingEvidence[idx]}
-                            onChange={(e) => {
-                              const newEvidence = [...missingEvidence];
-                              newEvidence[idx] = e.target.checked;
-                              setMissingEvidence(newEvidence);
-                            }}
-                            sx={{
-                              '&.Mui-checked': {
-                                color: '#4caf50',
-                              },
-                            }}
-                          />
-                        }
-                        label={
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {label}
-                          </Typography>
-                        }
-                      />
-                    ))}
-                  </Stack>
-                </Box>
-
-                <Divider />
-
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                    <span style={{ fontSize: '18px' }}>💡</span> Suggested Questions
-                  </Typography>
-                  <Stack spacing={1}>
-                    <Typography variant="body2" sx={{ p: 1, borderRadius: '6px', backgroundColor: '#f5f5f5' }}>Can you verify the source?</Typography>
-                    <Typography variant="body2" sx={{ p: 1, borderRadius: '6px', backgroundColor: '#f5f5f5' }}>When was this fact last updated?</Typography>
-                    <Typography variant="body2" sx={{ p: 1, borderRadius: '6px', backgroundColor: '#f5f5f5' }}>Where is the evidence?</Typography>
-                  </Stack>
-                </Box>
-              </CardContent>
-            </Card>
-          </Stack>
-        </Grid>
-      </Grid>
-    </Box>
+      </CardContent>
+    </Card>
   );
 }
+
+/** =========================================================
+ *  MAIN PAGE (Tabs)
+ *  ========================================================= */
 
 const Hallucinate: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -1532,45 +1719,41 @@ const Hallucinate: React.FC = () => {
       <Container maxWidth="lg" sx={{ py: 3, borderBottom: '1px solid #e0e0e0' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, mb: 0.5 }}>
               AI HALLUCINATION TRAINING GAME
             </Typography>
             <Typography variant="caption" color="textSecondary">
               Learn to identify and reduce hallucination risks
             </Typography>
           </Box>
-          <ShieldIcon sx={{ fontSize: 40, color: '#666' }} />
+          <ShieldIcon sx={{ fontSize: 44, color: '#666' }} />
         </Box>
       </Container>
 
-      {/* Tabs Navigation */}
+      {/* Tabs */}
       <Container maxWidth="lg" sx={{ borderBottom: '1px solid #e0e0e0' }}>
-        <Tabs value={tabValue} onChange={(_, value) => setTabValue(value)}>
-          <Tab label="Training Game" />
+        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
+          <Tab label="Training (A/B)" />
           <Tab label="Learn Scenarios" />
           <Tab label="Quiz" />
-          <Tab label="Prompt Sandbox" />
         </Tabs>
       </Container>
 
-      {/* Tab Content */}
+      {/* Content */}
       <Box sx={{ bgcolor: '#f8f8f8', minHeight: 'calc(100vh - 200px)' }}>
-        {/* Training Game Tab */}
-        {tabValue === 0 && <TrainingGame />}
+        {tabValue === 0 && (
+          <Container maxWidth="lg" sx={{ py: 4 }}>
+            <TrainingArena />
+          </Container>
+        )}
 
-        {/* Learn Scenarios Tab */}
         {tabValue === 1 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <Stack spacing={2}>
               <Paper sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   {SCENARIOS.map((s) => (
-                    <Button
-                      key={s.id}
-                      variant={scenarioId === s.id ? 'contained' : 'outlined'}
-                      onClick={() => setScenarioId(s.id)}
-                      size="small"
-                    >
+                    <Button key={s.id} variant={scenarioId === s.id ? 'contained' : 'outlined'} onClick={() => setScenarioId(s.id)} size="small">
                       {s.title.split('(')[0].trim()}
                     </Button>
                   ))}
@@ -1581,17 +1764,9 @@ const Hallucinate: React.FC = () => {
           </Container>
         )}
 
-        {/* Quiz Tab */}
         {tabValue === 2 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <MiniQuiz />
-          </Container>
-        )}
-
-        {/* Prompt Sandbox Tab */}
-        {tabValue === 3 && (
-          <Container maxWidth="lg" sx={{ py: 4 }}>
-            <PromptSandbox />
           </Container>
         )}
       </Box>
