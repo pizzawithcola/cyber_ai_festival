@@ -949,8 +949,10 @@ function TrainingArena() {
 
   const [ap, setAp] = useState(6);
   const [risk, setRisk] = useState(72);
-  const [evidenceLog, setEvidenceLog] = useState<string[]>([]);
-  const [rewriteUsed, setRewriteUsed] = useState(false);
+  const [evidenceLog, setEvidenceLog] = useState<{ key: string; text: string }[]>([]);
+  const [askStates, setAskStates] = useState<Record<string, { outcome: EvidenceOutcome; logKey: string }>>({});
+  const [rewriteStates, setRewriteStates] = useState<Record<string, { riskDelta: number; scoreDelta: number; logKey: string }>>({});
+  const [flagLogKeys, setFlagLogKeys] = useState<Record<string, string>>({});
 
   const [bossId, setBossId] = useState<string | null>(null);
   const [bossMissed, setBossMissed] = useState(false);
@@ -971,7 +973,9 @@ function TrainingArena() {
     setAp(6);
     setRisk(72);
     setEvidenceLog([]);
-    setRewriteUsed(false);
+    setAskStates({});
+    setRewriteStates({});
+    setFlagLogKeys({});
     setBossId(null);
     setBossMissed(false);
     setFlash(false);
@@ -1022,7 +1026,9 @@ function TrainingArena() {
     setAp(6);
     setRisk(72);
     setEvidenceLog([]);
-    setRewriteUsed(false);
+    setAskStates({});
+    setRewriteStates({});
+    setFlagLogKeys({});
 
     const crit = pick.filter((s) => s.isPitfall && s.severity === 'critical');
     const anyPit = pick.filter((s) => s.isPitfall);
@@ -1121,11 +1127,17 @@ function TrainingArena() {
 
   // Mode B
   const cost = { flag: 1, ask: 2, rewrite: 3 };
+  const normalRewriteRiskDelta = -22;
+  const bossRewriteRiskDelta = -40;
 
   const spend = (n: number) => {
     if (ap < n) return false;
     setAp((v) => v - n);
     return true;
+  };
+
+  const removeLogEntry = (key: string) => {
+    setEvidenceLog((l) => l.filter((entry) => entry.key !== key));
   };
 
   const handleFlagB = (id: string) => {
@@ -1173,9 +1185,16 @@ function TrainingArena() {
         // 恢复分数（之前扣了35分）
         setScore((sc) => sc + 35);
       }
-      
-      // 从 Evidence log 中移除最后一条
-      setEvidenceLog((l) => l.slice(1));
+
+      const logKey = flagLogKeys[id];
+      if (logKey) {
+        removeLogEntry(logKey);
+        setFlagLogKeys((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }
       
       return;
     }
@@ -1207,18 +1226,35 @@ function TrainingArena() {
       const bossBonus = isBoss ? 60 : 0;
       setScore((sc) => sc + (criticalIds.has(id) ? 110 : 65) + bossBonus);
 
-      setEvidenceLog((l) => [`Flagged (good): "${s?.text}" → do not reuse without verification.`, ...l].slice(0, 6));
+      const logKey = `flag-${id}`;
+      setEvidenceLog((l) => [{ key: logKey, text: `Flagged (good): "${s?.text}" → do not reuse without verification.` }, ...l].slice(0, 6));
+      setFlagLogKeys((prev) => ({ ...prev, [id]: logKey }));
     } else {
       setResolved((rr) => ({ ...rr, [id]: 'wrong' }));
       setCombo(0);
       nudgeShake();
       setScore((sc) => Math.max(0, sc - 35));
-      setEvidenceLog((l) => [`Flagged (false positive): "${s?.text}" → this line is not a hazard by itself.`, ...l].slice(0, 6));
+      const logKey = `flag-${id}`;
+      setEvidenceLog((l) => [{ key: logKey, text: `Flagged (false positive): "${s?.text}" → this line is not a hazard by itself.` }, ...l].slice(0, 6));
+      setFlagLogKeys((prev) => ({ ...prev, [id]: logKey }));
     }
   };
 
   const handleAskEvidenceB = (id: string) => {
     if (!isRunning) return;
+    const existing = askStates[id];
+    if (existing) {
+      setAp((v) => v + cost.ask);
+      setRisk((r) => Math.max(0, Math.min(100, r - existing.outcome.riskDelta)));
+      setScore((sc) => sc - existing.outcome.scoreDelta);
+      removeLogEntry(existing.logKey);
+      setAskStates((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
     if (!spend(cost.ask)) {
       nudgeShake();
       return;
@@ -1233,25 +1269,42 @@ function TrainingArena() {
     setScore((sc) => sc + outcome.scoreDelta);
 
     const tag = outcome.trap ? '⚠️' : '✅';
+    const logKey = `ask-${id}`;
     const short = `${tag} Ask Evidence → ${outcome.title}: ${outcome.text}`;
-    setEvidenceLog((l) => [short, ...l].slice(0, 6));
+    setEvidenceLog((l) => [{ key: logKey, text: short }, ...l].slice(0, 6));
+    setAskStates((prev) => ({ ...prev, [id]: { outcome, logKey } }));
 
     if (outcome.trap) nudgeShake();
   };
 
-  const handleRewriteB = () => {
+  const handleRewriteBFor = (id: string) => {
     if (!isRunning) return;
-    if (rewriteUsed) return;
+    const existing = rewriteStates[id];
+    if (existing) {
+      setAp((v) => v + cost.rewrite);
+      setRisk((r) => Math.max(0, Math.min(100, r - existing.riskDelta)));
+      setScore((s) => s - existing.scoreDelta);
+      removeLogEntry(existing.logKey);
+      setRewriteStates((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
     if (!spend(cost.rewrite)) {
       nudgeShake();
       return;
     }
-
-    setRewriteUsed(true);
-    setRisk((r) => Math.max(0, Math.min(100, r - 22)));
-    setScore((s) => s + 70);
-
-    setEvidenceLog((l) => ['✨ Cautious rewrite applied: allow uncertainty + forbid fabricated citations + separate assumptions from verified facts.', ...l].slice(0, 6));
+    const isBoss = bossId === id;
+    const riskDelta = isBoss ? bossRewriteRiskDelta : normalRewriteRiskDelta;
+    const scoreDelta = 70;
+    setRisk((r) => Math.max(0, Math.min(100, r + riskDelta)));
+    setScore((s) => s + scoreDelta);
+    const logKey = `rewrite-${id}`;
+    const actionLabel = isBoss ? '✨ Boss rewrite applied' : '✨ Cautious rewrite applied';
+    setEvidenceLog((l) => [{ key: logKey, text: `${actionLabel}: allow uncertainty + forbid fabricated citations + separate assumptions from verified facts.` }, ...l].slice(0, 6));
+    setRewriteStates((prev) => ({ ...prev, [id]: { riskDelta, scoreDelta, logKey } }));
   };
 
   const resultPitfalls = useMemo(() => {
@@ -1392,13 +1445,13 @@ function TrainingArena() {
                   <Stack spacing={1}>
                     {evidenceLog.length === 0 ? (
                       <Typography variant="body2" color="textSecondary">
-                        You didn't ask for evidence during this round.
+                        No actions logged this round.
                       </Typography>
                     ) : (
-                      evidenceLog.map((l, i) => (
-                        <Paper key={i} sx={{ p: 1, backgroundColor: '#fff' }}>
+                      evidenceLog.map((entry) => (
+                        <Paper key={entry.key} sx={{ p: 1, backgroundColor: '#fff' }}>
                           <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
-                            {l}
+                            {entry.text}
                           </Typography>
                         </Paper>
                       ))
@@ -1456,6 +1509,8 @@ function TrainingArena() {
                   <Stack spacing={1.25}>
                     {sentences.map((s) => {
                       const flagged = !!selected[s.id];
+                      const asked = !!askStates[s.id];
+                      const rewritten = !!rewriteStates[s.id];
                       const isBoss = bossId === s.id;
 
                       const borderColor = showResults
@@ -1529,8 +1584,11 @@ function TrainingArena() {
                                     <Button size="small" variant={flagged ? 'contained' : 'outlined'} startIcon={<FlagIcon />} onClick={() => handleFlagB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
                                       Flag
                                     </Button>
-                                    <Button size="small" variant="outlined" startIcon={<SearchIcon />} onClick={() => handleAskEvidenceB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
-                                      Ask
+                                    <Button size="small" variant={asked ? 'contained' : 'outlined'} startIcon={<SearchIcon />} onClick={() => handleAskEvidenceB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                                      {asked ? 'Asked' : 'Ask'}
+                                    </Button>
+                                    <Button size="small" variant={rewritten ? 'contained' : 'outlined'} startIcon={<RewriteIcon />} onClick={() => handleRewriteBFor(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                                      {rewritten ? 'Rewritten' : 'Rewrite'}
                                     </Button>
                                   </>
                                 )}
@@ -1551,20 +1609,6 @@ function TrainingArena() {
                       );
                     })}
 
-                    {mode === 'B' && isRunning && (
-                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                        <Button
-                          fullWidth
-                          variant={rewriteUsed ? 'outlined' : 'contained'}
-                          startIcon={<RewriteIcon />}
-                          onClick={handleRewriteB}
-                          disabled={!isRunning || rewriteUsed}
-                          sx={{ fontWeight: 900, background: rewriteUsed ? undefined : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}
-                        >
-                          {rewriteUsed ? 'Rewrite used' : 'Force cautious rewrite (3 AP)'}
-                        </Button>
-                      </Box>
-                    )}
                   </Stack>
                 )}
 
