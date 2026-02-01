@@ -1777,7 +1777,7 @@ const Hallucinate: React.FC = () => {
       {/* Tabs */}
       <Container maxWidth="lg" sx={{ borderBottom: '1px solid #e0e0e0' }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-          <Tab label="Training (A/B)" />
+          <Tab label="Training Game" />
           <Tab label="Learn Scenarios" />
           <Tab label="Quiz" />
         </Tabs>
