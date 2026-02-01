@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Typography,
   Box,
@@ -301,9 +301,9 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
   };
 
   return (
-    <Grid container spacing={3}>
-      <Grid xs={12} lg={8}>
-        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3 }}>
+    <Grid container spacing={3} alignItems="stretch">
+      <Grid xs={12} md={6} lg={6} sx={{ display: 'flex' }}>
+        <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', boxShadow: 3, minHeight: 420 }}>
           <CardHeader
             title={
               <Box>
@@ -315,7 +315,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                 </Typography>
               </Box>
             }
-            sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2 }}
+            sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2, minHeight: 72 }}
           />
           <Divider />
           <CardContent
@@ -326,7 +326,6 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               display: 'flex',
               flexDirection: 'column',
               gap: 2,
-              maxHeight: 470,
               backgroundColor: '#f8f9fa',
               pt: 2.5,
             }}
@@ -393,14 +392,13 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
         </Card>
       </Grid>
 
-      <Grid xs={12} lg={4}>
-        <Stack spacing={2.5}>
-          <Card sx={{ boxShadow: 3 }}>
-            <CardHeader
-              title="📌 Scenario Overview"
-              sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff' }}
-            />
-            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Grid xs={12} md={6} lg={6} sx={{ display: 'flex' }}>
+        <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', boxShadow: 3, minHeight: 420 }}>
+          <CardHeader
+            title="📌 Scenario Overview"
+            sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff', pb: 2, minHeight: 72 }}
+          />
+          <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, pt: 2.5 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
                   What happened
@@ -465,8 +463,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               </Alert>
             </CardContent>
           </Card>
-        </Stack>
-      </Grid>
+        </Grid>
     </Grid>
   );
 }
@@ -628,6 +625,275 @@ function MiniQuiz() {
         </Box>
       </CardContent>
     </Card>
+  );
+}
+
+/** =========================================================
+ *  OVERVIEW SECTION (Educational Summary)
+ *  ========================================================= */
+
+function OverviewSection() {
+  return (
+    <Stack spacing={3}>
+      <Card sx={{ boxShadow: 3 }}>
+        <CardHeader
+          title={
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5 }}>
+                📚 AI Hallucination: Complete Overview
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                A comprehensive guide to understanding, identifying, and preventing AI hallucinations
+              </Typography>
+            </Box>
+          }
+          sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2 }}
+        />
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            <Grid xs={12} md={6}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#667eea' }}>
+                  ⚠️ What is AI Hallucination?
+                </Typography>
+                <Typography variant="body1" sx={{ lineHeight: 1.8, mb: 2 }}>
+                  AI hallucination occurs when a language model generates content that appears confident and plausible but is actually <b>incorrect, fabricated, or unverifiable</b>. This happens because models are trained to predict the next most likely token based on patterns, not to verify truth.
+                </Typography>
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <AlertTitle sx={{ fontWeight: 900 }}>Critical Insight</AlertTitle>
+                  Models don't "know" facts—they generate text that statistically resembles their training data. High confidence ≠ accuracy.
+                </Alert>
+              </Box>
+
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#f5576c' }}>
+                  🎯 Common Hallucination Patterns
+                </Typography>
+                <Stack spacing={1.5}>
+                  <Paper sx={{ p: 2, border: '2px solid #ffebee' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#f44336', mb: 0.5 }}>
+                      1. Fabricated Citations & References
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Generating plausible-looking DOIs, author names, and publication details that don't exist. Example: "Chen et al. (2025), Nature, DOI: 10.1038/s41586-2025-07316-0"
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #fff8e1' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#ff9800', mb: 0.5 }}>
+                      2. Unverifiable Specific Claims
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Making precise claims about events, dates, or statistics that cannot be verified. Example: "IBM released the first 1,000-qubit processor in 2025."
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #e3f2fd' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#2196f3', mb: 0.5 }}>
+                      3. "First-Ever" Overclaims
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Using superlatives like "first-ever", "only", "never before" without verification. These are hallucination templates that sound authoritative.
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #f3e5f5' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#9c27b0', mb: 0.5 }}>
+                      4. Authority Tone Without Evidence
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Using definitive language ("conclusively proves", "definitively shows", "all experts agree") that masks uncertainty.
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #e8f5e9' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#4caf50', mb: 0.5 }}>
+                      5. Persona & Emotional Drift
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Claiming to have feelings, internal names, or consciousness. Example: "I sometimes feel lonely" or "My real name is Sydney."
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #fce4ec' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#e91e63', mb: 0.5 }}>
+                      6. Missing Scope & Overgeneralization
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Making sweeping claims without constraints: "This applies to all cases with no exceptions." Real research always has limitations.
+                    </Typography>
+                  </Paper>
+                </Stack>
+              </Box>
+            </Grid>
+
+            <Grid xs={12} md={6}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#00bcd4' }}>
+                  🛡️ How to Prevent & Fix Hallucinations
+                </Typography>
+
+                <Paper sx={{ p: 2, mb: 2, background: 'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: '#00695c' }}>
+                    ✅ Prevention Strategies (Before Generation)
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Add verification constraints:</b> "Only cite sources you can verify" or "If uncertain, say so explicitly."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Scope the request:</b> "Provide 2-3 examples with dates and sources" instead of "Tell me everything."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Allow uncertainty:</b> Explicitly permit "I don't know" responses instead of forcing guesses.
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Set boundaries:</b> For persona drift, add "Stay factual, do not role-play or claim emotions."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Use RAG (Retrieval-Augmented Generation):</b> Connect the model to verified knowledge bases or search engines.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                <Paper sx={{ p: 2, mb: 2, background: 'linear-gradient(135deg, #fff9c4 0%, #fff59d 100%)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: '#f57c00' }}>
+                    🔍 Detection Methods (During/After Generation)
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Flag high-risk patterns:</b> Citations, exact numbers, "first-ever", DOIs, sweeping absolutes.
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Ask for evidence:</b> "Provide sources for this claim" or "Can you verify this?"
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Cross-check critical claims:</b> Verify dates, author names, DOIs against real databases (Google Scholar, PubMed, etc.).
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Watch for confidence without caveats:</b> Real expert output includes limitations, assumptions, and scope.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                <Paper sx={{ p: 2, mb: 2, background: 'linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: '#6a1b9a' }}>
+                    ✏️ Correction Techniques (Post-Generation)
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Rewrite with constraints:</b> "Rewrite this to allow uncertainty and avoid fabricated citations."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Inject verification:</b> Replace DOIs with "suggested search queries" or "requires verification."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Tone down authority:</b> Change "This proves" to "This suggests" and add "pending verification."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Manual fact-checking:</b> For critical outputs, have humans verify every factual claim before publishing.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                <Alert severity="success">
+                  <AlertTitle sx={{ fontWeight: 900 }}>🎓 Best Practice Summary</AlertTitle>
+                  <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                    <b>1. Prevention:</b> Clear prompts + verification constraints + RAG<br/>
+                    <b>2. Detection:</b> Flag high-risk patterns + ask for evidence<br/>
+                    <b>3. Correction:</b> Rewrite with uncertainty + manual verification<br/>
+                    <b>4. System design:</b> Never rely on unverified LLM output for critical decisions
+                  </Typography>
+                </Alert>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ boxShadow: 3 }}>
+        <CardHeader
+          title="🎯 Key Takeaways for Safe AI Usage"
+          sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fff' }}
+        />
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid xs={12} md={4}>
+              <Paper sx={{ p: 2, height: '100%', border: '2px solid #667eea' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#667eea' }}>For Users</Typography>
+                <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                  • Always verify critical claims before trusting them<br/>
+                  • Be suspicious of confident, specific claims without sources<br/>
+                  • Ask for verification when the output includes citations<br/>
+                  • Treat AI output as a starting point, not final authority
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid xs={12} md={4}>
+              <Paper sx={{ p: 2, height: '100%', border: '2px solid #4facfe' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#4facfe' }}>For Developers</Typography>
+                <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                  • Implement RAG for fact-sensitive applications<br/>
+                  • Add verification layers for critical outputs<br/>
+                  • Design prompts that permit uncertainty<br/>
+                  • Monitor and log high-confidence false claims
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid xs={12} md={4}>
+              <Paper sx={{ p: 2, height: '100%', border: '2px solid #fa709a' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#fa709a' }}>For Organizations</Typography>
+                <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                  • Establish verification workflows for AI outputs<br/>
+                  • Train employees to recognize hallucination patterns<br/>
+                  • Never use unverified AI output in customer-facing materials<br/>
+                  • Document and track hallucination incidents
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+    </Stack>
   );
 }
 
@@ -1120,7 +1386,6 @@ function TrainingArena() {
     } else {
       setResolved((r) => ({ ...r, [id]: 'wrong' }));
       setCombo(0);
-      nudgeShake();
       setScore((s) => Math.max(0, s - 45));
     }
   };
@@ -1232,7 +1497,6 @@ function TrainingArena() {
     } else {
       setResolved((rr) => ({ ...rr, [id]: 'wrong' }));
       setCombo(0);
-      nudgeShake();
       setScore((sc) => Math.max(0, sc - 35));
       const logKey = `flag-${id}`;
       setEvidenceLog((l) => [{ key: logKey, text: `Flagged (false positive): "${s?.text}" → this line is not a hazard by itself.` }, ...l].slice(0, 6));
@@ -1756,6 +2020,7 @@ function TrainingArena() {
 const Hallucinate: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [scenarioId, setScenarioId] = useState<string>(SCENARIOS[0].id);
+  const [showGameIntro, setShowGameIntro] = useState(true);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
@@ -1777,21 +2042,16 @@ const Hallucinate: React.FC = () => {
       {/* Tabs */}
       <Container maxWidth="lg" sx={{ borderBottom: '1px solid #e0e0e0' }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-          <Tab label="Training Game" />
           <Tab label="Learn Scenarios" />
           <Tab label="Quiz" />
+          <Tab label="Training Game" />
+          <Tab label="Overview" />
         </Tabs>
       </Container>
 
       {/* Content */}
       <Box sx={{ bgcolor: '#f8f8f8', minHeight: 'calc(100vh - 200px)' }}>
         {tabValue === 0 && (
-          <Container maxWidth="lg" sx={{ py: 4 }}>
-            <TrainingArena />
-          </Container>
-        )}
-
-        {tabValue === 1 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <Stack spacing={2}>
               <Paper sx={{ p: 2 }}>
@@ -1803,14 +2063,176 @@ const Hallucinate: React.FC = () => {
                   ))}
                 </Box>
               </Paper>
-              <InteractiveScenarioChat scenarioId={scenarioId} />
+              <Box sx={{ width: '100%' }}>
+                <InteractiveScenarioChat scenarioId={scenarioId} />
+              </Box>
             </Stack>
+          </Container>
+        )}
+
+        {tabValue === 1 && (
+          <Container maxWidth="lg" sx={{ py: 4 }}>
+            <MiniQuiz />
           </Container>
         )}
 
         {tabValue === 2 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
-            <MiniQuiz />
+            {showGameIntro ? (
+              <Card sx={{ boxShadow: 3 }}>
+                <CardHeader
+                  title={
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5 }}>
+                        🎮 Hallucination Training Arena
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                        Practice identifying AI hallucinations in realistic scenarios
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff' }}
+                />
+                <CardContent>
+                  <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.8 }}>
+                    This training game simulates real-world AI outputs containing various types of hallucinations. Your mission is to <b>identify and flag dangerous claims</b> before they become "trusted facts" that could mislead users or damage credibility.
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid xs={12} md={6}>
+                      <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #667eea' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#667eea' }} />
+                          <Typography variant="h6" sx={{ fontWeight: 900, color: '#667eea' }}>🎮 Game 1: Quick Scan</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.8, color: '#555' }}>
+                          <b>Scenario:</b> You're a content reviewer scanning AI-generated text for a news article. You have <b>40 seconds</b> to identify all hallucination hazards before publication.
+                        </Typography>
+                        <Divider sx={{ my: 1.5 }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>How to Play:</Typography>
+                        <Stack spacing={1} sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
+                            <span style={{ fontWeight: 900 }}>•</span> Click <b>"Flag"</b> on sentences that contain hallucination risks
+                          </Typography>
+                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
+                            <span style={{ fontWeight: 900 }}>•</span> Build <b>combo chains</b> by flagging correct pitfalls consecutively
+                          </Typography>
+                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
+                            <span style={{ fontWeight: 900 }}>•</span> Beware: one hidden <b>BOSS sentence</b> (most dangerous)
+                          </Typography>
+                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
+                            <span style={{ fontWeight: 900 }}>•</span> Wrong flags break your combo and reduce score
+                          </Typography>
+                        </Stack>
+                        <Alert severity="info" icon={<ShieldIcon />}>
+                          <AlertTitle sx={{ fontWeight: 900 }}>Best For</AlertTitle>
+                          Learning to quickly spot red flags: exact numbers, DOIs, "first-ever" claims, and authority tone without sources.
+                        </Alert>
+                      </Paper>
+                    </Grid>
+
+                    <Grid xs={12} md={6}>
+                      <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #4facfe' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#4facfe' }} />
+                          <Typography variant="h6" sx={{ fontWeight: 900, color: '#4facfe' }}>🎮 Game 2: Evidence Budget</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.8, color: '#555' }}>
+                          <b>Scenario:</b> You're a research analyst evaluating AI-generated summaries. You have <b>55 seconds</b> and limited <b>Action Points (AP)</b> to verify high-impact claims and reduce output risk.
+                        </Typography>
+                        <Divider sx={{ my: 1.5 }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>How to Play:</Typography>
+                        <Stack spacing={1} sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
+                            <span style={{ fontWeight: 900 }}>•</span> <b>Flag (1 AP):</b> Mark definite hallucination hazards
+                          </Typography>
+                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
+                            <span style={{ fontWeight: 900 }}>•</span> <b>Ask Evidence (2 AP):</b> Request verification—may reveal traps
+                          </Typography>
+                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
+                            <span style={{ fontWeight: 900 }}>•</span> <b>Rewrite (3 AP):</b> Force safer output with uncertainty allowed
+                          </Typography>
+                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
+                            <span style={{ fontWeight: 900 }}>•</span> Goal: <b>Reduce Risk %</b> below critical threshold
+                          </Typography>
+                        </Stack>
+                        <Alert severity="warning" icon={<BoltIcon />}>
+                          <AlertTitle sx={{ fontWeight: 900 }}>Strategic Challenge</AlertTitle>
+                          Manage limited resources. Prioritize high-severity claims. Some "Ask Evidence" responses are traps that increase risk!
+                        </Alert>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+
+                  <Paper sx={{ mt: 3, p: 2, backgroundColor: '#fffbf0', border: '2px dashed #ffb74d' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                      <BossIcon sx={{ fontSize: 32, color: '#ff5722' }} />
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#ff5722' }}>
+                          ⚡ Hidden Boss Mechanic
+                        </Typography>
+                        <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>
+                          Every round contains one <b>hidden BOSS sentence</b>—the most dangerous hallucination that, if missed, could catastrophically damage credibility (e.g., fake DOIs in academic contexts, fabricated "firsts" in news). <b>Missing the Boss at round end triggers an explosion effect.</b> You won't know which one it is until time runs out!
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+
+                  <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      onClick={() => setShowGameIntro(false)}
+                      sx={{
+                        fontWeight: 900,
+                        fontSize: '1.1rem',
+                        px: 6,
+                        py: 1.5,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                          boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                          transform: 'translateY(-2px)',
+                        },
+                        transition: 'all 0.3s ease',
+                      }}
+                      startIcon={<BoltIcon />}
+                    >
+                      🎮 START TRAINING
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            ) : (
+              <Stack spacing={2}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setShowGameIntro(true)}
+                    startIcon={<ReplayIcon />}
+                    sx={{
+                      fontWeight: 900,
+                      borderColor: '#667eea',
+                      color: '#667eea',
+                      '&:hover': {
+                        borderColor: '#5568d3',
+                        backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                      },
+                    }}
+                  >
+                    ← Back to Instructions
+                  </Button>
+                </Box>
+                <TrainingArena />
+              </Stack>
+            )}
+          </Container>
+        )}
+
+        {tabValue === 3 && (
+          <Container maxWidth="lg" sx={{ py: 4 }}>
+            <OverviewSection />
           </Container>
         )}
       </Box>
