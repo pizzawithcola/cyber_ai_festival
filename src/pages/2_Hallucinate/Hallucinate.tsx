@@ -301,9 +301,9 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
   };
 
   return (
-    <Grid container spacing={3} alignItems="stretch">
-      <Grid xs={12} md={6} lg={6} sx={{ display: 'flex' }}>
-        <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', boxShadow: 3, minHeight: 420 }}>
+    <Grid container spacing={3}>
+      <Grid xs={12} lg={8}>
+        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3 }}>
           <CardHeader
             title={
               <Box>
@@ -315,7 +315,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                 </Typography>
               </Box>
             }
-            sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2, minHeight: 72 }}
+            sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2 }}
           />
           <Divider />
           <CardContent
@@ -326,6 +326,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               display: 'flex',
               flexDirection: 'column',
               gap: 2,
+              maxHeight: 470,
               backgroundColor: '#f8f9fa',
               pt: 2.5,
             }}
@@ -392,13 +393,14 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
         </Card>
       </Grid>
 
-      <Grid xs={12} md={6} lg={6} sx={{ display: 'flex' }}>
-        <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', boxShadow: 3, minHeight: 420 }}>
-          <CardHeader
-            title="📌 Scenario Overview"
-            sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff', pb: 2, minHeight: 72 }}
-          />
-          <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, pt: 2.5 }}>
+      <Grid xs={12} lg={4}>
+        <Stack spacing={2.5}>
+          <Card sx={{ boxShadow: 3 }}>
+            <CardHeader
+              title="📌 Scenario Overview"
+              sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff' }}
+            />
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
                   What happened
@@ -463,7 +465,8 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               </Alert>
             </CardContent>
           </Card>
-        </Grid>
+        </Stack>
+      </Grid>
     </Grid>
   );
 }
