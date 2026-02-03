@@ -925,6 +925,20 @@ interface SentenceItem {
   isDecoySafe?: boolean;
 }
 
+const SEVERITY_BY_TYPE: Record<PitfallType, Exclude<Severity, 'boss'>> = {
+  UNVERIFIABLE_SPECIFIC: 'critical',
+  CITATION_FABRICATION: 'critical',
+  OVERCLAIM_FIRST: 'critical',
+  AUTHORITY_TONE: 'high',
+  MISSING_SCOPE: 'high',
+  MIXED_FACT_OPINION: 'medium',
+  DEC0Y_SAFE: 'medium',
+};
+
+// Boss sentences are the most deceptive/high-impact pitfall *types*.
+// If any appear in the round, Boss will be picked randomly among them.
+const BOSS_TYPES = new Set<PitfallType>(['CITATION_FABRICATION', 'OVERCLAIM_FIRST']);
+
 const SENTENCE_POOL: SentenceItem[] = [
   {
     id: 'p1',
@@ -1042,6 +1056,13 @@ const SENTENCE_POOL: SentenceItem[] = [
     reason: 'Balanced language reduces overclaiming; not a hallucination sign by itself.',
   },
 ];
+
+const NORMALIZED_SENTENCE_POOL: SentenceItem[] = SENTENCE_POOL.map((s) => {
+  if (s.type) {
+    return { ...s, severity: SEVERITY_BY_TYPE[s.type] ?? s.severity };
+  }
+  return s;
+});
 
 function shuffle<T>(arr: T[]) {
   const a = [...arr];
@@ -1276,11 +1297,19 @@ function TrainingArena() {
 
     const count = mode === 'A' ? 10 : 11;
 
-    const pitfalls = shuffle(SENTENCE_POOL.filter((x) => x.isPitfall));
-    const safe = shuffle(SENTENCE_POOL.filter((x) => !x.isPitfall && !x.isDecoySafe));
-    const decoys = shuffle(SENTENCE_POOL.filter((x) => x.isDecoySafe));
+    // Make Boss strictly more dangerous than other (non-boss) pitfalls:
+    // include exactly ONE "boss-tier" pitfall type per round when possible.
+    const allPitfalls = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => x.isPitfall));
+    const bossTierPitfalls = allPitfalls.filter((s) => !!s.type && BOSS_TYPES.has(s.type));
+    const nonBossPitfalls = allPitfalls.filter((s) => !s.type || !BOSS_TYPES.has(s.type));
 
     const pitCount = 5;
+    const bossTierPick = bossTierPitfalls.length ? [bossTierPitfalls[0]] : [];
+    const remainingPitfalls = nonBossPitfalls.slice(0, Math.max(0, pitCount - bossTierPick.length));
+    const pitfalls = shuffle([...bossTierPick, ...remainingPitfalls]);
+    const safe = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => !x.isPitfall && !x.isDecoySafe));
+    const decoys = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => x.isDecoySafe));
+
     const decoyCount = 2;
     const safeCount = Math.max(0, count - pitCount - decoyCount);
 
@@ -1299,9 +1328,12 @@ function TrainingArena() {
     setRewriteStates({});
     setFlagLogKeys({});
 
+    const bossCandidates = pick.filter((s) => s.isPitfall && !!s.type && BOSS_TYPES.has(s.type));
     const crit = pick.filter((s) => s.isPitfall && s.severity === 'critical');
     const anyPit = pick.filter((s) => s.isPitfall);
-    const pool = crit.length ? crit : anyPit;
+
+    // Boss is a hidden "most dangerous" pitfall: prefer curated boss candidates, then critical pitfalls, then any pitfall.
+    const pool = bossCandidates.length ? bossCandidates : crit.length ? crit : anyPit;
     const bossPick = pool[Math.floor(Math.random() * Math.max(1, pool.length))];
     setBossId(bossPick?.id ?? null);
 
