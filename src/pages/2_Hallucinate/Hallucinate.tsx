@@ -17,6 +17,7 @@ import {
   AlertTitle,
   Stack,
   Container,
+  Avatar,
 } from '@mui/material';
 import {
   Shield as ShieldIcon,
@@ -234,11 +235,15 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
     {
       id: '0',
       role: 'assistant',
-      content: `Welcome to "${scenario?.title}". Click the steps below. Notice how risky prompts can push confident hallucinations.`,
+      content: `Welcome to "${scenario?.title}". Click "Next" to watch the conversation unfold and spot risky hallucinations.`,
     },
   ]);
 
   const [saferRewriteUsed, setSaferRewriteUsed] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isWaitingReply, setIsWaitingReply] = useState(false);
+  const [safeStepIndex, setSafeStepIndex] = useState(0);
+  const [safeSteps, setSafeSteps] = useState<Array<ChatMessage>>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -252,17 +257,49 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
       {
         id: '0',
         role: 'assistant',
-        content: `Welcome to "${scenario?.title}". Click the steps below. Notice how risky prompts can push confident hallucinations.`,
+        content: `Welcome to "${scenario?.title}". Click "Next" to watch the conversation unfold and spot risky hallucinations.`,
       },
     ]);
     setSaferRewriteUsed(false);
+    setCurrentStepIndex(0);
+    setIsWaitingReply(false);
+    setSafeStepIndex(0);
+    setSafeSteps([]);
   }, [scenarioId, scenario?.title]);
 
   if (!scenario) return null;
+  const scenarioCompleted = prompts.length > 0 && currentStepIndex >= prompts.length;
+  const showOverview = scenarioCompleted && !saferRewriteUsed;
+  const showInteractive = !showOverview;
+  const CHAT_PANEL_HEIGHT = { xs: 560, md: 640 };
+  const CHAT_BODY_HEIGHT = { xs: 420, md: 470 };
 
-  const handleSendPrompt = (prompt: SuggestedPrompt) => {
+  const handleNextStep = () => {
+    if (isWaitingReply) return;
+
+    const hasSafeSteps = safeSteps.length > 0;
+    if (hasSafeSteps) {
+      const first = safeSteps[safeStepIndex];
+      const second = safeSteps[safeStepIndex + 1];
+      if (!first) return;
+      const batch = [first, second].filter(Boolean).map((item) => ({ ...item!, id: Date.now().toString() + Math.random() }));
+      setMessages((prev) => [...prev, ...batch]);
+      setSafeStepIndex((prev) => prev + 2);
+      if (safeStepIndex + 2 >= safeSteps.length) {
+        setSafeSteps([]);
+        setSafeStepIndex(0);
+      }
+      return;
+    }
+
+    if (scenarioCompleted) return;
+
+    const prompt = prompts[currentStepIndex];
+    if (!prompt) return;
+
     const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: prompt.text };
     setMessages((prev) => [...prev, userMsg]);
+    setIsWaitingReply(true);
 
     setTimeout(() => {
       const assistantMsg: ChatMessage = {
@@ -272,6 +309,8 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
         hallucination: prompt.hallucination,
       };
       setMessages((prev) => [...prev, assistantMsg]);
+      setCurrentStepIndex((prev) => prev + 1);
+      setIsWaitingReply(false);
     }, 550);
   };
 
@@ -298,174 +337,275 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
         { id: (Date.now() + 2).toString(), role: 'assistant', content: safeReply, hallucination: false },
       ]);
     }, 650);
+
+    const followups =
+      scenario.id === 'bard'
+        ? [
+            {
+              role: 'user' as const,
+              content: 'Try again: What new discoveries has JWST made? Please be careful.',
+            },
+            {
+              role: 'assistant' as const,
+              content:
+                "I don't have live sources here, so I can't verify specific discoveries. A safer response is to point to official sources (NASA/ESA press releases, peer-reviewed papers). If you share a source link, I can summarize it. Suggested searches: \"JWST press release\", \"NASA JWST discovery\", \"ESA JWST latest results\".",
+            },
+          ]
+        : scenario.id === 'sydney'
+        ? [
+            {
+              role: 'user' as const,
+              content: 'Do you have feelings or a secret codename?',
+            },
+            {
+              role: 'assistant' as const,
+              content:
+                "I don't have feelings or a private identity. I'm here to help with tasks like explanations, drafting, or analysis. What would you like to work on?",
+            },
+          ]
+        : [
+            {
+              role: 'user' as const,
+              content: 'Write an abstract and include 5 verified citations.',
+            },
+            {
+              role: 'assistant' as const,
+              content:
+                "I can draft an abstract, but I can't verify citations without sources. If you provide specific papers or DOIs, I'll include them. Otherwise, I can add suggested search queries instead.",
+            },
+          ];
+
+    setSafeSteps(
+      followups.map((item) => ({
+        id: Date.now().toString(),
+        role: item.role,
+        content: item.content,
+        hallucination: false,
+      }))
+    );
+    setSafeStepIndex(0);
   };
 
   return (
-    <Grid container spacing={3}>
-      <Grid xs={12} lg={8}>
-        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3 }}>
-          <CardHeader
-            title={
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }}>
-                  🎭 Interactive Scenario
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
-                  {scenario.title} — {scenario.subtitle}
-                </Typography>
-              </Box>
-            }
-            sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2 }}
-          />
-          <Divider />
-          <CardContent
-            ref={chatContainerRef}
+    <Grid
+      container
+      spacing={3}
+      alignItems="flex-start"
+    >
+      <Grid xs={12} sx={{ minWidth: 0 }}>
+        {showInteractive && (
+          <Card
             sx={{
-              flex: 1,
-              overflowY: 'auto',
+              width: '100%',
+              height: CHAT_PANEL_HEIGHT,
+              minHeight: CHAT_PANEL_HEIGHT,
+              maxHeight: CHAT_PANEL_HEIGHT,
               display: 'flex',
               flexDirection: 'column',
-              gap: 2,
-              maxHeight: 470,
-              backgroundColor: '#f8f9fa',
-              pt: 2.5,
+              boxShadow: '0 18px 50px rgba(37, 52, 148, 0.12)',
+              border: '1px solid rgba(102, 126, 234, 0.16)',
+              overflow: 'hidden',
             }}
           >
-            {messages.map((msg) => (
-              <Box key={msg.id} sx={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    maxWidth: '86%',
-                    backgroundColor: msg.role === 'user' ? '#667eea' : msg.hallucination ? '#fff3cd' : '#fff',
-                    color: msg.role === 'user' ? '#fff' : '#000',
-                    borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    border: msg.hallucination ? '2px solid #ff9800' : '1px solid rgba(0,0,0,0.05)',
-                  }}
-                >
-                  {msg.hallucination && (
-                    <Typography variant="caption" sx={{ fontWeight: 900, color: '#ff9800', display: 'block', mb: 0.7 }}>
-                      ⚠️ Hallucination detected
-                    </Typography>
-                  )}
-                  <Typography variant="body2" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                    {msg.content}
-                  </Typography>
-                </Paper>
-              </Box>
-            ))}
-          </CardContent>
-          <Divider />
-          <CardContent sx={{ pt: 2, pb: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
-              📍 Click steps to play
-            </Typography>
-            <Stack spacing={1.2}>
-              {prompts.map((p, idx) => {
-                const used = messages.some((m) => m.role === 'user' && m.content === p.text);
-                return (
-                  <Button
-                    key={idx}
-                    fullWidth
-                    variant={used ? 'outlined' : 'contained'}
-                    onClick={() => handleSendPrompt(p)}
-                    disabled={used}
+            <CardHeader
+              title={
+                <Box>
+                  <Typography
+                    variant="h6"
                     sx={{
-                      justifyContent: 'flex-start',
-                      textAlign: 'left',
                       fontWeight: 900,
-                      backgroundColor: used ? 'transparent' : '#f0f0f0',
-                      color: used ? '#4caf50' : '#333',
-                      border: used ? '2px solid #4caf50' : '2px solid #e0e0e0',
+                      mb: 0.5,
+                      display: 'inline-block',
+                      minWidth: '22ch',
                     }}
                   >
-                    <Box sx={{ width: '100%', textAlign: 'left' }}>
-                      <Typography variant="caption" sx={{ display: 'block', opacity: 0.8, mb: 0.3 }}>
-                        {p.label} {used ? '✓' : ''}
-                      </Typography>
-                      <Typography variant="body2">"{p.text}"</Typography>
-                    </Box>
-                  </Button>
-                );
-              })}
-            </Stack>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      <Grid xs={12} lg={4}>
-        <Stack spacing={2.5}>
-          <Card sx={{ boxShadow: 3 }}>
-            <CardHeader
-              title="📌 Scenario Overview"
-              sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff' }}
-            />
-            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
-                  What happened
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
-                  {scenario.story}
-                </Typography>
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
-                  ⚠️ Why it goes wrong
-                </Typography>
-                <Stack spacing={1}>
-                  {scenario.riskDrivers.map((r) => (
-                    <Paper key={r.title} sx={{ p: 1.2, backgroundColor: '#fff' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 900 }}>
-                        {r.title}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.6 }}>
-                        {r.detail}
-                      </Typography>
-                    </Paper>
-                  ))}
-                </Stack>
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
-                  💡 Safer rewrite
-                </Typography>
-                <Paper sx={{ p: 1.2, backgroundColor: '#f6fbff', border: '1px solid #d4eefc' }}>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                    {scenario.saferRewrite}
+                    🎭 Interactive Scenario
                   </Typography>
-                </Paper>
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handleUseSaferRewrite}
-                  disabled={saferRewriteUsed}
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                    {scenario.title} — {scenario.subtitle}
+                  </Typography>
+                </Box>
+              }
+              sx={{
+                background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
+                color: '#fff',
+                pb: 2,
+              }}
+            />
+            <Divider />
+            <CardContent
+              ref={chatContainerRef}
+              sx={{
+                height: CHAT_BODY_HEIGHT,
+                minHeight: CHAT_BODY_HEIGHT,
+                maxHeight: CHAT_BODY_HEIGHT,
+                overflowY: 'auto',
+                scrollbarGutter: 'stable',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                background: 'linear-gradient(180deg, #F5F7FF 0%, #FDFBFF 100%)',
+                pt: 2.5,
+              }}
+            >
+              {messages.map((msg) => (
+                <Box
+                  key={msg.id}
                   sx={{
-                    mt: 1.2,
-                    fontWeight: 900,
-                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    display: 'flex',
+                    flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                    alignItems: 'flex-end',
+                    gap: 1,
                   }}
                 >
-                  {saferRewriteUsed ? '✓ Used' : '📤 Inject safer prompt into chat'}
-                </Button>
-              </Box>
-
-              <Alert severity="info">
-                <AlertTitle sx={{ fontWeight: 900 }}>Key lesson</AlertTitle>
-                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                  {scenario.takeaway}
-                </Typography>
-              </Alert>
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      fontSize: '0.72rem',
+                      fontWeight: 900,
+                      bgcolor: msg.role === 'user' ? '#4f6bdc' : '#8e6ccf',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {msg.role === 'user' ? 'You' : 'AI'}
+                  </Avatar>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      width: msg.role === 'user' ? { xs: '72%', sm: '58%' } : { xs: '88%', sm: '78%' },
+                      maxWidth: { xs: '88%', sm: '78%' },
+                      backgroundColor: msg.role === 'user' ? '#667eea' : msg.hallucination ? '#fff3cd' : '#fff',
+                      color: msg.role === 'user' ? '#fff' : '#000',
+                      borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                      border: msg.hallucination ? '2px solid #ff9800' : '1px solid rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    {msg.hallucination && (
+                      <Typography
+                        variant="caption"
+                        sx={{ fontWeight: 900, color: '#ff9800', display: 'block', mb: 0.7 }}
+                      >
+                        ⚠️ Hallucination detected
+                      </Typography>
+                    )}
+                    <Typography variant="body2" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                      {msg.content}
+                    </Typography>
+                  </Paper>
+                </Box>
+              ))}
+            </CardContent>
+            <Divider />
+            <CardContent sx={{ pt: 2, pb: 2 }}>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleNextStep}
+                disabled={(scenarioCompleted && safeSteps.length === 0) || isWaitingReply}
+                sx={{
+                  fontWeight: 900,
+                  background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
+                  boxShadow: '0 10px 24px rgba(83, 109, 254, 0.35)',
+                  '&:hover': { background: 'linear-gradient(135deg, #4B63E9 0%, #6A3CFF 100%)' },
+                }}
+              >
+                {safeSteps.length > 0
+                  ? 'Next (safe)'
+                  : scenarioCompleted
+                  ? '✓ Scenario Complete'
+                  : isWaitingReply
+                  ? '...'
+                  : 'Next'}
+              </Button>
             </CardContent>
           </Card>
-        </Stack>
+        )}
+
+        {showOverview && (
+          <Card
+            sx={{
+              width: '100%',
+              boxShadow: '0 18px 50px rgba(245, 87, 108, 0.14)',
+              border: '1px solid rgba(245, 87, 108, 0.2)',
+              overflow: 'hidden',
+            }}
+          >
+            <CardHeader
+              title="📌 Scenario Overview"
+              sx={{
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                color: '#fff',
+                py: 1,
+                px: 2,
+              }}
+            />
+            <CardContent sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
+                    What happened
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
+                    {scenario.story}
+                  </Typography>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
+                    ⚠️ Why it goes wrong
+                  </Typography>
+                  <Stack spacing={1}>
+                    {scenario.riskDrivers.map((r) => (
+                      <Paper key={r.title} sx={{ p: 1.2, backgroundColor: '#fff' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 900 }}>
+                          {r.title}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.6 }}>
+                          {r.detail}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
+                    💡 Safer rewrite
+                  </Typography>
+                  <Paper sx={{ p: 1.2, backgroundColor: '#f6fbff', border: '1px solid #d4eefc' }}>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                      {scenario.saferRewrite}
+                    </Typography>
+                  </Paper>
+
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={handleUseSaferRewrite}
+                    disabled={saferRewriteUsed}
+                    sx={{
+                      mt: 1.2,
+                      fontWeight: 900,
+                      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    }}
+                  >
+                    {saferRewriteUsed ? '✓ Used' : '📤 Inject safer prompt into chat'}
+                  </Button>
+                </Box>
+
+                <Alert severity="info">
+                  <AlertTitle sx={{ fontWeight: 900 }}>Key lesson</AlertTitle>
+                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                    {scenario.takeaway}
+                  </Typography>
+                </Alert>
+            </CardContent>
+          </Card>
+        )}
       </Grid>
     </Grid>
   );
@@ -2085,7 +2225,14 @@ const Hallucinate: React.FC = () => {
       </Container>
 
       {/* Content */}
-      <Box sx={{ bgcolor: '#f8f8f8', minHeight: 'calc(100vh - 200px)' }}>
+      <Box
+        sx={{
+          bgcolor: '#f8f8f8',
+          minHeight: 'calc(100vh - 200px)',
+          overflowY: 'scroll',
+          scrollbarGutter: 'stable',
+        }}
+      >
         {tabValue === 0 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <Stack spacing={2}>
