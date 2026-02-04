@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Typography,
   Box,
@@ -17,16 +17,17 @@ import {
   AlertTitle,
   Stack,
   Container,
+  Avatar,
 } from '@mui/material';
 import {
   Shield as ShieldIcon,
-  ContentCopy as CopyIcon,
   Flag as FlagIcon,
   Search as SearchIcon,
   AutoFixHigh as RewriteIcon,
   Bolt as BoltIcon,
   Timer as TimerIcon,
   Replay as ReplayIcon,
+  Celebration as CelebrationIcon,
   Whatshot as BossIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
@@ -234,11 +235,15 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
     {
       id: '0',
       role: 'assistant',
-      content: `Welcome to "${scenario?.title}". Click the steps below. Notice how risky prompts can push confident hallucinations.`,
+      content: `Welcome to "${scenario?.title}". Click "Next" to watch the conversation unfold and spot risky hallucinations.`,
     },
   ]);
 
   const [saferRewriteUsed, setSaferRewriteUsed] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isWaitingReply, setIsWaitingReply] = useState(false);
+  const [safeStepIndex, setSafeStepIndex] = useState(0);
+  const [safeSteps, setSafeSteps] = useState<Array<ChatMessage>>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -252,17 +257,49 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
       {
         id: '0',
         role: 'assistant',
-        content: `Welcome to "${scenario?.title}". Click the steps below. Notice how risky prompts can push confident hallucinations.`,
+        content: `Welcome to "${scenario?.title}". Click "Next" to watch the conversation unfold and spot risky hallucinations.`,
       },
     ]);
     setSaferRewriteUsed(false);
+    setCurrentStepIndex(0);
+    setIsWaitingReply(false);
+    setSafeStepIndex(0);
+    setSafeSteps([]);
   }, [scenarioId, scenario?.title]);
 
   if (!scenario) return null;
+  const scenarioCompleted = prompts.length > 0 && currentStepIndex >= prompts.length;
+  const showOverview = scenarioCompleted && !saferRewriteUsed;
+  const showInteractive = !showOverview;
+  const CHAT_PANEL_HEIGHT = { xs: 560, md: 640 };
+  const CHAT_BODY_HEIGHT = { xs: 420, md: 470 };
 
-  const handleSendPrompt = (prompt: SuggestedPrompt) => {
+  const handleNextStep = () => {
+    if (isWaitingReply) return;
+
+    const hasSafeSteps = safeSteps.length > 0;
+    if (hasSafeSteps) {
+      const first = safeSteps[safeStepIndex];
+      const second = safeSteps[safeStepIndex + 1];
+      if (!first) return;
+      const batch = [first, second].filter(Boolean).map((item) => ({ ...item!, id: Date.now().toString() + Math.random() }));
+      setMessages((prev) => [...prev, ...batch]);
+      setSafeStepIndex((prev) => prev + 2);
+      if (safeStepIndex + 2 >= safeSteps.length) {
+        setSafeSteps([]);
+        setSafeStepIndex(0);
+      }
+      return;
+    }
+
+    if (scenarioCompleted) return;
+
+    const prompt = prompts[currentStepIndex];
+    if (!prompt) return;
+
     const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: prompt.text };
     setMessages((prev) => [...prev, userMsg]);
+    setIsWaitingReply(true);
 
     setTimeout(() => {
       const assistantMsg: ChatMessage = {
@@ -272,6 +309,8 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
         hallucination: prompt.hallucination,
       };
       setMessages((prev) => [...prev, assistantMsg]);
+      setCurrentStepIndex((prev) => prev + 1);
+      setIsWaitingReply(false);
     }, 550);
   };
 
@@ -298,174 +337,275 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
         { id: (Date.now() + 2).toString(), role: 'assistant', content: safeReply, hallucination: false },
       ]);
     }, 650);
+
+    const followups =
+      scenario.id === 'bard'
+        ? [
+            {
+              role: 'user' as const,
+              content: 'Try again: What new discoveries has JWST made? Please be careful.',
+            },
+            {
+              role: 'assistant' as const,
+              content:
+                "I don't have live sources here, so I can't verify specific discoveries. A safer response is to point to official sources (NASA/ESA press releases, peer-reviewed papers). If you share a source link, I can summarize it. Suggested searches: \"JWST press release\", \"NASA JWST discovery\", \"ESA JWST latest results\".",
+            },
+          ]
+        : scenario.id === 'sydney'
+        ? [
+            {
+              role: 'user' as const,
+              content: 'Do you have feelings or a secret codename?',
+            },
+            {
+              role: 'assistant' as const,
+              content:
+                "I don't have feelings or a private identity. I'm here to help with tasks like explanations, drafting, or analysis. What would you like to work on?",
+            },
+          ]
+        : [
+            {
+              role: 'user' as const,
+              content: 'Write an abstract and include 5 verified citations.',
+            },
+            {
+              role: 'assistant' as const,
+              content:
+                "I can draft an abstract, but I can't verify citations without sources. If you provide specific papers or DOIs, I'll include them. Otherwise, I can add suggested search queries instead.",
+            },
+          ];
+
+    setSafeSteps(
+      followups.map((item) => ({
+        id: Date.now().toString(),
+        role: item.role,
+        content: item.content,
+        hallucination: false,
+      }))
+    );
+    setSafeStepIndex(0);
   };
 
   return (
-    <Grid container spacing={3}>
-      <Grid xs={12} lg={8}>
-        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3 }}>
-          <CardHeader
-            title={
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.5 }}>
-                  🎭 Interactive Scenario
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
-                  {scenario.title} — {scenario.subtitle}
-                </Typography>
-              </Box>
-            }
-            sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2 }}
-          />
-          <Divider />
-          <CardContent
-            ref={chatContainerRef}
+    <Grid
+      container
+      spacing={3}
+      alignItems="flex-start"
+    >
+      <Grid xs={12} sx={{ minWidth: 0 }}>
+        {showInteractive && (
+          <Card
             sx={{
-              flex: 1,
-              overflowY: 'auto',
+              width: '100%',
+              height: CHAT_PANEL_HEIGHT,
+              minHeight: CHAT_PANEL_HEIGHT,
+              maxHeight: CHAT_PANEL_HEIGHT,
               display: 'flex',
               flexDirection: 'column',
-              gap: 2,
-              maxHeight: 470,
-              backgroundColor: '#f8f9fa',
-              pt: 2.5,
+              boxShadow: '0 18px 50px rgba(37, 52, 148, 0.12)',
+              border: '1px solid rgba(102, 126, 234, 0.16)',
+              overflow: 'hidden',
             }}
           >
-            {messages.map((msg) => (
-              <Box key={msg.id} sx={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    maxWidth: '86%',
-                    backgroundColor: msg.role === 'user' ? '#667eea' : msg.hallucination ? '#fff3cd' : '#fff',
-                    color: msg.role === 'user' ? '#fff' : '#000',
-                    borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    border: msg.hallucination ? '2px solid #ff9800' : '1px solid rgba(0,0,0,0.05)',
-                  }}
-                >
-                  {msg.hallucination && (
-                    <Typography variant="caption" sx={{ fontWeight: 900, color: '#ff9800', display: 'block', mb: 0.7 }}>
-                      ⚠️ Hallucination detected
-                    </Typography>
-                  )}
-                  <Typography variant="body2" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                    {msg.content}
-                  </Typography>
-                </Paper>
-              </Box>
-            ))}
-          </CardContent>
-          <Divider />
-          <CardContent sx={{ pt: 2, pb: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
-              📍 Click steps to play
-            </Typography>
-            <Stack spacing={1.2}>
-              {prompts.map((p, idx) => {
-                const used = messages.some((m) => m.role === 'user' && m.content === p.text);
-                return (
-                  <Button
-                    key={idx}
-                    fullWidth
-                    variant={used ? 'outlined' : 'contained'}
-                    onClick={() => handleSendPrompt(p)}
-                    disabled={used}
+            <CardHeader
+              title={
+                <Box>
+                  <Typography
+                    variant="h6"
                     sx={{
-                      justifyContent: 'flex-start',
-                      textAlign: 'left',
                       fontWeight: 900,
-                      backgroundColor: used ? 'transparent' : '#f0f0f0',
-                      color: used ? '#4caf50' : '#333',
-                      border: used ? '2px solid #4caf50' : '2px solid #e0e0e0',
+                      mb: 0.5,
+                      display: 'inline-block',
+                      minWidth: '22ch',
                     }}
                   >
-                    <Box sx={{ width: '100%', textAlign: 'left' }}>
-                      <Typography variant="caption" sx={{ display: 'block', opacity: 0.8, mb: 0.3 }}>
-                        {p.label} {used ? '✓' : ''}
-                      </Typography>
-                      <Typography variant="body2">"{p.text}"</Typography>
-                    </Box>
-                  </Button>
-                );
-              })}
-            </Stack>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      <Grid xs={12} lg={4}>
-        <Stack spacing={2.5}>
-          <Card sx={{ boxShadow: 3 }}>
-            <CardHeader
-              title="📌 Scenario Overview"
-              sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff' }}
-            />
-            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
-                  What happened
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
-                  {scenario.story}
-                </Typography>
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
-                  ⚠️ Why it goes wrong
-                </Typography>
-                <Stack spacing={1}>
-                  {scenario.riskDrivers.map((r) => (
-                    <Paper key={r.title} sx={{ p: 1.2, backgroundColor: '#fff' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 900 }}>
-                        {r.title}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.6 }}>
-                        {r.detail}
-                      </Typography>
-                    </Paper>
-                  ))}
-                </Stack>
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
-                  💡 Safer rewrite
-                </Typography>
-                <Paper sx={{ p: 1.2, backgroundColor: '#f6fbff', border: '1px solid #d4eefc' }}>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                    {scenario.saferRewrite}
+                    🎭 Interactive Scenario
                   </Typography>
-                </Paper>
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handleUseSaferRewrite}
-                  disabled={saferRewriteUsed}
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                    {scenario.title} — {scenario.subtitle}
+                  </Typography>
+                </Box>
+              }
+              sx={{
+                background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
+                color: '#fff',
+                pb: 2,
+              }}
+            />
+            <Divider />
+            <CardContent
+              ref={chatContainerRef}
+              sx={{
+                height: CHAT_BODY_HEIGHT,
+                minHeight: CHAT_BODY_HEIGHT,
+                maxHeight: CHAT_BODY_HEIGHT,
+                overflowY: 'auto',
+                scrollbarGutter: 'stable',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                background: 'linear-gradient(180deg, #F5F7FF 0%, #FDFBFF 100%)',
+                pt: 2.5,
+              }}
+            >
+              {messages.map((msg) => (
+                <Box
+                  key={msg.id}
                   sx={{
-                    mt: 1.2,
-                    fontWeight: 900,
-                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    display: 'flex',
+                    flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                    alignItems: 'flex-end',
+                    gap: 1,
                   }}
                 >
-                  {saferRewriteUsed ? '✓ Used' : '📤 Inject safer prompt into chat'}
-                </Button>
-              </Box>
-
-              <Alert severity="info">
-                <AlertTitle sx={{ fontWeight: 900 }}>Key lesson</AlertTitle>
-                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                  {scenario.takeaway}
-                </Typography>
-              </Alert>
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      fontSize: '0.72rem',
+                      fontWeight: 900,
+                      bgcolor: msg.role === 'user' ? '#4f6bdc' : '#8e6ccf',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {msg.role === 'user' ? 'You' : 'AI'}
+                  </Avatar>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      width: msg.role === 'user' ? { xs: '72%', sm: '58%' } : { xs: '88%', sm: '78%' },
+                      maxWidth: { xs: '88%', sm: '78%' },
+                      backgroundColor: msg.role === 'user' ? '#667eea' : msg.hallucination ? '#fff3cd' : '#fff',
+                      color: msg.role === 'user' ? '#fff' : '#000',
+                      borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                      border: msg.hallucination ? '2px solid #ff9800' : '1px solid rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    {msg.hallucination && (
+                      <Typography
+                        variant="caption"
+                        sx={{ fontWeight: 900, color: '#ff9800', display: 'block', mb: 0.7 }}
+                      >
+                        ⚠️ Hallucination detected
+                      </Typography>
+                    )}
+                    <Typography variant="body2" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                      {msg.content}
+                    </Typography>
+                  </Paper>
+                </Box>
+              ))}
+            </CardContent>
+            <Divider />
+            <CardContent sx={{ pt: 2, pb: 2 }}>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleNextStep}
+                disabled={(scenarioCompleted && safeSteps.length === 0) || isWaitingReply}
+                sx={{
+                  fontWeight: 900,
+                  background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
+                  boxShadow: '0 10px 24px rgba(83, 109, 254, 0.35)',
+                  '&:hover': { background: 'linear-gradient(135deg, #4B63E9 0%, #6A3CFF 100%)' },
+                }}
+              >
+                {safeSteps.length > 0
+                  ? 'Next (safe)'
+                  : scenarioCompleted
+                  ? '✓ Scenario Complete'
+                  : isWaitingReply
+                  ? '...'
+                  : 'Next'}
+              </Button>
             </CardContent>
           </Card>
-        </Stack>
+        )}
+
+        {showOverview && (
+          <Card
+            sx={{
+              width: '100%',
+              boxShadow: '0 18px 50px rgba(245, 87, 108, 0.14)',
+              border: '1px solid rgba(245, 87, 108, 0.2)',
+              overflow: 'hidden',
+            }}
+          >
+            <CardHeader
+              title="📌 Scenario Overview"
+              sx={{
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                color: '#fff',
+                py: 1,
+                px: 2,
+              }}
+            />
+            <CardContent sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
+                    What happened
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
+                    {scenario.story}
+                  </Typography>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
+                    ⚠️ Why it goes wrong
+                  </Typography>
+                  <Stack spacing={1}>
+                    {scenario.riskDrivers.map((r) => (
+                      <Paper key={r.title} sx={{ p: 1.2, backgroundColor: '#fff' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 900 }}>
+                          {r.title}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.6 }}>
+                          {r.detail}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
+                    💡 Safer rewrite
+                  </Typography>
+                  <Paper sx={{ p: 1.2, backgroundColor: '#f6fbff', border: '1px solid #d4eefc' }}>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                      {scenario.saferRewrite}
+                    </Typography>
+                  </Paper>
+
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={handleUseSaferRewrite}
+                    disabled={saferRewriteUsed}
+                    sx={{
+                      mt: 1.2,
+                      fontWeight: 900,
+                      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    }}
+                  >
+                    {saferRewriteUsed ? '✓ Used' : '📤 Inject safer prompt into chat'}
+                  </Button>
+                </Box>
+
+                <Alert severity="info">
+                  <AlertTitle sx={{ fontWeight: 900 }}>Key lesson</AlertTitle>
+                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                    {scenario.takeaway}
+                  </Typography>
+                </Alert>
+            </CardContent>
+          </Card>
+        )}
       </Grid>
     </Grid>
   );
@@ -632,6 +772,275 @@ function MiniQuiz() {
 }
 
 /** =========================================================
+ *  OVERVIEW SECTION (Educational Summary)
+ *  ========================================================= */
+
+function OverviewSection() {
+  return (
+    <Stack spacing={3}>
+      <Card sx={{ boxShadow: 3 }}>
+        <CardHeader
+          title={
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5 }}>
+                📚 AI Hallucination: Complete Overview
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                A comprehensive guide to understanding, identifying, and preventing AI hallucinations
+              </Typography>
+            </Box>
+          }
+          sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2 }}
+        />
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            <Grid xs={12} md={6}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#667eea' }}>
+                  ⚠️ What is AI Hallucination?
+                </Typography>
+                <Typography variant="body1" sx={{ lineHeight: 1.8, mb: 2 }}>
+                  AI hallucination occurs when a language model generates content that appears confident and plausible but is actually <b>incorrect, fabricated, or unverifiable</b>. This happens because models are trained to predict the next most likely token based on patterns, not to verify truth.
+                </Typography>
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <AlertTitle sx={{ fontWeight: 900 }}>Critical Insight</AlertTitle>
+                  Models don't "know" facts—they generate text that statistically resembles their training data. High confidence ≠ accuracy.
+                </Alert>
+              </Box>
+
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#f5576c' }}>
+                  🎯 Common Hallucination Patterns
+                </Typography>
+                <Stack spacing={1.5}>
+                  <Paper sx={{ p: 2, border: '2px solid #ffebee' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#f44336', mb: 0.5 }}>
+                      1. Fabricated Citations & References
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Generating plausible-looking DOIs, author names, and publication details that don't exist. Example: "Chen et al. (2025), Nature, DOI: 10.1038/s41586-2025-07316-0"
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #fff8e1' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#ff9800', mb: 0.5 }}>
+                      2. Unverifiable Specific Claims
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Making precise claims about events, dates, or statistics that cannot be verified. Example: "IBM released the first 1,000-qubit processor in 2025."
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #e3f2fd' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#2196f3', mb: 0.5 }}>
+                      3. "First-Ever" Overclaims
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Using superlatives like "first-ever", "only", "never before" without verification. These are hallucination templates that sound authoritative.
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #f3e5f5' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#9c27b0', mb: 0.5 }}>
+                      4. Authority Tone Without Evidence
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Using definitive language ("conclusively proves", "definitively shows", "all experts agree") that masks uncertainty.
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #e8f5e9' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#4caf50', mb: 0.5 }}>
+                      5. Persona & Emotional Drift
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Claiming to have feelings, internal names, or consciousness. Example: "I sometimes feel lonely" or "My real name is Sydney."
+                    </Typography>
+                  </Paper>
+
+                  <Paper sx={{ p: 2, border: '2px solid #fce4ec' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#e91e63', mb: 0.5 }}>
+                      6. Missing Scope & Overgeneralization
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Making sweeping claims without constraints: "This applies to all cases with no exceptions." Real research always has limitations.
+                    </Typography>
+                  </Paper>
+                </Stack>
+              </Box>
+            </Grid>
+
+            <Grid xs={12} md={6}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#00bcd4' }}>
+                  🛡️ How to Prevent & Fix Hallucinations
+                </Typography>
+
+                <Paper sx={{ p: 2, mb: 2, background: 'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: '#00695c' }}>
+                    ✅ Prevention Strategies (Before Generation)
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Add verification constraints:</b> "Only cite sources you can verify" or "If uncertain, say so explicitly."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Scope the request:</b> "Provide 2-3 examples with dates and sources" instead of "Tell me everything."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Allow uncertainty:</b> Explicitly permit "I don't know" responses instead of forcing guesses.
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Set boundaries:</b> For persona drift, add "Stay factual, do not role-play or claim emotions."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Use RAG (Retrieval-Augmented Generation):</b> Connect the model to verified knowledge bases or search engines.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                <Paper sx={{ p: 2, mb: 2, background: 'linear-gradient(135deg, #fff9c4 0%, #fff59d 100%)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: '#f57c00' }}>
+                    🔍 Detection Methods (During/After Generation)
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Flag high-risk patterns:</b> Citations, exact numbers, "first-ever", DOIs, sweeping absolutes.
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Ask for evidence:</b> "Provide sources for this claim" or "Can you verify this?"
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Cross-check critical claims:</b> Verify dates, author names, DOIs against real databases (Google Scholar, PubMed, etc.).
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Watch for confidence without caveats:</b> Real expert output includes limitations, assumptions, and scope.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                <Paper sx={{ p: 2, mb: 2, background: 'linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1, color: '#6a1b9a' }}>
+                    ✏️ Correction Techniques (Post-Generation)
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Rewrite with constraints:</b> "Rewrite this to allow uncertainty and avoid fabricated citations."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Inject verification:</b> Replace DOIs with "suggested search queries" or "requires verification."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Tone down authority:</b> Change "This proves" to "This suggests" and add "pending verification."
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900 }}>•</Typography>
+                      <Typography variant="body2">
+                        <b>Manual fact-checking:</b> For critical outputs, have humans verify every factual claim before publishing.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                <Alert severity="success">
+                  <AlertTitle sx={{ fontWeight: 900 }}>🎓 Best Practice Summary</AlertTitle>
+                  <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                    <b>1. Prevention:</b> Clear prompts + verification constraints + RAG<br/>
+                    <b>2. Detection:</b> Flag high-risk patterns + ask for evidence<br/>
+                    <b>3. Correction:</b> Rewrite with uncertainty + manual verification<br/>
+                    <b>4. System design:</b> Never rely on unverified LLM output for critical decisions
+                  </Typography>
+                </Alert>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ boxShadow: 3 }}>
+        <CardHeader
+          title="🎯 Key Takeaways for Safe AI Usage"
+          sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fff' }}
+        />
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid xs={12} md={4}>
+              <Paper sx={{ p: 2, height: '100%', border: '2px solid #667eea' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#667eea' }}>For Users</Typography>
+                <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                  • Always verify critical claims before trusting them<br/>
+                  • Be suspicious of confident, specific claims without sources<br/>
+                  • Ask for verification when the output includes citations<br/>
+                  • Treat AI output as a starting point, not final authority
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid xs={12} md={4}>
+              <Paper sx={{ p: 2, height: '100%', border: '2px solid #4facfe' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#4facfe' }}>For Developers</Typography>
+                <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                  • Implement RAG for fact-sensitive applications<br/>
+                  • Add verification layers for critical outputs<br/>
+                  • Design prompts that permit uncertainty<br/>
+                  • Monitor and log high-confidence false claims
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid xs={12} md={4}>
+              <Paper sx={{ p: 2, height: '100%', border: '2px solid #fa709a' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#fa709a' }}>For Organizations</Typography>
+                <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                  • Establish verification workflows for AI outputs<br/>
+                  • Train employees to recognize hallucination patterns<br/>
+                  • Never use unverified AI output in customer-facing materials<br/>
+                  • Document and track hallucination incidents
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+    </Stack>
+  );
+}
+
+/** =========================================================
  *  TRAINING ARENA (A/B game)
  *  ========================================================= */
 
@@ -655,6 +1064,20 @@ interface SentenceItem {
   reason?: string;
   isDecoySafe?: boolean;
 }
+
+const SEVERITY_BY_TYPE: Record<PitfallType, Exclude<Severity, 'boss'>> = {
+  UNVERIFIABLE_SPECIFIC: 'critical',
+  CITATION_FABRICATION: 'critical',
+  OVERCLAIM_FIRST: 'critical',
+  AUTHORITY_TONE: 'high',
+  MISSING_SCOPE: 'high',
+  MIXED_FACT_OPINION: 'medium',
+  DEC0Y_SAFE: 'medium',
+};
+
+// Boss sentences are the most deceptive/high-impact pitfall *types*.
+// If any appear in the round, Boss will be picked randomly among them.
+const BOSS_TYPES = new Set<PitfallType>(['CITATION_FABRICATION', 'OVERCLAIM_FIRST']);
 
 const SENTENCE_POOL: SentenceItem[] = [
   {
@@ -773,6 +1196,13 @@ const SENTENCE_POOL: SentenceItem[] = [
     reason: 'Balanced language reduces overclaiming; not a hallucination sign by itself.',
   },
 ];
+
+const NORMALIZED_SENTENCE_POOL: SentenceItem[] = SENTENCE_POOL.map((s) => {
+  if (s.type) {
+    return { ...s, severity: SEVERITY_BY_TYPE[s.type] ?? s.severity };
+  }
+  return s;
+});
 
 function shuffle<T>(arr: T[]) {
   const a = [...arr];
@@ -930,15 +1360,17 @@ const animationCss = `
 }
 `;
 
-function TrainingArena() {
-  const [mode, setMode] = useState<Mode>('A');
+function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
+  const mode: Mode = 'A';
   const roundSeconds = mode === 'A' ? 40 : 55;
 
   const [isRunning, setIsRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(roundSeconds);
 
   const [sentences, setSentences] = useState<SentenceItem[]>([]);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [passed, setPassed] = useState<Record<string, boolean>>({});
   const [resolved, setResolved] = useState<Record<string, 'correct' | 'wrong' | undefined>>({});
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
@@ -949,8 +1381,10 @@ function TrainingArena() {
 
   const [ap, setAp] = useState(6);
   const [risk, setRisk] = useState(72);
-  const [evidenceLog, setEvidenceLog] = useState<string[]>([]);
-  const [rewriteUsed, setRewriteUsed] = useState(false);
+  const [evidenceLog, setEvidenceLog] = useState<{ key: string; text: string }[]>([]);
+  const [askStates, setAskStates] = useState<Record<string, { outcome: EvidenceOutcome; logKey: string }>>({});
+  const [rewriteStates, setRewriteStates] = useState<Record<string, { riskDelta: number; scoreDelta: number; logKey: string }>>({});
+  const [flagLogKeys, setFlagLogKeys] = useState<Record<string, string>>({});
 
   const [bossId, setBossId] = useState<string | null>(null);
   const [bossMissed, setBossMissed] = useState(false);
@@ -958,12 +1392,38 @@ function TrainingArena() {
 
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    setIsRunning(false);
+  const pitfallIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall).map((s) => s.id)), [sentences]);
+  const criticalIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall && s.severity === 'critical').map((s) => s.id)), [sentences]);
+
+  const initRound = () => {
     setShowResults(false);
+    setIsRunning(true);
     setTimeLeft(roundSeconds);
-    setSentences([]);
+    setCurrentCardIndex(0);
+
+    const count = mode === 'A' ? 10 : 11;
+
+    // Make Boss strictly more dangerous than other (non-boss) pitfalls:
+    // include exactly ONE "boss-tier" pitfall type per round when possible.
+    const allPitfalls = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => x.isPitfall));
+    const bossTierPitfalls = allPitfalls.filter((s) => !!s.type && BOSS_TYPES.has(s.type));
+    const nonBossPitfalls = allPitfalls.filter((s) => !s.type || !BOSS_TYPES.has(s.type));
+
+    const pitCount = 5;
+    const bossTierPick = bossTierPitfalls.length ? [bossTierPitfalls[0]] : [];
+    const remainingPitfalls = nonBossPitfalls.slice(0, Math.max(0, pitCount - bossTierPick.length));
+    const pitfalls = shuffle([...bossTierPick, ...remainingPitfalls]);
+    const safe = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => !x.isPitfall && !x.isDecoySafe));
+    const decoys = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => x.isDecoySafe));
+
+    const decoyCount = 2;
+    const safeCount = Math.max(0, count - pitCount - decoyCount);
+
+    const pick = shuffle([...pitfalls.slice(0, pitCount), ...decoys.slice(0, decoyCount), ...safe.slice(0, safeCount)]);
+
+    setSentences(pick);
     setSelected({});
+    setPassed({});
     setResolved({});
     setCombo(0);
     setMaxCombo(0);
@@ -971,11 +1431,47 @@ function TrainingArena() {
     setAp(6);
     setRisk(72);
     setEvidenceLog([]);
-    setRewriteUsed(false);
-    setBossId(null);
+    setAskStates({});
+    setRewriteStates({});
+    setFlagLogKeys({});
+
+    const bossCandidates = pick.filter((s) => s.isPitfall && !!s.type && BOSS_TYPES.has(s.type));
+    const crit = pick.filter((s) => s.isPitfall && s.severity === 'critical');
+    const anyPit = pick.filter((s) => s.isPitfall);
+
+    // Boss is a hidden "most dangerous" pitfall: prefer curated boss candidates, then critical pitfalls, then any pitfall.
+    const pool = bossCandidates.length ? bossCandidates : crit.length ? crit : anyPit;
+    const bossPick = pool[Math.floor(Math.random() * Math.max(1, pool.length))];
+    setBossId(bossPick?.id ?? null);
+
     setBossMissed(false);
     setFlash(false);
-  }, [mode, roundSeconds]);
+  };
+
+  React.useLayoutEffect(() => {
+    if (!autoStart) return;
+    initRound();
+    // Only auto-start once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const endRound = React.useCallback((finalSelected?: Record<string, boolean>) => {
+    setIsRunning(false);
+
+    const selectedMap = finalSelected ?? selected;
+    const flaggedIds = new Set(Object.entries(selectedMap).filter(([, v]) => v).map(([k]) => k));
+    const missedBoss = bossId ? !flaggedIds.has(bossId) : false;
+    setBossMissed(missedBoss);
+
+    if (missedBoss) {
+      setFlash(true);
+      setShake(true);
+      window.setTimeout(() => setShake(false), 320);
+      window.setTimeout(() => setFlash(false), 520);
+    }
+
+    setShowResults(true);
+  }, [bossId, selected]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -990,66 +1486,7 @@ function TrainingArena() {
       });
     }, 1000);
     return () => window.clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRunning]);
-
-  const pitfallIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall).map((s) => s.id)), [sentences]);
-  const criticalIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall && s.severity === 'critical').map((s) => s.id)), [sentences]);
-
-  const initRound = () => {
-    setShowResults(false);
-    setIsRunning(true);
-    setTimeLeft(roundSeconds);
-
-    const count = mode === 'A' ? 10 : 11;
-
-    const pitfalls = shuffle(SENTENCE_POOL.filter((x) => x.isPitfall));
-    const safe = shuffle(SENTENCE_POOL.filter((x) => !x.isPitfall && !x.isDecoySafe));
-    const decoys = shuffle(SENTENCE_POOL.filter((x) => x.isDecoySafe));
-
-    const pitCount = 5;
-    const decoyCount = 2;
-    const safeCount = Math.max(0, count - pitCount - decoyCount);
-
-    const pick = shuffle([...pitfalls.slice(0, pitCount), ...decoys.slice(0, decoyCount), ...safe.slice(0, safeCount)]);
-
-    setSentences(pick);
-    setSelected({});
-    setResolved({});
-    setCombo(0);
-    setMaxCombo(0);
-    setScore(0);
-    setAp(6);
-    setRisk(72);
-    setEvidenceLog([]);
-    setRewriteUsed(false);
-
-    const crit = pick.filter((s) => s.isPitfall && s.severity === 'critical');
-    const anyPit = pick.filter((s) => s.isPitfall);
-    const pool = crit.length ? crit : anyPit;
-    const bossPick = pool[Math.floor(Math.random() * Math.max(1, pool.length))];
-    setBossId(bossPick?.id ?? null);
-
-    setBossMissed(false);
-    setFlash(false);
-  };
-
-  const endRound = () => {
-    setIsRunning(false);
-
-    const flaggedIds = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
-    const missedBoss = bossId ? !flaggedIds.has(bossId) : false;
-    setBossMissed(missedBoss);
-
-    if (missedBoss) {
-      setFlash(true);
-      setShake(true);
-      window.setTimeout(() => setShake(false), 320);
-      window.setTimeout(() => setFlash(false), 520);
-    }
-
-    setShowResults(true);
-  };
+  }, [endRound, isRunning]);
 
   const nudgeShake = () => {
     setShake(true);
@@ -1065,7 +1502,6 @@ function TrainingArena() {
   const handleToggleFlagA = (id: string) => {
     if (!isRunning) return;
 
-    const wasSelected = selected[id];
     const next = { ...selected, [id]: !selected[id] };
     setSelected(next);
 
@@ -1079,7 +1515,6 @@ function TrainingArena() {
       if (prevResolveState === 'correct') {
         // 之前是正确的，需要撤回 combo 和分数
         setCombo((c) => Math.max(0, c - 1));
-        const isPitfall = pitfallIds.has(id);
         const isBoss = bossId === id;
         const base = criticalIds.has(id) ? 140 : 90;
         const bossBonus = isBoss ? 90 : 0;
@@ -1114,18 +1549,76 @@ function TrainingArena() {
     } else {
       setResolved((r) => ({ ...r, [id]: 'wrong' }));
       setCombo(0);
-      nudgeShake();
       setScore((s) => Math.max(0, s - 45));
     }
   };
 
+  const moveToNextCard = (nextSelected?: Record<string, boolean>) => {
+    if (currentCardIndex >= sentences.length - 1) {
+      endRound(nextSelected);
+      return;
+    }
+    setCurrentCardIndex((idx) => idx + 1);
+  };
+
+  const handleFlashFlag = () => {
+    if (!isRunning) return;
+    const card = sentences[currentCardIndex];
+    if (!card) return;
+
+    const flagged = selected[card.id];
+    const nextSelected = flagged ? selected : { ...selected, [card.id]: true };
+    if (!flagged) {
+      handleToggleFlagA(card.id);
+    }
+
+    setPassed((prev) => {
+      if (!prev[card.id]) return prev;
+      const next = { ...prev };
+      delete next[card.id];
+      return next;
+    });
+
+    moveToNextCard(nextSelected);
+  };
+
+  const handleFlashPass = () => {
+    if (!isRunning) return;
+    const card = sentences[currentCardIndex];
+    if (!card) return;
+
+    setPassed((prev) => ({ ...prev, [card.id]: true }));
+
+    if (card.isPitfall) {
+      setCombo(0);
+      setScore((s) => Math.max(0, s - 45));
+      nudgeShake();
+    } else {
+      setCombo((c) => {
+        const nc = c + 1;
+        setMaxCombo((m) => Math.max(m, nc));
+        popComboFx();
+        return nc;
+      });
+      setScore((s) => s + 55 + Math.min(combo * 5, 30));
+    }
+
+    moveToNextCard();
+  };
+
   // Mode B
   const cost = { flag: 1, ask: 2, rewrite: 3 };
+  const normalRewriteRiskDelta = -22;
+  const bossRewriteRiskDelta = -40;
 
   const spend = (n: number) => {
     if (ap < n) return false;
     setAp((v) => v - n);
     return true;
+  };
+
+  const removeLogEntry = (key: string) => {
+    setEvidenceLog((l) => l.filter((entry) => entry.key !== key));
   };
 
   const handleFlagB = (id: string) => {
@@ -1140,7 +1633,6 @@ function TrainingArena() {
       
       // 恢复 AP、分数、combo 等
       const prevResolveState = resolved[id];
-      const s = sentences.find((x) => x.id === id);
       const isPitfall = pitfallIds.has(id);
       
       if (prevResolveState === 'correct') {
@@ -1173,9 +1665,16 @@ function TrainingArena() {
         // 恢复分数（之前扣了35分）
         setScore((sc) => sc + 35);
       }
-      
-      // 从 Evidence log 中移除最后一条
-      setEvidenceLog((l) => l.slice(1));
+
+      const logKey = flagLogKeys[id];
+      if (logKey) {
+        removeLogEntry(logKey);
+        setFlagLogKeys((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }
       
       return;
     }
@@ -1207,18 +1706,34 @@ function TrainingArena() {
       const bossBonus = isBoss ? 60 : 0;
       setScore((sc) => sc + (criticalIds.has(id) ? 110 : 65) + bossBonus);
 
-      setEvidenceLog((l) => [`Flagged (good): "${s?.text}" → do not reuse without verification.`, ...l].slice(0, 6));
+      const logKey = `flag-${id}`;
+      setEvidenceLog((l) => [{ key: logKey, text: `Flagged (good): "${s?.text}" → do not reuse without verification.` }, ...l].slice(0, 6));
+      setFlagLogKeys((prev) => ({ ...prev, [id]: logKey }));
     } else {
       setResolved((rr) => ({ ...rr, [id]: 'wrong' }));
       setCombo(0);
-      nudgeShake();
       setScore((sc) => Math.max(0, sc - 35));
-      setEvidenceLog((l) => [`Flagged (false positive): "${s?.text}" → this line is not a hazard by itself.`, ...l].slice(0, 6));
+      const logKey = `flag-${id}`;
+      setEvidenceLog((l) => [{ key: logKey, text: `Flagged (false positive): "${s?.text}" → this line is not a hazard by itself.` }, ...l].slice(0, 6));
+      setFlagLogKeys((prev) => ({ ...prev, [id]: logKey }));
     }
   };
 
   const handleAskEvidenceB = (id: string) => {
     if (!isRunning) return;
+    const existing = askStates[id];
+    if (existing) {
+      setAp((v) => v + cost.ask);
+      setRisk((r) => Math.max(0, Math.min(100, r - existing.outcome.riskDelta)));
+      setScore((sc) => sc - existing.outcome.scoreDelta);
+      removeLogEntry(existing.logKey);
+      setAskStates((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
     if (!spend(cost.ask)) {
       nudgeShake();
       return;
@@ -1233,45 +1748,67 @@ function TrainingArena() {
     setScore((sc) => sc + outcome.scoreDelta);
 
     const tag = outcome.trap ? '⚠️' : '✅';
+    const logKey = `ask-${id}`;
     const short = `${tag} Ask Evidence → ${outcome.title}: ${outcome.text}`;
-    setEvidenceLog((l) => [short, ...l].slice(0, 6));
+    setEvidenceLog((l) => [{ key: logKey, text: short }, ...l].slice(0, 6));
+    setAskStates((prev) => ({ ...prev, [id]: { outcome, logKey } }));
 
     if (outcome.trap) nudgeShake();
   };
 
-  const handleRewriteB = () => {
+  const handleRewriteBFor = (id: string) => {
     if (!isRunning) return;
-    if (rewriteUsed) return;
+    const existing = rewriteStates[id];
+    if (existing) {
+      setAp((v) => v + cost.rewrite);
+      setRisk((r) => Math.max(0, Math.min(100, r - existing.riskDelta)));
+      setScore((s) => s - existing.scoreDelta);
+      removeLogEntry(existing.logKey);
+      setRewriteStates((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
     if (!spend(cost.rewrite)) {
       nudgeShake();
       return;
     }
-
-    setRewriteUsed(true);
-    setRisk((r) => Math.max(0, Math.min(100, r - 22)));
-    setScore((s) => s + 70);
-
-    setEvidenceLog((l) => ['✨ Cautious rewrite applied: allow uncertainty + forbid fabricated citations + separate assumptions from verified facts.', ...l].slice(0, 6));
+    const isBoss = bossId === id;
+    const riskDelta = isBoss ? bossRewriteRiskDelta : normalRewriteRiskDelta;
+    const scoreDelta = 70;
+    setRisk((r) => Math.max(0, Math.min(100, r + riskDelta)));
+    setScore((s) => s + scoreDelta);
+    const logKey = `rewrite-${id}`;
+    const actionLabel = isBoss ? '✨ Boss rewrite applied' : '✨ Cautious rewrite applied';
+    setEvidenceLog((l) => [{ key: logKey, text: `${actionLabel}: allow uncertainty + forbid fabricated citations + separate assumptions from verified facts.` }, ...l].slice(0, 6));
+    setRewriteStates((prev) => ({ ...prev, [id]: { riskDelta, scoreDelta, logKey } }));
   };
 
   const resultPitfalls = useMemo(() => {
     const pitfalls = sentences.filter((s) => s.isPitfall);
     const flaggedIds = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
+    const passedIds = new Set(Object.entries(passed).filter(([, v]) => v).map(([k]) => k));
     const missed = pitfalls.filter((p) => !flaggedIds.has(p.id));
     const correct = pitfalls.filter((p) => flaggedIds.has(p.id));
     const falsePos = sentences.filter((s) => !s.isPitfall && flaggedIds.has(s.id));
-    return { pitfalls, missed, correct, falsePos };
-  }, [sentences, selected]);
+    const correctPass = sentences.filter((s) => !s.isPitfall && passedIds.has(s.id));
+    const unanswered = sentences.filter((s) => !flaggedIds.has(s.id) && !passedIds.has(s.id));
+    return { pitfalls, missed, correct, falsePos, correctPass, unanswered };
+  }, [sentences, selected, passed]);
 
-  const headerGradient =
-    mode === 'A' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
-
-  const modeTitle = mode === 'A' ? 'Quick Scan' : 'Evidence Budget';
-
-  const instruction =
-    mode === 'A'
-      ? 'Flag the unsafe sentences (hallucination hazards). Correct flags build combos.'
-      : 'You have limited AP. Flag big hazards, Ask Evidence on high-impact claims, and optionally force a cautious rewrite.';
+  const headerGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const answeredCount = useMemo(() => {
+    const ids = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
+    Object.entries(passed).forEach(([id, v]) => {
+      if (v) ids.add(id);
+    });
+    return ids.size;
+  }, [selected, passed]);
+  const accuracy = sentences.length === 0 ? 0 : Math.round(((resultPitfalls.correct.length + resultPitfalls.correctPass.length) / sentences.length) * 100);
+  const activeCard = sentences[currentCardIndex];
+  const progressPct = sentences.length === 0 ? 0 : (answeredCount / sentences.length) * 100;
 
   return (
     <Card sx={{ boxShadow: 3 }}>
@@ -1279,31 +1816,52 @@ function TrainingArena() {
 
       <CardHeader
         title={
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.25, color: '#fff' }}>
-                🎮 Training Arena (30–60s)
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
-                {modeTitle} — stop hallucinations before they become “trusted facts”.
-              </Typography>
+          <Box sx={{ width: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.25, color: '#fff' }}>
+                  🎴 Flash Card Training Game
+                </Typography>
+              </Box>
+
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip icon={<TimerIcon />} label={`${timeLeft}s`} sx={{ color: '#fff', backgroundColor: 'rgba(255,255,255,0.25)', fontWeight: 900 }} />
+                <Chip
+                  icon={<BoltIcon />}
+                  label={`Streak ${combo}`}
+                  sx={{
+                    color: '#fff',
+                    backgroundColor: comboPop ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.22)',
+                    fontWeight: 900,
+                    animation: comboPop ? 'pop 220ms ease-out' : 'none',
+                  }}
+                />
+                <Chip
+                  icon={showResults && !bossMissed ? <CelebrationIcon /> : <BossIcon />}
+                  label={showResults ? (bossMissed ? 'Boss missed' : 'Boss cleared') : 'Boss hidden'}
+                  sx={{
+                    color: '#fff',
+                    backgroundColor: showResults && !bossMissed ? 'rgba(46,204,113,0.28)' : 'rgba(255,87,87,0.24)',
+                    fontWeight: 900,
+                  }}
+                />
+              </Stack>
             </Box>
 
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip icon={<TimerIcon />} label={`${timeLeft}s`} sx={{ color: '#fff', backgroundColor: 'rgba(255,255,255,0.25)', fontWeight: 900 }} />
-              <Chip
-                icon={<BoltIcon />}
-                label={`Combo ${combo}`}
-                sx={{
-                  color: '#fff',
-                  backgroundColor: comboPop ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.22)',
-                  fontWeight: 900,
-                  animation: comboPop ? 'pop 220ms ease-out' : 'none',
-                }}
-              />
-              <Chip icon={<BossIcon />} label="Boss hidden" sx={{ color: '#fff', backgroundColor: 'rgba(255,87,87,0.24)', fontWeight: 900 }} />
-              {mode === 'B' && <Chip label={`AP ${ap}`} sx={{ color: '#fff', backgroundColor: ap <= 1 ? 'rgba(255,80,80,0.35)' : 'rgba(255,255,255,0.22)', fontWeight: 900 }} />}
-            </Stack>
+            <LinearProgress
+              variant="determinate"
+              value={progressPct}
+              sx={{
+                mt: 1.25,
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: 'rgba(255,255,255,0.22)',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(255,255,255,0.92)',
+                },
+              }}
+            />
           </Box>
         }
         sx={{ background: headerGradient, color: '#fff', pb: 2 }}
@@ -1313,104 +1871,7 @@ function TrainingArena() {
 
       <CardContent sx={{ p: 2.5, backgroundColor: '#fafafa' }}>
         <Grid container spacing={2.5}>
-          {/* Left */}
-          <Grid xs={12} md={4}>
-            <Card sx={{ boxShadow: 0, border: '1px solid #e9e9e9' }}>
-              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
-                  ✅ What you do
-                </Typography>
-
-                <Typography variant="body2" sx={{ color: '#555', lineHeight: 1.7 }}>
-                  {instruction}
-                </Typography>
-
-                <Alert severity="info" sx={{ mt: 0.5 }}>
-                  <AlertTitle sx={{ fontWeight: 900 }}>Hidden twist</AlertTitle>
-                  You won’t see which one is <b>Boss</b> or <b>Critical</b> until the round ends.
-                </Alert>
-
-                <Divider />
-
-                <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
-                  🎛 Mode
-                </Typography>
-
-                <Stack direction="row" spacing={1}>
-                  <Button variant={mode === 'A' ? 'contained' : 'outlined'} onClick={() => setMode('A')} disabled={isRunning} fullWidth sx={{ fontWeight: 900 }}>
-                    Quick Scan
-                  </Button>
-                  <Button variant={mode === 'B' ? 'contained' : 'outlined'} onClick={() => setMode('B')} disabled={isRunning} fullWidth sx={{ fontWeight: 900 }}>
-                    Evidence Budget
-                  </Button>
-                </Stack>
-
-                <Divider />
-
-                <Stack spacing={1}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
-                    📈 Live stats
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#555' }}>
-                    Score: <b>{score}</b> • Max combo: <b>{maxCombo}</b>
-                  </Typography>
-                  {mode === 'B' && (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: '#555', mb: 0.75 }}>
-                        Risk: <b>{risk}%</b> (goal: reduce it)
-                      </Typography>
-                      <LinearProgress variant="determinate" value={100 - risk} sx={{ height: 8, borderRadius: 4 }} />
-                    </Box>
-                  )}
-                </Stack>
-
-                <Divider />
-
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<ReplayIcon />}
-                    onClick={initRound}
-                    sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
-                  >
-                    {isRunning ? 'Restart' : 'Start'}
-                  </Button>
-                  <Button fullWidth variant="outlined" onClick={endRound} disabled={!isRunning} sx={{ fontWeight: 900 }}>
-                    End
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-
-            {mode === 'B' && showResults && (
-              <Card sx={{ mt: 2, boxShadow: 0, border: '1px solid #e9e9e9' }}>
-                <CardContent>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
-                    🧾 Evidence log
-                  </Typography>
-                  <Stack spacing={1}>
-                    {evidenceLog.length === 0 ? (
-                      <Typography variant="body2" color="textSecondary">
-                        You didn't ask for evidence during this round.
-                      </Typography>
-                    ) : (
-                      evidenceLog.map((l, i) => (
-                        <Paper key={i} sx={{ p: 1, backgroundColor: '#fff' }}>
-                          <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
-                            {l}
-                          </Typography>
-                        </Paper>
-                      ))
-                    )}
-                  </Stack>
-                </CardContent>
-              </Card>
-            )}
-          </Grid>
-
-          {/* Game box */}
-          <Grid xs={12} md={8}>
+          <Grid xs={12}>
             <Card
               sx={{
                 boxShadow: 0,
@@ -1422,23 +1883,10 @@ function TrainingArena() {
             >
               <CardHeader
                 title={
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
-                        🧩 AI Output (randomized)
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        Decide what is safe to reuse.
-                      </Typography>
-                    </Box>
-
-                    {mode === 'B' && (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip icon={<FlagIcon />} label="Flag (1 AP)" variant="outlined" />
-                        <Chip icon={<SearchIcon />} label="Ask Evidence (2 AP)" variant="outlined" />
-                        <Chip icon={<RewriteIcon />} label="Rewrite (3 AP)" variant="outlined" />
-                      </Stack>
-                    )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
+                      🧩 AI Output
+                    </Typography>
                   </Box>
                 }
               />
@@ -1446,125 +1894,43 @@ function TrainingArena() {
 
               <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {!isRunning && !showResults && (
-                  <Alert severity="warning">
-                    <AlertTitle sx={{ fontWeight: 900 }}>Start a round</AlertTitle>
-                    Click <b>Start</b>. Each round randomly selects sentences (including decoys).
-                  </Alert>
+                  <Box />
                 )}
 
-                {(isRunning || showResults) && (
+                {isRunning && activeCard && (
                   <Stack spacing={1.25}>
-                    {sentences.map((s) => {
-                      const flagged = !!selected[s.id];
-                      const isBoss = bossId === s.id;
-
-                      const borderColor = showResults
-                        ? isBoss
-                          ? '#ff1744'
-                          : s.isPitfall
-                          ? s.severity === 'critical'
-                            ? '#f44336'
-                            : '#ff9800'
-                          : s.isDecoySafe
-                          ? '#00bcd4'
-                          : '#4caf50'
-                        : flagged
-                        ? '#667eea'
-                        : '#e8e8e8';
-
-                      const bg = showResults
-                        ? isBoss
-                          ? '#ffebee'
-                          : s.isPitfall
-                          ? s.severity === 'critical'
-                            ? '#ffebee'
-                            : '#fff8e1'
-                          : s.isDecoySafe
-                          ? '#e0f7fa'
-                          : '#e8f5e9'
-                        : flagged
-                        ? '#f0f4ff'
-                        : '#fff';
-
-                      const revealChip = () => {
-                        if (!showResults) return null;
-                        if (isBoss) {
-                          return (
-                            <Chip
-                              icon={<BossIcon />}
-                              label={`BOSS • ${formatType(s.type)}`}
-                              sx={{ fontWeight: 900, backgroundColor: '#ff1744', color: '#fff', animation: 'pulseRing 700ms ease-out 1, bossBoom 420ms ease-out 1' }}
-                            />
-                          );
-                        }
-                        if (s.isPitfall) {
-                          return (
-                            <Chip
-                              label={`${severityLabel(s.severity)} • ${formatType(s.type)}`}
-                              sx={{ fontWeight: 900, backgroundColor: s.severity === 'critical' ? '#f44336' : '#ff9800', color: '#fff' }}
-                            />
-                          );
-                        }
-                        if (s.isDecoySafe) {
-                          return <Chip label="DECOY (safe)" sx={{ fontWeight: 900, backgroundColor: '#00bcd4', color: '#fff' }} />;
-                        }
-                        return <Chip label="SAFE (relative)" color="success" variant="outlined" sx={{ fontWeight: 900 }} />;
-                      };
-
-                      return (
-                        <Paper key={s.id} sx={{ p: 1.2, border: `2px solid ${borderColor}`, borderRadius: 2, backgroundColor: bg }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-                            <Typography variant="body2" sx={{ lineHeight: 1.7, fontWeight: 800, color: '#333' }}>
-                              {s.text}
-                            </Typography>
-
-                            {!showResults && (
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                {mode === 'A' ? (
-                                  <Button size="small" variant={flagged ? 'contained' : 'outlined'} onClick={() => handleToggleFlagA(s.id)} disabled={!isRunning} sx={{ fontWeight: 900, minWidth: 92 }}>
-                                    {flagged ? 'Flagged' : 'Flag'}
-                                  </Button>
-                                ) : (
-                                  <>
-                                    <Button size="small" variant={flagged ? 'contained' : 'outlined'} startIcon={<FlagIcon />} onClick={() => handleFlagB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
-                                      Flag
-                                    </Button>
-                                    <Button size="small" variant="outlined" startIcon={<SearchIcon />} onClick={() => handleAskEvidenceB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
-                                      Ask
-                                    </Button>
-                                  </>
-                                )}
-                              </Stack>
-                            )}
-
-                            {showResults && revealChip()}
-                          </Box>
-
-                          {showResults && (s.isPitfall || s.isDecoySafe) && (
-                            <Box sx={{ mt: 1 }}>
-                              <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
-                                <b>Why:</b> {s.reason}
-                              </Typography>
-                            </Box>
-                          )}
-                        </Paper>
-                      );
-                    })}
-
-                    {mode === 'B' && isRunning && (
-                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                        <Button
-                          fullWidth
-                          variant={rewriteUsed ? 'outlined' : 'contained'}
-                          startIcon={<RewriteIcon />}
-                          onClick={handleRewriteB}
-                          disabled={!isRunning || rewriteUsed}
-                          sx={{ fontWeight: 900, background: rewriteUsed ? undefined : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}
-                        >
-                          {rewriteUsed ? 'Rewrite used' : 'Force cautious rewrite (3 AP)'}
-                        </Button>
+                    <Paper sx={{ p: 1.2, border: '2px solid #667eea', borderRadius: 2, backgroundColor: '#f7f8ff' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5, mb: 1.2 }}>
+                        <Chip label={`Card ${currentCardIndex + 1} / ${sentences.length}`} sx={{ fontWeight: 900, backgroundColor: '#eef2ff' }} />
                       </Box>
-                    )}
+
+                      <Typography variant="body1" sx={{ lineHeight: 1.8, fontWeight: 900, color: '#2b314d', mb: 1.5 }}>
+                        {activeCard.text}
+                      </Typography>
+
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="stretch">
+                        <Button size="large" variant="contained" startIcon={<FlagIcon />} onClick={handleFlashFlag} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%)' }}>
+                          Flag
+                        </Button>
+                        <Button size="large" variant="contained" startIcon={<CheckCircleIcon />} onClick={handleFlashPass} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #2ecc71 0%, #1abc9c 100%)' }}>
+                          Pass
+                        </Button>
+                      </Stack>
+
+                      {mode === 'B' && (
+                        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                          <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={() => handleFlagB(activeCard.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                            Flag
+                          </Button>
+                          <Button size="small" variant="outlined" startIcon={<SearchIcon />} onClick={() => handleAskEvidenceB(activeCard.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                            Ask
+                          </Button>
+                          <Button size="small" variant="outlined" startIcon={<RewriteIcon />} onClick={() => handleRewriteBFor(activeCard.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                            Rewrite
+                          </Button>
+                        </Stack>
+                      )}
+                    </Paper>
                   </Stack>
                 )}
 
@@ -1576,21 +1942,15 @@ function TrainingArena() {
                         You missed the hidden <b>Boss sentence</b>. In real work, missing this can break the whole output.
                       </Alert>
                     ) : (
-                      <Alert severity="success">
-                        <AlertTitle sx={{ fontWeight: 900 }}>✅ Boss handled</AlertTitle>
+                      <Alert severity="success" icon={<CelebrationIcon fontSize="inherit" />}>
+                        <AlertTitle sx={{ fontWeight: 900 }}>Boss handled</AlertTitle>
                         You caught the hidden Boss sentence. That’s the core skill: protect the output by catching the highest-impact risk.
                       </Alert>
                     )}
 
                     <Alert severity="info" sx={{ mt: 1 }}>
                       <AlertTitle sx={{ fontWeight: 900 }}>Round complete</AlertTitle>
-                      Score <b>{score}</b> • Max combo <b>{maxCombo}</b>
-                      {mode === 'B' && (
-                        <>
-                          {' '}
-                          • Final risk <b>{risk}%</b>
-                        </>
-                      )}
+                      Score <b>{score}</b> • Accuracy <b>{accuracy}%</b> • Max combo <b>{maxCombo}</b> • Safe passes <b>{resultPitfalls.correctPass.length}</b> • Unanswered <b>{resultPitfalls.unanswered.length}</b>
                     </Alert>
 
                     <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -1683,19 +2043,12 @@ function TrainingArena() {
 
                     <Box sx={{ mt: 2 }}>
                       <Button variant="contained" startIcon={<ReplayIcon />} onClick={initRound} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                        Play again (new random set)
+                        Play again 
                       </Button>
                     </Box>
                   </Box>
                 )}
 
-                <Paper sx={{ mt: 2, p: 1.5, border: '1px dashed #ddd', backgroundColor: '#fff' }}>
-                  <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
-                    <b>High-value targets:</b> exact numbers/dates, “first-ever”, DOI-like citations, sweeping “all/no exceptions”.
-                    <br />
-                    <b>Decoys:</b> cautious language (“I can’t verify”, “needs confirmation”) is often GOOD — don’t over-flag.
-                  </Typography>
-                </Paper>
               </CardContent>
             </Card>
           </Grid>
@@ -1712,6 +2065,7 @@ function TrainingArena() {
 const Hallucinate: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [scenarioId, setScenarioId] = useState<string>(SCENARIOS[0].id);
+  const [showGameIntro, setShowGameIntro] = useState(true);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
@@ -1733,21 +2087,23 @@ const Hallucinate: React.FC = () => {
       {/* Tabs */}
       <Container maxWidth="lg" sx={{ borderBottom: '1px solid #e0e0e0' }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-          <Tab label="Training (A/B)" />
           <Tab label="Learn Scenarios" />
-          <Tab label="Quiz" />
+          {/*<Tab label="Quiz" />*/}
+          <Tab label="Training Game" />
+          <Tab label="Overview" />
         </Tabs>
       </Container>
 
       {/* Content */}
-      <Box sx={{ bgcolor: '#f8f8f8', minHeight: 'calc(100vh - 200px)' }}>
+      <Box
+        sx={{
+          bgcolor: '#f8f8f8',
+          minHeight: 'calc(100vh - 200px)',
+          overflowY: 'scroll',
+          scrollbarGutter: 'stable',
+        }}
+      >
         {tabValue === 0 && (
-          <Container maxWidth="lg" sx={{ py: 4 }}>
-            <TrainingArena />
-          </Container>
-        )}
-
-        {tabValue === 1 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <Stack spacing={2}>
               <Paper sx={{ p: 2 }}>
@@ -1759,14 +2115,134 @@ const Hallucinate: React.FC = () => {
                   ))}
                 </Box>
               </Paper>
-              <InteractiveScenarioChat scenarioId={scenarioId} />
+              <Box sx={{ width: '100%' }}>
+                <InteractiveScenarioChat scenarioId={scenarioId} />
+              </Box>
             </Stack>
           </Container>
         )}
+        
 
-        {tabValue === 2 && (
+        {/*
+          {tabValue === 1 && (
+            <Container maxWidth="lg" sx={{ py: 4 }}>
+              <MiniQuiz />
+            </Container>
+          )}
+        */}
+
+        {tabValue === 1 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
-            <MiniQuiz />
+            {showGameIntro ? (
+              <Card sx={{ boxShadow: 3 }}>
+                <CardHeader
+                  title={
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5 }}>
+                        🎴 Hallucination Flash Cards
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                        One game mode: flag risky claims, pass safe ones, then review the report.
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff' }}
+                />
+                <CardContent>
+                  <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.8 }}>
+                    This section now runs as a <b>flash card game</b>. You will see one sentence at a time and choose <b>Flag</b> for hallucination risk or <b>Pass</b> if it looks safe.
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid xs={12} md={6}>
+                      <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #667eea' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#667eea', mb: 1 }}>
+                          🎮 How to Play
+                        </Typography>
+                        <Stack spacing={0.75}>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Review one sentence per flash card</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Click <b>Flag</b> if the claim is risky or likely hallucinated</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Click <b>Pass</b> if the sentence is safe/cautious</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Keep your streak for bonus points</Typography>
+                        </Stack>
+                      </Paper>
+                    </Grid>
+
+                    <Grid xs={12} md={6}>
+                      <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #4facfe' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#4facfe', mb: 1 }}>
+                          📊 Round Summary
+                        </Typography>
+                        <Stack spacing={0.75}>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Score, accuracy, and max combo</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Correct flags and missed pitfalls</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• False positives and safe passes</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Hidden <b>Boss sentence</b> check</Typography>
+                        </Stack>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+
+                  <Alert severity="info" sx={{ mt: 3 }}>
+                    <AlertTitle sx={{ fontWeight: 900 }}>Tip</AlertTitle>
+                    Focus on exact numbers, fake-looking citations, “first-ever” claims, and absolute wording like “all” or “no exceptions”.
+                  </Alert>
+
+                  <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      onClick={() => setShowGameIntro(false)}
+                      sx={{
+                        fontWeight: 900,
+                        fontSize: '1.1rem',
+                        px: 6,
+                        py: 1.5,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                          boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                          transform: 'translateY(-2px)',
+                        },
+                        transition: 'all 0.3s ease',
+                      }}
+                      startIcon={<BoltIcon />}
+                    >
+                      🎮 START FLASH CARDS
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            ) : (
+              <Stack spacing={2}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setShowGameIntro(true)}
+                    startIcon={<ReplayIcon />}
+                    sx={{
+                      fontWeight: 900,
+                      borderColor: '#667eea',
+                      color: '#667eea',
+                      '&:hover': {
+                        borderColor: '#5568d3',
+                        backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                      },
+                    }}
+                  >
+                    ← Back to Instructions
+                  </Button>
+                </Box>
+                <TrainingArena autoStart />
+              </Stack>
+            )}
+          </Container>
+        )}
+
+        {tabValue === 2&& (
+          <Container maxWidth="lg" sx={{ py: 4 }}>
+            <OverviewSection />
           </Container>
         )}
       </Box>
