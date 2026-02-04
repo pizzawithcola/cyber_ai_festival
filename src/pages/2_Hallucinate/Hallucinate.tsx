@@ -33,6 +33,26 @@ import {
   Cancel as CancelIcon,
 } from '@mui/icons-material';
 
+const PRIMARY_HEADER_GRADIENT = 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)';
+const PANEL_SHADOW = '0 18px 50px rgba(37, 52, 148, 0.12)';
+const PANEL_BORDER = '1px solid rgba(102, 126, 234, 0.16)';
+const PANEL_BODY_BACKGROUND = 'linear-gradient(180deg, #F5F7FF 0%, #FDFBFF 100%)';
+
+const panelCardSx = {
+  width: '100%',
+  boxShadow: PANEL_SHADOW,
+  border: PANEL_BORDER,
+  overflow: 'hidden',
+  backgroundColor: '#fff',
+} as const;
+
+const panelHeaderSx = {
+  background: PRIMARY_HEADER_GRADIENT,
+  color: '#fff',
+  pb: 2,
+  '& .MuiCardHeader-content': { minWidth: 0 },
+} as const;
+
 /** =========================================================
  *  SCENARIOS (Learn Scenarios tab)
  *  ========================================================= */
@@ -273,8 +293,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
   const scenarioCompleted = prompts.length > 0 && currentStepIndex >= prompts.length;
   const showOverview = scenarioCompleted && isOverviewVisible && !saferRewriteUsed;
   const showInteractive = !showOverview;
-  const CHAT_PANEL_HEIGHT = { xs: 560, md: 640 };
-  const CHAT_BODY_HEIGHT = { xs: 420, md: 470 };
+  const CHAT_PANEL_HEIGHT = { xs: 640, md: 740 };
 
   const handleNextStep = () => {
     if (isWaitingReply) return;
@@ -397,7 +416,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
       spacing={3}
       alignItems="flex-start"
     >
-      <Grid xs={12} sx={{ minWidth: 0 }}>
+      <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
         {showInteractive && (
           <Card
             sx={{
@@ -414,7 +433,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
           >
             <CardHeader
               title={
-                <Box>
+                <Box sx={{ minWidth: 0 }}>
                   <Typography
                     variant="h6"
                     sx={{
@@ -426,7 +445,16 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                   >
                     🎭 Interactive Scenario
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                  <Typography
+                    variant="caption"
+                    noWrap
+                    sx={{
+                      color: 'rgba(255,255,255,0.85)',
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {scenario.title} — {scenario.subtitle}
                   </Typography>
                 </Box>
@@ -435,15 +463,15 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                 background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
                 color: '#fff',
                 pb: 2,
+                '& .MuiCardHeader-content': { minWidth: 0 },
               }}
             />
             <Divider />
             <CardContent
               ref={chatContainerRef}
               sx={{
-                height: CHAT_BODY_HEIGHT,
-                minHeight: CHAT_BODY_HEIGHT,
-                maxHeight: CHAT_BODY_HEIGHT,
+                flex: 1,
+                minHeight: 0,
                 overflowY: 'auto',
                 scrollbarGutter: 'stable',
                 display: 'flex',
@@ -513,6 +541,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                   background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
                   boxShadow: '0 10px 24px rgba(83, 109, 254, 0.35)',
                   '&:hover': { background: 'linear-gradient(135deg, #4B63E9 0%, #6A3CFF 100%)' },
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {safeSteps.length > 0
@@ -533,6 +562,11 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
           <Card
             sx={{
               width: '100%',
+              height: CHAT_PANEL_HEIGHT,
+              minHeight: CHAT_PANEL_HEIGHT,
+              maxHeight: CHAT_PANEL_HEIGHT,
+              display: 'flex',
+              flexDirection: 'column',
               boxShadow: '0 18px 50px rgba(245, 87, 108, 0.14)',
               border: '1px solid rgba(245, 87, 108, 0.2)',
               overflow: 'hidden',
@@ -547,7 +581,19 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                 px: 2,
               }}
             />
-            <CardContent sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Divider />
+            <CardContent
+              sx={{
+                pt: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                scrollbarGutter: 'stable',
+              }}
+            >
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
                     What happened
@@ -785,7 +831,7 @@ function MiniQuiz() {
 function OverviewSection() {
   return (
     <Stack spacing={3}>
-      <Card sx={{ boxShadow: 3 }}>
+      <Card sx={panelCardSx}>
         <CardHeader
           title={
             <Box>
@@ -797,11 +843,11 @@ function OverviewSection() {
               </Typography>
             </Box>
           }
-          sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', pb: 2 }}
+          sx={panelHeaderSx}
         />
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: 3, background: PANEL_BODY_BACKGROUND }}>
           <Grid container spacing={3}>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#667eea' }}>
                   ⚠️ What is AI Hallucination?
@@ -877,7 +923,7 @@ function OverviewSection() {
               </Box>
             </Grid>
 
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#00bcd4' }}>
                   🛡️ How to Prevent & Fix Hallucinations
@@ -1000,14 +1046,19 @@ function OverviewSection() {
         </CardContent>
       </Card>
 
-      <Card sx={{ boxShadow: 3 }}>
+      <Card sx={panelCardSx}>
         <CardHeader
           title="🎯 Key Takeaways for Safe AI Usage"
-          sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fff' }}
+          sx={{
+            background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            color: '#fff',
+            pb: 2,
+            '& .MuiCardHeader-content': { minWidth: 0 },
+          }}
         />
-        <CardContent>
+        <CardContent sx={{ background: PANEL_BODY_BACKGROUND }}>
           <Grid container spacing={2}>
-            <Grid xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper sx={{ p: 2, height: '100%', border: '2px solid #667eea' }}>
                 <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#667eea' }}>For Users</Typography>
                 <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
@@ -1018,7 +1069,7 @@ function OverviewSection() {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper sx={{ p: 2, height: '100%', border: '2px solid #4facfe' }}>
                 <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#4facfe' }}>For Developers</Typography>
                 <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
@@ -1029,7 +1080,7 @@ function OverviewSection() {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper sx={{ p: 2, height: '100%', border: '2px solid #fa709a' }}>
                 <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#fa709a' }}>For Organizations</Typography>
                 <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
@@ -1805,7 +1856,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     return { pitfalls, missed, correct, falsePos, correctPass, unanswered };
   }, [sentences, selected, passed]);
 
-  const headerGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const headerGradient = PRIMARY_HEADER_GRADIENT;
   const answeredCount = useMemo(() => {
     const ids = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
     Object.entries(passed).forEach(([id, v]) => {
@@ -1818,7 +1869,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
   const progressPct = sentences.length === 0 ? 0 : (answeredCount / sentences.length) * 100;
 
   return (
-    <Card sx={{ boxShadow: 3 }}>
+    <Card sx={panelCardSx}>
       <style>{animationCss}</style>
 
       <CardHeader
@@ -1871,14 +1922,14 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
             />
           </Box>
         }
-        sx={{ background: headerGradient, color: '#fff', pb: 2 }}
+        sx={{ ...panelHeaderSx, background: headerGradient }}
       />
 
       <Divider />
 
-      <CardContent sx={{ p: 2.5, backgroundColor: '#fafafa' }}>
+      <CardContent sx={{ p: 2.5, background: PANEL_BODY_BACKGROUND }}>
         <Grid container spacing={2.5}>
-          <Grid xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Card
               sx={{
                 boxShadow: 0,
@@ -1961,7 +2012,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                     </Alert>
 
                     <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                      <Grid xs={12} md={6}>
+                      <Grid size={{ xs: 12, md: 6 }}>
                         <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
                           <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>✅ Correct pitfalls you flagged</Typography>} />
                           <Divider />
@@ -1990,7 +2041,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                         </Card>
                       </Grid>
 
-                      <Grid xs={12} md={6}>
+                      <Grid size={{ xs: 12, md: 6 }}>
                         <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
                           <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>⚠️ Missed pitfalls</Typography>} />
                           <Divider />
@@ -2049,7 +2100,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                     </Grid>
 
                     <Box sx={{ mt: 2 }}>
-                      <Button variant="contained" startIcon={<ReplayIcon />} onClick={initRound} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                      <Button variant="contained" startIcon={<ReplayIcon />} onClick={initRound} sx={{ fontWeight: 900, background: PRIMARY_HEADER_GRADIENT }}>
                         Play again 
                       </Button>
                     </Box>
@@ -2141,7 +2192,7 @@ const Hallucinate: React.FC = () => {
         {tabValue === 1 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
             {showGameIntro ? (
-              <Card sx={{ boxShadow: 3 }}>
+              <Card sx={panelCardSx}>
                 <CardHeader
                   title={
                     <Box>
@@ -2153,15 +2204,15 @@ const Hallucinate: React.FC = () => {
                       </Typography>
                     </Box>
                   }
-                  sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff' }}
+                  sx={panelHeaderSx}
                 />
-                <CardContent>
+                <CardContent sx={{ background: PANEL_BODY_BACKGROUND }}>
                   <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.8 }}>
                     This section now runs as a <b>flash card game</b>. You will see one sentence at a time and choose <b>Flag</b> for hallucination risk or <b>Pass</b> if it looks safe.
                   </Typography>
 
                   <Grid container spacing={2}>
-                    <Grid xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #667eea' }}>
                         <Typography variant="h6" sx={{ fontWeight: 900, color: '#667eea', mb: 1 }}>
                           🎮 How to Play
@@ -2175,7 +2226,7 @@ const Hallucinate: React.FC = () => {
                       </Paper>
                     </Grid>
 
-                    <Grid xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #4facfe' }}>
                         <Typography variant="h6" sx={{ fontWeight: 900, color: '#4facfe', mb: 1 }}>
                           📊 Round Summary
@@ -2205,11 +2256,11 @@ const Hallucinate: React.FC = () => {
                         fontSize: '1.1rem',
                         px: 6,
                         py: 1.5,
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                        background: PRIMARY_HEADER_GRADIENT,
+                        boxShadow: '0 10px 24px rgba(83, 109, 254, 0.35)',
                         '&:hover': {
-                          background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                          boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                          background: 'linear-gradient(135deg, #4B63E9 0%, #6A3CFF 100%)',
+                          boxShadow: '0 14px 30px rgba(83, 109, 254, 0.5)',
                           transform: 'translateY(-2px)',
                         },
                         transition: 'all 0.3s ease',
@@ -2230,11 +2281,11 @@ const Hallucinate: React.FC = () => {
                     startIcon={<ReplayIcon />}
                     sx={{
                       fontWeight: 900,
-                      borderColor: '#667eea',
-                      color: '#667eea',
+                      borderColor: '#536DFE',
+                      color: '#536DFE',
                       '&:hover': {
-                        borderColor: '#5568d3',
-                        backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                        borderColor: '#4B63E9',
+                        backgroundColor: 'rgba(83, 109, 254, 0.05)',
                       },
                     }}
                   >
