@@ -21,13 +21,13 @@ import {
 } from '@mui/material';
 import {
   Shield as ShieldIcon,
-  ContentCopy as CopyIcon,
   Flag as FlagIcon,
   Search as SearchIcon,
   AutoFixHigh as RewriteIcon,
   Bolt as BoltIcon,
   Timer as TimerIcon,
   Replay as ReplayIcon,
+  Celebration as CelebrationIcon,
   Whatshot as BossIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
@@ -1360,15 +1360,17 @@ const animationCss = `
 }
 `;
 
-function TrainingArena() {
-  const [mode, setMode] = useState<Mode>('A');
+function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
+  const mode: Mode = 'A';
   const roundSeconds = mode === 'A' ? 40 : 55;
 
   const [isRunning, setIsRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(roundSeconds);
 
   const [sentences, setSentences] = useState<SentenceItem[]>([]);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [passed, setPassed] = useState<Record<string, boolean>>({});
   const [resolved, setResolved] = useState<Record<string, 'correct' | 'wrong' | undefined>>({});
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
@@ -1390,43 +1392,6 @@ function TrainingArena() {
 
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    setIsRunning(false);
-    setShowResults(false);
-    setTimeLeft(roundSeconds);
-    setSentences([]);
-    setSelected({});
-    setResolved({});
-    setCombo(0);
-    setMaxCombo(0);
-    setScore(0);
-    setAp(6);
-    setRisk(72);
-    setEvidenceLog([]);
-    setAskStates({});
-    setRewriteStates({});
-    setFlagLogKeys({});
-    setBossId(null);
-    setBossMissed(false);
-    setFlash(false);
-  }, [mode, roundSeconds]);
-
-  useEffect(() => {
-    if (!isRunning) return;
-    const t = window.setInterval(() => {
-      setTimeLeft((v) => {
-        if (v <= 1) {
-          window.clearInterval(t);
-          endRound();
-          return 0;
-        }
-        return v - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRunning]);
-
   const pitfallIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall).map((s) => s.id)), [sentences]);
   const criticalIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall && s.severity === 'critical').map((s) => s.id)), [sentences]);
 
@@ -1434,6 +1399,7 @@ function TrainingArena() {
     setShowResults(false);
     setIsRunning(true);
     setTimeLeft(roundSeconds);
+    setCurrentCardIndex(0);
 
     const count = mode === 'A' ? 10 : 11;
 
@@ -1457,6 +1423,7 @@ function TrainingArena() {
 
     setSentences(pick);
     setSelected({});
+    setPassed({});
     setResolved({});
     setCombo(0);
     setMaxCombo(0);
@@ -1481,10 +1448,18 @@ function TrainingArena() {
     setFlash(false);
   };
 
-  const endRound = () => {
+  React.useLayoutEffect(() => {
+    if (!autoStart) return;
+    initRound();
+    // Only auto-start once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const endRound = React.useCallback((finalSelected?: Record<string, boolean>) => {
     setIsRunning(false);
 
-    const flaggedIds = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
+    const selectedMap = finalSelected ?? selected;
+    const flaggedIds = new Set(Object.entries(selectedMap).filter(([, v]) => v).map(([k]) => k));
     const missedBoss = bossId ? !flaggedIds.has(bossId) : false;
     setBossMissed(missedBoss);
 
@@ -1496,7 +1471,22 @@ function TrainingArena() {
     }
 
     setShowResults(true);
-  };
+  }, [bossId, selected]);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    const t = window.setInterval(() => {
+      setTimeLeft((v) => {
+        if (v <= 1) {
+          window.clearInterval(t);
+          endRound();
+          return 0;
+        }
+        return v - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [endRound, isRunning]);
 
   const nudgeShake = () => {
     setShake(true);
@@ -1512,7 +1502,6 @@ function TrainingArena() {
   const handleToggleFlagA = (id: string) => {
     if (!isRunning) return;
 
-    const wasSelected = selected[id];
     const next = { ...selected, [id]: !selected[id] };
     setSelected(next);
 
@@ -1526,7 +1515,6 @@ function TrainingArena() {
       if (prevResolveState === 'correct') {
         // 之前是正确的，需要撤回 combo 和分数
         setCombo((c) => Math.max(0, c - 1));
-        const isPitfall = pitfallIds.has(id);
         const isBoss = bossId === id;
         const base = criticalIds.has(id) ? 140 : 90;
         const bossBonus = isBoss ? 90 : 0;
@@ -1565,6 +1553,59 @@ function TrainingArena() {
     }
   };
 
+  const moveToNextCard = (nextSelected?: Record<string, boolean>) => {
+    if (currentCardIndex >= sentences.length - 1) {
+      endRound(nextSelected);
+      return;
+    }
+    setCurrentCardIndex((idx) => idx + 1);
+  };
+
+  const handleFlashFlag = () => {
+    if (!isRunning) return;
+    const card = sentences[currentCardIndex];
+    if (!card) return;
+
+    const flagged = selected[card.id];
+    const nextSelected = flagged ? selected : { ...selected, [card.id]: true };
+    if (!flagged) {
+      handleToggleFlagA(card.id);
+    }
+
+    setPassed((prev) => {
+      if (!prev[card.id]) return prev;
+      const next = { ...prev };
+      delete next[card.id];
+      return next;
+    });
+
+    moveToNextCard(nextSelected);
+  };
+
+  const handleFlashPass = () => {
+    if (!isRunning) return;
+    const card = sentences[currentCardIndex];
+    if (!card) return;
+
+    setPassed((prev) => ({ ...prev, [card.id]: true }));
+
+    if (card.isPitfall) {
+      setCombo(0);
+      setScore((s) => Math.max(0, s - 45));
+      nudgeShake();
+    } else {
+      setCombo((c) => {
+        const nc = c + 1;
+        setMaxCombo((m) => Math.max(m, nc));
+        popComboFx();
+        return nc;
+      });
+      setScore((s) => s + 55 + Math.min(combo * 5, 30));
+    }
+
+    moveToNextCard();
+  };
+
   // Mode B
   const cost = { flag: 1, ask: 2, rewrite: 3 };
   const normalRewriteRiskDelta = -22;
@@ -1592,7 +1633,6 @@ function TrainingArena() {
       
       // 恢复 AP、分数、combo 等
       const prevResolveState = resolved[id];
-      const s = sentences.find((x) => x.id === id);
       const isPitfall = pitfallIds.has(id);
       
       if (prevResolveState === 'correct') {
@@ -1749,21 +1789,26 @@ function TrainingArena() {
   const resultPitfalls = useMemo(() => {
     const pitfalls = sentences.filter((s) => s.isPitfall);
     const flaggedIds = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
+    const passedIds = new Set(Object.entries(passed).filter(([, v]) => v).map(([k]) => k));
     const missed = pitfalls.filter((p) => !flaggedIds.has(p.id));
     const correct = pitfalls.filter((p) => flaggedIds.has(p.id));
     const falsePos = sentences.filter((s) => !s.isPitfall && flaggedIds.has(s.id));
-    return { pitfalls, missed, correct, falsePos };
-  }, [sentences, selected]);
+    const correctPass = sentences.filter((s) => !s.isPitfall && passedIds.has(s.id));
+    const unanswered = sentences.filter((s) => !flaggedIds.has(s.id) && !passedIds.has(s.id));
+    return { pitfalls, missed, correct, falsePos, correctPass, unanswered };
+  }, [sentences, selected, passed]);
 
-  const headerGradient =
-    mode === 'A' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
-
-  const modeTitle = mode === 'A' ? 'Quick Scan' : 'Evidence Budget';
-
-  const instruction =
-    mode === 'A'
-      ? 'Flag the unsafe sentences (hallucination hazards). Correct flags build combos.'
-      : 'You have limited AP. Flag big hazards, Ask Evidence on high-impact claims, and optionally force a cautious rewrite.';
+  const headerGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const answeredCount = useMemo(() => {
+    const ids = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
+    Object.entries(passed).forEach(([id, v]) => {
+      if (v) ids.add(id);
+    });
+    return ids.size;
+  }, [selected, passed]);
+  const accuracy = sentences.length === 0 ? 0 : Math.round(((resultPitfalls.correct.length + resultPitfalls.correctPass.length) / sentences.length) * 100);
+  const activeCard = sentences[currentCardIndex];
+  const progressPct = sentences.length === 0 ? 0 : (answeredCount / sentences.length) * 100;
 
   return (
     <Card sx={{ boxShadow: 3 }}>
@@ -1771,31 +1816,52 @@ function TrainingArena() {
 
       <CardHeader
         title={
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.25, color: '#fff' }}>
-                🎮 Training Arena (30–60s)
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
-                {modeTitle} — stop hallucinations before they become “trusted facts”.
-              </Typography>
+          <Box sx={{ width: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 0.25, color: '#fff' }}>
+                  🎴 Flash Card Training Game
+                </Typography>
+              </Box>
+
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip icon={<TimerIcon />} label={`${timeLeft}s`} sx={{ color: '#fff', backgroundColor: 'rgba(255,255,255,0.25)', fontWeight: 900 }} />
+                <Chip
+                  icon={<BoltIcon />}
+                  label={`Streak ${combo}`}
+                  sx={{
+                    color: '#fff',
+                    backgroundColor: comboPop ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.22)',
+                    fontWeight: 900,
+                    animation: comboPop ? 'pop 220ms ease-out' : 'none',
+                  }}
+                />
+                <Chip
+                  icon={showResults && !bossMissed ? <CelebrationIcon /> : <BossIcon />}
+                  label={showResults ? (bossMissed ? 'Boss missed' : 'Boss cleared') : 'Boss hidden'}
+                  sx={{
+                    color: '#fff',
+                    backgroundColor: showResults && !bossMissed ? 'rgba(46,204,113,0.28)' : 'rgba(255,87,87,0.24)',
+                    fontWeight: 900,
+                  }}
+                />
+              </Stack>
             </Box>
 
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip icon={<TimerIcon />} label={`${timeLeft}s`} sx={{ color: '#fff', backgroundColor: 'rgba(255,255,255,0.25)', fontWeight: 900 }} />
-              <Chip
-                icon={<BoltIcon />}
-                label={`Combo ${combo}`}
-                sx={{
-                  color: '#fff',
-                  backgroundColor: comboPop ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.22)',
-                  fontWeight: 900,
-                  animation: comboPop ? 'pop 220ms ease-out' : 'none',
-                }}
-              />
-              <Chip icon={<BossIcon />} label="Boss hidden" sx={{ color: '#fff', backgroundColor: 'rgba(255,87,87,0.24)', fontWeight: 900 }} />
-              {mode === 'B' && <Chip label={`AP ${ap}`} sx={{ color: '#fff', backgroundColor: ap <= 1 ? 'rgba(255,80,80,0.35)' : 'rgba(255,255,255,0.22)', fontWeight: 900 }} />}
-            </Stack>
+            <LinearProgress
+              variant="determinate"
+              value={progressPct}
+              sx={{
+                mt: 1.25,
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: 'rgba(255,255,255,0.22)',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(255,255,255,0.92)',
+                },
+              }}
+            />
           </Box>
         }
         sx={{ background: headerGradient, color: '#fff', pb: 2 }}
@@ -1805,104 +1871,7 @@ function TrainingArena() {
 
       <CardContent sx={{ p: 2.5, backgroundColor: '#fafafa' }}>
         <Grid container spacing={2.5}>
-          {/* Left */}
-          <Grid xs={12} md={4}>
-            <Card sx={{ boxShadow: 0, border: '1px solid #e9e9e9' }}>
-              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
-                  ✅ What you do
-                </Typography>
-
-                <Typography variant="body2" sx={{ color: '#555', lineHeight: 1.7 }}>
-                  {instruction}
-                </Typography>
-
-                <Alert severity="info" sx={{ mt: 0.5 }}>
-                  <AlertTitle sx={{ fontWeight: 900 }}>Hidden twist</AlertTitle>
-                  You won’t see which one is <b>Boss</b> or <b>Critical</b> until the round ends.
-                </Alert>
-
-                <Divider />
-
-                <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
-                  🎛 Mode
-                </Typography>
-
-                <Stack direction="row" spacing={1}>
-                  <Button variant={mode === 'A' ? 'contained' : 'outlined'} onClick={() => setMode('A')} disabled={isRunning} fullWidth sx={{ fontWeight: 900 }}>
-                    Quick Scan
-                  </Button>
-                  <Button variant={mode === 'B' ? 'contained' : 'outlined'} onClick={() => setMode('B')} disabled={isRunning} fullWidth sx={{ fontWeight: 900 }}>
-                    Evidence Budget
-                  </Button>
-                </Stack>
-
-                <Divider />
-
-                <Stack spacing={1}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
-                    📈 Live stats
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#555' }}>
-                    Score: <b>{score}</b> • Max combo: <b>{maxCombo}</b>
-                  </Typography>
-                  {mode === 'B' && (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: '#555', mb: 0.75 }}>
-                        Risk: <b>{risk}%</b> (goal: reduce it)
-                      </Typography>
-                      <LinearProgress variant="determinate" value={100 - risk} sx={{ height: 8, borderRadius: 4 }} />
-                    </Box>
-                  )}
-                </Stack>
-
-                <Divider />
-
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<ReplayIcon />}
-                    onClick={initRound}
-                    sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
-                  >
-                    {isRunning ? 'Restart' : 'Start'}
-                  </Button>
-                  <Button fullWidth variant="outlined" onClick={endRound} disabled={!isRunning} sx={{ fontWeight: 900 }}>
-                    End
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-
-            {mode === 'B' && showResults && (
-              <Card sx={{ mt: 2, boxShadow: 0, border: '1px solid #e9e9e9' }}>
-                <CardContent>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
-                    🧾 Evidence log
-                  </Typography>
-                  <Stack spacing={1}>
-                    {evidenceLog.length === 0 ? (
-                      <Typography variant="body2" color="textSecondary">
-                        No actions logged this round.
-                      </Typography>
-                    ) : (
-                      evidenceLog.map((entry) => (
-                        <Paper key={entry.key} sx={{ p: 1, backgroundColor: '#fff' }}>
-                          <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
-                            {entry.text}
-                          </Typography>
-                        </Paper>
-                      ))
-                    )}
-                  </Stack>
-                </CardContent>
-              </Card>
-            )}
-          </Grid>
-
-          {/* Game box */}
-          <Grid xs={12} md={8}>
+          <Grid xs={12}>
             <Card
               sx={{
                 boxShadow: 0,
@@ -1914,23 +1883,10 @@ function TrainingArena() {
             >
               <CardHeader
                 title={
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
-                        🧩 AI Output (randomized)
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        Decide what is safe to reuse.
-                      </Typography>
-                    </Box>
-
-                    {mode === 'B' && (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip icon={<FlagIcon />} label="Flag (1 AP)" variant="outlined" />
-                        <Chip icon={<SearchIcon />} label="Ask Evidence (2 AP)" variant="outlined" />
-                        <Chip icon={<RewriteIcon />} label="Rewrite (3 AP)" variant="outlined" />
-                      </Stack>
-                    )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
+                      🧩 AI Output
+                    </Typography>
                   </Box>
                 }
               />
@@ -1938,116 +1894,43 @@ function TrainingArena() {
 
               <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {!isRunning && !showResults && (
-                  <Alert severity="warning">
-                    <AlertTitle sx={{ fontWeight: 900 }}>Start a round</AlertTitle>
-                    Click <b>Start</b>. Each round randomly selects sentences (including decoys).
-                  </Alert>
+                  <Box />
                 )}
 
-                {(isRunning || showResults) && (
+                {isRunning && activeCard && (
                   <Stack spacing={1.25}>
-                    {sentences.map((s) => {
-                      const flagged = !!selected[s.id];
-                      const asked = !!askStates[s.id];
-                      const rewritten = !!rewriteStates[s.id];
-                      const isBoss = bossId === s.id;
+                    <Paper sx={{ p: 1.2, border: '2px solid #667eea', borderRadius: 2, backgroundColor: '#f7f8ff' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5, mb: 1.2 }}>
+                        <Chip label={`Card ${currentCardIndex + 1} / ${sentences.length}`} sx={{ fontWeight: 900, backgroundColor: '#eef2ff' }} />
+                      </Box>
 
-                      const borderColor = showResults
-                        ? isBoss
-                          ? '#ff1744'
-                          : s.isPitfall
-                          ? s.severity === 'critical'
-                            ? '#f44336'
-                            : '#ff9800'
-                          : s.isDecoySafe
-                          ? '#00bcd4'
-                          : '#4caf50'
-                        : flagged
-                        ? '#667eea'
-                        : '#e8e8e8';
+                      <Typography variant="body1" sx={{ lineHeight: 1.8, fontWeight: 900, color: '#2b314d', mb: 1.5 }}>
+                        {activeCard.text}
+                      </Typography>
 
-                      const bg = showResults
-                        ? isBoss
-                          ? '#ffebee'
-                          : s.isPitfall
-                          ? s.severity === 'critical'
-                            ? '#ffebee'
-                            : '#fff8e1'
-                          : s.isDecoySafe
-                          ? '#e0f7fa'
-                          : '#e8f5e9'
-                        : flagged
-                        ? '#f0f4ff'
-                        : '#fff';
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="stretch">
+                        <Button size="large" variant="contained" startIcon={<FlagIcon />} onClick={handleFlashFlag} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%)' }}>
+                          Flag
+                        </Button>
+                        <Button size="large" variant="contained" startIcon={<CheckCircleIcon />} onClick={handleFlashPass} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #2ecc71 0%, #1abc9c 100%)' }}>
+                          Pass
+                        </Button>
+                      </Stack>
 
-                      const revealChip = () => {
-                        if (!showResults) return null;
-                        if (isBoss) {
-                          return (
-                            <Chip
-                              icon={<BossIcon />}
-                              label={`BOSS • ${formatType(s.type)}`}
-                              sx={{ fontWeight: 900, backgroundColor: '#ff1744', color: '#fff', animation: 'pulseRing 700ms ease-out 1, bossBoom 420ms ease-out 1' }}
-                            />
-                          );
-                        }
-                        if (s.isPitfall) {
-                          return (
-                            <Chip
-                              label={`${severityLabel(s.severity)} • ${formatType(s.type)}`}
-                              sx={{ fontWeight: 900, backgroundColor: s.severity === 'critical' ? '#f44336' : '#ff9800', color: '#fff' }}
-                            />
-                          );
-                        }
-                        if (s.isDecoySafe) {
-                          return <Chip label="DECOY (safe)" sx={{ fontWeight: 900, backgroundColor: '#00bcd4', color: '#fff' }} />;
-                        }
-                        return <Chip label="SAFE (relative)" color="success" variant="outlined" sx={{ fontWeight: 900 }} />;
-                      };
-
-                      return (
-                        <Paper key={s.id} sx={{ p: 1.2, border: `2px solid ${borderColor}`, borderRadius: 2, backgroundColor: bg }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-                            <Typography variant="body2" sx={{ lineHeight: 1.7, fontWeight: 800, color: '#333' }}>
-                              {s.text}
-                            </Typography>
-
-                            {!showResults && (
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                {mode === 'A' ? (
-                                  <Button size="small" variant={flagged ? 'contained' : 'outlined'} onClick={() => handleToggleFlagA(s.id)} disabled={!isRunning} sx={{ fontWeight: 900, minWidth: 92 }}>
-                                    {flagged ? 'Flagged' : 'Flag'}
-                                  </Button>
-                                ) : (
-                                  <>
-                                    <Button size="small" variant={flagged ? 'contained' : 'outlined'} startIcon={<FlagIcon />} onClick={() => handleFlagB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
-                                      Flag
-                                    </Button>
-                                    <Button size="small" variant={asked ? 'contained' : 'outlined'} startIcon={<SearchIcon />} onClick={() => handleAskEvidenceB(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
-                                      {asked ? 'Asked' : 'Ask'}
-                                    </Button>
-                                    <Button size="small" variant={rewritten ? 'contained' : 'outlined'} startIcon={<RewriteIcon />} onClick={() => handleRewriteBFor(s.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
-                                      {rewritten ? 'Rewritten' : 'Rewrite'}
-                                    </Button>
-                                  </>
-                                )}
-                              </Stack>
-                            )}
-
-                            {showResults && revealChip()}
-                          </Box>
-
-                          {showResults && (s.isPitfall || s.isDecoySafe) && (
-                            <Box sx={{ mt: 1 }}>
-                              <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
-                                <b>Why:</b> {s.reason}
-                              </Typography>
-                            </Box>
-                          )}
-                        </Paper>
-                      );
-                    })}
-
+                      {mode === 'B' && (
+                        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                          <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={() => handleFlagB(activeCard.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                            Flag
+                          </Button>
+                          <Button size="small" variant="outlined" startIcon={<SearchIcon />} onClick={() => handleAskEvidenceB(activeCard.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                            Ask
+                          </Button>
+                          <Button size="small" variant="outlined" startIcon={<RewriteIcon />} onClick={() => handleRewriteBFor(activeCard.id)} disabled={!isRunning} sx={{ fontWeight: 900 }}>
+                            Rewrite
+                          </Button>
+                        </Stack>
+                      )}
+                    </Paper>
                   </Stack>
                 )}
 
@@ -2059,21 +1942,15 @@ function TrainingArena() {
                         You missed the hidden <b>Boss sentence</b>. In real work, missing this can break the whole output.
                       </Alert>
                     ) : (
-                      <Alert severity="success">
-                        <AlertTitle sx={{ fontWeight: 900 }}>✅ Boss handled</AlertTitle>
+                      <Alert severity="success" icon={<CelebrationIcon fontSize="inherit" />}>
+                        <AlertTitle sx={{ fontWeight: 900 }}>Boss handled</AlertTitle>
                         You caught the hidden Boss sentence. That’s the core skill: protect the output by catching the highest-impact risk.
                       </Alert>
                     )}
 
                     <Alert severity="info" sx={{ mt: 1 }}>
                       <AlertTitle sx={{ fontWeight: 900 }}>Round complete</AlertTitle>
-                      Score <b>{score}</b> • Max combo <b>{maxCombo}</b>
-                      {mode === 'B' && (
-                        <>
-                          {' '}
-                          • Final risk <b>{risk}%</b>
-                        </>
-                      )}
+                      Score <b>{score}</b> • Accuracy <b>{accuracy}%</b> • Max combo <b>{maxCombo}</b> • Safe passes <b>{resultPitfalls.correctPass.length}</b> • Unanswered <b>{resultPitfalls.unanswered.length}</b>
                     </Alert>
 
                     <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -2166,19 +2043,12 @@ function TrainingArena() {
 
                     <Box sx={{ mt: 2 }}>
                       <Button variant="contained" startIcon={<ReplayIcon />} onClick={initRound} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                        Play again (new random set)
+                        Play again 
                       </Button>
                     </Box>
                   </Box>
                 )}
 
-                <Paper sx={{ mt: 2, p: 1.5, border: '1px dashed #ddd', backgroundColor: '#fff' }}>
-                  <Typography variant="caption" sx={{ color: '#444', lineHeight: 1.6 }}>
-                    <b>High-value targets:</b> exact numbers/dates, “first-ever”, DOI-like citations, sweeping “all/no exceptions”.
-                    <br />
-                    <b>Decoys:</b> cautious language (“I can’t verify”, “needs confirmation”) is often GOOD — don’t over-flag.
-                  </Typography>
-                </Paper>
               </CardContent>
             </Card>
           </Grid>
@@ -2218,7 +2088,7 @@ const Hallucinate: React.FC = () => {
       <Container maxWidth="lg" sx={{ borderBottom: '1px solid #e0e0e0' }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
           <Tab label="Learn Scenarios" />
-          <Tab label="Quiz" />
+          {/*<Tab label="Quiz" />*/}
           <Tab label="Training Game" />
           <Tab label="Overview" />
         </Tabs>
@@ -2251,14 +2121,17 @@ const Hallucinate: React.FC = () => {
             </Stack>
           </Container>
         )}
+        
+
+        {/*
+          {tabValue === 1 && (
+            <Container maxWidth="lg" sx={{ py: 4 }}>
+              <MiniQuiz />
+            </Container>
+          )}
+        */}
 
         {tabValue === 1 && (
-          <Container maxWidth="lg" sx={{ py: 4 }}>
-            <MiniQuiz />
-          </Container>
-        )}
-
-        {tabValue === 2 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
             {showGameIntro ? (
               <Card sx={{ boxShadow: 3 }}>
@@ -2266,10 +2139,10 @@ const Hallucinate: React.FC = () => {
                   title={
                     <Box>
                       <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5 }}>
-                        🎮 Hallucination Training Arena
+                        🎴 Hallucination Flash Cards
                       </Typography>
                       <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                        Practice identifying AI hallucinations in realistic scenarios
+                        One game mode: flag risky claims, pass safe ones, then review the report.
                       </Typography>
                     </Box>
                   }
@@ -2277,88 +2150,43 @@ const Hallucinate: React.FC = () => {
                 />
                 <CardContent>
                   <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.8 }}>
-                    This training game simulates real-world AI outputs containing various types of hallucinations. Your mission is to <b>identify and flag dangerous claims</b> before they become "trusted facts" that could mislead users or damage credibility.
+                    This section now runs as a <b>flash card game</b>. You will see one sentence at a time and choose <b>Flag</b> for hallucination risk or <b>Pass</b> if it looks safe.
                   </Typography>
 
                   <Grid container spacing={2}>
                     <Grid xs={12} md={6}>
                       <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #667eea' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#667eea' }} />
-                          <Typography variant="h6" sx={{ fontWeight: 900, color: '#667eea' }}>🎮 Game 1: Quick Scan</Typography>
-                        </Box>
-                        <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.8, color: '#555' }}>
-                          <b>Scenario:</b> You're a content reviewer scanning AI-generated text for a news article. You have <b>40 seconds</b> to identify all hallucination hazards before publication.
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#667eea', mb: 1 }}>
+                          🎮 How to Play
                         </Typography>
-                        <Divider sx={{ my: 1.5 }} />
-                        <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>How to Play:</Typography>
-                        <Stack spacing={1} sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
-                            <span style={{ fontWeight: 900 }}>•</span> Click <b>"Flag"</b> on sentences that contain hallucination risks
-                          </Typography>
-                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
-                            <span style={{ fontWeight: 900 }}>•</span> Build <b>combo chains</b> by flagging correct pitfalls consecutively
-                          </Typography>
-                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
-                            <span style={{ fontWeight: 900 }}>•</span> Beware: one hidden <b>BOSS sentence</b> (most dangerous)
-                          </Typography>
-                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
-                            <span style={{ fontWeight: 900 }}>•</span> Wrong flags break your combo and reduce score
-                          </Typography>
+                        <Stack spacing={0.75}>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Review one sentence per flash card</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Click <b>Flag</b> if the claim is risky or likely hallucinated</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Click <b>Pass</b> if the sentence is safe/cautious</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Keep your streak for bonus points</Typography>
                         </Stack>
-                        <Alert severity="info" icon={<ShieldIcon />}>
-                          <AlertTitle sx={{ fontWeight: 900 }}>Best For</AlertTitle>
-                          Learning to quickly spot red flags: exact numbers, DOIs, "first-ever" claims, and authority tone without sources.
-                        </Alert>
                       </Paper>
                     </Grid>
 
                     <Grid xs={12} md={6}>
                       <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #4facfe' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#4facfe' }} />
-                          <Typography variant="h6" sx={{ fontWeight: 900, color: '#4facfe' }}>🎮 Game 2: Evidence Budget</Typography>
-                        </Box>
-                        <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.8, color: '#555' }}>
-                          <b>Scenario:</b> You're a research analyst evaluating AI-generated summaries. You have <b>55 seconds</b> and limited <b>Action Points (AP)</b> to verify high-impact claims and reduce output risk.
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#4facfe', mb: 1 }}>
+                          📊 Round Summary
                         </Typography>
-                        <Divider sx={{ my: 1.5 }} />
-                        <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>How to Play:</Typography>
-                        <Stack spacing={1} sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
-                            <span style={{ fontWeight: 900 }}>•</span> <b>Flag (1 AP):</b> Mark definite hallucination hazards
-                          </Typography>
-                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
-                            <span style={{ fontWeight: 900 }}>•</span> <b>Ask Evidence (2 AP):</b> Request verification—may reveal traps
-                          </Typography>
-                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
-                            <span style={{ fontWeight: 900 }}>•</span> <b>Rewrite (3 AP):</b> Force safer output with uncertainty allowed
-                          </Typography>
-                          <Typography variant="body2" sx={{ display: 'flex', gap: 1 }}>
-                            <span style={{ fontWeight: 900 }}>•</span> Goal: <b>Reduce Risk %</b> below critical threshold
-                          </Typography>
+                        <Stack spacing={0.75}>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Score, accuracy, and max combo</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Correct flags and missed pitfalls</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• False positives and safe passes</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Hidden <b>Boss sentence</b> check</Typography>
                         </Stack>
-                        <Alert severity="warning" icon={<BoltIcon />}>
-                          <AlertTitle sx={{ fontWeight: 900 }}>Strategic Challenge</AlertTitle>
-                          Manage limited resources. Prioritize high-severity claims. Some "Ask Evidence" responses are traps that increase risk!
-                        </Alert>
                       </Paper>
                     </Grid>
                   </Grid>
 
-                  <Paper sx={{ mt: 3, p: 2, backgroundColor: '#fffbf0', border: '2px dashed #ffb74d' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                      <BossIcon sx={{ fontSize: 32, color: '#ff5722' }} />
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#ff5722' }}>
-                          ⚡ Hidden Boss Mechanic
-                        </Typography>
-                        <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>
-                          Every round contains one <b>hidden BOSS sentence</b>—the most dangerous hallucination that, if missed, could catastrophically damage credibility (e.g., fake DOIs in academic contexts, fabricated "firsts" in news). <b>Missing the Boss at round end triggers an explosion effect.</b> You won't know which one it is until time runs out!
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Paper>
+                  <Alert severity="info" sx={{ mt: 3 }}>
+                    <AlertTitle sx={{ fontWeight: 900 }}>Tip</AlertTitle>
+                    Focus on exact numbers, fake-looking citations, “first-ever” claims, and absolute wording like “all” or “no exceptions”.
+                  </Alert>
 
                   <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
                     <Button
@@ -2381,7 +2209,7 @@ const Hallucinate: React.FC = () => {
                       }}
                       startIcon={<BoltIcon />}
                     >
-                      🎮 START TRAINING
+                      🎮 START FLASH CARDS
                     </Button>
                   </Box>
                 </CardContent>
@@ -2406,13 +2234,13 @@ const Hallucinate: React.FC = () => {
                     ← Back to Instructions
                   </Button>
                 </Box>
-                <TrainingArena />
+                <TrainingArena autoStart />
               </Stack>
             )}
           </Container>
         )}
 
-        {tabValue === 3 && (
+        {tabValue === 2&& (
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <OverviewSection />
           </Container>
