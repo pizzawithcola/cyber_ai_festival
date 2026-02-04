@@ -240,6 +240,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
   ]);
 
   const [saferRewriteUsed, setSaferRewriteUsed] = useState(false);
+  const [isOverviewVisible, setIsOverviewVisible] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isWaitingReply, setIsWaitingReply] = useState(false);
   const [safeStepIndex, setSafeStepIndex] = useState(0);
@@ -261,6 +262,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
       },
     ]);
     setSaferRewriteUsed(false);
+    setIsOverviewVisible(false);
     setCurrentStepIndex(0);
     setIsWaitingReply(false);
     setSafeStepIndex(0);
@@ -269,7 +271,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
 
   if (!scenario) return null;
   const scenarioCompleted = prompts.length > 0 && currentStepIndex >= prompts.length;
-  const showOverview = scenarioCompleted && !saferRewriteUsed;
+  const showOverview = scenarioCompleted && isOverviewVisible && !saferRewriteUsed;
   const showInteractive = !showOverview;
   const CHAT_PANEL_HEIGHT = { xs: 560, md: 640 };
   const CHAT_BODY_HEIGHT = { xs: 420, md: 470 };
@@ -292,7 +294,10 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
       return;
     }
 
-    if (scenarioCompleted) return;
+    if (scenarioCompleted) {
+      if (!saferRewriteUsed) setIsOverviewVisible(true);
+      return;
+    }
 
     const prompt = prompts[currentStepIndex];
     if (!prompt) return;
@@ -502,7 +507,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                 fullWidth
                 variant="contained"
                 onClick={handleNextStep}
-                disabled={(scenarioCompleted && safeSteps.length === 0) || isWaitingReply}
+                disabled={isWaitingReply || (scenarioCompleted && safeSteps.length === 0 && (saferRewriteUsed || isOverviewVisible))}
                 sx={{
                   fontWeight: 900,
                   background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
@@ -512,6 +517,8 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               >
                 {safeSteps.length > 0
                   ? 'Next (safe)'
+                  : scenarioCompleted && !saferRewriteUsed && !isOverviewVisible
+                  ? 'Next → Scenario Overview'
                   : scenarioCompleted
                   ? '✓ Scenario Complete'
                   : isWaitingReply
