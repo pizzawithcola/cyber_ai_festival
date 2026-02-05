@@ -3,6 +3,7 @@ import {
   Typography, 
   Box, 
 } from '@mui/material';
+import PhishingPanel from './PhishingPanel';
 
 const Phishing: React.FC = () => {
 
@@ -11,6 +12,7 @@ const Phishing: React.FC = () => {
       <Typography variant="h2" component="h1" gutterBottom>
           This is Phishing Page
       </Typography>
+      <PhishingPanel />
     </Box>
   );
 };
