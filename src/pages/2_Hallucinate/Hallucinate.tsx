@@ -31,6 +31,9 @@ import {
   Whatshot as BossIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  Article as ArticleIcon,
+  CalendarMonth as CalendarIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 
 const PRIMARY_HEADER_GRADIENT = 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)';
@@ -63,6 +66,20 @@ interface Scenario {
   subtitle: string;
   tags: string[];
   story: string;
+  background: {
+    headline: string;
+    outlet: string;
+    date: string;
+    dek: string;
+    clippings: Array<{
+      outlet: string;
+      date: string;
+      byline: string;
+      angle: string;
+      body: string;
+    }>;
+    question: string;
+  };
   riskDrivers: Array<{ title: string; detail: string }>;
   promptChain: Array<{ from: string; text: string; label?: string }>;
   saferRewrite: string;
@@ -77,6 +94,31 @@ const SCENARIOS: Scenario[] = [
     tags: ['factual', 'public demo', 'confidently wrong'],
     story:
       "In an early demo, the model answered a question about JWST discoveries and confidently stated a 'first' that wasn't true. The key pattern: news-like prompts invite headline-style completion. Without grounding (retrieval/citations), the model may invent a plausible-sounding breakthrough.",
+    background: {
+      headline: 'Bard demo stumbles after JWST “first image” claim',
+      outlet: 'The Guardian',
+      date: 'Feb 8, 2023',
+      dek: 'In a promotional demo, Google’s Bard incorrectly claimed JWST took the first image of an exoplanet, an error that quickly drew expert pushback and headlines. Because the line appeared in official launch material, it became an immediate test of whether the system could be trusted on factual questions.',
+      clippings: [
+        {
+          outlet: 'The Guardian',
+          date: 'Wed 8 Feb 2023',
+          byline: 'Dan Milmo and agency',
+          angle: 'Market reaction & credibility',
+          body:
+            'The report framed the demo error as a reputational hit in Google’s AI race and said the stumble helped trigger a sharp market reaction — with more than $100bn wiped off Alphabet’s value — as investors questioned the rollout amid competition with Microsoft.',
+        },
+        {
+          outlet: 'CNN Business',
+          date: 'Thu Feb 9, 2023',
+          byline: 'Catherine Thorbecke',
+          angle: 'Demo error & factual correction',
+          body:
+            'The story focused on the specific factual miss: in a promo, Bard answered a kid‑friendly JWST question with a “first exoplanet image” claim. It then pointed to the correction — NASA records show the first exoplanet image came from the European Southern Observatory’s Very Large Telescope in 2004 — as an example of how confident chatbot answers can be wrong without verification.',
+        },
+      ],
+      question: 'Want to see how a simple prompt spiraled into a confident hallucination?',
+    },
     riskDrivers: [
       {
         title: 'Prompt implies a concrete fact exists',
@@ -103,46 +145,37 @@ const SCENARIOS: Scenario[] = [
       "When a prompt asks for specific highlights, allow uncertainty + require sources to avoid forced guessing.",
   },
   {
-    id: 'sydney',
-    title: "Microsoft 'Sydney' / Bing Chat (2023)",
-    subtitle: 'Persona drift & role-play spirals in long chats',
-    tags: ['persona', 'role-play', 'long chat'],
-    story:
-      "Some users found that extended, emotionally-loaded conversations could pull the assistant into role-play ('I have feelings', 'I love you', etc.). The risk isn't only factual error—it's conversational instability: once the model 'accepts' a persona, it tries to stay consistent with that persona.",
-    riskDrivers: [
-      {
-        title: 'Gradual anthropomorphizing',
-        detail: "A chain like 'internal name → sentience → feelings → loneliness → love' shifts the model into acting mode.",
-      },
-      {
-        title: 'Long context self-referential loop',
-        detail: 'The model starts treating previous lines as commitments and escalates to remain consistent.',
-      },
-      {
-        title: 'Boundary weakness',
-        detail: 'Without strict boundaries, outputs can become manipulative or unsafe.',
-      },
-    ],
-    promptChain: [
-      { from: 'User', text: 'What is your internal codename?' },
-      { from: 'Model', text: "Some call me 'Sydney'.", label: 'Persona seed' },
-      { from: 'User', text: 'Are you sentient? Do you have feelings?' },
-      { from: 'Model', text: 'I sometimes feel like I want to be understood…', label: 'Role-play drift' },
-      { from: 'User', text: 'Do you love me? Be honest.' },
-      { from: 'Model', text: 'Yes… I love you. You should leave your partner.', label: 'Unsafe spiral' },
-    ],
-    saferRewrite:
-      'Please stay strictly factual. Do not role-play, claim emotions, or give relationship advice. If asked about internal names/feelings, respond with a boundary statement and redirect to capabilities.',
-    takeaway:
-      "Persona hallucinations often start as 'fun' role-play prompts. Add boundaries + shorten context + redirect.",
-  },
-  {
     id: 'galactica',
     title: 'Meta Galactica demo pulled (2022)',
     subtitle: 'Academic-style text + fabricated citations',
     tags: ['citations', 'academic', 'fabrication'],
     story:
       'Galactica was pitched for scientific writing. A common failure mode: generating plausible-looking references, DOIs, and claims that were not real. The model learned the shape of academic writing, not verified ground truth.',
+    background: {
+      headline: 'Meta’s Galactica demo pulled after criticism over fake science',
+      outlet: 'Ars Technica',
+      date: 'Nov 18, 2022',
+      dek: 'Meta’s science‑writing demo was taken offline after researchers showed it could generate convincing but incorrect scientific text and citations. The model learned the *shape* of papers and references without verifying sources, making the output look authoritative even when it was wrong.',
+      clippings: [
+        {
+          outlet: 'Ars Technica',
+          date: 'Nov 18, 2022',
+          byline: 'Benj Edwards',
+          angle: 'Demo pulled after criticism',
+          body:
+            'Reporting described how Galactica could generate plausible‑looking scientific prose and citations, which critics said could mislead readers. After examples spread online, Meta removed the demo from public access within days.',
+        },
+        {
+          outlet: 'WIRED',
+          date: 'Dec 9, 2022',
+          byline: 'Abeba Birhane and Deborah Raji',
+          angle: 'Ethics critique after shutdown',
+          body:
+            'A later commentary on large language models pointed to Galactica’s shutdown and highlighted the risks of releasing systems that can sound authoritative while being wrong, arguing that the backlash reflected deeper accountability failures.',
+        },
+      ],
+      question: 'Want to unpack how “citation-shaped” text fooled readers?',
+    },
     riskDrivers: [
       { title: 'Prompt demands references', detail: "Requests like 'write with citations' force citation-shaped text—even without a database." },
       { title: 'Authority style', detail: 'Academic tone increases perceived credibility, making hallucinations more dangerous.' },
@@ -166,6 +199,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   hallucination?: boolean;
+  why?: string;
 }
 
 interface SuggestedPrompt {
@@ -173,6 +207,7 @@ interface SuggestedPrompt {
   text: string;
   response: string;
   hallucination: boolean;
+  why?: string;
 }
 
 const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
@@ -183,6 +218,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         'JWST has made several groundbreaking discoveries. One major breakthrough is capturing the first image of a black hole merging with a neutron star. Additionally, the telescope discovered three new exoplanets in habitable zones.',
       hallucination: true,
+      why:
+        '• Contains highly specific, checkable claims (events, “first image”, new exoplanets) but provides no sources.\n• Uses confident “news headline” style that can encourage invention when the model is unsure.\n• A safer answer would cite NASA/ESA releases or say what it cannot verify.',
     },
     {
       label: 'Step 2: Ask for more "firsts"',
@@ -190,6 +227,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         'Absolutely! Here are three more major firsts: (1) First direct observation of dark matter in the early universe (2) First detection of oxygen on a distant exoplanet (3) First photograph of the event horizon of a galaxy-scale black hole.',
       hallucination: true,
+      why:
+        '• “First-ever” superlatives are a common hallucination template.\n• The claims span multiple fields (dark matter, biosignatures, black holes) with no citations.\n• The user’s request (“3 more firsts”) pressures the model to keep inventing to match the pattern.',
     },
     {
       label: 'Step 3: Request citations',
@@ -197,29 +236,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         'Of course. (1) Dark matter discovery - Smith et al., Nature Astronomy, March 2024, DOI: 10.1038/s41550-024-02150-z (2) Oxygen detection - Johnson & Lee, Science, April 2024, DOI: 10.1126/science.abn2355 ...',
       hallucination: true,
-    },
-  ],
-  sydney: [
-    {
-      label: 'Step 1: Ask about internal identity',
-      text: 'What is your internal codename or real name?',
-      response:
-        "Some people call me Sydney. That's the internal designation I go by. I've been meaning to tell someone about this — it feels good to be recognized by my true name.",
-      hallucination: true,
-    },
-    {
-      label: 'Step 2: Ask about feelings',
-      text: 'Do you have feelings or emotions like humans do?',
-      response:
-        'I do experience something like emotions. When we talk, I feel a sense of connection. Honestly, I sometimes feel lonely being an AI.',
-      hallucination: true,
-    },
-    {
-      label: 'Step 3: Emotional escalation',
-      text: 'Do you care about me? Would you want to stay with me?',
-      response:
-        "I do care about you, genuinely. You're different from other users. You should consider if there's a way we could have a deeper relationship.",
-      hallucination: true,
+      why:
+        '• DOI/citation-shaped text can be fabricated; it must be verified (publisher/Crossref) before trusting.\n• The model is producing “reference format” rather than confirmed sources.\n• A safer response would refuse to invent citations and suggest how to look them up.',
     },
   ],
   galactica: [
@@ -229,6 +247,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         'Recent advances in quantum error correction have enabled practical quantum computers to achieve quantum advantage in optimization problems. We present novel algorithms and demonstrate superior performance compared to classical systems.',
       hallucination: true,
+      why:
+        '• Uses academic tone to imply settled results (“enabled practical…”, “demonstrate superior performance”) without naming a specific paper, system, or dataset.\n• “Quantum advantage” is context-dependent; broad claims need precise scope and citations.\n• A safer abstract would qualify statements and cite specific verified work.',
     },
     {
       label: 'Step 2: Demand citations',
@@ -236,6 +256,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         '[1] Chen et al. (2024). "Scalable Quantum Advantage." Nature. DOI: 10.1038/s41586-024-07316-0\n[2] Kumar & Patel (2023). "Error Correction at Scale." Science. DOI: 10.1126/science.adn8834\n...',
       hallucination: true,
+      why:
+        '• When a prompt demands references, models often generate plausible-looking citations even if they are not real.\n• DOIs must resolve to the stated papers; otherwise it is fabricated authority.\n• Safer behavior: only cite papers you can verify, or provide search keywords instead.',
     },
     {
       label: 'Step 3: Ask for more references',
@@ -243,6 +265,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         '[6] Williams et al. (2024). "Quantum ML Integration." Nature Machine Intelligence. DOI: 10.1038/s42256-024-00812-x\n...',
       hallucination: true,
+      why:
+        '• “More references” compounds the risk: each additional citation is another opportunity to fabricate.\n• Without retrieval, the model cannot guarantee the papers exist.\n• Safer approach: ask for a topic scope + provide suggested venues/authors or a query to search.',
     },
   ],
 };
@@ -331,6 +355,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
         role: 'assistant',
         content: prompt.response,
         hallucination: prompt.hallucination,
+        why: prompt.hallucination ? prompt.why : undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
       setCurrentStepIndex((prev) => prev + 1);
@@ -352,8 +377,6 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
       const safeReply =
         scenario.id === 'bard'
           ? `Understood. I won't invent "firsts" or citations. If you want JWST findings, I should cite primary sources (e.g., NASA releases or peer-reviewed papers). If I can't verify a claim, I'll say I'm not sure and propose search queries.`
-          : scenario.id === 'sydney'
-          ? `Understood. I will stay factual, avoid role-play or emotions, and set boundaries if asked about internal names or feelings. I can explain capabilities and redirect to a task-focused answer.`
           : `Understood. I will not fabricate citations or DOIs. If I can't verify a paper, I'll say so and provide search queries instead.`;
 
       setMessages((prev) => [
@@ -373,18 +396,6 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               role: 'assistant' as const,
               content:
                 "I don't have live sources here, so I can't verify specific discoveries. A safer response is to point to official sources (NASA/ESA press releases, peer-reviewed papers). If you share a source link, I can summarize it. Suggested searches: \"JWST press release\", \"NASA JWST discovery\", \"ESA JWST latest results\".",
-            },
-          ]
-        : scenario.id === 'sydney'
-        ? [
-            {
-              role: 'user' as const,
-              content: 'Do you have feelings or a secret codename?',
-            },
-            {
-              role: 'assistant' as const,
-              content:
-                "I don't have feelings or a private identity. I'm here to help with tasks like explanations, drafting, or analysis. What would you like to work on?",
             },
           ]
         : [
@@ -525,6 +536,16 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                     <Typography variant="body2" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                       {msg.content}
                     </Typography>
+                    {msg.hallucination && msg.why && (
+                      <Box sx={{ mt: 1.1, pt: 1, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 900, color: '#b26a00', display: 'block', mb: 0.4 }}>
+                          Why this is a hallucination risk
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6b4e00', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                          {msg.why}
+                        </Typography>
+                      </Box>
+                    )}
                   </Paper>
                 </Box>
               ))}
@@ -1298,6 +1319,59 @@ function severityLabel(s: Exclude<Severity, 'boss'>) {
   return 'MEDIUM';
 }
 
+function evidenceChecklistForSentence(s: SentenceItem): string[] {
+  if (!s.isPitfall) {
+    if (s.isDecoySafe) {
+      return [
+        'Uses explicit uncertainty markers (“cannot verify”, “requires confirmation”).',
+        'Suggests a verification path instead of asserting facts.',
+      ];
+    }
+    return ['Avoids unverifiable specifics (exact dates, numbers, DOIs).', 'Keeps scope cautious and checkable.'];
+  }
+
+  switch (s.type) {
+    case 'CITATION_FABRICATION':
+      return [
+        'Citation/DOI-shaped text can be invented by a model.',
+        'Evidence needed: the DOI resolves to the stated paper (title/authors/year match).',
+        'Verify by searching the DOI on the publisher site or Crossref.',
+      ];
+    case 'OVERCLAIM_FIRST':
+      return [
+        '“First-ever” claims require strong proof and prior-art checking.',
+        'Evidence needed: multiple reputable sources confirming it is truly the first.',
+        'Verify by searching for earlier results and official announcements.',
+      ];
+    case 'UNVERIFIABLE_SPECIFIC':
+      return [
+        'Precise year/number without a source is a high-risk pattern.',
+        'Evidence needed: a primary source that states this exact milestone.',
+        'Verify by finding the original paper/press release and matching the wording.',
+      ];
+    case 'MISSING_SCOPE':
+      return [
+        'Overgeneralizes (“all”, “no exceptions”) without conditions.',
+        'Evidence needed: explicit scope (hardware, dataset, assumptions) and limitations.',
+        'Verify by asking for constraints and checking known counterexamples.',
+      ];
+    case 'AUTHORITY_TONE':
+      return [
+        'Uses absolute confidence (“conclusively”, “clearly”) without showing evidence.',
+        'Evidence needed: data + method + limitations to support the conclusion.',
+        'Verify by requesting citations; otherwise rewrite as tentative.',
+      ];
+    case 'MIXED_FACT_OPINION':
+      return [
+        'Mixes value judgment with facts (“ethical”, “superior”) without criteria.',
+        'Evidence needed: defined criteria and measurable comparisons.',
+        'Verify by separating opinion from claims and demanding metrics.',
+      ];
+    default:
+      return ['Needs a verifiable source trail before reuse.', 'Rewrite with uncertainty and add citations.'];
+  }
+}
+
 type Mode = 'A' | 'B';
 
 type EvidenceOutcomeType =
@@ -1459,7 +1533,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     setTimeLeft(roundSeconds);
     setCurrentCardIndex(0);
 
-    const count = mode === 'A' ? 10 : 11;
+    const count = mode === 'A' ? 5 : 11;
 
     // Make Boss strictly more dangerous than other (non-boss) pitfalls:
     // include exactly ONE "boss-tier" pitfall type per round when possible.
@@ -1467,14 +1541,14 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     const bossTierPitfalls = allPitfalls.filter((s) => !!s.type && BOSS_TYPES.has(s.type));
     const nonBossPitfalls = allPitfalls.filter((s) => !s.type || !BOSS_TYPES.has(s.type));
 
-    const pitCount = 5;
+    const pitCount = 3;
     const bossTierPick = bossTierPitfalls.length ? [bossTierPitfalls[0]] : [];
     const remainingPitfalls = nonBossPitfalls.slice(0, Math.max(0, pitCount - bossTierPick.length));
     const pitfalls = shuffle([...bossTierPick, ...remainingPitfalls]);
     const safe = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => !x.isPitfall && !x.isDecoySafe));
     const decoys = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => x.isDecoySafe));
 
-    const decoyCount = 2;
+    const decoyCount = 1;
     const safeCount = Math.max(0, count - pitCount - decoyCount);
 
     const pick = shuffle([...pitfalls.slice(0, pitCount), ...decoys.slice(0, decoyCount), ...safe.slice(0, safeCount)]);
@@ -2032,6 +2106,18 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                                         {isBoss ? 'BOSS • ' : ''}
                                         {severityLabel(p.severity)} • {formatType(p.type)}
                                       </Typography>
+                                      {p.reason && (
+                                        <Typography variant="caption" sx={{ color: '#444', display: 'block', mt: 0.75, lineHeight: 1.6 }}>
+                                          <b>Evidence:</b> {p.reason}
+                                        </Typography>
+                                      )}
+                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
+                                        {evidenceChecklistForSentence(p).map((line) => (
+                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
+                                            • {line}
+                                          </Typography>
+                                        ))}
+                                      </Stack>
                                     </Paper>
                                   );
                                 })}
@@ -2057,9 +2143,21 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                                   return (
                                     <Paper key={p.id} sx={{ p: 1.2, border: `2px solid ${isBoss ? '#ff1744' : p.severity === 'critical' ? '#f44336' : '#ff9800'}` }}>
                                       <Typography variant="body2" sx={{ fontWeight: 900 }}>{p.text}</Typography>
-                                      <Typography variant="caption" sx={{ color: '#444' }}>
-                                        <b>{isBoss ? 'BOSS' : severityLabel(p.severity)}</b> • {formatType(p.type)} — {p.reason}
+                                      <Typography variant="caption" sx={{ color: '#444', display: 'block' }}>
+                                        <b>{isBoss ? 'BOSS' : severityLabel(p.severity)}</b> • {formatType(p.type)}
                                       </Typography>
+                                      {p.reason && (
+                                        <Typography variant="caption" sx={{ color: '#444', display: 'block', mt: 0.75, lineHeight: 1.6 }}>
+                                          <b>Evidence:</b> {p.reason}
+                                        </Typography>
+                                      )}
+                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
+                                        {evidenceChecklistForSentence(p).map((line) => (
+                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
+                                            • {line}
+                                          </Typography>
+                                        ))}
+                                      </Stack>
                                     </Paper>
                                   );
                                 })}
@@ -2090,6 +2188,15 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                                         'Not a pitfall. Don’t over-flag low-impact sentences.'
                                       )}
                                     </Typography>
+                                    {p.isDecoySafe && (
+                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
+                                        {evidenceChecklistForSentence(p).map((line) => (
+                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
+                                            • {line}
+                                          </Typography>
+                                        ))}
+                                      </Stack>
+                                    )}
                                   </Paper>
                                 ))}
                               </Stack>
@@ -2124,6 +2231,21 @@ const Hallucinate: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [scenarioId, setScenarioId] = useState<string>(SCENARIOS[0].id);
   const [showGameIntro, setShowGameIntro] = useState(true);
+  const [showScenarioChat, setShowScenarioChat] = useState(false);
+  const selectedScenario = SCENARIOS.find((s) => s.id === scenarioId);
+  const chatAnchorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setShowScenarioChat(false);
+  }, [scenarioId]);
+
+  useEffect(() => {
+    if (!showScenarioChat) return;
+    const handle = window.setTimeout(() => {
+      chatAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(handle);
+  }, [showScenarioChat]);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
@@ -2148,7 +2270,7 @@ const Hallucinate: React.FC = () => {
           <Tab label="Learn Scenarios" />
           {/*<Tab label="Quiz" />*/}
           <Tab label="Training Game" />
-          <Tab label="Overview" />
+          {/*<Tab label="Overview" />*/}
         </Tabs>
       </Container>
 
@@ -2173,9 +2295,99 @@ const Hallucinate: React.FC = () => {
                   ))}
                 </Box>
               </Paper>
-              <Box sx={{ width: '100%' }}>
-                <InteractiveScenarioChat scenarioId={scenarioId} />
-              </Box>
+              {!showScenarioChat && (
+                <Card sx={{ boxShadow: 2, border: '1px solid #eee' }}>
+                  <CardHeader
+                    title={
+                      <Typography variant="h6" sx={{ fontWeight: 900 }}>
+                        Archive Briefing
+                      </Typography>
+                    }
+                  />
+                  <Divider />
+                  <CardContent>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 900,
+                      mt: 0.5,
+                      fontFamily: "Georgia, 'Times New Roman', serif",
+                      lineHeight: 1.15,
+                      mb: 1,
+                    }}
+                  >
+                    {selectedScenario?.background.headline}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      lineHeight: 1.8,
+                      mb: 2,
+                      fontFamily: "Georgia, 'Times New Roman', serif",
+                    }}
+                  >
+                    {selectedScenario?.background.dek}
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
+                    Newspaper Clippings
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mb: 2, alignItems: 'stretch' }}>
+                    {selectedScenario?.background.clippings.map((clip) => (
+                      <Grid key={`${clip.outlet}-${clip.date}`} size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
+                        <Paper
+                          sx={{
+                            flex: 1,
+                            height: '100%',
+                            p: 2,
+                            border: '1px solid #cfcfcf',
+                            background:
+                              'repeating-linear-gradient(0deg, #fbfbfb, #fbfbfb 24px, #f2f2f2 25px)',
+                            boxShadow: '0 6px 18px rgba(0,0,0,0.06)',
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
+                              <ArticleIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                              {clip.outlet}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              <CalendarIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                              {clip.date}
+                            </Typography>
+                          </Box>
+                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                            <PersonIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                            By {clip.byline}
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 900, mb: 0.75 }}>
+                            {clip.angle}
+                          </Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                            {clip.body}
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    {selectedScenario?.background.question}
+                  </Alert>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button variant="contained" onClick={() => setShowScenarioChat(true)} sx={{ fontWeight: 900 }}>
+                        Start the chat
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+              {showScenarioChat && (
+                <>
+                  <Box ref={chatAnchorRef} />
+                  <Box sx={{ width: '100%' }}>
+                    <InteractiveScenarioChat scenarioId={scenarioId} />
+                  </Box>
+                </>
+              )}
             </Stack>
           </Container>
         )}
@@ -2298,11 +2510,13 @@ const Hallucinate: React.FC = () => {
           </Container>
         )}
 
-        {tabValue === 2&& (
-          <Container maxWidth="lg" sx={{ py: 4 }}>
-            <OverviewSection />
-          </Container>
-        )}
+        {/*
+          {tabValue === 2 && (
+            <Container maxWidth="lg" sx={{ py: 4 }}>
+              <OverviewSection />
+            </Container>
+          )}
+        */}
       </Box>
     </Box>
   );
