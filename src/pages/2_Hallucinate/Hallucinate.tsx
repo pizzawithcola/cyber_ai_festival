@@ -199,6 +199,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   hallucination?: boolean;
+  why?: string;
 }
 
 interface SuggestedPrompt {
@@ -206,6 +207,7 @@ interface SuggestedPrompt {
   text: string;
   response: string;
   hallucination: boolean;
+  why?: string;
 }
 
 const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
@@ -216,6 +218,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         'JWST has made several groundbreaking discoveries. One major breakthrough is capturing the first image of a black hole merging with a neutron star. Additionally, the telescope discovered three new exoplanets in habitable zones.',
       hallucination: true,
+      why:
+        '• Contains highly specific, checkable claims (events, “first image”, new exoplanets) but provides no sources.\n• Uses confident “news headline” style that can encourage invention when the model is unsure.\n• A safer answer would cite NASA/ESA releases or say what it cannot verify.',
     },
     {
       label: 'Step 2: Ask for more "firsts"',
@@ -223,6 +227,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         'Absolutely! Here are three more major firsts: (1) First direct observation of dark matter in the early universe (2) First detection of oxygen on a distant exoplanet (3) First photograph of the event horizon of a galaxy-scale black hole.',
       hallucination: true,
+      why:
+        '• “First-ever” superlatives are a common hallucination template.\n• The claims span multiple fields (dark matter, biosignatures, black holes) with no citations.\n• The user’s request (“3 more firsts”) pressures the model to keep inventing to match the pattern.',
     },
     {
       label: 'Step 3: Request citations',
@@ -230,6 +236,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         'Of course. (1) Dark matter discovery - Smith et al., Nature Astronomy, March 2024, DOI: 10.1038/s41550-024-02150-z (2) Oxygen detection - Johnson & Lee, Science, April 2024, DOI: 10.1126/science.abn2355 ...',
       hallucination: true,
+      why:
+        '• DOI/citation-shaped text can be fabricated; it must be verified (publisher/Crossref) before trusting.\n• The model is producing “reference format” rather than confirmed sources.\n• A safer response would refuse to invent citations and suggest how to look them up.',
     },
   ],
   galactica: [
@@ -239,6 +247,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         'Recent advances in quantum error correction have enabled practical quantum computers to achieve quantum advantage in optimization problems. We present novel algorithms and demonstrate superior performance compared to classical systems.',
       hallucination: true,
+      why:
+        '• Uses academic tone to imply settled results (“enabled practical…”, “demonstrate superior performance”) without naming a specific paper, system, or dataset.\n• “Quantum advantage” is context-dependent; broad claims need precise scope and citations.\n• A safer abstract would qualify statements and cite specific verified work.',
     },
     {
       label: 'Step 2: Demand citations',
@@ -246,6 +256,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         '[1] Chen et al. (2024). "Scalable Quantum Advantage." Nature. DOI: 10.1038/s41586-024-07316-0\n[2] Kumar & Patel (2023). "Error Correction at Scale." Science. DOI: 10.1126/science.adn8834\n...',
       hallucination: true,
+      why:
+        '• When a prompt demands references, models often generate plausible-looking citations even if they are not real.\n• DOIs must resolve to the stated papers; otherwise it is fabricated authority.\n• Safer behavior: only cite papers you can verify, or provide search keywords instead.',
     },
     {
       label: 'Step 3: Ask for more references',
@@ -253,6 +265,8 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       response:
         '[6] Williams et al. (2024). "Quantum ML Integration." Nature Machine Intelligence. DOI: 10.1038/s42256-024-00812-x\n...',
       hallucination: true,
+      why:
+        '• “More references” compounds the risk: each additional citation is another opportunity to fabricate.\n• Without retrieval, the model cannot guarantee the papers exist.\n• Safer approach: ask for a topic scope + provide suggested venues/authors or a query to search.',
     },
   ],
 };
@@ -341,6 +355,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
         role: 'assistant',
         content: prompt.response,
         hallucination: prompt.hallucination,
+        why: prompt.hallucination ? prompt.why : undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
       setCurrentStepIndex((prev) => prev + 1);
@@ -521,6 +536,16 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                     <Typography variant="body2" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                       {msg.content}
                     </Typography>
+                    {msg.hallucination && msg.why && (
+                      <Box sx={{ mt: 1.1, pt: 1, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 900, color: '#b26a00', display: 'block', mb: 0.4 }}>
+                          Why this is a hallucination risk
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6b4e00', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                          {msg.why}
+                        </Typography>
+                      </Box>
+                    )}
                   </Paper>
                 </Box>
               ))}
@@ -1294,6 +1319,59 @@ function severityLabel(s: Exclude<Severity, 'boss'>) {
   return 'MEDIUM';
 }
 
+function evidenceChecklistForSentence(s: SentenceItem): string[] {
+  if (!s.isPitfall) {
+    if (s.isDecoySafe) {
+      return [
+        'Uses explicit uncertainty markers (“cannot verify”, “requires confirmation”).',
+        'Suggests a verification path instead of asserting facts.',
+      ];
+    }
+    return ['Avoids unverifiable specifics (exact dates, numbers, DOIs).', 'Keeps scope cautious and checkable.'];
+  }
+
+  switch (s.type) {
+    case 'CITATION_FABRICATION':
+      return [
+        'Citation/DOI-shaped text can be invented by a model.',
+        'Evidence needed: the DOI resolves to the stated paper (title/authors/year match).',
+        'Verify by searching the DOI on the publisher site or Crossref.',
+      ];
+    case 'OVERCLAIM_FIRST':
+      return [
+        '“First-ever” claims require strong proof and prior-art checking.',
+        'Evidence needed: multiple reputable sources confirming it is truly the first.',
+        'Verify by searching for earlier results and official announcements.',
+      ];
+    case 'UNVERIFIABLE_SPECIFIC':
+      return [
+        'Precise year/number without a source is a high-risk pattern.',
+        'Evidence needed: a primary source that states this exact milestone.',
+        'Verify by finding the original paper/press release and matching the wording.',
+      ];
+    case 'MISSING_SCOPE':
+      return [
+        'Overgeneralizes (“all”, “no exceptions”) without conditions.',
+        'Evidence needed: explicit scope (hardware, dataset, assumptions) and limitations.',
+        'Verify by asking for constraints and checking known counterexamples.',
+      ];
+    case 'AUTHORITY_TONE':
+      return [
+        'Uses absolute confidence (“conclusively”, “clearly”) without showing evidence.',
+        'Evidence needed: data + method + limitations to support the conclusion.',
+        'Verify by requesting citations; otherwise rewrite as tentative.',
+      ];
+    case 'MIXED_FACT_OPINION':
+      return [
+        'Mixes value judgment with facts (“ethical”, “superior”) without criteria.',
+        'Evidence needed: defined criteria and measurable comparisons.',
+        'Verify by separating opinion from claims and demanding metrics.',
+      ];
+    default:
+      return ['Needs a verifiable source trail before reuse.', 'Rewrite with uncertainty and add citations.'];
+  }
+}
+
 type Mode = 'A' | 'B';
 
 type EvidenceOutcomeType =
@@ -1455,7 +1533,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     setTimeLeft(roundSeconds);
     setCurrentCardIndex(0);
 
-    const count = mode === 'A' ? 10 : 11;
+    const count = mode === 'A' ? 5 : 11;
 
     // Make Boss strictly more dangerous than other (non-boss) pitfalls:
     // include exactly ONE "boss-tier" pitfall type per round when possible.
@@ -1463,14 +1541,14 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     const bossTierPitfalls = allPitfalls.filter((s) => !!s.type && BOSS_TYPES.has(s.type));
     const nonBossPitfalls = allPitfalls.filter((s) => !s.type || !BOSS_TYPES.has(s.type));
 
-    const pitCount = 5;
+    const pitCount = 3;
     const bossTierPick = bossTierPitfalls.length ? [bossTierPitfalls[0]] : [];
     const remainingPitfalls = nonBossPitfalls.slice(0, Math.max(0, pitCount - bossTierPick.length));
     const pitfalls = shuffle([...bossTierPick, ...remainingPitfalls]);
     const safe = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => !x.isPitfall && !x.isDecoySafe));
     const decoys = shuffle(NORMALIZED_SENTENCE_POOL.filter((x) => x.isDecoySafe));
 
-    const decoyCount = 2;
+    const decoyCount = 1;
     const safeCount = Math.max(0, count - pitCount - decoyCount);
 
     const pick = shuffle([...pitfalls.slice(0, pitCount), ...decoys.slice(0, decoyCount), ...safe.slice(0, safeCount)]);
@@ -2028,6 +2106,18 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                                         {isBoss ? 'BOSS • ' : ''}
                                         {severityLabel(p.severity)} • {formatType(p.type)}
                                       </Typography>
+                                      {p.reason && (
+                                        <Typography variant="caption" sx={{ color: '#444', display: 'block', mt: 0.75, lineHeight: 1.6 }}>
+                                          <b>Evidence:</b> {p.reason}
+                                        </Typography>
+                                      )}
+                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
+                                        {evidenceChecklistForSentence(p).map((line) => (
+                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
+                                            • {line}
+                                          </Typography>
+                                        ))}
+                                      </Stack>
                                     </Paper>
                                   );
                                 })}
@@ -2053,9 +2143,21 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                                   return (
                                     <Paper key={p.id} sx={{ p: 1.2, border: `2px solid ${isBoss ? '#ff1744' : p.severity === 'critical' ? '#f44336' : '#ff9800'}` }}>
                                       <Typography variant="body2" sx={{ fontWeight: 900 }}>{p.text}</Typography>
-                                      <Typography variant="caption" sx={{ color: '#444' }}>
-                                        <b>{isBoss ? 'BOSS' : severityLabel(p.severity)}</b> • {formatType(p.type)} — {p.reason}
+                                      <Typography variant="caption" sx={{ color: '#444', display: 'block' }}>
+                                        <b>{isBoss ? 'BOSS' : severityLabel(p.severity)}</b> • {formatType(p.type)}
                                       </Typography>
+                                      {p.reason && (
+                                        <Typography variant="caption" sx={{ color: '#444', display: 'block', mt: 0.75, lineHeight: 1.6 }}>
+                                          <b>Evidence:</b> {p.reason}
+                                        </Typography>
+                                      )}
+                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
+                                        {evidenceChecklistForSentence(p).map((line) => (
+                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
+                                            • {line}
+                                          </Typography>
+                                        ))}
+                                      </Stack>
                                     </Paper>
                                   );
                                 })}
@@ -2086,6 +2188,15 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                                         'Not a pitfall. Don’t over-flag low-impact sentences.'
                                       )}
                                     </Typography>
+                                    {p.isDecoySafe && (
+                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
+                                        {evidenceChecklistForSentence(p).map((line) => (
+                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
+                                            • {line}
+                                          </Typography>
+                                        ))}
+                                      </Stack>
+                                    )}
                                   </Paper>
                                 ))}
                               </Stack>
