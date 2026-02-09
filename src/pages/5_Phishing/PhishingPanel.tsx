@@ -13,13 +13,13 @@ const PhishingPanel: React.FC = () => {
         Phishing Panel
       </Typography>
       <Grid container spacing={2} sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'row', mb: 2 }}>
-        <Grid size={{ xs: 12, md: 5.8 }} sx={{ ml: 2 }}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`,}}>
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, ml: 3}}>
             <PhishingTarget />
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, md: 5.8 }} sx={{ mr: 2 }}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`,}}>
+        <Grid size={{ xs: 12, md: 7 }}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, mr: 3}}>
             <PhishingMailSpace />
           </Paper>
         </Grid>
