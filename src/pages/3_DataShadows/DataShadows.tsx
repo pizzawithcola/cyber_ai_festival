@@ -1,18 +1,8 @@
-import React from 'react';
-import {  
-  Typography, 
-  Box, 
-} from '@mui/material';
+import React from 'react'
+import RealApplePhone from './components/RealApplePhone'
 
 const DataShadows: React.FC = () => {
+  return <RealApplePhone />
+}
 
-  return (
-    <Box>
-      <Typography variant="h2" component="h1" gutterBottom>
-          This is Data Shadows Page
-      </Typography>
-    </Box>
-  );
-};
-
-export default DataShadows;
+export default DataShadows
