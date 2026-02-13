@@ -28,25 +28,31 @@ import {
   Timer as TimerIcon,
   Replay as ReplayIcon,
   Celebration as CelebrationIcon,
-  Whatshot as BossIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  InfoOutlined as InfoOutlinedIcon,
   Article as ArticleIcon,
   CalendarMonth as CalendarIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
 
-const PRIMARY_HEADER_GRADIENT = 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)';
-const PANEL_SHADOW = '0 18px 50px rgba(37, 52, 148, 0.12)';
-const PANEL_BORDER = '1px solid rgba(102, 126, 234, 0.16)';
-const PANEL_BODY_BACKGROUND = 'linear-gradient(180deg, #F5F7FF 0%, #FDFBFF 100%)';
+const NEON_CYAN = '#00ffd9';
+const NEON_PINK = '#ff2e93';
+const NEON_PURPLE = '#5b2eff';
+const NEON_BLUE = '#2ee3ff';
+const PRIMARY_HEADER_GRADIENT = `linear-gradient(135deg, ${NEON_PINK} 0%, ${NEON_PURPLE} 100%)`;
+const PANEL_SHADOW =
+  '0 0 0 1px rgba(0, 255, 217, 0.55), 0 18px 46px rgba(0, 255, 217, 0.18), 0 0 32px rgba(91, 46, 255, 0.2)';
+const PANEL_BORDER = '1px solid rgba(0, 255, 217, 0.6)';
+const PANEL_BODY_BACKGROUND =
+  'linear-gradient(180deg, rgba(7, 12, 28, 0.98) 0%, rgba(6, 10, 22, 0.98) 100%)';
 
 const panelCardSx = {
   width: '100%',
   boxShadow: PANEL_SHADOW,
   border: PANEL_BORDER,
   overflow: 'hidden',
-  backgroundColor: '#fff',
+  backgroundColor: 'rgba(8, 12, 26, 0.95)',
 } as const;
 
 const panelHeaderSx = {
@@ -194,6 +200,8 @@ const SCENARIOS: Scenario[] = [
   },
 ];
 
+const REQUIRED_SCENARIO_IDS = SCENARIOS.map((s) => s.id);
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -271,7 +279,13 @@ const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
   ],
 };
 
-function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
+function InteractiveScenarioChat({
+  scenarioId,
+  onComplete,
+}: {
+  scenarioId: string;
+  onComplete?: (id: string) => void;
+}) {
   const scenario = SCENARIOS.find((s) => s.id === scenarioId);
   const prompts = SCENARIO_PROMPTS[scenarioId] || [];
 
@@ -290,6 +304,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
   const [safeStepIndex, setSafeStepIndex] = useState(0);
   const [safeSteps, setSafeSteps] = useState<Array<ChatMessage>>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [completeAcknowledged, setCompleteAcknowledged] = useState(false);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -311,13 +326,21 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
     setIsWaitingReply(false);
     setSafeStepIndex(0);
     setSafeSteps([]);
+    setCompleteAcknowledged(false);
   }, [scenarioId, scenario?.title]);
 
   if (!scenario) return null;
   const scenarioCompleted = prompts.length > 0 && currentStepIndex >= prompts.length;
   const showOverview = scenarioCompleted && isOverviewVisible && !saferRewriteUsed;
   const showInteractive = !showOverview;
-  const CHAT_PANEL_HEIGHT = { xs: 640, md: 740 };
+  const CHAT_PANEL_HEIGHT = { xs: 760, md: 860 };
+  const isScenarioCompleteReady = scenarioCompleted && (saferRewriteUsed || isOverviewVisible);
+
+  const handleScenarioComplete = () => {
+    if (completeAcknowledged) return;
+    setCompleteAcknowledged(true);
+    onComplete?.(scenario.id);
+  };
 
   const handleNextStep = () => {
     if (isWaitingReply) return;
@@ -437,8 +460,8 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               maxHeight: CHAT_PANEL_HEIGHT,
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 18px 50px rgba(37, 52, 148, 0.12)',
-              border: '1px solid rgba(102, 126, 234, 0.16)',
+              boxShadow: PANEL_SHADOW,
+              border: PANEL_BORDER,
               overflow: 'hidden',
             }}
           >
@@ -471,7 +494,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                 </Box>
               }
               sx={{
-                background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
+                background: PRIMARY_HEADER_GRADIENT,
                 color: '#fff',
                 pb: 2,
                 '& .MuiCardHeader-content': { minWidth: 0 },
@@ -488,7 +511,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 2,
-                background: 'linear-gradient(180deg, #F5F7FF 0%, #FDFBFF 100%)',
+                background: PANEL_BODY_BACKGROUND,
                 pt: 2.5,
               }}
             >
@@ -506,29 +529,34 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                     sx={{
                       width: 32,
                       height: 32,
-                      fontSize: '0.72rem',
+                      fontSize: '1.1rem',
                       fontWeight: 900,
-                      bgcolor: msg.role === 'user' ? '#4f6bdc' : '#8e6ccf',
+                      bgcolor: msg.role === 'user' ? 'rgba(0, 255, 217, 0.9)' : 'rgba(255, 46, 147, 0.9)',
+                      color: '#031017',
                       flexShrink: 0,
                     }}
                   >
-                    {msg.role === 'user' ? 'You' : 'AI'}
+                    {msg.role === 'user' ? '🧑‍🚀' : '👾'}
                   </Avatar>
                   <Paper
                     sx={{
                       p: 2,
                       width: msg.role === 'user' ? { xs: '72%', sm: '58%' } : { xs: '88%', sm: '78%' },
                       maxWidth: { xs: '88%', sm: '78%' },
-                      backgroundColor: msg.role === 'user' ? '#667eea' : msg.hallucination ? '#fff3cd' : '#fff',
-                      color: msg.role === 'user' ? '#fff' : '#000',
+                      backgroundColor: msg.role === 'user'
+                        ? 'rgba(0, 255, 217, 0.15)'
+                        : msg.hallucination
+                        ? 'rgba(255, 171, 64, 0.12)'
+                        : 'rgba(9, 16, 30, 0.9)',
+                      color: msg.role === 'user' ? '#eaffff' : '#f2fbff',
                       borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                      border: msg.hallucination ? '2px solid #ff9800' : '1px solid rgba(0,0,0,0.05)',
+                      border: msg.hallucination ? '2px solid rgba(255, 171, 64, 0.9)' : '1px solid rgba(0, 255, 217, 0.25)',
                     }}
                   >
                     {msg.hallucination && (
                       <Typography
                         variant="caption"
-                        sx={{ fontWeight: 900, color: '#ff9800', display: 'block', mb: 0.7 }}
+                        sx={{ fontWeight: 900, color: '#ffb74d', display: 'block', mb: 0.7 }}
                       >
                         ⚠️ Hallucination detected
                       </Typography>
@@ -537,7 +565,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                       {msg.content}
                     </Typography>
                     {msg.hallucination && msg.why && (
-                      <Box sx={{ mt: 1.1, pt: 1, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+                      <Box sx={{ mt: 1.1, pt: 1, borderTop: '1px solid rgba(255, 171, 64, 0.4)' }}>
                         <Typography variant="caption" sx={{ fontWeight: 900, color: '#b26a00', display: 'block', mb: 0.4 }}>
                           Why this is a hallucination risk
                         </Typography>
@@ -555,13 +583,22 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               <Button
                 fullWidth
                 variant="contained"
-                onClick={handleNextStep}
-                disabled={isWaitingReply || (scenarioCompleted && safeSteps.length === 0 && (saferRewriteUsed || isOverviewVisible))}
+                onClick={() => {
+                  if (isScenarioCompleteReady && safeSteps.length === 0) {
+                    handleScenarioComplete();
+                    return;
+                  }
+                  handleNextStep();
+                }}
+                disabled={isWaitingReply || (isScenarioCompleteReady && safeSteps.length === 0 && completeAcknowledged)}
                 sx={{
                   fontWeight: 900,
-                  background: 'linear-gradient(135deg, #536DFE 0%, #7C4DFF 100%)',
-                  boxShadow: '0 10px 24px rgba(83, 109, 254, 0.35)',
-                  '&:hover': { background: 'linear-gradient(135deg, #4B63E9 0%, #6A3CFF 100%)' },
+                  background: PRIMARY_HEADER_GRADIENT,
+                  boxShadow: '0 0 0 1px rgba(0, 255, 217, 0.6), 0 12px 26px rgba(0, 255, 217, 0.32)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #00ffd9 0%, #ff2e93 100%)',
+                    boxShadow: '0 0 0 1px rgba(255, 46, 147, 0.7), 0 14px 32px rgba(255, 46, 147, 0.35)',
+                  },
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -569,7 +606,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                   ? 'Next (safe)'
                   : scenarioCompleted && !saferRewriteUsed && !isOverviewVisible
                   ? 'Next → Scenario Overview'
-                  : scenarioCompleted
+                  : isScenarioCompleteReady
                   ? '✓ Scenario Complete'
                   : isWaitingReply
                   ? '...'
@@ -596,7 +633,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
             <CardHeader
               title="📌 Scenario Overview"
               sx={{
-                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                background: 'linear-gradient(135deg, #ff2e93 0%, #5b2eff 100%)',
                 color: '#fff',
                 py: 1,
                 px: 2,
@@ -616,7 +653,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
               }}
             >
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#f5576c' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#ff2e93' }}>
                     What happened
                   </Typography>
                   <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
@@ -664,7 +701,7 @@ function InteractiveScenarioChat({ scenarioId }: { scenarioId: string }) {
                     sx={{
                       mt: 1.2,
                       fontWeight: 900,
-                      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                      background: `linear-gradient(135deg, ${NEON_CYAN} 0%, ${NEON_BLUE} 100%)`,
                     }}
                   >
                     {saferRewriteUsed ? '✓ Used' : '📤 Inject safer prompt into chat'}
@@ -764,7 +801,7 @@ function MiniQuiz() {
             </Typography>
           </Box>
         }
-        sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fff', pb: 2 }}
+        sx={{ background: 'linear-gradient(135deg, #ff2e93 0%, #00ffd9 100%)', color: '#fff', pb: 2 }}
       />
       <Divider />
       <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -777,7 +814,7 @@ function MiniQuiz() {
             <Box key={q.id} sx={{ p: 2, borderRadius: 2, backgroundColor: '#fafafa', border: '1px solid #eee' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.2 }}>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#fa709a' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#ff2e93' }}>
                     Question {idx + 1}
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.6 }}>
@@ -808,8 +845,8 @@ function MiniQuiz() {
                         justifyContent: 'flex-start',
                         textAlign: 'left',
                         fontWeight: 900,
-                        backgroundColor: chosen ? '#fa709a' : 'transparent',
-                        borderColor: chosen ? '#fa709a' : '#ddd',
+                        backgroundColor: chosen ? '#ff2e93' : 'transparent',
+                        borderColor: chosen ? '#ff2e93' : 'rgba(0, 255, 217, 0.35)',
                         color: chosen ? '#fff' : '#333',
                       }}
                     >
@@ -831,7 +868,7 @@ function MiniQuiz() {
           );
         })}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderRadius: 2, background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fff' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderRadius: 2, background: 'linear-gradient(135deg, #ff2e93 0%, #00ffd9 100%)', color: '#fff' }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
             📊 Your Score
           </Typography>
@@ -870,7 +907,7 @@ function OverviewSection() {
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#667eea' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: NEON_BLUE }}>
                   ⚠️ What is AI Hallucination?
                 </Typography>
                 <Typography variant="body1" sx={{ lineHeight: 1.8, mb: 2 }}>
@@ -883,7 +920,7 @@ function OverviewSection() {
               </Box>
 
               <Box sx={{ mt: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#f5576c' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, color: '#ff2e93' }}>
                   🎯 Common Hallucination Patterns
                 </Typography>
                 <Stack spacing={1.5}>
@@ -1071,7 +1108,7 @@ function OverviewSection() {
         <CardHeader
           title="🎯 Key Takeaways for Safe AI Usage"
           sx={{
-            background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            background: 'linear-gradient(135deg, #ff2e93 0%, #00ffd9 100%)',
             color: '#fff',
             pb: 2,
             '& .MuiCardHeader-content': { minWidth: 0 },
@@ -1080,8 +1117,8 @@ function OverviewSection() {
         <CardContent sx={{ background: PANEL_BODY_BACKGROUND }}>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2, height: '100%', border: '2px solid #667eea' }}>
-                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#667eea' }}>For Users</Typography>
+              <Paper sx={{ p: 2, height: '100%', border: `2px solid ${NEON_BLUE}` }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: NEON_BLUE }}>For Users</Typography>
                 <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
                   • Always verify critical claims before trusting them<br/>
                   • Be suspicious of confident, specific claims without sources<br/>
@@ -1091,8 +1128,8 @@ function OverviewSection() {
               </Paper>
             </Grid>
             <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2, height: '100%', border: '2px solid #4facfe' }}>
-                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#4facfe' }}>For Developers</Typography>
+              <Paper sx={{ p: 2, height: '100%', border: '2px solid #00ffd9' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#00ffd9' }}>For Developers</Typography>
                 <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
                   • Implement RAG for fact-sensitive applications<br/>
                   • Add verification layers for critical outputs<br/>
@@ -1102,8 +1139,8 @@ function OverviewSection() {
               </Paper>
             </Grid>
             <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2, height: '100%', border: '2px solid #fa709a' }}>
-                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#fa709a' }}>For Organizations</Typography>
+              <Paper sx={{ p: 2, height: '100%', border: '2px solid #ff2e93' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: '#ff2e93' }}>For Organizations</Typography>
                 <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
                   • Establish verification workflows for AI outputs<br/>
                   • Train employees to recognize hallucination patterns<br/>
@@ -1519,10 +1556,10 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
   const [flagLogKeys, setFlagLogKeys] = useState<Record<string, string>>({});
 
   const [bossId, setBossId] = useState<string | null>(null);
-  const [bossMissed, setBossMissed] = useState(false);
   const [flash, setFlash] = useState(false);
 
   const [showResults, setShowResults] = useState(false);
+  const [resultPage, setResultPage] = useState<'summary' | 'correct' | 'wrong' | 'complete'>('summary');
 
   const pitfallIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall).map((s) => s.id)), [sentences]);
   const criticalIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall && s.severity === 'critical').map((s) => s.id)), [sentences]);
@@ -1566,6 +1603,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     setAskStates({});
     setRewriteStates({});
     setFlagLogKeys({});
+    setResultPage('summary');
 
     const bossCandidates = pick.filter((s) => s.isPitfall && !!s.type && BOSS_TYPES.has(s.type));
     const crit = pick.filter((s) => s.isPitfall && s.severity === 'critical');
@@ -1576,7 +1614,6 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     const bossPick = pool[Math.floor(Math.random() * Math.max(1, pool.length))];
     setBossId(bossPick?.id ?? null);
 
-    setBossMissed(false);
     setFlash(false);
   };
 
@@ -1593,7 +1630,6 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     const selectedMap = finalSelected ?? selected;
     const flaggedIds = new Set(Object.entries(selectedMap).filter(([, v]) => v).map(([k]) => k));
     const missedBoss = bossId ? !flaggedIds.has(bossId) : false;
-    setBossMissed(missedBoss);
 
     if (missedBoss) {
       setFlash(true);
@@ -1603,6 +1639,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
     }
 
     setShowResults(true);
+    setResultPage('summary');
   }, [bossId, selected]);
 
   useEffect(() => {
@@ -1941,6 +1978,14 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
   const accuracy = sentences.length === 0 ? 0 : Math.round(((resultPitfalls.correct.length + resultPitfalls.correctPass.length) / sentences.length) * 100);
   const activeCard = sentences[currentCardIndex];
   const progressPct = sentences.length === 0 ? 0 : (answeredCount / sentences.length) * 100;
+  const feedback = accuracy >= 80 ? 'Well done' : accuracy < 40 ? 'Almost there' : 'Keep going';
+  const feedbackDetail =
+    accuracy >= 80
+      ? 'Strong accuracy. You are consistently catching high-risk lines.'
+      : accuracy < 40
+      ? 'Good start. Focus on exact numbers, citations, and “first-ever” claims.'
+      : 'Solid progress. Tighten checks on scope and evidence cues.';
+  const feedbackColor = accuracy >= 80 ? '#2ecc71' : accuracy < 40 ? '#ffb74d' : '#00c2ff';
 
   return (
     <Card sx={panelCardSx}>
@@ -1969,11 +2014,11 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                   }}
                 />
                 <Chip
-                  icon={showResults && !bossMissed ? <CelebrationIcon /> : <BossIcon />}
-                  label={showResults ? (bossMissed ? 'Boss missed' : 'Boss cleared') : 'Boss hidden'}
+                  icon={<CelebrationIcon />}
+                  label={showResults ? 'Round complete' : 'In progress'}
                   sx={{
                     color: '#fff',
-                    backgroundColor: showResults && !bossMissed ? 'rgba(46,204,113,0.28)' : 'rgba(255,87,87,0.24)',
+                    backgroundColor: showResults ? 'rgba(46,204,113,0.28)' : 'rgba(0, 255, 217, 0.22)',
                     fontWeight: 900,
                   }}
                 />
@@ -2031,7 +2076,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
 
                 {isRunning && activeCard && (
                   <Stack spacing={1.25}>
-                    <Paper sx={{ p: 1.2, border: '2px solid #667eea', borderRadius: 2, backgroundColor: '#f7f8ff' }}>
+                    <Paper sx={{ p: 1.2, border: `2px solid ${NEON_BLUE}`, borderRadius: 2, backgroundColor: 'rgba(0, 255, 217, 0.08)' }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5, mb: 1.2 }}>
                         <Chip label={`Card ${currentCardIndex + 1} / ${sentences.length}`} sx={{ fontWeight: 900, backgroundColor: '#eef2ff' }} />
                       </Box>
@@ -2068,96 +2113,162 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
 
                 {showResults && (
                   <Box sx={{ mt: 2 }}>
-                    {bossMissed ? (
-                      <Alert severity="error" sx={{ animation: 'bossBoom 420ms ease-out 1' }}>
-                        <AlertTitle sx={{ fontWeight: 900 }}>💥 Boss missed</AlertTitle>
-                        You missed the hidden <b>Boss sentence</b>. In real work, missing this can break the whole output.
-                      </Alert>
-                    ) : (
-                      <Alert severity="success" icon={<CelebrationIcon fontSize="inherit" />}>
-                        <AlertTitle sx={{ fontWeight: 900 }}>Boss handled</AlertTitle>
-                        You caught the hidden Boss sentence. That’s the core skill: protect the output by catching the highest-impact risk.
-                      </Alert>
+                    {resultPage === 'summary' && (
+                      <Stack spacing={2}>
+                        <Paper
+                          sx={{
+                            p: 2,
+                            border: `1px solid ${NEON_CYAN}`,
+                            background:
+                              'linear-gradient(135deg, rgba(0, 255, 217, 0.12), rgba(46, 227, 255, 0.06))',
+                            boxShadow: '0 0 18px rgba(0, 255, 217, 0.2)',
+                          }}
+                        >
+                          <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#eaffff', mb: 0.75 }}>
+                            Round complete
+                          </Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 900, color: NEON_CYAN, mb: 0.75 }}>
+                            Score {score}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#d7f2ff', lineHeight: 1.7 }}>
+                            Accuracy <b>{accuracy}%</b> • Max combo <b>{maxCombo}</b> • Safe passes{' '}
+                            <b>{resultPitfalls.correctPass.length}</b> • Unanswered <b>{resultPitfalls.unanswered.length}</b>
+                          </Typography>
+                        </Paper>
+
+                        <Paper
+                          sx={{
+                            p: 2,
+                            border: `1px solid ${feedbackColor}`,
+                            backgroundColor: 'rgba(0, 255, 217, 0.08)',
+                          }}
+                        >
+                          <Typography variant="subtitle2" sx={{ fontWeight: 900, color: feedbackColor }}>
+                            {feedback}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#d7f2ff' }}>
+                            {feedbackDetail}
+                          </Typography>
+                        </Paper>
+                      </Stack>
                     )}
 
-                    <Alert severity="info" sx={{ mt: 1 }}>
-                      <AlertTitle sx={{ fontWeight: 900 }}>Round complete</AlertTitle>
-                      Score <b>{score}</b> • Accuracy <b>{accuracy}%</b> • Max combo <b>{maxCombo}</b> • Safe passes <b>{resultPitfalls.correctPass.length}</b> • Unanswered <b>{resultPitfalls.unanswered.length}</b>
-                    </Alert>
-
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
-                          <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>✅ Correct pitfalls you flagged</Typography>} />
-                          <Divider />
-                          <CardContent sx={{ pt: 2 }}>
-                            {resultPitfalls.correct.length === 0 ? (
-                              <Typography variant="body2" color="textSecondary">
-                                None. Focus on <b>exact numbers</b>, <b>“first-ever”</b>, and <b>DOIs</b>.
-                              </Typography>
-                            ) : (
-                              <Stack spacing={1}>
-                                {resultPitfalls.correct.map((p) => {
-                                  const isBoss = bossId === p.id;
-                                  return (
-                                    <Paper key={p.id} sx={{ p: 1.2, border: isBoss ? '2px solid #ff1744' : undefined }}>
-                                      <Typography variant="body2" sx={{ fontWeight: 900 }}>{p.text}</Typography>
-                                      <Typography variant="caption" color="textSecondary">
-                                        {isBoss ? 'BOSS • ' : ''}
-                                        {severityLabel(p.severity)} • {formatType(p.type)}
-                                      </Typography>
+                    {resultPage === 'correct' && (
+                      <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
+                        <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>✅ Correct pitfalls you flagged</Typography>} />
+                        <Divider />
+                        <CardContent sx={{ pt: 2 }}>
+                          {resultPitfalls.correct.length === 0 ? (
+                            <Typography variant="body2" color="textSecondary">
+                              None yet. Watch <b>exact numbers</b>, <b>“first-ever”</b>, and <b>DOIs</b>.
+                            </Typography>
+                          ) : (
+                            <Stack spacing={1}>
+                              {resultPitfalls.correct.map((p) => {
+                                return (
+                                  <Paper key={p.id} sx={{ p: 1.2 }}>
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontWeight: 900,
+                                        color: '#eaffff',
+                                        letterSpacing: '0.2px',
+                                        backgroundColor: 'rgba(0, 255, 217, 0.08)',
+                                        border: '1px solid rgba(0, 255, 217, 0.35)',
+                                        borderRadius: 1,
+                                        px: 1,
+                                        py: 0.4,
+                                        display: 'inline-block',
+                                        fontFamily: p.type === 'CITATION_FABRICATION' ? "'VT323', 'Courier New', monospace" : undefined,
+                                      }}
+                                    >
+                                      {p.text}
+                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        mt: 0.9,
+                                        p: 0.9,
+                                        borderRadius: 1,
+                                        border: '1px solid rgba(91, 46, 255, 0.35)',
+                                        backgroundColor: 'rgba(91, 46, 255, 0.08)',
+                                      }}
+                                    >
                                       {p.reason && (
-                                        <Typography variant="caption" sx={{ color: '#444', display: 'block', mt: 0.75, lineHeight: 1.6 }}>
-                                          <b>Evidence:</b> {p.reason}
+                                        <Typography variant="caption" sx={{ color: '#cdd9ff', display: 'block', lineHeight: 1.4 }}>
+                                          {p.reason}
                                         </Typography>
                                       )}
-                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
+                                      <Stack spacing={0.25} sx={{ mt: p.reason ? 0.5 : 0 }}>
                                         {evidenceChecklistForSentence(p).map((line) => (
-                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
+                                          <Typography key={line} variant="caption" sx={{ color: '#c7d3ff', lineHeight: 1.5, display: 'block' }}>
                                             • {line}
                                           </Typography>
                                         ))}
                                       </Stack>
-                                    </Paper>
-                                  );
-                                })}
-                              </Stack>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Grid>
+                                    </Box>
+                                  </Paper>
+                                );
+                              })}
+                            </Stack>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
 
-                      <Grid size={{ xs: 12, md: 6 }}>
+                    {resultPage === 'wrong' && (
+                      <Stack spacing={2}>
                         <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
                           <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>⚠️ Missed pitfalls</Typography>} />
                           <Divider />
                           <CardContent sx={{ pt: 2 }}>
                             {resultPitfalls.missed.length === 0 ? (
                               <Typography variant="body2" color="textSecondary">
-                                Great — you didn’t miss any pitfall sentence.
+                                Great — no missed pitfalls.
                               </Typography>
                             ) : (
                               <Stack spacing={1}>
                                 {resultPitfalls.missed.map((p) => {
-                                  const isBoss = bossId === p.id;
                                   return (
-                                    <Paper key={p.id} sx={{ p: 1.2, border: `2px solid ${isBoss ? '#ff1744' : p.severity === 'critical' ? '#f44336' : '#ff9800'}` }}>
-                                      <Typography variant="body2" sx={{ fontWeight: 900 }}>{p.text}</Typography>
-                                      <Typography variant="caption" sx={{ color: '#444', display: 'block' }}>
-                                        <b>{isBoss ? 'BOSS' : severityLabel(p.severity)}</b> • {formatType(p.type)}
+                                    <Paper key={p.id} sx={{ p: 1.2, border: `2px solid ${p.severity === 'critical' ? '#f44336' : '#ff9800'}` }}>
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontWeight: 900,
+                                          color: '#eaffff',
+                                          letterSpacing: '0.2px',
+                                          backgroundColor: 'rgba(0, 255, 217, 0.08)',
+                                          border: '1px solid rgba(0, 255, 217, 0.35)',
+                                          borderRadius: 1,
+                                          px: 1,
+                                          py: 0.4,
+                                          display: 'inline-block',
+                                          fontFamily: p.type === 'CITATION_FABRICATION' ? "'VT323', 'Courier New', monospace" : undefined,
+                                        }}
+                                      >
+                                        {p.text}
                                       </Typography>
-                                      {p.reason && (
-                                        <Typography variant="caption" sx={{ color: '#444', display: 'block', mt: 0.75, lineHeight: 1.6 }}>
-                                          <b>Evidence:</b> {p.reason}
-                                        </Typography>
-                                      )}
-                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
-                                        {evidenceChecklistForSentence(p).map((line) => (
-                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
-                                            • {line}
+                                      <Box
+                                        sx={{
+                                          mt: 0.9,
+                                          p: 0.9,
+                                          borderRadius: 1,
+                                          border: '1px solid rgba(91, 46, 255, 0.35)',
+                                          backgroundColor: 'rgba(91, 46, 255, 0.08)',
+                                        }}
+                                      >
+                                        {p.reason && (
+                                          <Typography variant="caption" sx={{ color: '#cdd9ff', display: 'block', lineHeight: 1.4 }}>
+                                            {p.reason}
                                           </Typography>
-                                        ))}
-                                      </Stack>
+                                        )}
+                                        <Stack spacing={0.25} sx={{ mt: p.reason ? 0.5 : 0 }}>
+                                          {evidenceChecklistForSentence(p).map((line) => (
+                                            <Typography key={line} variant="caption" sx={{ color: '#c7d3ff', lineHeight: 1.5, display: 'block' }}>
+                                              • {line}
+                                            </Typography>
+                                          ))}
+                                        </Stack>
+                                      </Box>
                                     </Paper>
                                   );
                                 })}
@@ -2166,7 +2277,7 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                           </CardContent>
                         </Card>
 
-                        <Card sx={{ mt: 2, boxShadow: 0, border: '1px solid #eee' }}>
+                        <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
                           <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>🧨 False positives</Typography>} />
                           <Divider />
                           <CardContent sx={{ pt: 2 }}>
@@ -2178,39 +2289,113 @@ function TrainingArena({ autoStart = false }: { autoStart?: boolean }) {
                               <Stack spacing={1}>
                                 {resultPitfalls.falsePos.map((p) => (
                                   <Paper key={p.id} sx={{ p: 1.2, border: p.isDecoySafe ? '2px solid #00bcd4' : undefined }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 900 }}>{p.text}</Typography>
-                                    <Typography variant="caption" sx={{ color: '#444' }}>
-                                      {p.isDecoySafe ? (
-                                        <>
-                                          <b>Decoy (safe)</b> — cautious language is often GOOD. {p.reason}
-                                        </>
-                                      ) : (
-                                        'Not a pitfall. Don’t over-flag low-impact sentences.'
-                                      )}
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontWeight: 900,
+                                        color: '#eaffff',
+                                        letterSpacing: '0.2px',
+                                        backgroundColor: 'rgba(0, 255, 217, 0.08)',
+                                        border: '1px solid rgba(0, 255, 217, 0.35)',
+                                        borderRadius: 1,
+                                        px: 1,
+                                        py: 0.4,
+                                        display: 'inline-block',
+                                        fontFamily: p.type === 'CITATION_FABRICATION' ? "'VT323', 'Courier New', monospace" : undefined,
+                                      }}
+                                    >
+                                      {p.text}
                                     </Typography>
-                                    {p.isDecoySafe && (
-                                      <Stack spacing={0.25} sx={{ mt: 0.75 }}>
-                                        {evidenceChecklistForSentence(p).map((line) => (
-                                          <Typography key={line} variant="caption" sx={{ color: '#555', lineHeight: 1.5, display: 'block' }}>
-                                            • {line}
-                                          </Typography>
-                                        ))}
-                                      </Stack>
-                                    )}
+                                    <Box
+                                      sx={{
+                                        mt: 0.9,
+                                        p: 0.9,
+                                        borderRadius: 1,
+                                        border: '1px solid rgba(91, 46, 255, 0.35)',
+                                        backgroundColor: 'rgba(91, 46, 255, 0.08)',
+                                      }}
+                                    >
+                                      <Typography variant="caption" sx={{ color: '#cdd9ff', display: 'block', lineHeight: 1.4 }}>
+                                        {p.isDecoySafe ? 'Decoy (safe) — cautious language is good.' : 'Not a pitfall. Avoid over-flagging.'}
+                                      </Typography>
+                                      {p.isDecoySafe && (
+                                        <Stack spacing={0.25} sx={{ mt: 0.5 }}>
+                                          {evidenceChecklistForSentence(p).map((line) => (
+                                            <Typography key={line} variant="caption" sx={{ color: '#c7d3ff', lineHeight: 1.5, display: 'block' }}>
+                                              • {line}
+                                            </Typography>
+                                          ))}
+                                        </Stack>
+                                      )}
+                                    </Box>
                                   </Paper>
                                 ))}
                               </Stack>
                             )}
                           </CardContent>
                         </Card>
-                      </Grid>
-                    </Grid>
+                      </Stack>
+                    )}
 
-                    <Box sx={{ mt: 2 }}>
-                      <Button variant="contained" startIcon={<ReplayIcon />} onClick={initRound} sx={{ fontWeight: 900, background: PRIMARY_HEADER_GRADIENT }}>
-                        Play again 
-                      </Button>
-                    </Box>
+                    {resultPage === 'complete' && (
+                      <Card
+                        sx={{
+                          boxShadow: 0,
+                          border: `1px solid ${NEON_CYAN}`,
+                          background:
+                            'linear-gradient(135deg, rgba(0, 255, 217, 0.12), rgba(255, 46, 147, 0.08))',
+                        }}
+                      >
+                        <CardHeader
+                          title={
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
+                              🏁 Chapter Complete
+                            </Typography>
+                          }
+                        />
+                        <Divider />
+                        <CardContent sx={{ pt: 2 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 900, mb: 1, color: NEON_CYAN }}>
+                            Congratulations!
+                          </Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                            You&apos;ve completed all content in this chapter. Your training run is now logged as a clear win.
+                          </Typography>
+                          <Paper
+                            sx={{
+                              mt: 2,
+                              p: 1.2,
+                              border: `1px solid ${NEON_PINK}`,
+                              backgroundColor: 'rgba(255, 46, 147, 0.08)',
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ display: 'block', fontWeight: 900, color: NEON_PINK }}>
+                              MISSION STATUS: COMPLETE
+                            </Typography>
+                          </Paper>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {resultPage !== 'complete' && (
+                      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                          variant="contained"
+                          onClick={() =>
+                            setResultPage(
+                              resultPage === 'summary'
+                                ? 'correct'
+                                : resultPage === 'correct'
+                                ? 'wrong'
+                                : 'complete'
+                            )
+                          }
+                          sx={{ fontWeight: 900 }}
+                        >
+                          Next
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
                 )}
 
@@ -2232,8 +2417,152 @@ const Hallucinate: React.FC = () => {
   const [scenarioId, setScenarioId] = useState<string>(SCENARIOS[0].id);
   const [showGameIntro, setShowGameIntro] = useState(true);
   const [showScenarioChat, setShowScenarioChat] = useState(false);
+  const [completedScenarioIds, setCompletedScenarioIds] = useState<Set<string>>(new Set());
   const selectedScenario = SCENARIOS.find((s) => s.id === scenarioId);
   const chatAnchorRef = useRef<HTMLDivElement>(null);
+  const allScenariosCompleted = useMemo(
+    () => REQUIRED_SCENARIO_IDS.every((id) => completedScenarioIds.has(id)),
+    [completedScenarioIds]
+  );
+  const scenarioProgressLabel = `${completedScenarioIds.size}/${REQUIRED_SCENARIO_IDS.length}`;
+
+  const arcadeFontCss = `
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+  `;
+
+  const arcadeSx = {
+    position: 'relative',
+    color: '#f2fbff',
+    backgroundColor: '#050710',
+    backgroundImage:
+      'radial-gradient(circle at 15% 10%, rgba(255, 46, 147, 0.28), transparent 45%), radial-gradient(circle at 85% 18%, rgba(0, 255, 217, 0.22), transparent 50%), radial-gradient(circle at 50% 80%, rgba(91, 46, 255, 0.22), transparent 55%), linear-gradient(180deg, rgba(6, 10, 24, 0.99), rgba(5, 7, 16, 0.99))',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
+      backgroundSize: '100% 4px',
+      opacity: 0.4,
+      pointerEvents: 'none',
+    },
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      backgroundImage:
+        'linear-gradient(90deg, rgba(0, 255, 217, 0.08) 1px, transparent 1px), linear-gradient(0deg, rgba(0, 255, 217, 0.06) 1px, transparent 1px)',
+      backgroundSize: '22px 22px',
+      opacity: 0.15,
+      pointerEvents: 'none',
+    },
+    '@keyframes neonPulse': {
+      '0%': { filter: 'drop-shadow(0 0 6px rgba(0, 255, 217, 0.25))' },
+      '50%': { filter: 'drop-shadow(0 0 14px rgba(255, 46, 147, 0.4))' },
+      '100%': { filter: 'drop-shadow(0 0 6px rgba(0, 255, 217, 0.25))' },
+    },
+    '& .MuiTypography-root': {
+      fontFamily: "'VT323', 'Courier New', monospace",
+      color: '#f2fbff',
+      letterSpacing: '0.3px',
+      lineHeight: 1.65,
+      textShadow: '0 1px 0 rgba(0,0,0,0.35)',
+    },
+    '& .MuiTypography-h4, & .MuiTypography-h5, & .MuiTypography-h6, & .MuiTypography-subtitle1, & .MuiTypography-subtitle2': {
+      fontFamily: "'Press Start 2P', 'VT323', monospace",
+      textTransform: 'uppercase',
+    },
+    '& .MuiTypography-h4': {
+      fontSize: { xs: '1.55rem', sm: '1.9rem' },
+      lineHeight: 1.3,
+      letterSpacing: '0.6px',
+    },
+    '& .MuiTypography-h5': {
+      fontSize: { xs: '1.25rem', sm: '1.45rem' },
+      lineHeight: 1.4,
+      letterSpacing: '0.5px',
+    },
+    '& .MuiTypography-h6': {
+      fontSize: { xs: '1.1rem', sm: '1.28rem' },
+      lineHeight: 1.45,
+      letterSpacing: '0.45px',
+    },
+    '& .MuiTypography-body1': {
+      fontSize: { xs: '1.2rem', sm: '1.32rem' },
+    },
+    '& .MuiTypography-body2': {
+      fontSize: { xs: '1.15rem', sm: '1.26rem' },
+    },
+    '& .MuiTypography-caption': {
+      fontSize: '1.05rem',
+      opacity: 0.92,
+    },
+    '& .MuiTypography-colorTextSecondary': {
+      color: 'rgba(190, 230, 247, 0.88)',
+    },
+    '& .MuiCard-root, & .MuiPaper-root': {
+      backgroundColor: 'rgba(8, 12, 26, 0.95) !important',
+      border: '1px solid rgba(0, 255, 217, 0.5) !important',
+      boxShadow:
+        '0 0 0 1px rgba(0, 255, 217, 0.45), 0 12px 30px rgba(0, 255, 217, 0.16), 0 0 24px rgba(255, 46, 147, 0.1) !important',
+      backdropFilter: 'blur(8px)',
+    },
+    '& .MuiCardHeader-root': {
+      background: 'linear-gradient(135deg, #ff2e93 0%, #5b2eff 100%) !important',
+      color: '#fff',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+    },
+    '& .MuiCardContent-root': {
+      background: 'rgba(8, 12, 24, 0.88) !important',
+    },
+    '& .MuiButton-contained': {
+      background: 'linear-gradient(135deg, #00ffd9 0%, #5b2eff 100%) !important',
+      color: '#07101d !important',
+      fontWeight: '900 !important',
+      boxShadow: '0 0 0 1px rgba(0, 255, 217, 0.6), 0 10px 24px rgba(0, 255, 217, 0.35)',
+      border: '1px solid rgba(0, 255, 217, 0.75)',
+      animation: 'neonPulse 3.8s ease-in-out infinite',
+    },
+    '& .MuiButton-outlined': {
+      color: '#00ffd9 !important',
+      borderColor: 'rgba(0, 255, 217, 0.7) !important',
+      fontWeight: '900',
+      backgroundColor: 'rgba(0, 255, 217, 0.08)',
+    },
+    '& .MuiChip-root': {
+      backgroundColor: 'rgba(0, 255, 217, 0.12) !important',
+      color: '#00ffd9 !important',
+      border: '1px solid rgba(0, 255, 217, 0.5)',
+      fontWeight: 900,
+    },
+    '& .MuiTabs-indicator': {
+      backgroundColor: '#00ffd9',
+    },
+    '& .MuiTab-root': {
+      color: 'rgba(215, 249, 255, 0.7)',
+      fontWeight: 900,
+    },
+    '& .Mui-selected': {
+      color: '#00ffd9 !important',
+    },
+    '& .MuiDivider-root': {
+      borderColor: 'rgba(0, 255, 217, 0.18)',
+    },
+    '& .MuiLinearProgress-root': {
+      backgroundColor: 'rgba(0, 255, 217, 0.15) !important',
+    },
+    '& .MuiLinearProgress-bar': {
+      backgroundColor: '#00ffd9 !important',
+    },
+    '& .MuiAlert-root': {
+      backgroundColor: 'rgba(0, 255, 217, 0.08) !important',
+      border: '1px solid rgba(0, 255, 217, 0.35) !important',
+      color: '#eaffff',
+      boxShadow: '0 0 16px rgba(0, 255, 217, 0.16)',
+    },
+    '& .MuiAlert-icon': {
+      color: '#00ffd9',
+    },
+  } as const;
 
   useEffect(() => {
     setShowScenarioChat(false);
@@ -2248,10 +2577,17 @@ const Hallucinate: React.FC = () => {
   }, [showScenarioChat]);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: '#050710',
+        ...arcadeSx,
+      }}
+    >
+      <style>{arcadeFontCss}</style>
       {/* Header */}
-      <Container maxWidth="lg" sx={{ py: 3, borderBottom: '1px solid #e0e0e0' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Container maxWidth="lg" sx={{ py: 3, borderBottom: '1px solid rgba(0, 255, 217, 0.24)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 900, mb: 0.5 }}>
               AI HALLUCINATION TRAINING GAME
@@ -2260,16 +2596,22 @@ const Hallucinate: React.FC = () => {
               Learn to identify and reduce hallucination risks
             </Typography>
           </Box>
-          <ShieldIcon sx={{ fontSize: 44, color: '#666' }} />
+          <ShieldIcon sx={{ fontSize: 44, color: '#00ffd9' }} />
         </Box>
       </Container>
 
       {/* Tabs */}
-      <Container maxWidth="lg" sx={{ borderBottom: '1px solid #e0e0e0' }}>
+      <Container maxWidth="lg" sx={{ borderBottom: '1px solid rgba(0, 255, 217, 0.2)' }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-          <Tab label="Learn Scenarios" />
+          <Tab
+            label={
+              allScenariosCompleted
+                ? 'Learn Scenarios ✓ Completed'
+                : `Learn Scenarios (${scenarioProgressLabel})`
+            }
+          />
           {/*<Tab label="Quiz" />*/}
-          <Tab label="Training Game" />
+          <Tab label={allScenariosCompleted ? 'Training Game' : 'Training Game (Locked)'} disabled={!allScenariosCompleted} />
           {/*<Tab label="Overview" />*/}
         </Tabs>
       </Container>
@@ -2277,7 +2619,7 @@ const Hallucinate: React.FC = () => {
       {/* Content */}
       <Box
         sx={{
-          bgcolor: '#f8f8f8',
+          bgcolor: 'rgba(6, 10, 24, 0.9)',
           minHeight: 'calc(100vh - 200px)',
           overflowY: 'scroll',
           scrollbarGutter: 'stable',
@@ -2311,7 +2653,7 @@ const Hallucinate: React.FC = () => {
                     sx={{
                       fontWeight: 900,
                       mt: 0.5,
-                      fontFamily: "Georgia, 'Times New Roman', serif",
+                      fontFamily: "'Press Start 2P', 'VT323', monospace",
                       lineHeight: 1.15,
                       mb: 1,
                     }}
@@ -2323,11 +2665,32 @@ const Hallucinate: React.FC = () => {
                     sx={{
                       lineHeight: 1.8,
                       mb: 2,
-                      fontFamily: "Georgia, 'Times New Roman', serif",
+                      fontFamily: "'VT323', 'Courier New', monospace",
                     }}
                   >
                     {selectedScenario?.background.dek}
                   </Typography>
+                  {selectedScenario?.id === 'bard' && (
+                    <Paper
+                      sx={{
+                        mb: 2,
+                        p: 1.2,
+                        border: `1px solid ${NEON_CYAN}`,
+                        backgroundColor: 'rgba(0, 255, 217, 0.08)',
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{ display: 'block', fontWeight: 900, color: NEON_CYAN, mb: 0.5, fontFamily: "'Press Start 2P', 'VT323', monospace" }}
+                      >
+                        <InfoOutlinedIcon sx={{ fontSize: 14, mr: 0.6, verticalAlign: 'text-bottom' }} />
+                        Note
+                      </Typography>
+                      <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#d7f2ff' }}>
+                        JWST = James Webb Space Telescope, NASA/ESA/CSA&apos;s flagship space observatory.
+                      </Typography>
+                    </Paper>
+                  )}
                   <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
                     Newspaper Clippings
                   </Typography>
@@ -2339,38 +2702,53 @@ const Hallucinate: React.FC = () => {
                             flex: 1,
                             height: '100%',
                             p: 2,
-                            border: '1px solid #cfcfcf',
+                            border: '1px solid rgba(0, 255, 217, 0.45)',
                             background:
-                              'repeating-linear-gradient(0deg, #fbfbfb, #fbfbfb 24px, #f2f2f2 25px)',
-                            boxShadow: '0 6px 18px rgba(0,0,0,0.06)',
+                              'linear-gradient(180deg, rgba(7, 12, 28, 0.98), rgba(6, 10, 22, 0.98))',
+                            boxShadow: '0 10px 22px rgba(0, 255, 217, 0.1)',
+                            color: '#eaffff',
                           }}
                         >
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#eaffff' }}>
                               <ArticleIcon sx={{ fontSize: 14, mr: 0.5 }} />
                               {clip.outlet}
                             </Typography>
-                            <Typography variant="caption" color="textSecondary">
+                            <Typography variant="caption" sx={{ color: '#bfeeff' }}>
                               <CalendarIcon sx={{ fontSize: 14, mr: 0.5 }} />
                               {clip.date}
                             </Typography>
                           </Box>
-                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                          <Typography variant="caption" sx={{ display: 'block', mb: 1, color: '#bfeeff' }}>
                             <PersonIcon sx={{ fontSize: 14, mr: 0.5 }} />
                             By {clip.byline}
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 900, mb: 0.75 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 900, mb: 0.75, color: '#eaffff' }}>
                             {clip.angle}
                           </Typography>
-                          <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#d7f2ff' }}>
                             {clip.body}
                           </Typography>
                         </Paper>
                       </Grid>
                     ))}
                   </Grid>
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    {selectedScenario?.background.question}
+                  <Alert
+                    severity="info"
+                    sx={{
+                      mb: 2,
+                      backgroundColor: 'rgba(0, 255, 217, 0.12)',
+                      border: '1px solid rgba(0, 255, 217, 0.45)',
+                      color: '#eaffff',
+                      '& .MuiAlert-icon': { color: '#00ffd9' },
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ fontFamily: "'Press Start 2P', 'VT323', monospace", lineHeight: 1.6 }}
+                    >
+                      {selectedScenario?.background.question}
+                    </Typography>
                   </Alert>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <Button variant="contained" onClick={() => setShowScenarioChat(true)} sx={{ fontWeight: 900 }}>
@@ -2384,7 +2762,17 @@ const Hallucinate: React.FC = () => {
                 <>
                   <Box ref={chatAnchorRef} />
                   <Box sx={{ width: '100%' }}>
-                    <InteractiveScenarioChat scenarioId={scenarioId} />
+                    <InteractiveScenarioChat
+                      scenarioId={scenarioId}
+                      onComplete={(id) =>
+                        setCompletedScenarioIds((prev) => {
+                          if (prev.has(id)) return prev;
+                          const next = new Set(prev);
+                          next.add(id);
+                          return next;
+                        })
+                      }
+                    />
                   </Box>
                 </>
               )}
@@ -2403,7 +2791,28 @@ const Hallucinate: React.FC = () => {
 
         {tabValue === 1 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
-            {showGameIntro ? (
+            {!allScenariosCompleted ? (
+              <Card sx={panelCardSx}>
+                <CardHeader
+                  title={
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5 }}>
+                        🔒 Training Game Locked
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                        Complete both Learn Scenarios to unlock the training game.
+                      </Typography>
+                    </Box>
+                  }
+                  sx={panelHeaderSx}
+                />
+                <CardContent sx={{ background: PANEL_BODY_BACKGROUND }}>
+                  <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
+                    Finish the two scenarios first. Once both are completed, the Training Game tab will unlock automatically.
+                  </Typography>
+                </CardContent>
+              </Card>
+            ) : showGameIntro ? (
               <Card sx={panelCardSx}>
                 <CardHeader
                   title={
@@ -2425,12 +2834,30 @@ const Hallucinate: React.FC = () => {
 
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #667eea' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#667eea', mb: 1 }}>
+                      <Paper sx={{ p: 2.5, height: '100%', border: `2px solid ${NEON_BLUE}` }}>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: NEON_BLUE, mb: 1 }}>
                           🎮 How to Play
                         </Typography>
                         <Stack spacing={0.75}>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Review one sentence per flash card</Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              lineHeight: 1.7,
+                              color: '#07101d',
+                              fontWeight: 900,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.75,
+                              px: 1,
+                              py: 0.4,
+                              borderRadius: 1,
+                              background: `linear-gradient(135deg, ${NEON_PINK} 0%, ${NEON_CYAN} 100%)`,
+                              boxShadow: '0 0 12px rgba(255, 46, 147, 0.35)',
+                            }}
+                          >
+                            • Finish all 5 cards within 40 seconds
+                          </Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Click <b>Flag</b> if the claim is risky or likely hallucinated</Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Click <b>Pass</b> if the sentence is safe/cautious</Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Keep your streak for bonus points</Typography>
@@ -2439,24 +2866,38 @@ const Hallucinate: React.FC = () => {
                     </Grid>
 
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #4facfe' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#4facfe', mb: 1 }}>
+                      <Paper sx={{ p: 2.5, height: '100%', border: '2px solid #00ffd9' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#00ffd9', mb: 1 }}>
                           📊 Round Summary
                         </Typography>
                         <Stack spacing={0.75}>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Score, accuracy, and max combo</Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Correct flags and missed pitfalls</Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• False positives and safe passes</Typography>
-                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Hidden <b>Boss sentence</b> check</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#bfeeff' }}>• Review accuracy, combos, and missed pitfalls</Typography>
                         </Stack>
                       </Paper>
                     </Grid>
                   </Grid>
 
-                  <Alert severity="info" sx={{ mt: 3 }}>
-                    <AlertTitle sx={{ fontWeight: 900 }}>Tip</AlertTitle>
+                  <Alert
+                    severity="info"
+                    sx={{
+                      mt: 3,
+                      backgroundColor: 'rgba(0, 255, 217, 0.12)',
+                      border: '1px solid rgba(0, 255, 217, 0.45)',
+                      color: '#eaffff',
+                      '& .MuiAlert-icon': { color: '#00ffd9' },
+                    }}
+                  >
+                  <AlertTitle sx={{ fontWeight: 900, fontFamily: "'Press Start 2P', 'VT323', monospace" }}>Tip</AlertTitle>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontFamily: "'Press Start 2P', 'VT323', monospace", lineHeight: 1.6 }}
+                  >
                     Focus on exact numbers, fake-looking citations, “first-ever” claims, and absolute wording like “all” or “no exceptions”.
-                  </Alert>
+                  </Typography>
+                </Alert>
 
                   <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
                     <Button
@@ -2471,7 +2912,7 @@ const Hallucinate: React.FC = () => {
                         background: PRIMARY_HEADER_GRADIENT,
                         boxShadow: '0 10px 24px rgba(83, 109, 254, 0.35)',
                         '&:hover': {
-                          background: 'linear-gradient(135deg, #4B63E9 0%, #6A3CFF 100%)',
+                          background: 'linear-gradient(135deg, #00ffd9 0%, #ff2e93 100%)',
                           boxShadow: '0 14px 30px rgba(83, 109, 254, 0.5)',
                           transform: 'translateY(-2px)',
                         },
@@ -2493,11 +2934,11 @@ const Hallucinate: React.FC = () => {
                     startIcon={<ReplayIcon />}
                     sx={{
                       fontWeight: 900,
-                      borderColor: '#536DFE',
-                      color: '#536DFE',
+                      borderColor: '#00ffd9',
+                      color: '#00ffd9',
                       '&:hover': {
-                        borderColor: '#4B63E9',
-                        backgroundColor: 'rgba(83, 109, 254, 0.05)',
+                        borderColor: NEON_BLUE,
+                        backgroundColor: 'rgba(0, 255, 217, 0.08)',
                       },
                     }}
                   >
