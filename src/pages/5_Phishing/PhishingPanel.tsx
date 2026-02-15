@@ -12,14 +12,14 @@ const PhishingPanel: React.FC = () => {
       <Typography variant='h4' gutterBottom>
         Phishing Panel
       </Typography>
-      <Grid container spacing={2} sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'row', mb: 2 }}>
+      <Grid container spacing={2} sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'row', mb: 2, px: 2 }}>
         <Grid size={{ xs: 12, md: 5 }}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, ml: 3}}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`}}>
             <PhishingTarget />
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, md: 7 }}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, mr: 3}}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`}}>
             <PhishingMailSpace />
           </Paper>
         </Grid>

@@ -75,7 +75,7 @@ const PhishingTarget: React.FC = () => {
   const currentMission = missions.find(m => m.targetId === currentLevel) || missions[0];
 
   return (
-    <Box sx={{ flexGrow: 1, padding: 2, overflowY: 'auto', height: '100%' }}>
+    <Box sx={{ padding: 2, height: '100%',  }}>
       <Typography variant='h4' gutterBottom sx={{ fontWeight: 700, color: '#1976d2', textAlign: 'center' }}>
         🕵️ MI6 PHISHING MISSION - LEVEL {currentLevel}
       </Typography>
