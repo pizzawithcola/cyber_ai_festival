@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid, Paper, Box, Typography, useTheme } from '@mui/material';
+import { Paper, Box, Typography, useTheme } from '@mui/material';
 import PhishingTarget from './PhishingTarget';
 import PhishingMailSpace from './PhishingMailSpace';
 
@@ -8,23 +8,23 @@ const PhishingPanel: React.FC = () => {
   const theme = useTheme();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
-      <Typography variant='h4' gutterBottom>
+    <Box className='phishing-panel' sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
+      {/* <Typography variant='h4' sx={{ px: 2, pt: 1, pb: 1, flexShrink: 0 }}>
         Phishing Panel
-      </Typography>
-      <Grid container spacing={2} sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'row', mb: 2, px: 2 }}>
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`}}>
+      </Typography> */}
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: 2, mt: 2, mb: 1, px: 2 }}>
+        <Box sx={{ flex: 5, minWidth: 0, minHeight: 0 }}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, overflow: 'hidden' }}>
             <PhishingTarget />
           </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`}}>
+        </Box>
+        <Box sx={{ flex: 7, minWidth: 0, minHeight: 0 }}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, overflow: 'hidden' }}>
             <PhishingMailSpace />
           </Paper>
-        </Grid>
-      </Grid>
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 'auto' }}>
+        </Box>
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', flexShrink: 0, py: 0.5 }}>
         <Typography sx={{ fontSize: '12px' }}>Please <b>DO NOT</b> send any personal or sensitive information to LLM.</Typography>
       </Box>
     </Box>

@@ -54,18 +54,20 @@ const PhishingMailSpace: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: 2, overflow: 'hidden' }}>
       <Typography variant='h6' gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
-        📧 EMAIL DRAFT EDITOR
+        PHISHING EMAIL EDITOR
       </Typography>
       
       <Paper 
         sx={{ 
-          flexGrow: 1, 
+          flex: 1, 
+          minHeight: 0,
           display: 'flex', 
           flexDirection: 'column',
           border: `1px solid ${theme.palette.divider}`,
-          backgroundColor: theme.palette.background.paper
+          backgroundColor: theme.palette.background.paper,
+          overflow: 'hidden'
         }}
       >
         {/* 发件人邮箱 */}
@@ -176,15 +178,15 @@ const PhishingMailSpace: React.FC = () => {
         </Box>
         
         {/* 邮件正文 */}
-        <Box sx={{ flexGrow: 1, p: 2 }}>
-          <Typography variant='subtitle2' sx={{ mb: 1, fontWeight: 500, color: '#666666' }}>
+        <Box sx={{ flex: 1, minHeight: 0, p: 2, display: 'flex', flexDirection: 'column' }}>
+          <Typography variant='subtitle2' sx={{ mb: 1, fontWeight: 500, color: '#666666', flexShrink: 0 }}>
             Message:
           </Typography>
           <textarea
             style={{
               width: '100%',
-              height: '100%',
-              minHeight: '200px',
+              flex: 1,
+              minHeight: '80px',
               border: `1px solid ${theme.palette.divider}`,
               borderRadius: '4px',
               padding: '12px',

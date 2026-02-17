@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid, Paper, Box, Typography, useTheme, Avatar, Chip, Card, CardContent } from '@mui/material';
+import { Paper, Box, Typography, useTheme, Chip, Card, CardContent } from '@mui/material';
 
 const PhishingTarget: React.FC = () => {
   const theme = useTheme();
@@ -13,7 +13,6 @@ const PhishingTarget: React.FC = () => {
       position: 'Senior Security Analyst',
       hobbies: ['Cybersecurity Research', 'Penetration Testing', 'AI Ethics'],
       personality: 'Detail-oriented, skeptical, tech-savvy',
-      clearance: 'Level 5 - Classified',
       photo: '/api/placeholder/200/200'
     },
     {
@@ -23,7 +22,6 @@ const PhishingTarget: React.FC = () => {
       position: 'Financial Controller',
       hobbies: ['Investment Analysis', 'Data Visualization', 'Risk Management'],
       personality: 'Analytical, risk-averse, process-driven',
-      clearance: 'Level 3 - Confidential',
       photo: '/api/placeholder/200/200'
     },
     {
@@ -33,7 +31,6 @@ const PhishingTarget: React.FC = () => {
       position: 'HR Director',
       hobbies: ['Talent Development', 'Organizational Psychology', 'Team Building'],
       personality: 'People-focused, empathetic, diplomatic',
-      clearance: 'Level 4 - Secret',
       photo: '/api/placeholder/200/200'
     }
   ];
@@ -75,62 +72,70 @@ const PhishingTarget: React.FC = () => {
   const currentMission = missions.find(m => m.targetId === currentLevel) || missions[0];
 
   return (
-    <Box sx={{ padding: 2, height: '100%',  }}>
-      <Typography variant='h4' gutterBottom sx={{ fontWeight: 700, color: '#1976d2', textAlign: 'center' }}>
-        🕵️ MI6 PHISHING MISSION - LEVEL {currentLevel}
+    <Box sx={{ padding: 2, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <Typography variant='h6' gutterBottom sx={{ fontWeight: 700, color: '#1976d2', textAlign: 'center', flexShrink: 0 }}>
+        PHISHING TARGET
       </Typography>
       
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, minHeight: 'fit-content' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* 目标信息 - 纵向排列 */}
-        <Paper sx={{ p: 3, backgroundColor: theme.palette.background.paper, flexShrink: 0 }}>
-          <Typography variant='h5' gutterBottom sx={{ fontWeight: 600, color: '#1976d2', textAlign: 'center', mb: 3 }}>
-            📋 TARGET PROFILE
-          </Typography>
-          
-          {/* 目标照片 */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-            <Avatar 
-              src={currentTarget.photo} 
-              sx={{ 
-                width: 100, 
-                height: 100, 
-                border: '3px solid #1976d2',
-                boxShadow: '0 4px 20px rgba(25, 118, 210, 0.3)'
-              }} 
-            />
+        <Paper sx={{ p: 3, backgroundColor: theme.palette.background.paper }}>
+          {/* 上半部分：照片 + 基本信息 横向排列 */}
+          <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', mb: 2, gap: 2 }}>
+            {/* 左侧：照片1:1靠左 */}
+            <Box sx={{ flex: '1 1 45%', minWidth: 120, display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+              <Box
+                component='img'
+                src={currentTarget.photo}
+                alt={currentTarget.name}
+                sx={{
+                  aspectRatio: '1 / 1',
+                  width: '100%',
+                  maxWidth: 200,
+                  objectFit: 'cover',
+                  borderRadius: 1,
+                  border: '3px solid #1976d2',
+                  boxShadow: '0 4px 20px rgba(25, 118, 210, 0.3)',
+                  backgroundColor: theme.palette.action.hover,
+                }}
+              />
+            </Box>
+            {/* 右侧：文字靠左对齐，空间不够时换行到下方 */}
+            <Box sx={{ flex: '1 1 45%', minWidth: 150, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 1.5 }}>
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 500 }}>Name:</Typography>
+                <Typography variant='body2'>{currentTarget.name}</Typography>
+              </Box>
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 500 }}>Department:</Typography>
+                <Typography variant='body2'>{currentTarget.department}</Typography>
+              </Box>
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 500 }}>Position:</Typography>
+                <Typography variant='body2'>{currentTarget.position}</Typography>
+              </Box>
+            </Box>
           </Box>
-          
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant='body2' sx={{ fontWeight: 500 }}>Name:</Typography>
-              <Typography variant='body2' sx={{ mb: 1 }}>{currentTarget.name}</Typography>
-              
-              <Typography variant='body2' sx={{ fontWeight: 500 }}>Department:</Typography>
-              <Typography variant='body2' sx={{ mb: 1 }}>{currentTarget.department}</Typography>
-              
-              <Typography variant='body2' sx={{ fontWeight: 500 }}>Position:</Typography>
-              <Typography variant='body2' sx={{ mb: 1 }}>{currentTarget.position}</Typography>
-            </Grid>
-            
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant='body2' sx={{ fontWeight: 500 }}>Clearance Level:</Typography>
-              <Chip label={currentTarget.clearance} size='small' color='error' variant='outlined' sx={{ mb: 2 }} />
-              
+
+          {/* 下半部分：Hobbies + Personality */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box>
               <Typography variant='body2' sx={{ fontWeight: 500 }}>Hobbies:</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 2 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                 {currentTarget.hobbies.map((hobby: string, index: number) => (
                   <Chip key={index} label={hobby} size='small' variant='outlined' />
                 ))}
               </Box>
-              
+            </Box>
+            <Box>
               <Typography variant='body2' sx={{ fontWeight: 500 }}>Personality:</Typography>
               <Typography variant='body2'>{currentTarget.personality}</Typography>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Paper>
         
         {/* 钓鱼任务 - 纵向排列 */}
-        <Paper sx={{ p: 3, backgroundColor: theme.palette.background.paper, flexShrink: 0 }}>
+        <Paper sx={{ p: 3, backgroundColor: theme.palette.background.paper }}>
           <Typography variant='h5' gutterBottom sx={{ fontWeight: 600, color: '#d32f2f', textAlign: 'center', mb: 3 }}>
             🎯 PHISHING MISSION
           </Typography>
