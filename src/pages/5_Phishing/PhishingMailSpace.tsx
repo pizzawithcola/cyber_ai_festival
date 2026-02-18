@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   Box, 
   TextField, 
@@ -20,6 +20,35 @@ import {
   FormatUnderlined, 
   Send 
 } from '@mui/icons-material';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import TurndownService from 'turndown';
+
+const turndown = new TurndownService({
+  headingStyle: 'atx',
+  bulletListMarker: '-',
+});
+
+turndown.addRule('underline', {
+  filter: ['u'],
+  replacement: (content) => `<u>${content}</u>`,
+});
+
+turndown.addRule('coloredText', {
+  filter: (node) => {
+    return (
+      node.nodeName === 'SPAN' &&
+      !!(node as HTMLElement).style?.color
+    );
+  },
+  replacement: (content, node) => {
+    const color = (node as HTMLElement).style.color;
+    return `<span style="color: ${color}">${content}</span>`;
+  },
+});
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
@@ -38,20 +67,66 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
 const PhishingMailSpace: React.FC = () => {
   const theme = useTheme();
   
-  const [senderEmail, setSenderEmail] = useState('security@update-company.com');
+  const [senderEmail, setSenderEmail] = useState('');
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
-  const [content, setContent] = useState('');
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const [isUnderline, setIsUnderline] = useState(false);
-  const [textColor, setTextColor] = useState('#000000');
 
-  const handleSend = () => {
-    // 这里可以添加发送逻辑
-    console.log('Sending email:', { senderEmail, recipient, subject, content });
-    alert('Email sent successfully!');
-  };
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: false,
+        codeBlock: false,
+        blockquote: false,
+        horizontalRule: false,
+      }),
+      Underline,
+      TextStyle,
+      Color,
+    ],
+    content: '',
+    editorProps: {
+      attributes: {
+        style: `
+          outline: none;
+          height: 100%;
+          font-family: inherit;
+          font-size: 14px;
+          color: ${theme.palette.text.primary};
+          padding: 12px;
+        `,
+      },
+    },
+  });
+
+  const handleSend = useCallback(() => {
+    if (!editor) return;
+    const html = editor.getHTML();
+    const markdown = turndown.turndown(html);
+    console.log('=== Email Sent ===');
+    console.log('From:', senderEmail);
+    console.log('To:', recipient);
+    console.log('Subject:', subject);
+    console.log('--- HTML ---');
+    console.log(html);
+    console.log('--- Markdown (for LLM) ---');
+    console.log(markdown);
+    alert(
+      `Email sent successfully!\n\n` +
+      `--- HTML ---\n${html}\n\n` +
+      `--- Markdown (for LLM) ---\n${markdown}`
+    );
+  }, [editor, senderEmail, recipient, subject]);
+
+  const handleColorChange = useCallback((color: string) => {
+    if (!editor) return;
+    if (color === 'unset') {
+      editor.chain().focus().unsetColor().run();
+    } else {
+      editor.chain().focus().setColor(color).run();
+    }
+  }, [editor]);
+
+  const currentColor = editor?.getAttributes('textStyle')?.color || 'unset';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: 2, overflow: 'hidden' }}>
@@ -70,61 +145,71 @@ const PhishingMailSpace: React.FC = () => {
           overflow: 'hidden'
         }}
       >
-        {/* 发件人邮箱 */}
-        <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
-          <Typography variant='subtitle2' sx={{ mb: 1, fontWeight: 500, color: '#666666' }}>
-            From:
-          </Typography>
-          <StyledTextField
-            fullWidth
-            value={senderEmail}
-            onChange={(e) => setSenderEmail(e.target.value)}
-            variant='outlined'
-            size='small'
-            placeholder='Enter sender email address'
-          />
-        </Box>
-        
-        {/* 收件人 */}
-        <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
-          <Typography variant='subtitle2' sx={{ mb: 1, fontWeight: 500, color: '#666666' }}>
-            To:
-          </Typography>
-          <StyledTextField
-            fullWidth
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            variant='outlined'
-            size='small'
-            placeholder='Enter recipient email address'
-          />
-        </Box>
-        
-        {/* 邮件标题 */}
-        <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
-          <Typography variant='subtitle2' sx={{ mb: 1, fontWeight: 500, color: '#666666' }}>
-            Subject:
-          </Typography>
-          <StyledTextField
-            fullWidth
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            variant='outlined'
-            size='small'
-            placeholder='Enter email subject'
-          />
+        {/* From / To / Subject + Send */}
+        <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', flexDirection: 'row', gap: 1 }}>
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>From:</Typography>
+              <StyledTextField
+                fullWidth
+                value={senderEmail}
+                onChange={(e) => setSenderEmail(e.target.value)}
+                variant='outlined'
+                size='small'
+                placeholder='Enter sender email address'
+              />
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>To:</Typography>
+              <StyledTextField
+                fullWidth
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+                variant='outlined'
+                size='small'
+                placeholder='Enter recipient email address'
+              />
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>Subject:</Typography>
+              <StyledTextField
+                fullWidth
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                variant='outlined'
+                size='small'
+                placeholder='Enter email subject'
+              />
+            </Box>
+          </Box>
+          <Button
+            variant='contained'
+            color='primary'
+            onClick={handleSend}
+            sx={{
+              width: 60,
+              minWidth: 50,
+              height: 'auto',
+              alignSelf: 'stretch',
+              backgroundColor: '#1976d2',
+              '&:hover': { backgroundColor: '#1565c0' },
+            }}
+          >
+            <Send />
+          </Button>
         </Box>
         
         {/* 格式化工具栏 */}
-        <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', gap: 0.5 }}>
+        <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', gap: 0.5, alignItems: 'center' }}>
           <IconButton 
             size='small' 
-            onClick={() => setIsBold(!isBold)}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
             sx={{ 
-              backgroundColor: isBold ? '#1976d2' : 'transparent',
-              color: isBold ? '#ffffff' : '#666666',
+              borderRadius: 1,
+              backgroundColor: editor?.isActive('bold') ? '#1976d2' : 'transparent',
+              color: editor?.isActive('bold') ? '#ffffff' : '#666666',
               '&:hover': {
-                backgroundColor: isBold ? '#1565c0' : '#f5f5f5'
+                backgroundColor: editor?.isActive('bold') ? '#1565c0' : '#f5f5f5'
               }
             }}
           >
@@ -133,12 +218,13 @@ const PhishingMailSpace: React.FC = () => {
           
           <IconButton 
             size='small' 
-            onClick={() => setIsItalic(!isItalic)}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
             sx={{ 
-              backgroundColor: isItalic ? '#1976d2' : 'transparent',
-              color: isItalic ? '#ffffff' : '#666666',
+              borderRadius: 1,
+              backgroundColor: editor?.isActive('italic') ? '#1976d2' : 'transparent',
+              color: editor?.isActive('italic') ? '#ffffff' : '#666666',
               '&:hover': {
-                backgroundColor: isItalic ? '#1565c0' : '#f5f5f5'
+                backgroundColor: editor?.isActive('italic') ? '#1565c0' : '#f5f5f5'
               }
             }}
           >
@@ -147,12 +233,13 @@ const PhishingMailSpace: React.FC = () => {
           
           <IconButton 
             size='small' 
-            onClick={() => setIsUnderline(!isUnderline)}
+            onClick={() => editor?.chain().focus().toggleUnderline().run()}
             sx={{ 
-              backgroundColor: isUnderline ? '#1976d2' : 'transparent',
-              color: isUnderline ? '#ffffff' : '#666666',
+              borderRadius: 1,
+              backgroundColor: editor?.isActive('underline') ? '#1976d2' : 'transparent',
+              color: editor?.isActive('underline') ? '#ffffff' : '#666666',
               '&:hover': {
-                backgroundColor: isUnderline ? '#1565c0' : '#f5f5f5'
+                backgroundColor: editor?.isActive('underline') ? '#1565c0' : '#f5f5f5'
               }
             }}
           >
@@ -164,11 +251,11 @@ const PhishingMailSpace: React.FC = () => {
           <FormControl size='small' sx={{ minWidth: 120 }}>
             <InputLabel>Text Color</InputLabel>
             <Select
-              value={textColor}
+              value={currentColor}
               label='Text Color'
-              onChange={(e) => setTextColor(e.target.value as string)}
+              onChange={(e) => handleColorChange(e.target.value as string)}
             >
-              <MenuItem value='#ffffff'>White</MenuItem>
+              <MenuItem value='unset'>Default</MenuItem>
               <MenuItem value='#dc2626'>Red</MenuItem>
               <MenuItem value='#2563eb'>Blue</MenuItem>
               <MenuItem value='#059669'>Green</MenuItem>
@@ -177,51 +264,35 @@ const PhishingMailSpace: React.FC = () => {
           </FormControl>
         </Box>
         
-        {/* 邮件正文 */}
-        <Box sx={{ flex: 1, minHeight: 0, p: 2, display: 'flex', flexDirection: 'column' }}>
-          <Typography variant='subtitle2' sx={{ mb: 1, fontWeight: 500, color: '#666666', flexShrink: 0 }}>
-            Message:
-          </Typography>
-          <textarea
-            style={{
-              width: '100%',
-              flex: 1,
-              minHeight: '80px',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: '4px',
-              padding: '12px',
-              fontFamily: 'inherit',
-              fontSize: '14px',
-              fontWeight: isBold ? 'bold' : 'normal',
-              fontStyle: isItalic ? 'italic' : 'normal',
-              textDecoration: isUnderline ? 'underline' : 'none',
-              color: textColor,
-              resize: 'vertical',
-              backgroundColor: theme.palette.background.paper
-            }}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder='Enter your email message here...'
+        {/* 富文本编辑器 */}
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
+            cursor: 'text',
+            '& .tiptap': {
+              height: '100%',
+              outline: 'none',
+              p: { margin: '0 0 0.5em 0' },
+              'p:last-child': { marginBottom: 0 },
+            },
+            '& .tiptap p.is-editor-empty:first-child::before': {
+              content: 'attr(data-placeholder)',
+              color: theme.palette.text.disabled,
+              pointerEvents: 'none',
+              float: 'left',
+              height: 0,
+            },
+          }}
+          onClick={() => editor?.chain().focus().run()}
+        >
+          <EditorContent
+            editor={editor}
+            style={{ height: '100%' }}
           />
         </Box>
         
-        {/* 发送按钮 */}
-        <Box sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button 
-            variant='contained' 
-            color='primary'
-            onClick={handleSend}
-            startIcon={<Send />}
-            sx={{ 
-              backgroundColor: '#1976d2',
-              '&:hover': {
-                backgroundColor: '#1565c0'
-              }
-            }}
-          >
-            Send Email
-          </Button>
-        </Box>
       </Paper>
     </Box>
   );

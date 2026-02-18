@@ -9,15 +9,17 @@ const PhishingTarget: React.FC = () => {
     {
       id: 1,
       name: 'Alex Johnson',
+      email: 'alex.j@acc.com',
       department: 'IT Security',
       position: 'Senior Security Analyst',
       hobbies: ['Cybersecurity Research', 'Penetration Testing', 'AI Ethics'],
       personality: 'Detail-oriented, skeptical, tech-savvy',
-      photo: '/api/placeholder/200/200'
+      photo: 'public/woman2.png'
     },
     {
       id: 2,
       name: 'Sarah Chen',
+      email: 'sarah.c@acc.com',
       department: 'Finance',
       position: 'Financial Controller',
       hobbies: ['Investment Analysis', 'Data Visualization', 'Risk Management'],
@@ -27,6 +29,7 @@ const PhishingTarget: React.FC = () => {
     {
       id: 3,
       name: 'Marcus Rodriguez',
+      email: 'marcus.r@acc.com',
       department: 'Human Resources',
       position: 'HR Director',
       hobbies: ['Talent Development', 'Organizational Psychology', 'Team Building'],
@@ -73,7 +76,7 @@ const PhishingTarget: React.FC = () => {
 
   return (
     <Box sx={{ padding: 2, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <Typography variant='h6' gutterBottom sx={{ fontWeight: 700, color: '#1976d2', textAlign: 'center', flexShrink: 0 }}>
+      <Typography variant='h5' gutterBottom sx={{ fontWeight: 700, color: '#1976d2', textAlign: 'center', flexShrink: 0 }}>
         PHISHING TARGET
       </Typography>
       
@@ -94,7 +97,7 @@ const PhishingTarget: React.FC = () => {
                   maxWidth: 200,
                   objectFit: 'cover',
                   borderRadius: 1,
-                  border: '3px solid #1976d2',
+                  border: '3px rgba(17, 29, 78, 0.3)',
                   boxShadow: '0 4px 20px rgba(25, 118, 210, 0.3)',
                   backgroundColor: theme.palette.action.hover,
                 }}
@@ -135,14 +138,14 @@ const PhishingTarget: React.FC = () => {
         </Paper>
         
         {/* 钓鱼任务 - 纵向排列 */}
-        <Paper sx={{ p: 3, backgroundColor: theme.palette.background.paper }}>
+        <Paper sx={{ px: 2, backgroundColor: theme.palette.background.paper }}>
           <Typography variant='h5' gutterBottom sx={{ fontWeight: 600, color: '#d32f2f', textAlign: 'center', mb: 3 }}>
             🎯 PHISHING MISSION
           </Typography>
           
           <Card sx={{ border: '2px solid #d32f2f', backgroundColor: 'rgba(211, 47, 47, 0.08)' }}>
             <CardContent>
-              <Typography variant='h6' sx={{ fontWeight: 600, color: '#d32f2f', mb: 1 }}>
+              <Typography variant='h5' sx={{ fontWeight: 600, color: '#d32f2f', mb: 1 }}>
                 {currentMission.title}
               </Typography>
               <Typography variant='body1' sx={{ mb: 2 }}>
