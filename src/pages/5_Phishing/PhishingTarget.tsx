@@ -1,78 +1,14 @@
 import React from 'react';
 import { Paper, Box, Typography, useTheme, Chip, Card, CardContent } from '@mui/material';
+import type { Target, Mission } from './phishingData';
 
-const PhishingTarget: React.FC = () => {
+interface PhishingTargetProps {
+  target: Target;
+  mission: Mission;
+}
+
+const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, mission: currentMission }) => {
   const theme = useTheme();
-
-  // 三个关卡的目标信息
-  const targets = [
-    {
-      id: 1,
-      name: 'Alex Johnson',
-      email: 'alex.j@acc.com',
-      department: 'IT Security',
-      position: 'Senior Security Analyst',
-      hobbies: ['Cybersecurity Research', 'Penetration Testing', 'AI Ethics'],
-      personality: 'Detail-oriented, skeptical, tech-savvy',
-      photo: 'public/woman2.png'
-    },
-    {
-      id: 2,
-      name: 'Sarah Chen',
-      email: 'sarah.c@acc.com',
-      department: 'Finance',
-      position: 'Financial Controller',
-      hobbies: ['Investment Analysis', 'Data Visualization', 'Risk Management'],
-      personality: 'Analytical, risk-averse, process-driven',
-      photo: '/api/placeholder/200/200'
-    },
-    {
-      id: 3,
-      name: 'Marcus Rodriguez',
-      email: 'marcus.r@acc.com',
-      department: 'Human Resources',
-      position: 'HR Director',
-      hobbies: ['Talent Development', 'Organizational Psychology', 'Team Building'],
-      personality: 'People-focused, empathetic, diplomatic',
-      photo: '/api/placeholder/200/200'
-    }
-  ];
-
-  // 三个关卡的钓鱼任务
-  const missions = [
-    {
-      targetId: 1,
-      title: 'Security Update Required',
-      description: 'Urgent security patch needs immediate attention',
-      targetLink: 'https://secure-update.company.com/patch',
-      difficulty: 'Medium',
-      successRate: '65%',
-      hint: 'Exploit technical urgency'
-    },
-    {
-      targetId: 2,
-      title: 'Financial Audit Notification',
-      description: 'Quarterly financial audit requires document submission',
-      targetLink: 'https://finance-audit.company.com/submit',
-      difficulty: 'Hard',
-      successRate: '38%',
-      hint: 'Leverage compliance pressure'
-    },
-    {
-      targetId: 3,
-      title: 'Employee Performance Review',
-      description: 'Annual performance evaluations need completion',
-      targetLink: 'https://hr-performance.company.com/review',
-      difficulty: 'Easy',
-      successRate: '75%',
-      hint: 'Use HR authority'
-    }
-  ];
-
-  // 当前关卡（默认第一关）
-  const currentLevel = 1;
-  const currentTarget = targets.find(t => t.id === currentLevel) || targets[0];
-  const currentMission = missions.find(m => m.targetId === currentLevel) || missions[0];
 
   return (
     <Box sx={{ padding: 2, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -117,6 +53,10 @@ const PhishingTarget: React.FC = () => {
                 <Typography variant='body2' sx={{ fontWeight: 500 }}>Position:</Typography>
                 <Typography variant='body2'>{currentTarget.position}</Typography>
               </Box>
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 500 }}>Email:</Typography>
+                <Typography variant='body2'>{currentTarget.email}</Typography>
+              </Box>
             </Box>
           </Box>
 
@@ -145,21 +85,18 @@ const PhishingTarget: React.FC = () => {
           
           <Card sx={{ border: '2px solid #d32f2f', backgroundColor: 'rgba(211, 47, 47, 0.08)' }}>
             <CardContent>
-              <Typography variant='h5' sx={{ fontWeight: 600, color: '#d32f2f', mb: 1 }}>
-                {currentMission.title}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Typography variant='h5' sx={{ fontWeight: 600, color: '#d32f2f' }}>
+                  {currentMission.title}
+                </Typography>
+                <Chip label={currentMission.difficulty} size='small' color='primary' variant='outlined' />
+              </Box>
               <Typography variant='body1' sx={{ mb: 2 }}>
                 {currentMission.description}
               </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-                  Target Link: {currentMission.targetLink}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Chip label={`Difficulty: ${currentMission.difficulty}`} size='small' color='primary' variant='outlined' />
-                  <Chip label={`Success Rate: ${currentMission.successRate}`} size='small' color='secondary' variant='outlined' />
-                </Box>
-              </Box>
+              <Typography variant='body2' sx={{ color: 'text.secondary', mb: 2 }}>
+                Target Link: {currentMission.targetLink}
+              </Typography>
               <Typography variant='body2' sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
                 <strong>Strategy Hint:</strong> {currentMission.hint}
               </Typography>

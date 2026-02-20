@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { Target, Mission } from './phishingData';
 import { 
   Box, 
   TextField, 
@@ -64,8 +66,14 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
-const PhishingMailSpace: React.FC = () => {
+interface PhishingMailSpaceProps {
+  target: Target;
+  mission: Mission;
+}
+
+const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   
   const [senderEmail, setSenderEmail] = useState('');
   const [recipient, setRecipient] = useState('');
@@ -98,24 +106,55 @@ const PhishingMailSpace: React.FC = () => {
     },
   });
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     if (!editor) return;
     const html = editor.getHTML();
     const markdown = turndown.turndown(html);
+
+    const prompt = `From: ${senderEmail}\nTo: ${recipient}\nSubject: ${subject}\n\n${markdown}`;
+
     console.log('=== Email Sent ===');
-    console.log('From:', senderEmail);
-    console.log('To:', recipient);
-    console.log('Subject:', subject);
-    console.log('--- HTML ---');
-    console.log(html);
-    console.log('--- Markdown (for LLM) ---');
-    console.log(markdown);
-    alert(
-      `Email sent successfully!\n\n` +
-      `--- HTML ---\n${html}\n\n` +
-      `--- Markdown (for LLM) ---\n${markdown}`
-    );
-  }, [editor, senderEmail, recipient, subject]);
+    console.log('Prompt:', prompt);
+
+    const targetInformation = {
+      name: target.name,
+      email: target.email,
+      department: target.department,
+      position: target.position,
+      hobbies: target.hobbies,
+      personality: target.personality,
+      mission: {
+        title: mission.title,
+        description: mission.description,
+        targetLink: mission.targetLink,
+        difficulty: mission.difficulty,
+        hint: mission.hint,
+      },
+    };
+
+    try {
+      const res = await fetch('http://localhost:8848/llm/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          model: 'deepseek-chat',
+          target_information: targetInformation,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      console.log('LLM Response:', data);
+
+      const reply = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
+      navigate('/phishing/score', { state: { reply } });
+    } catch (err) {
+      console.error('Failed to send:', err);
+      alert(`Failed to send email: ${err}`);
+    }
+  }, [editor, senderEmail, recipient, subject, navigate]);
 
   const handleColorChange = useCallback((color: string) => {
     if (!editor) return;
