@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Paper, Box, Typography, useTheme } from '@mui/material';
 import PhishingTarget from './PhishingTarget';
 import PhishingMailSpace from './PhishingMailSpace';
@@ -8,16 +8,21 @@ import { targets, missions } from './phishingData';
 const PhishingPanel: React.FC = () => {
   const theme = useTheme();
 
-  const currentLevel = 1;
-  const currentTarget = targets.find(t => t.id === currentLevel) || targets[0];
-  const currentMission = missions.find(m => m.targetId === currentLevel) || missions[0];
+  const [levelIndex, setLevelIndex] = useState(0);
+
+  const handleSwitch = useCallback(() => {
+    setLevelIndex((prev) => (prev + 1) % targets.length);
+  }, []);
+
+  const currentTarget = targets[levelIndex];
+  const currentMission = missions.find(m => m.targetId === currentTarget.id) || missions[0];
 
   return (
     <Box className='phishing-panel' sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: 2, mt: 2, mb: 1, px: 2 }}>
         <Box sx={{ flex: 5, minWidth: 0, minHeight: 0 }}>
           <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, overflow: 'hidden' }}>
-            <PhishingTarget target={currentTarget} mission={currentMission} />
+            <PhishingTarget target={currentTarget} mission={currentMission} onSwitch={handleSwitch} />
           </Paper>
         </Box>
         <Box sx={{ flex: 7, minWidth: 0, minHeight: 0 }}>

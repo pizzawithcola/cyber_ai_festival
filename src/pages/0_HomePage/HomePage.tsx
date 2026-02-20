@@ -95,8 +95,8 @@ const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
     }
   ];
 
-  const handleGameClick = (path: string) => {
-    navigate(path);
+  const handleGameClick = (gameId: string) => {
+    navigate(`/login/${gameId}`);
   };
 
   return (
@@ -124,7 +124,7 @@ const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
               maxWidth: { md: 'calc(20% - 16px)' },
             }}
           >
-            <StyledCard onClick={() => handleGameClick(game.path)}>
+            <StyledCard onClick={() => handleGameClick(game.id)}>
               <CardContent sx={{ textAlign: 'center', padding: 3 }}>
                 <GameIcon>
                   <Typography variant="h4">{game.icon}</Typography>

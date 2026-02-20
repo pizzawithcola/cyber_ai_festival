@@ -7,6 +7,7 @@ import DataShadows from '../pages/3_DataShadows/DataShadows';
 import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition';
 import PhishingPanel from '../pages/5_Phishing/PhishingPanel';
 import PhishingScorePage from '../pages/5_Phishing/PhishingScorePage';
+import LoginPage from '../components/sharedPages/LoginPage';
 
 
 interface AppRoutesProps {
@@ -17,6 +18,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
   return (
     <Routes>
       <Route path="/" element={<HomePage toggleColorMode={toggleColorMode} />} />
+      <Route path="/login/:game" element={<LoginPage />} />
       <Route path="/deepfake" element={<DeepFake />} />
       <Route path="/hallucinate" element={<Hallucinate />} />
       <Route path="/datashadows" element={<DataShadows />} />

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Target, Mission } from './phishingData';
 import { 
@@ -14,13 +14,15 @@ import {
   IconButton,
   Divider,
   styled,
-  useTheme
+  useTheme,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { 
   FormatBold, 
   FormatItalic, 
   FormatUnderlined, 
-  Send 
+  Send,
 } from '@mui/icons-material';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -78,6 +80,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
   const [senderEmail, setSenderEmail] = useState('');
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'warning' }>({ open: false, message: '', severity: 'success' });
 
   const editor = useEditor({
     extensions: [
@@ -105,6 +108,52 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
       },
     },
   });
+
+  const prevTargetId = useRef(target.id);
+
+  useEffect(() => {
+    if (prevTargetId.current !== target.id) {
+      prevTargetId.current = target.id;
+      setSenderEmail('');
+      setRecipient('');
+      setSubject('');
+      editor?.commands.clearContent();
+    }
+  }, [target.id, editor]);
+
+  const getDraftKey = useCallback((id: number) => `phishing_draft_${id}`, []);
+
+  const handleSaveDraft = useCallback(() => {
+    if (!editor) return;
+    const draft = {
+      senderEmail,
+      recipient,
+      subject,
+      content: editor.getHTML(),
+    };
+    localStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
+    setSnackbar({ open: true, message: 'Draft saved!', severity: 'success' });
+  }, [editor, senderEmail, recipient, subject, target.id, getDraftKey]);
+
+  const handleLoadDraft = useCallback(() => {
+    if (!editor) return;
+    const raw = localStorage.getItem(getDraftKey(target.id));
+    if (!raw) {
+      setSnackbar({ open: true, message: 'No draft found for this target.', severity: 'warning' });
+      return;
+    }
+    const draft = JSON.parse(raw) as {
+      senderEmail: string;
+      recipient: string;
+      subject: string;
+      content: string;
+    };
+    setSenderEmail(draft.senderEmail);
+    setRecipient(draft.recipient);
+    setSubject(draft.subject);
+    editor.commands.setContent(draft.content);
+    setSnackbar({ open: true, message: 'Draft loaded!', severity: 'success' });
+  }, [editor, target.id, getDraftKey]);
 
   const handleSend = useCallback(async () => {
     if (!editor) return;
@@ -148,13 +197,21 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
       const data = await res.json();
       console.log('LLM Response:', data);
 
+      const draft = {
+        senderEmail,
+        recipient,
+        subject,
+        content: editor.getHTML(),
+      };
+      localStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
+
       const reply = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
       navigate('/phishing/score', { state: { reply } });
     } catch (err) {
       console.error('Failed to send:', err);
       alert(`Failed to send email: ${err}`);
     }
-  }, [editor, senderEmail, recipient, subject, navigate]);
+  }, [editor, senderEmail, recipient, subject, navigate, getDraftKey, target.id]);
 
   const handleColorChange = useCallback((color: string) => {
     if (!editor) return;
@@ -301,6 +358,43 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
               <MenuItem value='#d97706'>Orange</MenuItem>
             </Select>
           </FormControl>
+
+          <Box sx={{ flex: 1 }} />
+
+          <Button
+            size='small'
+            variant='outlined'
+            onClick={handleSaveDraft}
+            sx={{
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              height: 40,
+              color: '#fff',
+              borderColor: 'rgba(255,255,255,0.3)',
+              '&:hover': { borderColor: '#fff' },
+              '&:focus': { outline: 'none', boxShadow: 'none' },
+              '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+            }}
+          >
+            Save Draft
+          </Button>
+          <Button
+            size='small'
+            variant='outlined'
+            onClick={handleLoadDraft}
+            sx={{
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              height: 40,
+              color: '#fff',
+              borderColor: 'rgba(255,255,255,0.3)',
+              '&:hover': { borderColor: '#fff' },
+              '&:focus': { outline: 'none', boxShadow: 'none' },
+              '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+            }}
+          >
+            Load Draft
+          </Button>
         </Box>
         
         {/* 富文本编辑器 */}
@@ -333,6 +427,22 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
         </Box>
         
       </Paper>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          variant='filled'
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

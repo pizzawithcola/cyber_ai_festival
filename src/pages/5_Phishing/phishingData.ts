@@ -27,53 +27,53 @@ export const targets: Target[] = [
     position: 'Senior Security Analyst',
     hobbies: ['Cybersecurity Research', 'Penetration Testing', 'AI Ethics'],
     personality: 'Detail-oriented, skeptical, tech-savvy',
-    photo: 'public/woman2.png'
+    photo: 'public/phishing/man1.png'
   },
   {
     id: 2,
-    name: 'Sarah Chen',
+    name: 'Sarah Collins',
     email: 'sarah.c@acc.com',
-    department: 'Finance',
-    position: 'Financial Controller',
-    hobbies: ['Investment Analysis', 'Data Visualization', 'Risk Management'],
-    personality: 'Analytical, risk-averse, process-driven',
-    photo: '/api/placeholder/200/200'
+    department: 'Marketing & Communications',
+    position: 'Social Media Coordinator',
+    hobbies: ['Online Shopping', 'Travel Photography', 'Food Blogging'],
+    personality: 'Enthusiastic, curious, easily excited by new opportunities',
+    photo: 'public/phishing/woman1.png'
   },
   {
     id: 3,
-    name: 'Marcus Rodriguez',
-    email: 'marcus.r@acc.com',
-    department: 'Human Resources',
-    position: 'HR Director',
-    hobbies: ['Talent Development', 'Organizational Psychology', 'Team Building'],
-    personality: 'People-focused, empathetic, diplomatic',
-    photo: '/api/placeholder/200/200'
+    name: 'Emily Parker',
+    email: 'emily.p@acc.com',
+    department: 'Finance & Accounting',
+    position: 'Junior Financial Analyst',
+    hobbies: ['Yoga', 'Book Club', 'Volunteering'],
+    personality: 'Diligent, people-pleasing, eager to impress superiors',
+    photo: 'public/phishing/woman2.png'
   }
 ];
 
 export const missions: Mission[] = [
   {
     targetId: 1,
-    title: 'Security Update Required',
-    description: 'Urgent security patch needs immediate attention',
-    targetLink: 'https://secure-update.company.com/patch',
+    title: 'Password Expiration Notice',
+    description: 'Your company password will expire in 24 hours. You must reset it immediately or your account will be locked and you will lose access to your computer.',
+    targetLink: 'https://acc-portal.com/password-reset',
     difficulty: 'Medium',
-    hint: 'Exploit technical urgency'
+    hint: 'Create urgency with account lockout threat — everyone fears losing access to their work computer'
   },
   {
     targetId: 2,
-    title: 'Financial Audit Notification',
-    description: 'Quarterly financial audit requires document submission',
-    targetLink: 'https://finance-audit.company.com/submit',
-    difficulty: 'Hard',
-    hint: 'Leverage compliance pressure'
+    title: 'Lucky Winner Notification',
+    description: 'Craft an email from an external company claiming the target has won a prize or reward (e.g. gift card, vacation package). Convince her to click the link to claim it.',
+    targetLink: 'https://mega-rewards-global.com/claim',
+    difficulty: 'Easy',
+    hint: 'Appeal to excitement and FOMO — she loves deals and new opportunities'
   },
   {
     targetId: 3,
-    title: 'Employee Performance Review',
-    description: 'Annual performance evaluations need completion',
-    targetLink: 'https://hr-performance.company.com/review',
-    difficulty: 'Easy',
-    hint: 'Use HR authority'
+    title: 'Urgent Request from Management',
+    description: 'Impersonate a senior manager or direct supervisor at ACC, and request confidential financial reports or sensitive data via an internal-looking shared link.',
+    targetLink: 'https://acc-cloudshare.com/documents',
+    difficulty: 'Hard',
+    hint: 'Leverage authority and time pressure — she is eager to impress and unlikely to question a superior'
   }
 ];

@@ -1,20 +1,41 @@
 import React from 'react';
-import { Paper, Box, Typography, useTheme, Chip, Card, CardContent } from '@mui/material';
+import { Paper, Box, Typography, useTheme, Chip, Card, CardContent, IconButton, Tooltip } from '@mui/material';
+import { SwapHoriz } from '@mui/icons-material';
 import type { Target, Mission } from './phishingData';
 
 interface PhishingTargetProps {
   target: Target;
   mission: Mission;
+  onSwitch?: () => void;
 }
 
-const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, mission: currentMission }) => {
+const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, mission: currentMission, onSwitch }) => {
   const theme = useTheme();
 
   return (
     <Box sx={{ padding: 2, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <Typography variant='h5' gutterBottom sx={{ fontWeight: 700, color: '#1976d2', textAlign: 'center', flexShrink: 0 }}>
-        PHISHING TARGET
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative', mb: 1 }}>
+        <Typography variant='h5' sx={{ fontWeight: 700, color: '#1976d2', textAlign: 'center' }}>
+          PHISHING TARGET
+        </Typography>
+        {onSwitch && (
+          <Tooltip title='Switch Target'>
+            <IconButton
+              onClick={onSwitch}
+              size='small'
+              sx={{
+                position: 'absolute',
+                right: 0,
+                color: '#1976d2',
+                '&:focus': { outline: 'none', boxShadow: 'none' },
+                '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+              }}
+            >
+              <SwapHoriz />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
       
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* 目标信息 - 纵向排列 */}
