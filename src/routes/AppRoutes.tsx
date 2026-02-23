@@ -7,6 +7,7 @@ import DataShadows from '../pages/3_DataShadows/DataShadows';
 import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition';
 import PhishingPanel from '../pages/5_Phishing/PhishingPanel';
 import PhishingScorePage from '../pages/5_Phishing/PhishingScorePage';
+import RankingPage from '../components/sharedPages/RankingPage';
 import LoginPage from '../components/sharedPages/LoginPage';
 
 
@@ -25,6 +26,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/retaildemolition" element={<RetailDemolition />} />
       <Route path="/phishing" element={<PhishingPanel />} />
       <Route path="/phishing/score" element={<PhishingScorePage />} />
+      <Route path="/ranking" element={<RankingPage />} />
     </Routes>
   );
 };

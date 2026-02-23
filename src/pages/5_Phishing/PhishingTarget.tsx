@@ -1,6 +1,6 @@
 import React from 'react';
 import { Paper, Box, Typography, useTheme, Chip, Card, CardContent, IconButton, Tooltip } from '@mui/material';
-import { SwapHoriz } from '@mui/icons-material';
+import { Autorenew } from '@mui/icons-material';
 import type { Target, Mission } from './phishingData';
 
 interface PhishingTargetProps {
@@ -31,7 +31,7 @@ const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, 
                 '&:focus-visible': { outline: 'none', boxShadow: 'none' },
               }}
             >
-              <SwapHoriz />
+              <Autorenew />
             </IconButton>
           </Tooltip>
         )}
@@ -56,7 +56,8 @@ const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, 
                   borderRadius: 1,
                   border: '3px rgba(17, 29, 78, 0.3)',
                   boxShadow: '0 4px 20px rgba(25, 118, 210, 0.3)',
-                  backgroundColor: theme.palette.action.hover,
+                  // backgroundColor: theme.palette.action.hover,
+                  backgroundColor: 'rgb(151, 151, 151)',
                 }}
               />
             </Box>
@@ -101,7 +102,7 @@ const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, 
         {/* 钓鱼任务 - 纵向排列 */}
         <Paper sx={{ px: 2, backgroundColor: theme.palette.background.paper }}>
           <Typography variant='h5' gutterBottom sx={{ fontWeight: 600, color: '#d32f2f', textAlign: 'center', mb: 3 }}>
-            🎯 PHISHING MISSION
+            YOUR MISSION
           </Typography>
           
           <Card sx={{ border: '2px solid #d32f2f', backgroundColor: 'rgba(211, 47, 47, 0.08)' }}>

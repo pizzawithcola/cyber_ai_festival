@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { setStoredUser } from '../../utils/userStorage';
 import {
   Box,
   Paper,
@@ -66,6 +67,8 @@ const COUNTRIES = [
   { code: 'VN', name: 'Vietnam' },
 ];
 
+const COUNTRY_NAME_TO_CODE = Object.fromEntries(COUNTRIES.map(c => [c.name, c.code])) as Record<string, string>;
+
 type SnackState = { open: boolean; message: string; severity: 'success' | 'error' | 'warning' };
 
 const LoginPage: React.FC = () => {
@@ -106,7 +109,16 @@ const LoginPage: React.FC = () => {
         throw new Error(err.detail || 'Login failed');
       }
       const user = await res.json();
-      console.log('Logged in user:', user);
+      const firstname = user?.firstname ?? user?.first_name ?? loginFirstname;
+      const lastname = user?.lastname ?? user?.last_name;
+      const region = user?.region ?? user?.country;
+      const countryCode =
+        region && region.length === 2
+          ? region.toUpperCase()
+          : region
+            ? COUNTRY_NAME_TO_CODE[region]
+            : undefined;
+      if (firstname) setStoredUser({ firstname, lastname, countryCode });
       navigate(gameRoute);
     } catch (err) {
       setSnack({ open: true, message: String(err instanceof Error ? err.message : err), severity: 'error' });
