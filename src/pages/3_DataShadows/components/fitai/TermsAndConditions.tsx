@@ -139,14 +139,15 @@ For questions about these terms, contact: legal@fitai.com`
     
     const privacyOptionsScore = uncheckedCount * 10
     const totalTermsScore = readingScore + privacyOptionsScore
-    
-    // Save to context
+
+    // Save privacy settings so RegistrationSurvey and TruthReveal can use them
     updateUserChoices({
       termsReadingProgress,
       termsReadingScore: readingScore,
       uncheckedOptions,
       privacyOptionsScore,
-      totalTermsScore
+      totalTermsScore,
+      privacySettings: { ...privacySettings },
     })
     
     console.log('Terms Scoring:', {

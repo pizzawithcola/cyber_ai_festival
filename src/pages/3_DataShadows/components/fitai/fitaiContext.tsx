@@ -13,8 +13,16 @@ type UserData = {
   activityLevel: string
 }
 
+export type PrivacySettings = {
+  analytics?: boolean
+  marketing?: boolean
+  thirdParty?: boolean
+  dataRetention?: boolean
+  aiTraining?: boolean
+}
+
 type UserChoices = {
-  [key: string]: string | number | boolean | string[]
+  [key: string]: string | number | boolean | string[] | PrivacySettings | undefined
 }
 
 type FitAIState = {
