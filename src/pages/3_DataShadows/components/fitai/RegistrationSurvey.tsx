@@ -18,61 +18,87 @@ interface QuestionData {
 }
 
 const RegistrationSurvey: React.FC = () => {
-  const { setScreen, updateUserChoices } = useFitAI()
+  const { setScreen, updateUserChoices, userChoices } = useFitAI()
   const [currentStep, setCurrentStep] = useState(1)
   const [data, setData] = useState<QuestionData>({})
   const [showAI, setShowAI] = useState(false)
   const [lastAnswer, setLastAnswer] = useState('')
+  const aiTrainingConsent = (userChoices?.privacySettings as { aiTraining?: boolean } | undefined)?.aiTraining === true
   const [heightWeightVisible, setHeightWeightVisible] = useState(false)
   const [addressVisible, setAddressVisible] = useState(false)
   const [occupationVisible, setOccupationVisible] = useState(false)
-  const [showLocationSuccess, setShowLocationSuccess] = useState(false) // 新增：位置获取成功提示状态
+  const [showLocationSuccess, setShowLocationSuccess] = useState(false) 
 
   const handleNext = () => {
     if (currentStep < 5) {
-      setShowAI(true)
-      setLastAnswer(JSON.stringify(data))
-      setTimeout(() => {
-        setShowAI(false)
+      if (aiTrainingConsent) {
+        setShowAI(true)
+        setLastAnswer(JSON.stringify(data))
+        setTimeout(() => {
+          setShowAI(false)
+          setCurrentStep(currentStep + 1)
+        }, 1500)
+      } else {
         setCurrentStep(currentStep + 1)
-      }, 1500)
+      }
     } else {
       // Save user choices to context
       console.log('Survey completed, saving user choices...')
       
-      // Calculate survey score: +10 for each skipped optional question
+      // Calculate survey score: +10 for each unfilled optional question
+      // Score only when:
+      // 1. Field is visible AND has actual content filled in = 0 pts
+      // 2. Field is not visible OR no content filled in = 10 pts each
       const skippedOptionalQuestions: string[] = []
       let surveyScore = 0
       
-      if (!heightWeightVisible) {
+      // Height/Weight: counts only if BOTH filled when visible
+      const heightWeightFilled = heightWeightVisible && data.height && data.weight
+      if (!heightWeightFilled) {
         skippedOptionalQuestions.push('height_weight')
         surveyScore += 10
       }
-      if (!addressVisible) {
+      
+      // Home Address: counts only if filled when visible
+      const addressFilled = addressVisible && data.homeAddress
+      if (!addressFilled) {
         skippedOptionalQuestions.push('home_address')
         surveyScore += 10
       }
-      if (!occupationVisible) {
+      
+      // Occupation: counts only if filled when visible
+      const occupationFilled = occupationVisible && data.occupation
+      if (!occupationFilled) {
         skippedOptionalQuestions.push('occupation')
         surveyScore += 10
       }
       
       // Update user choices - for privacy scoring
+      // Store individual survey field values at top level for context compatibility
       const choices = {
         surveyScore,
         skippedOptionalQuestions,
         filledOptionalQuestions: 3 - skippedOptionalQuestions.length,
         sensitiveDataPoints: [
-          ...(data.height && data.weight ? ['height', 'weight'] : []),
-          ...(data.homeAddress ? ['home_address'] : []),
-          ...(data.occupation ? ['occupation'] : [])
-        ]
+          ...(heightWeightFilled ? ['height', 'weight'] : []),
+          ...(addressFilled ? ['home_address'] : []),
+          ...(occupationFilled ? ['occupation'] : [])
+        ],
+        // Store actual user input data at top level (UserChoices compatible)
+        surveyHeight: data.height,
+        surveyWeight: data.weight,
+        surveyOccupation: data.occupation,
+        surveyHomeAddress: data.homeAddress,
       }
       
       console.log('Survey Scoring:', {
         skippedOptionalQuestions,
         surveyScore,
-        filledOptionalQuestions: choices.filledOptionalQuestions
+        filledOptionalQuestions: choices.filledOptionalQuestions,
+        surveyHeight: choices.surveyHeight,
+        surveyWeight: choices.surveyWeight,
+        surveyOccupation: choices.surveyOccupation,
+        surveyHomeAddress: choices.surveyHomeAddress,
       })
       
       // Call updateUserChoices if exists

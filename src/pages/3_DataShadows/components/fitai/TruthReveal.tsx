@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useFitAI } from './fitaiContext'
+import { useDataShadowsLayout } from '../../DataShadowsLayoutContext'
+import { NetworkDataFlowDiagram } from './NetworkDataFlowDiagram'
+import type { TermsConsent, SurveyData } from './dataFlowLogic'
 
 const TruthReveal: React.FC = () => {
   const { setScreen, userChoices } = useFitAI()
+  const layout = useDataShadowsLayout()
   const [phase, setPhase] = useState(0)
   const [showTwist, setShowTwist] = useState(false)
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
@@ -76,8 +81,45 @@ const TruthReveal: React.FC = () => {
     }
   }
 
+  // Sync final-step layout (phone left, diagram right) and portal diagram into right slot
+  useEffect(() => {
+    if (showAllLayers) layout.setTruthRevealFinalStep(true)
+    return () => { layout.setTruthRevealFinalStep(false) }
+  }, [showAllLayers, layout])
+
+  const rightSlotEl = layout.rightSlotMounted ? layout.rightSlotRef.current : null
+  const termsConsent: TermsConsent = {
+    privacySettings: (userChoices?.privacySettings as TermsConsent['privacySettings']) ?? {
+      analytics: false,
+      marketing: false,
+      thirdParty: false,
+      dataRetention: false,
+      aiTraining: false,
+    },
+    termsReadingProgress: typeof userChoices?.termsReadingProgress === 'number' ? userChoices.termsReadingProgress : 0,
+    uncheckedOptions: userChoices?.uncheckedOptions as string[] | undefined,
+  }
+  const surveyData: SurveyData = {
+    height: typeof userChoices?.surveyHeight === 'number' ? userChoices.surveyHeight : undefined,
+    weight: typeof userChoices?.surveyWeight === 'number' ? userChoices.surveyWeight : undefined,
+    occupation: typeof userChoices?.surveyOccupation === 'string' ? userChoices.surveyOccupation : undefined,
+    homeAddress: typeof userChoices?.surveyHomeAddress === 'string' ? userChoices.surveyHomeAddress : undefined,
+  }
+  const portalContent =
+    showAllLayers && rightSlotEl
+      ? createPortal(
+          <NetworkDataFlowDiagram
+            termsConsent={termsConsent}
+            surveyData={surveyData}
+            overridePrivacyScore={privacyScore}
+          />,
+          rightSlotEl
+        )
+      : null
+
   return (
     <>
+      {portalContent}
       <div
         onWheel={handleScroll}
         style={{
@@ -169,12 +211,12 @@ const TruthReveal: React.FC = () => {
                 fontSize: '50px',
                 animation: 'spin 2s linear infinite',
                 marginBottom: '20px'
-              }}>🤖</div>
+              }}>📱</div>
               <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 12px' }}>
                 Optimizing Your Plan Details...
               </h2>
               <p style={{ fontSize: '12px', color: '#888', margin: '0 0 16px' }}>
-                Our AI is analyzing all your data
+                Our App is analyzing all your data
               </p>
               <div style={{
                 display: 'flex',
