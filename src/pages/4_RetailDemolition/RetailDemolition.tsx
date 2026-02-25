@@ -20,6 +20,7 @@ const RetailDemolition = () => {
     vettedLogs,
     showQuiz,
     quizAnswers,
+    decisions,
     logRef,
     chatRef,
     chatBottomRef,
@@ -64,6 +65,8 @@ const RetailDemolition = () => {
         setNotifications={setNotifications}
         setShowQuiz={setShowQuiz}
         setGameState={setGameState}
+        score={score}
+        decisions={decisions}
       />
     </div>
   );

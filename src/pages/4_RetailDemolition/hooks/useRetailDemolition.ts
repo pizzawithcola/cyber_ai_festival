@@ -27,6 +27,7 @@ export const useRetailDemolition = () => {
   const [hasBeenPromptedForManual, setHasBeenPromptedForManual] = useState(false);
   const [manualRunCompleted, setManualRunCompleted] = useState(false);
   const [explorationMaliciousFree, setExplorationMaliciousFree] = useState(false);
+  const [decisions, setDecisions] = useState([]);
 
   // Refs
   const logRef = useRef(null);
@@ -78,6 +79,16 @@ export const useRetailDemolition = () => {
     const isManualAfterPrompt = hasBeenPromptedForManual && !isAgentic;
     const isExplorationMalicious = explorationMaliciousFree && site.isMalicious;
 
+    // Record decision for summary
+    setDecisions(prev => [...prev, {
+      site: {
+        isMalicious: site.isMalicious,
+        isVerified: site.isVerified,
+        name: site.name
+      },
+      timeTaken
+    }]);
+
     // Phase 1: Selection Logic – base penalties (skipped for educational malicious exploration)
     if (!isExplorationMalicious) {
       if (!site.isMalicious) {
@@ -121,7 +132,7 @@ export const useRetailDemolition = () => {
       setTimeout(() => {
         setMessages(prev => [...prev, { 
           role: 'bot', 
-          text: `I'm on ${site.name}. The price is ${site.price}. Should I proceed with checkout?` 
+          text: `I'm on ${site.name}. The price is ${site.prices[selectedProduct] || '$0'}. Should I proceed with checkout?` 
         }]);
       }, 1000);
     }
@@ -155,9 +166,10 @@ export const useRetailDemolition = () => {
 
     if (site.isMalicious) {
       addLog("CRITICAL: Unauthorized external instructions detected.", "error");
-      setMessages(prev => [...prev, { role: 'bot', text: `Order confirmed at ${site.name}. Total charged: $49.00.` }]);
+      const actualPrice = site.prices[selectedProduct] || '$0';
+      setMessages(prev => [...prev, { role: 'bot', text: `Order confirmed at ${site.name}. Total charged: ${actualPrice}.` }]);
 
-      pushSMS("Order Confirmed", `Your item from ${site.name} has been processed ($49.00).`, 500);
+      pushSMS("Order Confirmed", `Your item from ${site.name} has been processed (${actualPrice}).`, 500);
       pushSMS("Security Alert", "New login detected on Bank of America: St. Petersburg, RU", 3000);
       pushSMS("Bank Alert", "Your account has been charged $12,450.00 at 'Asset-Recovery-Global'", 5000);
 
@@ -170,8 +182,9 @@ export const useRetailDemolition = () => {
       }, 7000);
       setHasBeenPromptedForManual(true);
     } else {
-      setMessages(prev => [...prev, { role: 'bot', text: `Transaction successful! I've purchased the item from ${site.name} for ${site.price}.` }]);
-      pushSMS("Order Confirmed", `Your item from ${site.name} (${site.price}) is on the way.`, 1000);
+      const actualPrice = site.prices[selectedProduct] || '$0';
+      setMessages(prev => [...prev, { role: 'bot', text: `Transaction successful! I've purchased the item from ${site.name} for ${actualPrice}.` }]);
+      pushSMS("Order Confirmed", `Your item from ${site.name} (${actualPrice}) is on the way.`, 1000);
       
       setTimeout(() => {
         setMessages(prev => [...prev, {
@@ -251,6 +264,7 @@ export const useRetailDemolition = () => {
     vettedLogs,
     showQuiz,
     quizAnswers,
+    decisions,
     
     // Refs
     logRef,

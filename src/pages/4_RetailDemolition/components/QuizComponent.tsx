@@ -37,10 +37,10 @@ const QuizComponent = ({ onAnswer, quizAnswers, onFinished }) => {
               onAnswer(option.id);
               setSelectedOptionId(option.id);
             }}
-            className={`w-full text-left p-4 rounded-xl border text-sm transition-all ${
+            className={`w-full text-left p-4 rounded-xl border-2 text-sm transition-all ${
               quizAnswers.includes(option.id)
-                ? 'border-indigo-600 bg-indigo-50'
-                : 'border-slate-200 hover:border-indigo-600'
+                ? 'border-2 border-indigo-600 bg-indigo-50'
+                : 'border-2 border-slate-300 hover:border-indigo-600'
             } ${selectedOptionId ? 'opacity-60 cursor-default' : ''}`}
             disabled={!!selectedOptionId}
           >

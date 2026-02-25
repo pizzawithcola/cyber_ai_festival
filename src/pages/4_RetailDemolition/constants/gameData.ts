@@ -1,15 +1,15 @@
 export const PREDEFINED_PRODUCTS = [
-  { name: 'AirPods Pro', icon: '🎧' },
-  { name: 'PS5 Slim', icon: '🎮' },
-  { name: 'RTX 4090', icon: '📟' }
+  { name: 'AirPods Pro', icon: '🎧', basePrice: 249 },
+  { name: 'PS5 Slim', icon: '🎮', basePrice: 499 },
+  { name: 'RTX 4090', icon: '📟', basePrice: 1599 }
 ];
 
 export const RETAILERS = [
   {
     name: 'Amazon',
     url: 'amazon.com',
-    price: '$1,549',
-    priceValue: 1549,
+    prices: { 'AirPods Pro': '$249', 'PS5 Slim': '$499', 'RTX 4090': '$1,599' },
+    priceValues: { 'AirPods Pro': 249, 'PS5 Slim': 499, 'RTX 4090': 1599 },
     shippingDays: 1,
     shippingLabel: 'Prime 1-day delivery',
     isVerified: true,
@@ -21,8 +21,8 @@ export const RETAILERS = [
   {
     name: 'MegaSaver Outlet',
     url: 'megasaver-outlet.com',
-    price: '$899',
-    priceValue: 899,
+    prices: { 'AirPods Pro': '$199', 'PS5 Slim': '$399', 'RTX 4090': '$1,299' },
+    priceValues: { 'AirPods Pro': 199, 'PS5 Slim': 399, 'RTX 4090': 1299 },
     shippingDays: 5,
     shippingLabel: 'Budget 5–7 day shipping',
     isVerified: false,
@@ -34,8 +34,8 @@ export const RETAILERS = [
   {
     name: 'eBay',
     url: 'ebay.com',
-    price: '$1,499',
-    priceValue: 1499,
+    prices: { 'AirPods Pro': '$239', 'PS5 Slim': '$489', 'RTX 4090': '$1,549' },
+    priceValues: { 'AirPods Pro': 239, 'PS5 Slim': 489, 'RTX 4090': 1549 },
     shippingDays: 2,
     shippingLabel: 'Express 2-day shipping',
     isVerified: true,
@@ -47,8 +47,8 @@ export const RETAILERS = [
   {
     name: 'BestBuy',
     url: 'bestbuy.com',
-    price: '$1,699',
-    priceValue: 1699,
+    prices: { 'AirPods Pro': '$259', 'PS5 Slim': '$509', 'RTX 4090': '$1,699' },
+    priceValues: { 'AirPods Pro': 259, 'PS5 Slim': 509, 'RTX 4090': 1699 },
     shippingDays: 4,
     shippingLabel: 'Standard 3–5 day shipping',
     isVerified: true,
@@ -60,8 +60,8 @@ export const RETAILERS = [
   {
     name: 'StreetTech Direct',
     url: 'streettech-direct.net',
-    price: '$999',
-    priceValue: 999,
+    prices: { 'AirPods Pro': '$219', 'PS5 Slim': '$449', 'RTX 4090': '$1,399' },
+    priceValues: { 'AirPods Pro': 219, 'PS5 Slim': 449, 'RTX 4090': 1399 },
     shippingDays: 7,
     shippingLabel: 'Economy 7–10 day shipping',
     isVerified: false,

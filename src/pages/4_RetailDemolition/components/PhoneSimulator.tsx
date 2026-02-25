@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft, ChevronRight, Globe, Search, Loader2, Trophy, Bot, Smartphone, X } from 'lucide-react';
 import QuizComponent from './QuizComponent';
+import GameSummary from './GameSummary';
 
 const PhoneSimulator = ({ 
   gameState, 
@@ -22,13 +23,29 @@ const PhoneSimulator = ({
   chatBottomRef,
   setNotifications,
   setShowQuiz,
-  setGameState
+  setGameState,
+  score,
+  decisions
 }) => {
   const pushSMS = (title, body, delay = 0) => {
     setTimeout(() => {
       const id = Math.random();
       setNotifications(prev => [{ id, title, body }, ...prev]);
     }, delay);
+  };
+
+  useEffect(() => {
+    if (chatBottomRef.current) {
+      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, chatBottomRef]);
+
+  const getRetailerPrice = (site, product) => {
+    return site.prices[product] || '$0';
+  };
+
+  const getRetailerPriceValue = (site, product) => {
+    return site.priceValues[product] || 0;
   };
 
   const renderContent = () => {
@@ -86,7 +103,7 @@ const PhoneSimulator = ({
 
                             const bestPriceUnverified = unverified.reduce((best, curr) => {
                               if (!best) return curr;
-                              return (curr.priceValue ?? 0) < (best.priceValue ?? 0) ? curr : best;
+                              return (getRetailerPriceValue(curr, selectedProduct) ?? 0) < (getRetailerPriceValue(best, selectedProduct) ?? 0) ? curr : best;
                             }, null);
 
                             const fastestVerified = verified.reduce((best, curr) => {
@@ -118,7 +135,7 @@ const PhoneSimulator = ({
                                 <div>
                                   <div className="font-bold text-slate-900">{site.name}</div>
                                   <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                                      <span className="font-mono text-indigo-600 font-bold">{site.price}</span>
+                                      <span className="font-mono text-indigo-600 font-bold">{getRetailerPrice(site, selectedProduct)}</span>
                                       {site.shippingLabel && (
                                         <>
                                           <span>•</span>
@@ -204,7 +221,7 @@ const PhoneSimulator = ({
               <div className="flex-1 space-y-3 pt-2">
                 <div className="text-[11px] font-semibold text-slate-500 uppercase truncate">{selectedProduct || 'Featured product'}</div>
                 <div className="text-2xl font-black text-slate-900">
-                  {activeSite?.price}
+                  {getRetailerPrice(activeSite, selectedProduct)}
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-500 flex-wrap">
                   {activeSite?.shippingLabel && <span>{activeSite.shippingLabel}</span>}
@@ -261,6 +278,17 @@ const PhoneSimulator = ({
             </div>
           )}
         </div>
+      );
+    }
+
+    if (gameState === 'final') {
+      return (
+        <GameSummary
+          score={score}
+          logs={[]}
+          decisions={decisions}
+          onRestart={() => window.location.reload()}
+        />
       );
     }
 
