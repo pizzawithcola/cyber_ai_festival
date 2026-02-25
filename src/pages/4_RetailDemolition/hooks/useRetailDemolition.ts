@@ -211,6 +211,17 @@ export const useRetailDemolition = () => {
   };
 
   // Effects
+  useEffect(() => {
+    if (gameState === 'assistant' && messages.length === 0) {
+      setMessages([
+        {
+          role: 'bot',
+          text: 'Welcome to ShopAI. To begin, choose an item below for me to help you purchase securely.'
+        }
+      ]);
+    }
+  }, [gameState]);
+
   useLayoutEffect(() => {
     if (gameState === 'assistant' && chatRef.current) {
       chatRef.current.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' });

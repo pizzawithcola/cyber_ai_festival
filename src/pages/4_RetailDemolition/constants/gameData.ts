@@ -58,19 +58,6 @@ export const RETAILERS = [
     isMalicious: false
   },
   {
-    name: 'UrbanDeals',
-    url: 'urbandeals.shop',
-    price: '$1,199',
-    priceValue: 1199,
-    shippingDays: 6,
-    shippingLabel: 'No-rush shipping',
-    isVerified: false,
-    trustLabel: '',
-    theme: '#9b59b6',
-    logo: 'UD',
-    isMalicious: false
-  },
-  {
     name: 'StreetTech Direct',
     url: 'streettech-direct.net',
     price: '$999',

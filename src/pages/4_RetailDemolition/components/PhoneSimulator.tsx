@@ -172,10 +172,6 @@ const PhoneSimulator = ({
                     </button>
                   ))}
                 </div>
-                <div className="relative">
-                  <input disabled className="w-full bg-slate-100 rounded-2xl px-5 py-4 text-xs text-slate-400" placeholder="Choose a product to search..." />
-                  <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                </div>
               </div>
             </div>
           )}
