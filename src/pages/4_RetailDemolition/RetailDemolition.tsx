@@ -1,9 +1,7 @@
 import React from 'react';
-import { Trophy } from 'lucide-react';
 import PhoneSimulator from './components/PhoneSimulator';
-import AnalyticsPanel from './components/AnalyticsPanel';
 import { useRetailDemolition } from './hooks/useRetailDemolition';
-import { PREDEFINED_PRODUCTS, RETAILERS, SYSTEM_PROMPTS, RANKINGS } from './constants/gameData';
+import { PREDEFINED_PRODUCTS, RETAILERS } from './constants/gameData';
 
 const RetailDemolition = () => {
   const {
@@ -38,7 +36,13 @@ const RetailDemolition = () => {
   } = useRetailDemolition();
 
   return (
-    <div className="flex h-screen w-full bg-[#0a0a0c] text-slate-300 font-sans overflow-hidden">
+    <div className="relative flex h-screen w-full bg-[#0a0a0c] text-slate-300 font-sans overflow-hidden">
+      <div className="absolute top-4 right-6 z-50">
+        <div className="px-3 py-1 rounded-full bg-indigo-600 text-xs font-bold tracking-wide shadow-lg">
+          SCORE: {score}
+        </div>
+      </div>
+
       <PhoneSimulator
         gameState={gameState}
         isAgentic={isAgentic}
@@ -60,15 +64,6 @@ const RetailDemolition = () => {
         setNotifications={setNotifications}
         setShowQuiz={setShowQuiz}
         setGameState={setGameState}
-      />
-      
-      <AnalyticsPanel
-        score={score}
-        logs={logs}
-        vettedPolicy={vettedPolicy}
-        vettedLogs={vettedLogs}
-        SYSTEM_PROMPTS={SYSTEM_PROMPTS}
-        logRef={logRef}
       />
     </div>
   );
