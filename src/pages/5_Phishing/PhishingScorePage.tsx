@@ -31,11 +31,13 @@ const PhishingScorePage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [attemptCount, setAttemptCount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const state = location.state as {
     reply: {
       total_score: number;
       score_details: Record<string, [number, string]>;
+      user_id?: number;
     };
   } | null;
 
@@ -50,10 +52,42 @@ const PhishingScorePage: React.FC = () => {
     );
   }
 
-  const { total_score, score_details } = state.reply;
+  const { total_score, score_details, user_id } = state.reply;
   const maxTotal = Object.values(CATEGORY_LABELS).reduce((sum, c) => sum + c.maxScore, 0);
   const totalRatio = total_score / maxTotal;
   const user = getStoredUser();
+
+  const handleSubmitScoreAndNavigate = async () => {
+    if (!user_id) {
+      console.error('No user_id provided');
+      navigate('/ranking/game/phishing');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Extract game5_score from score_details
+      const game5Score = score_details['5'] ? score_details['5'][0] : 0;
+
+      const response = await fetch(`http://localhost:8848/scores/${user_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game5_score: game5Score,
+          total_score: total_score
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to submit score:', response.status);
+      }
+    } catch (err) {
+      console.error('Error submitting score:', err);
+    } finally {
+      setIsSubmitting(false);
+      navigate('/ranking/game/phishing');
+    }
+  };
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
@@ -169,11 +203,12 @@ const PhishingScorePage: React.FC = () => {
             )}
             <Button
               variant="contained"
-              onClick={() => navigate('/ranking')}
+              onClick={handleSubmitScoreAndNavigate}
+              disabled={isSubmitting}
               endIcon={<ArrowForward />}
               sx={{ px: 3 }}
             >
-              Next
+              {isSubmitting ? 'Submitting...' : 'Next'}
             </Button>
           </Box>
           {attemptCount >= 3 && (

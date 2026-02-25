@@ -8,6 +8,7 @@ import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition';
 import PhishingPanel from '../pages/5_Phishing/PhishingPanel';
 import PhishingScorePage from '../pages/5_Phishing/PhishingScorePage';
 import RankingPage from '../components/sharedPages/RankingPage';
+import AdminPage from '../components/functional/AdminPage';
 import LoginPage from '../components/sharedPages/LoginPage';
 
 
@@ -27,6 +28,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/phishing" element={<PhishingPanel />} />
       <Route path="/phishing/score" element={<PhishingScorePage />} />
       <Route path="/ranking" element={<RankingPage />} />
+      <Route path="/ranking/game/:game" element={<RankingPage />} />
+      <Route path="/admin" element={<AdminPage />} />
     </Routes>
   );
 };

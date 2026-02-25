@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { setStoredUser } from '../../utils/userStorage';
+import { COUNTRIES } from '../common/Countries';
 import {
   Box,
   Paper,
@@ -37,35 +38,6 @@ function countryCodeToFlag(code: string) {
     .map(c => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
     .join('');
 }
-
-const COUNTRIES = [
-  { code: 'AU', name: 'Australia' },
-  { code: 'BH', name: 'Bahrain' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'CN', name: 'Mainland China' },
-  { code: 'EG', name: 'Egypt' },
-  { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'HK', name: 'Hong Kong SAR' },
-  { code: 'IN', name: 'India' },
-  { code: 'ID', name: 'Indonesia' },
-  { code: 'KW', name: 'Kuwait' },
-  { code: 'MY', name: 'Malaysia' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'NZ', name: 'New Zealand' },
-  { code: 'OM', name: 'Oman' },
-  { code: 'PL', name: 'Poland' },
-  { code: 'QA', name: 'Qatar' },
-  { code: 'SA', name: 'Saudi Arabia' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'KR', name: 'South Korea' },
-  { code: 'CN', name: 'Taiwan, China' },
-  { code: 'TR', name: 'Turkey' },
-  { code: 'AE', name: 'United Arab Emirates' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-  { code: 'VN', name: 'Vietnam' },
-];
 
 const COUNTRY_NAME_TO_CODE = Object.fromEntries(COUNTRIES.map(c => [c.name, c.code])) as Record<string, string>;
 
