@@ -1,3 +1,14 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+@plugin "tailwind-scrollbar-hide";
+
+@layer base {
+  /* This ensures Tailwind's utility classes win over MUI's default button styles */
+  button, [type='button'], [type='reset'], [type='submit'] {
+    @apply bg-transparent; 
+  }
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
