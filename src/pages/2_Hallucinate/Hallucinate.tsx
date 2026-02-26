@@ -91,13 +91,13 @@ const Hallucinate: React.FC = () => {
       '100%': { filter: 'drop-shadow(0 0 6px rgba(0, 255, 217, 0.25))' },
     },
     '& .MuiTypography-root': {
-      fontFamily: "'VT323', 'Courier New', monospace",
+      fontFamily: "'Helvetica Neue', Arial, sans-serif",
       color: '#f2fbff',
       letterSpacing: '0.3px',
       lineHeight: 1.65,
       textShadow: '0 1px 0 rgba(0,0,0,0.35)',
     },
-    '& .MuiTypography-h4, & .MuiTypography-h5, & .MuiTypography-h6, & .MuiTypography-subtitle1, & .MuiTypography-subtitle2': {
+    '& .MuiTypography-h4, & .MuiTypography-h5, & .MuiTypography-h6': {
       fontFamily: "'Press Start 2P', 'VT323', monospace",
       textTransform: 'uppercase',
     },
@@ -321,45 +321,62 @@ const Hallucinate: React.FC = () => {
                       </Typography>
                     </Paper>
                   )}
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 1 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 900,
+                      mb: 1,
+                      color: '#f3f3f3',
+                      letterSpacing: '0.08em',
+                      fontSize: { xs: '1.08rem', sm: '1.18rem' },
+                    }}
+                  >
                     Newspaper Clippings
                   </Typography>
                   <Grid container spacing={2} sx={{ mb: 2, alignItems: 'stretch' }}>
                     {selectedScenario?.background.clippings.map((clip) => (
                       <Grid key={`${clip.outlet}-${clip.date}`} size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
-                        <Paper
+                        <Box
+                          component="article"
                           sx={{
                             flex: 1,
                             height: '100%',
                             p: 2,
-                            border: '1px solid rgba(0, 255, 217, 0.45)',
-                            background:
-                              'linear-gradient(180deg, rgba(7, 12, 28, 0.98), rgba(6, 10, 22, 0.98))',
-                            boxShadow: '0 10px 22px rgba(0, 255, 217, 0.1)',
-                            color: '#eaffff',
+                            border: '3px double #161616',
+                            backgroundColor: '#f6f1e4',
+                            backgroundImage:
+                              'linear-gradient(0deg, rgba(0,0,0,0.025), rgba(0,0,0,0.025)), repeating-linear-gradient(180deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 4px)',
+                            boxShadow: '0 6px 14px rgba(0, 0, 0, 0.22)',
+                            color: '#161616',
+                            '& .MuiTypography-root': {
+                              color: '#161616 !important',
+                              fontFamily: "'Georgia', 'Times New Roman', serif",
+                              textShadow: 'none !important',
+                              letterSpacing: 'normal',
+                            },
                           }}
                         >
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#eaffff' }}>
-                              <ArticleIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pb: 0.5, borderBottom: '1px solid rgba(0,0,0,0.3)' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                              <ArticleIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-top' }} />
                               {clip.outlet}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#bfeeff' }}>
-                              <CalendarIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                            <Typography variant="caption" sx={{ fontSize: '0.72rem', opacity: 0.9 }}>
+                              <CalendarIcon sx={{ fontSize: 13, mr: 0.4, verticalAlign: 'text-top' }} />
                               {clip.date}
                             </Typography>
                           </Box>
-                          <Typography variant="caption" sx={{ display: 'block', mb: 1, color: '#bfeeff' }}>
-                            <PersonIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                          <Typography variant="caption" sx={{ display: 'block', mb: 1, fontSize: '0.75rem', fontStyle: 'italic' }}>
+                            <PersonIcon sx={{ fontSize: 13, mr: 0.4, verticalAlign: 'text-top' }} />
                             By {clip.byline}
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 900, mb: 0.75, color: '#eaffff' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 900, mb: 0.75, fontSize: '1rem', lineHeight: 1.45 }}>
                             {clip.angle}
                           </Typography>
-                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#d7f2ff' }}>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, fontSize: '0.96rem' }}>
                             {clip.body}
                           </Typography>
-                        </Paper>
+                        </Box>
                       </Grid>
                     ))}
                   </Grid>
@@ -443,9 +460,6 @@ const Hallucinate: React.FC = () => {
                       <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5 }}>
                         🎴 Hallucination Flash Cards
                       </Typography>
-                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                        One game mode: flag risky claims, pass safe ones, then review the report.
-                      </Typography>
                     </Box>
                   }
                   sx={panelHeaderSx}
@@ -483,7 +497,6 @@ const Hallucinate: React.FC = () => {
                           </Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Click <b>Flag</b> if the claim is risky or likely hallucinated</Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Click <b>Pass</b> if the sentence is safe/cautious</Typography>
-                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Keep your streak for bonus points</Typography>
                         </Stack>
                       </Paper>
                     </Grid>
@@ -494,10 +507,10 @@ const Hallucinate: React.FC = () => {
                           📊 Round Summary
                         </Typography>
                         <Stack spacing={0.75}>
-                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Score, accuracy, and max combo</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Score out of 100 and accuracy</Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• Correct flags and missed pitfalls</Typography>
                           <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>• False positives and safe passes</Typography>
-                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#bfeeff' }}>• Review accuracy, combos, and missed pitfalls</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#bfeeff' }}>• Review accuracy and missed pitfalls</Typography>
                         </Stack>
                       </Paper>
                     </Grid>

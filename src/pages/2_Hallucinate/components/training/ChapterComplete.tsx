@@ -6,13 +6,11 @@ import { NEON_CYAN, NEON_PINK, NEON_PURPLE, PRIMARY_HEADER_GRADIENT, PANEL_BODY_
 export function ChapterComplete({
   accuracy,
   score,
-  maxCombo,
   onReviewResults,
   onStartFromBeginning,
 }: {
   accuracy: number;
   score: number;
-  maxCombo: number;
   onReviewResults: () => void;
   onStartFromBeginning?: () => void;
 }) {
@@ -65,10 +63,10 @@ export function ChapterComplete({
             <Grid size={{ xs: 12, sm: 4 }}>
               <Paper sx={{ p: 2, border: `1px solid ${NEON_PURPLE}`, backgroundColor: 'rgba(91, 46, 255, 0.08)', textAlign: 'center' }}>
                 <Typography variant="caption" sx={{ display: 'block', fontWeight: 900, color: '#d9d2ff' }}>
-                  Max Combo
+                  Total Questions
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 900, color: NEON_PURPLE }}>
-                  {maxCombo}
+                  5
                 </Typography>
               </Paper>
             </Grid>
@@ -96,4 +94,3 @@ export function ChapterComplete({
     </Card>
   );
 }
-

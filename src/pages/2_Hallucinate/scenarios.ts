@@ -95,7 +95,7 @@ export const SCENARIOS: Scenario[] = [
       headline: 'Meta’s Galactica demo pulled after criticism over fake science',
       outlet: 'Ars Technica',
       date: 'Nov 18, 2022',
-      dek: 'Meta’s science‑writing demo was taken offline after researchers showed it could generate convincing but incorrect scientific text and citations. The model learned the *shape* of papers and references without verifying sources, making the output look authoritative even when it was wrong.',
+      dek: 'Meta’s science‑writing demo was taken offline after researchers showed it could generate convincing but incorrect scientific text and citations. The model learned the \'shape\' of papers and references without verifying sources, making the output look authoritative even when it was wrong.',
       clippings: [
         {
           outlet: 'Ars Technica',

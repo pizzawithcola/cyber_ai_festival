@@ -7,8 +7,6 @@ import { type ResultPage, type ResultPitfalls } from './types';
 export function ResultsPanel({
   resultPage,
   score,
-  accuracy,
-  maxCombo,
   resultPitfalls,
   feedback,
   feedbackDetail,
@@ -17,8 +15,6 @@ export function ResultsPanel({
 }: {
   resultPage: Exclude<ResultPage, 'complete'>;
   score: number;
-  accuracy: number;
-  maxCombo: number;
   resultPitfalls: ResultPitfalls;
   feedback: string;
   feedbackDetail: string;
@@ -40,29 +36,40 @@ export function ResultsPanel({
             <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#eaffff', mb: 0.75 }}>
               Round complete
             </Typography>
-            <Typography variant="h5" sx={{ fontWeight: 900, color: NEON_CYAN, mb: 0.75 }}>
+            <Typography variant="h5" sx={{ fontWeight: 900, color: NEON_CYAN, mb: 1 }}>
               Score {score}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#d7f2ff', lineHeight: 1.7 }}>
-              Accuracy <b>{accuracy}%</b> • Max combo <b>{maxCombo}</b> • Safe passes <b>{resultPitfalls.correctPass.length}</b> • Unanswered{' '}
-              <b>{resultPitfalls.unanswered.length}</b>
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ p: 2, border: `1px solid ${feedbackColor}`, backgroundColor: 'rgba(0, 255, 217, 0.08)' }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 900, color: feedbackColor }}>
-              {feedback}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#d7f2ff' }}>
-              {feedbackDetail}
-            </Typography>
+            <Box
+              sx={{
+                mt: 0.25,
+                px: 1.1,
+                py: 0.9,
+                borderRadius: 1,
+                border: `1px solid ${feedbackColor}`,
+                backgroundColor: 'rgba(0, 0, 0, 0.12)',
+              }}
+            >
+              <Typography variant="body2" sx={{ color: '#d7f2ff', lineHeight: 1.7 }}>
+                <Box component="span" sx={{ color: feedbackColor, fontWeight: 900 }}>
+                  {feedback}
+                </Box>
+                {' — '}
+                {feedbackDetail}
+              </Typography>
+            </Box>
           </Paper>
         </Stack>
       )}
 
       {resultPage === 'correct' && (
         <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
-          <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>✅ Correct pitfalls you flagged</Typography>} />
+          <CardHeader
+            title={
+              <Typography variant="subtitle1" sx={{ fontWeight: 900, fontSize: { xs: '1.08rem', sm: '1.16rem' } }}>
+                ✅ Correct pitfalls you flagged
+              </Typography>
+            }
+          />
           <Divider />
           <CardContent sx={{ pt: 2 }}>
             {resultPitfalls.correct.length === 0 ? (
@@ -124,7 +131,13 @@ export function ResultsPanel({
 
       {resultPage === 'missed' && (
         <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
-          <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>⚠️ Missed pitfalls</Typography>} />
+          <CardHeader
+            title={
+              <Typography variant="subtitle1" sx={{ fontWeight: 900, fontSize: { xs: '1.08rem', sm: '1.16rem' } }}>
+                ⚠️ Missed pitfalls
+              </Typography>
+            }
+          />
           <Divider />
           <CardContent sx={{ pt: 2 }}>
             {resultPitfalls.missed.length === 0 ? (
@@ -186,7 +199,13 @@ export function ResultsPanel({
 
       {resultPage === 'falsePos' && (
         <Card sx={{ boxShadow: 0, border: '1px solid #eee' }}>
-          <CardHeader title={<Typography variant="subtitle2" sx={{ fontWeight: 900 }}>🧨 False positives</Typography>} />
+          <CardHeader
+            title={
+              <Typography variant="subtitle1" sx={{ fontWeight: 900, fontSize: { xs: '1.08rem', sm: '1.16rem' } }}>
+                🧨 False positives
+              </Typography>
+            }
+          />
           <Divider />
           <CardContent sx={{ pt: 2 }}>
             {resultPitfalls.falsePos.length === 0 ? (
@@ -252,4 +271,3 @@ export function ResultsPanel({
     </Box>
   );
 }
-

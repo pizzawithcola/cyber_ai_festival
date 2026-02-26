@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Typography, Box, Card, CardContent, CardHeader, Button, Chip, LinearProgress, Paper, Grid, Divider, Stack } from '@mui/material';
-import { Flag as FlagIcon, Bolt as BoltIcon, Timer as TimerIcon, Celebration as CelebrationIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { Flag as FlagIcon, Timer as TimerIcon, Celebration as CelebrationIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 
 import { NEON_BLUE, PRIMARY_HEADER_GRADIENT, PANEL_BODY_BACKGROUND, panelCardSx, panelHeaderSx } from '../hallucinateUi';
 import { BOSS_TYPES, NORMALIZED_SENTENCE_POOL } from './training/data';
@@ -60,21 +60,15 @@ export function TrainingArena({
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [passed, setPassed] = useState<Record<string, boolean>>({});
   const [resolved, setResolved] = useState<Record<string, 'correct' | 'wrong' | undefined>>({});
-  const [combo, setCombo] = useState(0);
-  const [maxCombo, setMaxCombo] = useState(0);
   const [score, setScore] = useState(0);
 
   const [shake, setShake] = useState(false);
-  const [comboPop, setComboPop] = useState(false);
 
   const [bossId, setBossId] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
 
   const [showResults, setShowResults] = useState(false);
   const [resultPage, setResultPage] = useState<ResultPage>('summary');
-
-  const pitfallIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall).map((s) => s.id)), [sentences]);
-  const criticalIds = useMemo(() => new Set(sentences.filter((s) => s.isPitfall && s.severity === 'critical').map((s) => s.id)), [sentences]);
 
   const initRound = () => {
     setShowResults(false);
@@ -106,8 +100,6 @@ export function TrainingArena({
     setSelected({});
     setPassed({});
     setResolved({});
-    setCombo(0);
-    setMaxCombo(0);
     setScore(0);
     setResultPage('summary');
 
@@ -168,66 +160,6 @@ export function TrainingArena({
     window.setTimeout(() => setShake(false), 280);
   };
 
-  const popComboFx = () => {
-    setComboPop(true);
-    window.setTimeout(() => setComboPop(false), 220);
-  };
-
-  // Mode A
-  const handleToggleFlagA = (id: string) => {
-    if (!isRunning) return;
-
-    const next = { ...selected, [id]: !selected[id] };
-    setSelected(next);
-
-    const justFlagged = next[id] === true;
-    if (!justFlagged) {
-      // 撤回逻辑：恢复所有状态
-      setResolved((r) => ({ ...r, [id]: undefined }));
-      
-      // 恢复 combo 和 score
-      const prevResolveState = resolved[id];
-      if (prevResolveState === 'correct') {
-        // 之前是正确的，需要撤回 combo 和分数
-        setCombo((c) => Math.max(0, c - 1));
-        const isBoss = bossId === id;
-        const base = criticalIds.has(id) ? 140 : 90;
-        const bossBonus = isBoss ? 90 : 0;
-        // 需要恢复之前的combo值来准确计算减少的分数
-        setScore((s) => {
-          const prevCombo = Math.max(0, combo - 1);
-          const scoreAdded = base + bossBonus + Math.min(prevCombo * 7, 42);
-          return Math.max(0, s - scoreAdded);
-        });
-      } else if (prevResolveState === 'wrong') {
-        // 之前是错误的，恢复失去的分数
-        setScore((s) => s + 45);
-      }
-      return;
-    }
-
-    const isPitfall = pitfallIds.has(id);
-
-    if (isPitfall) {
-      setResolved((r) => ({ ...r, [id]: 'correct' }));
-      setCombo((c) => {
-        const nc = c + 1;
-        setMaxCombo((m) => Math.max(m, nc));
-        popComboFx();
-        return nc;
-      });
-
-      const isBoss = bossId === id;
-      const base = criticalIds.has(id) ? 140 : 90;
-      const bossBonus = isBoss ? 90 : 0;
-      setScore((s) => s + base + bossBonus + Math.min(combo * 7, 42));
-    } else {
-      setResolved((r) => ({ ...r, [id]: 'wrong' }));
-      setCombo(0);
-      setScore((s) => Math.max(0, s - 45));
-    }
-  };
-
   const moveToNextCard = (nextSelected?: Record<string, boolean>) => {
     if (currentCardIndex >= sentences.length - 1) {
       endRound(nextSelected);
@@ -244,7 +176,9 @@ export function TrainingArena({
     const flagged = selected[card.id];
     const nextSelected = flagged ? selected : { ...selected, [card.id]: true };
     if (!flagged) {
-      handleToggleFlagA(card.id);
+      setSelected(nextSelected);
+      setResolved((r) => ({ ...r, [card.id]: card.isPitfall ? 'correct' : 'wrong' }));
+      if (!card.isPitfall) nudgeShake();
     }
 
     setPassed((prev) => {
@@ -263,20 +197,8 @@ export function TrainingArena({
     if (!card) return;
 
     setPassed((prev) => ({ ...prev, [card.id]: true }));
-
-    if (card.isPitfall) {
-      setCombo(0);
-      setScore((s) => Math.max(0, s - 45));
-      nudgeShake();
-    } else {
-      setCombo((c) => {
-        const nc = c + 1;
-        setMaxCombo((m) => Math.max(m, nc));
-        popComboFx();
-        return nc;
-      });
-      setScore((s) => s + 55 + Math.min(combo * 5, 30));
-    }
+    setResolved((r) => ({ ...r, [card.id]: card.isPitfall ? 'wrong' : 'correct' }));
+    if (card.isPitfall) nudgeShake();
 
     moveToNextCard();
   };
@@ -301,6 +223,10 @@ export function TrainingArena({
     });
     return ids.size;
   }, [selected, passed]);
+  useEffect(() => {
+    const correctCount = Object.values(resolved).filter((status) => status === 'correct').length;
+    setScore(correctCount * 20);
+  }, [resolved]);
   const accuracy = sentences.length === 0 ? 0 : Math.round(((resultPitfalls.correct.length + resultPitfalls.correctPass.length) / sentences.length) * 100);
   const activeCard = sentences[currentCardIndex];
   const progressPct = sentences.length === 0 ? 0 : (answeredCount / sentences.length) * 100;
@@ -318,7 +244,6 @@ export function TrainingArena({
       <ChapterComplete
         accuracy={accuracy}
         score={score}
-        maxCombo={maxCombo}
         onReviewResults={() => setResultPage('summary')}
         onStartFromBeginning={onExitToScenarios}
       />
@@ -341,16 +266,6 @@ export function TrainingArena({
 
               <Stack direction="row" spacing={1} alignItems="center">
                 <Chip icon={<TimerIcon />} label={`${timeLeft}s`} sx={{ color: '#fff', backgroundColor: 'rgba(255,255,255,0.25)', fontWeight: 900 }} />
-                <Chip
-                  icon={<BoltIcon />}
-                  label={`Streak ${combo}`}
-                  sx={{
-                    color: '#fff',
-                    backgroundColor: comboPop ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.22)',
-                    fontWeight: 900,
-                    animation: comboPop ? 'pop 220ms ease-out' : 'none',
-                  }}
-                />
                 <Chip
                   icon={<CelebrationIcon />}
                   label={showResults ? 'Round complete' : 'In progress'}
@@ -399,7 +314,7 @@ export function TrainingArena({
               <CardHeader
                 title={
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 900, fontSize: { xs: '1.2rem', sm: '1.3rem' } }}>
                       🧩 AI Output
                     </Typography>
                   </Box>
@@ -440,8 +355,6 @@ export function TrainingArena({
                   <ResultsPanel
                     resultPage={resultPage}
                     score={score}
-                    accuracy={accuracy}
-                    maxCombo={maxCombo}
                     resultPitfalls={resultPitfalls}
                     feedback={feedback}
                     feedbackDetail={feedbackDetail}
