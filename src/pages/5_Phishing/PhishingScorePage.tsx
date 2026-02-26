@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getStoredUser, type StoredUser } from '../../utils/userStorage';
+import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 import {
   Box,
   Typography,
@@ -74,12 +75,14 @@ const PhishingScorePage: React.FC = () => {
 
   if (!state?.reply) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 2 }}>
-        <Typography variant='h5'>No score data available</Typography>
-        <Button variant='contained' startIcon={<ArrowBack />} onClick={() => navigate('/phishing')}>
-          Back to Phishing Panel
-        </Button>
-      </Box>
+      <MatrixRainBackground>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 2 }}>
+          <Typography variant='h5'>No score data available</Typography>
+          <Button variant='contained' startIcon={<ArrowBack />} onClick={() => navigate('/phishing')}>
+            Back to Phishing Panel
+          </Button>
+        </Box>
+      </MatrixRainBackground>
     );
   }
 
@@ -162,19 +165,20 @@ const PhishingScorePage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <Header
-        title='Phishing Score Report'
-        firstname={user?.firstname}
-        lastname={user?.lastname}
-        countryCode={user?.countryCode}
-      />
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
-        <Box sx={{ maxWidth: 1200, width: '100%' }}>
-          {/* Total Score */}
-          <Paper
-            sx={{
-              p: 4,
+    <MatrixRainBackground>
+      <Box sx={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <Header
+          title='Phishing Score Report'
+          firstname={user?.firstname}
+          lastname={user?.lastname}
+          countryCode={user?.countryCode}
+        />
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
+          <Box sx={{ maxWidth: 1200, width: '100%' }}>
+            {/* Total Score */}
+            <Paper
+              sx={{
+                p: 4,
               mb: 4,
               textAlign: 'center',
               border: `2px solid ${getScoreColor(totalRatio)}`,
@@ -315,7 +319,8 @@ const PhishingScorePage: React.FC = () => {
           )}
         </Box>
       </Box>
-    </Box>
+      </Box>
+    </MatrixRainBackground>
   );
 };
 

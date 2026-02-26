@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Container, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 
 const PhishingEducationPage: React.FC = () => {
   const theme = useTheme();
@@ -74,26 +75,27 @@ const PhishingEducationPage: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: theme.palette.background.default,
-      }}
-    >
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            textAlign: 'center',
-            px: 3,
-            minHeight: '200px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
+    <MatrixRainBackground>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'transparent', // Make background transparent to show matrix rain
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              textAlign: 'center',
+              px: 3,
+              minHeight: '200px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
           {texts.map((text, index) => (
             <Typography
               key={index}
@@ -114,7 +116,8 @@ const PhishingEducationPage: React.FC = () => {
           ))}
         </Box>
       </Container>
-    </Box>
+      </Box>
+    </MatrixRainBackground>
   );
 };
 

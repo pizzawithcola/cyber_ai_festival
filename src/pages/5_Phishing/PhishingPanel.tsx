@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Paper, Box, Typography, useTheme } from '@mui/material';
 import Header from '../../components/common/Header';
 import { getStoredUser } from '../../utils/userStorage';
+import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 import PhishingTarget from './PhishingTarget';
 import PhishingMailSpace from './PhishingMailSpace';
 import { targets, missions } from './phishingData';
@@ -21,29 +22,31 @@ const PhishingPanel: React.FC = () => {
   const user = getStoredUser();
 
   return (
-    <Box className='phishing-panel' sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
-      <Header
-        title='MISSION V: PHISHING'
-        firstname={user?.firstname}
-        lastname={user?.lastname}
-        countryCode={user?.countryCode}
-      />
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: 2, mt: 2, mb: 1, px: 2 }}>
-        <Box sx={{ flex: 5, minWidth: 0, minHeight: 0 }}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, overflow: 'hidden' }}>
-            <PhishingTarget target={currentTarget} mission={currentMission} onSwitch={handleSwitch} />
-          </Paper>
+    <MatrixRainBackground>
+      <Box className='phishing-panel' sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
+        <Header
+          title='MISSION V: PHISHING'
+          firstname={user?.firstname}
+          lastname={user?.lastname}
+          countryCode={user?.countryCode}
+        />
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: 2, mt: 2, mb: 1, px: 2 }}>
+          <Box sx={{ flex: 5, minWidth: 0, minHeight: 0 }}>
+            <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, overflow: 'hidden' }}>
+              <PhishingTarget target={currentTarget} mission={currentMission} onSwitch={handleSwitch} />
+            </Paper>
+          </Box>
+          <Box sx={{ flex: 7, minWidth: 0, minHeight: 0 }}>
+            <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, overflow: 'hidden' }}>
+              <PhishingMailSpace target={currentTarget} mission={currentMission} />
+            </Paper>
+          </Box>
         </Box>
-        <Box sx={{ flex: 7, minWidth: 0, minHeight: 0 }}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, overflow: 'hidden' }}>
-            <PhishingMailSpace target={currentTarget} mission={currentMission} />
-          </Paper>
+        <Box sx={{ display: 'flex', justifyContent: 'center', flexShrink: 0, py: 0.5 }}>
+          <Typography sx={{ fontSize: '12px' }}>Please <b>DO NOT</b> send any personal or sensitive information to LLM.</Typography>
         </Box>
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'center', flexShrink: 0, py: 0.5 }}>
-        <Typography sx={{ fontSize: '12px' }}>Please <b>DO NOT</b> send any personal or sensitive information to LLM.</Typography>
-      </Box>
-    </Box>
+    </MatrixRainBackground>
   );
 };
 
