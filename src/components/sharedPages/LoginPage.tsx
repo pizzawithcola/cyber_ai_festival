@@ -20,7 +20,7 @@ const GAME_ROUTES: Record<string, string> = {
   hallucinate: '/hallucinate',
   datashadows: '/datashadows',
   retaildemolition: '/retaildemolition',
-  phishing: '/phishing',
+  phishing: '/phishing/edu',
 };
 
 const GAME_TITLES: Record<string, string> = {
@@ -81,6 +81,7 @@ const LoginPage: React.FC = () => {
         throw new Error(err.detail || 'Login failed');
       }
       const user = await res.json();
+      const userId = user?.id;
       const firstname = user?.firstname ?? user?.first_name ?? loginFirstname;
       const lastname = user?.lastname ?? user?.last_name;
       const region = user?.region ?? user?.country;
@@ -90,7 +91,7 @@ const LoginPage: React.FC = () => {
           : region
             ? COUNTRY_NAME_TO_CODE[region]
             : undefined;
-      if (firstname) setStoredUser({ firstname, lastname, countryCode });
+      if (firstname) setStoredUser({ id: userId, firstname, lastname, countryCode });
       navigate(gameRoute);
     } catch (err) {
       setSnack({ open: true, message: String(err instanceof Error ? err.message : err), severity: 'error' });

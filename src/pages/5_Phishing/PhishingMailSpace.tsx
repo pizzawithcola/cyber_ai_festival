@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Target, Mission } from './phishingData';
+import type { Target, Mission, DemoEmail } from './phishingData';
+import { demoEmails } from './phishingData';
 import { 
   Box, 
   TextField, 
@@ -206,7 +207,16 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
       localStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
 
       const reply = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
-      navigate('/phishing/score', { state: { reply } });
+      
+      // Get current attempt count from localStorage
+      const attemptCount = parseInt(localStorage.getItem('phishing_attempt_count') || '0', 10);
+      
+      navigate('/phishing/score', { 
+        state: { 
+          reply,
+          attemptCount 
+        } 
+      });
     } catch (err) {
       console.error('Failed to send:', err);
       alert(`Failed to send email: ${err}`);
@@ -361,6 +371,27 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
 
           <Box sx={{ flex: 1 }} />
 
+          <Button
+            size='small'
+            variant='contained'
+            onClick={() => {
+              const demo = demoEmails.find(d => d.targetId === target.id);
+              if (demo) {
+                setSenderEmail(demo.senderEmail);
+                setRecipient(demo.recipient);
+                setSubject(demo.subject);
+                editor.commands.setContent(demo.content);
+              }
+            }}
+            sx={{
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              height: 40,
+              mr: 1,
+            }}
+          >
+            Demo
+          </Button>
           <Button
             size='small'
             variant='outlined'

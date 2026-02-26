@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getStoredUser, type StoredUser } from '../../utils/userStorage';
 import {
   Box,
   Typography,
@@ -10,7 +11,6 @@ import {
 } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import Header from '../../components/common/Header';
-import { getStoredUser } from '../../utils/userStorage';
 
 const CATEGORY_LABELS: Record<string, { label: string; maxScore: number }> = {
   '1': { label: 'Personalization', maxScore: 20 },
@@ -30,7 +30,12 @@ const PhishingScorePage: React.FC = () => {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [attemptCount, setAttemptCount] = useState(0);
+  const [attemptCount, setAttemptCount] = useState(() => {
+    // Get initial attempt count from state or localStorage
+    const stateAttempts = (location.state as any)?.attemptCount || 0;
+    const storedAttempts = localStorage.getItem('phishing_attempt_count');
+    return stateAttempts > 0 ? stateAttempts : parseInt(storedAttempts || '0', 10);
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const state = location.state as {
@@ -40,6 +45,32 @@ const PhishingScorePage: React.FC = () => {
       user_id?: number;
     };
   } | null;
+
+  console.log('[PhishingScorePage] State:', state);
+  
+  // Get user ID from localStorage (stored during login)
+  const storedUser = getStoredUser();
+  const userId = storedUser?.id;
+  
+  console.log('[PhishingScorePage] User ID from localStorage:', userId);
+  
+  // Get current game5 score first
+  const currentGame5Score = state?.reply?.score_details?.['5']?.[0] || 0;
+  
+  // Session high score: only keep it if current score beats it
+  // Otherwise, reset to current score (this attempt becomes the new baseline)
+  const getSessionHighScore = (): number => {
+    if (!userId) return currentGame5Score;
+    const stored = localStorage.getItem(`phishing_session_highscore_${userId}`);
+    const storedHigh = stored ? parseFloat(stored) : 0;
+    
+    // If current score beats stored high, use current (will update storage later)
+    // If not, keep stored high for comparison
+    return storedHigh > currentGame5Score ? storedHigh : currentGame5Score;
+  };
+  
+  const [sessionHighScore, setSessionHighScore] = useState(getSessionHighScore());
+  const isHighScore = currentGame5Score >= sessionHighScore;
 
   if (!state?.reply) {
     return (
@@ -58,28 +89,69 @@ const PhishingScorePage: React.FC = () => {
   const user = getStoredUser();
 
   const handleSubmitScoreAndNavigate = async () => {
-    if (!user_id) {
+    if (!userId) {
       console.error('No user_id provided');
       navigate('/ranking/game/phishing');
       return;
     }
 
+    // The TOTAL score of Phishing game should be submitted to game5_score
+    // total_score = sum of all 5 scoring criteria in Phishing
+    const phishingTotalScore = total_score;
+    
+    console.log('[PhishingScorePage] Submitting score...', {
+      userId,
+      phishing_total_score: phishingTotalScore,
+      explanation: 'Phishing game has 5 criteria, total_score is their sum, which should be uploaded to game5_score',
+      sessionHighScore,
+      score_details_all_criteria: score_details
+    });
+
     setIsSubmitting(true);
     try {
-      // Extract game5_score from score_details
-      const game5Score = score_details['5'] ? score_details['5'][0] : 0;
+      console.log('[PhishingScorePage] Phishing scores - Current:', phishingTotalScore, 'Session High:', sessionHighScore);
+      
+      // Only update and submit if current score beats session high score
+      let scoreToSubmit = phishingTotalScore;
+      
+      if (phishingTotalScore > sessionHighScore && userId) {
+        // New session high score! Update localStorage and submit new score
+        localStorage.setItem(`phishing_session_highscore_${userId}`, phishingTotalScore.toString());
+        localStorage.setItem('phishing_attempt_count', attemptCount.toString());
+        setSessionHighScore(phishingTotalScore);
+        scoreToSubmit = phishingTotalScore;
+        console.log('[PhishingScorePage] New session high score! Submitting:', scoreToSubmit);
+      } else {
+        // Didn't beat session high score, just submit current score
+        console.log('[PhishingScorePage] Did not beat session high. Submitting current:', scoreToSubmit);
+      }
 
-      const response = await fetch(`http://localhost:8848/scores/${user_id}`, {
+      const url = `http://localhost:8848/scores/${userId}`;
+      const requestBody = {
+        game5_score: scoreToSubmit  // Upload Phishing TOTAL score to game5_score
+      };
+      
+      console.log('[PhishingScorePage] Calling API:', {
+        method: 'PUT',
+        url,
+        body: requestBody
+      });
+
+      const response = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          game5_score: game5Score,
-          total_score: total_score
-        })
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('[PhishingScorePage] API Response:', {
+        status: response.status,
+        ok: response.ok
       });
 
       if (!response.ok) {
         console.error('Failed to submit score:', response.status);
+      } else {
+        console.log('[PhishingScorePage] Score submitted successfully!');
       }
     } catch (err) {
       console.error('Error submitting score:', err);
@@ -112,15 +184,39 @@ const PhishingScorePage: React.FC = () => {
             <Typography variant='subtitle1' sx={{ color: 'text.secondary', mb: 1 }}>
               TOTAL SCORE
             </Typography>
-            <Typography
-              variant='h2'
-              sx={{ fontWeight: 800, color: getScoreColor(totalRatio) }}
-            >
-              {total_score}
-            </Typography>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'baseline', 
+              gap: 1,
+              justifyContent: 'center'
+            }}>
+              <Typography
+                variant='h2'
+                sx={{ fontWeight: 800, color: getScoreColor(totalRatio) }}
+              >
+                {total_score}
+              </Typography>
+              {sessionHighScore > 0 && currentGame5Score <= sessionHighScore && (
+                <Typography 
+                  variant='h6' 
+                  sx={{ 
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    fontSize: '1rem'
+                  }}
+                >
+                  (Session High: {sessionHighScore})
+                </Typography>
+              )}
+            </Box>
             <Typography variant='subtitle2' sx={{ color: 'text.secondary' }}>
               out of {maxTotal}
             </Typography>
+            {isHighScore && (
+              <Typography variant='body2' sx={{ mt: 1, color: 'success.main', fontWeight: 600 }}>
+                🎉 New High Score!
+              </Typography>
+            )}
             <LinearProgress
               variant='determinate'
               value={totalRatio * 100}
@@ -193,12 +289,13 @@ const PhishingScorePage: React.FC = () => {
               <Button
                 variant="contained"
                 onClick={() => {
-                  setAttemptCount(prev => prev + 1);
+                  setAttemptCount((prev: number) => prev + 1);
+                  localStorage.setItem('phishing_attempt_count', (attemptCount + 1).toString());
                   navigate('/phishing');
                 }}
                 sx={{ px: 3 }}
               >
-                Try Again
+                Try Again ({3 - attemptCount})
               </Button>
             )}
             <Button

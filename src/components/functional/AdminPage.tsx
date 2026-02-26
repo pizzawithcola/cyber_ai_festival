@@ -931,60 +931,76 @@ const AdminPage: React.FC = () => {
                     margin="dense"
                     name="game1_score"
                     label="Game 1 Score"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game1_score}
-                    onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
                     margin="dense"
                     name="game2_score"
                     label="Game 2 Score"
-                    type="text"
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     fullWidth
                     variant="outlined"
                     value={formData.game2_score}
                     onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
                     margin="dense"
                     name="game3_score"
                     label="Game 3 Score"
-                    type="text"
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     fullWidth
                     variant="outlined"
                     value={formData.game3_score}
                     onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
                     margin="dense"
                     name="game4_score"
                     label="Game 4 Score"
-                    type="text"
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     fullWidth
                     variant="outlined"
                     value={formData.game4_score}
                     onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
                     margin="dense"
                     name="game5_score"
                     label="Game 5 Score"
-                    type="text"
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     fullWidth
                     variant="outlined"
                     value={formData.game5_score}
                     onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                 </Box>
@@ -1070,60 +1086,76 @@ const AdminPage: React.FC = () => {
                     margin="dense"
                     name="game1_score"
                     label="Game 1 Score"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game1_score}
-                    onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
                     margin="dense"
                     name="game2_score"
                     label="Game 2 Score"
-                    type="text"
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     fullWidth
                     variant="outlined"
                     value={formData.game2_score}
                     onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
                     margin="dense"
                     name="game3_score"
                     label="Game 3 Score"
-                    type="text"
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     fullWidth
                     variant="outlined"
                     value={formData.game3_score}
                     onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
                     margin="dense"
                     name="game4_score"
                     label="Game 4 Score"
-                    type="text"
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     fullWidth
                     variant="outlined"
                     value={formData.game4_score}
                     onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
                     margin="dense"
                     name="game5_score"
                     label="Game 5 Score"
-                    type="text"
+                    type="number"
+                    inputProps={{ 
+                      min: 0, 
+                      max: 100,
+                      step: 0.1
+                    }}
                     fullWidth
                     variant="outlined"
                     value={formData.game5_score}
                     onChange={handleInputChange}
-                    inputProps={{ min: 0, max: 100 }}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                 </Box>

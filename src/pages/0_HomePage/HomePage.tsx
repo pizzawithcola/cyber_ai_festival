@@ -8,7 +8,7 @@ import {
   styled,
   useTheme
 } from '@mui/material';
-import ThemeToggle from '../../components/common/ThemeToggle';
+// import ThemeToggle from '../../components/common/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
 
 interface HomePageProps {
@@ -105,9 +105,9 @@ const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
         <Typography variant="h2" component="h1" gutterBottom>
           Welcome to Cyber AI Festival
         </Typography>
-        <Box sx={{ display: 'inline-block', mb: 2 }}>
+        {/* <Box sx={{ display: 'inline-block', mb: 2 }}>
           <ThemeToggle toggleColorMode={toggleColorMode} />
-        </Box>
+        </Box> */}
       </Box>
       
       <Typography variant="h5" component="h2" gutterBottom sx={{ color: 'text.secondary', mb: 4 }}>

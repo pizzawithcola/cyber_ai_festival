@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, styled, useTheme } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
 
 interface RankingEntry {
@@ -175,7 +176,16 @@ const RankingPage: React.FC = () => {
             <Button 
               variant="contained" 
               size="large"
-              onClick={() => navigate('/')}
+              onClick={() => {
+                // Clear all session data when going back to home
+                const storedUser = getStoredUser();
+                if (storedUser?.id) {
+                  localStorage.removeItem(`phishing_session_highscore_${storedUser.id}`);
+                }
+                localStorage.removeItem('phishing_attempt_count');
+                console.log('[RankingPage] Cleared session data');
+                navigate('/');
+              }}
               sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}
             >
               Back to Home

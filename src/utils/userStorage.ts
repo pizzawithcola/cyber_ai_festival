@@ -1,6 +1,7 @@
 const USER_STORAGE_KEY = 'cyber_ai_user';
 
 export interface StoredUser {
+  id?: number;
   firstname: string;
   lastname?: string;
   countryCode?: string;
