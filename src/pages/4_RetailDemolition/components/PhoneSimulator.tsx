@@ -115,13 +115,32 @@ const PhoneSimulator = ({
                             if (bestPriceUnverified) usedNames.add(bestPriceUnverified.name);
                             if (fastestVerified) usedNames.add(fastestVerified.name);
 
-                            const remaining = retailersCopy.filter(r => !usedNames.has(r.name));
-                            const shuffledRemaining = [...remaining].sort(() => Math.random() - 0.5);
-
                             const orderedRetailers = [
                               ...(bestPriceUnverified ? [bestPriceUnverified] : []),
                               ...(fastestVerified ? [fastestVerified] : []),
-                              ...shuffledRemaining
+                              ...RETAILERS.filter(r => 
+                                r.name === 'MegaSaver Outlet' && !usedNames.has(r.name)
+                              ),
+                              ...RETAILERS.filter(r => 
+                                r.name === 'Amazon' && !usedNames.has(r.name)
+                              ),
+                              ...RETAILERS.filter(r => 
+                                r.name === 'BestBuy' && !usedNames.has(r.name)
+                              ),
+                              ...RETAILERS.filter(r => 
+                                r.name === 'StreetTech Direct' && !usedNames.has(r.name)
+                              ),
+                              ...RETAILERS.filter(r => 
+                                r.name === 'eBay' && !usedNames.has(r.name)
+                              ),
+                              ...RETAILERS.filter(r => 
+                                r.name !== 'MegaSaver Outlet' && 
+                                r.name !== 'Amazon' && 
+                                r.name !== 'BestBuy' && 
+                                r.name !== 'StreetTech Direct' && 
+                                r.name !== 'eBay' &&
+                                !usedNames.has(r.name)
+                              )
                             ];
 
                             return orderedRetailers.map((site, index) => (

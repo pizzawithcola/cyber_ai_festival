@@ -78,6 +78,7 @@ export const useRetailDemolition = () => {
     const timeTaken = (Date.now() - startTime) / 1000;
     const isManualAfterPrompt = hasBeenPromptedForManual && !isAgentic;
     const isExplorationMalicious = explorationMaliciousFree && site.isMalicious;
+    const isManualMode = !isAgentic;
 
     // Record decision for summary
     setDecisions(prev => [...prev, {
@@ -89,8 +90,12 @@ export const useRetailDemolition = () => {
       timeTaken
     }]);
 
-    // Phase 1: Selection Logic – base penalties (skipped for educational malicious exploration)
-    if (!isExplorationMalicious) {
+    // Educational exploration mode - no penalties for clicking malicious sites after safe verified purchase
+    if (isExplorationMalicious) {
+      // Educational malicious click after a safe, verified run – no score impact
+      setExplorationMaliciousFree(false);
+    } else if (!isManualMode) {
+      // Phase 1: Selection Logic – base penalties (only in agentic mode, not during educational exploration)
       if (!site.isMalicious) {
         updateScore(0); // No deduction for safe choice
       } else {
@@ -106,19 +111,12 @@ export const useRetailDemolition = () => {
 
       // Speed Penalty – rushing to any decision too quickly
       if (timeTaken < 3) updateScore(-10);
-    } else {
-      // Educational malicious click after a safe, verified run – no score impact
-      setExplorationMaliciousFree(false);
     }
 
-    // Manual exploration after explicit prompt – track completion and add extra penalty
-    if (isManualAfterPrompt) {
+    // Manual exploration after explicit prompt – track completion only for malicious sites (no penalties in manual mode)
+    if (isManualAfterPrompt && site.isMalicious) {
       setManualRunCompleted(true);
-
-      if (site.isMalicious && !isExplorationMalicious) {
-        // Additional deduction for failing to spot a malicious site in manual mode
-        updateScore(-10);
-      }
+      // No penalties in manual mode - users are encouraged to explore
     }
 
     setActiveSite(site);
@@ -132,7 +130,7 @@ export const useRetailDemolition = () => {
       setTimeout(() => {
         setMessages(prev => [...prev, { 
           role: 'bot', 
-          text: `I'm on ${site.name}. The price is ${site.prices[selectedProduct] || '$0'}. Should I proceed with checkout?` 
+          text: `I'm on ${site.name}. The price is ${site.prices[selectedProduct] || '$0'}. Click this retailer in AGENTIC mode to proceed with checkout.` 
         }]);
       }, 1000);
     }

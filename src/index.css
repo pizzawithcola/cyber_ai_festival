@@ -5,7 +5,7 @@
 @layer base {
   /* Let Tailwind utilities fully control button appearance */
   button, [type='button'], [type='reset'], [type='submit'] {
-    @apply bg-transparent border-none outline-none;
+    @apply bg-transparent border-0 outline-none;
   }
 }
 
