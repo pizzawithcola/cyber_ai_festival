@@ -26,6 +26,7 @@ const PhoneSimulator = ({
   setShowQuiz,
   setGameState,
   score,
+  scoreEvents,
   decisions,
   handleBillingComplete
 }) => {
@@ -314,6 +315,7 @@ const PhoneSimulator = ({
           score={score}
           logs={[]}
           decisions={decisions}
+          scoreEvents={scoreEvents}
           onRestart={() => window.location.reload()}
         />
       );

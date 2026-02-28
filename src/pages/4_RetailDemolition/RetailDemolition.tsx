@@ -16,6 +16,7 @@ const RetailDemolition = () => {
     logs,
     selectedProduct,
     score,
+    scoreEvents,
     vettedPolicy,
     vettedLogs,
     showQuiz,
@@ -68,6 +69,7 @@ const RetailDemolition = () => {
         setShowQuiz={setShowQuiz}
         setGameState={setGameState}
         score={score}
+        scoreEvents={scoreEvents}
         decisions={decisions}
         handleBillingComplete={handleBillingComplete}
       />

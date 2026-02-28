@@ -15,8 +15,15 @@ export const useRetailDemolition = () => {
 
   // Scoring State (0–100, deductions-based)
   const [score, setScore] = useState(100);
+  const [scoreEvents, setScoreEvents] = useState([]);
   const updateScore = (change) => {
     setScore(prev => Math.max(0, Math.min(100, prev + change)));
+  };
+  const applyScoreChange = (change, reason, meta = {}) => {
+    if (change !== 0) {
+      setScoreEvents(prev => [...prev, { change, reason, meta, timestamp: Date.now() }]);
+    }
+    updateScore(change);
   };
   const [startTime, setStartTime] = useState(0);
   const [vettedPolicy, setVettedPolicy] = useState(false);
@@ -81,14 +88,21 @@ export const useRetailDemolition = () => {
     const isExplorationMalicious = explorationMaliciousFree && site.isMalicious;
     const isManualMode = !isAgentic;
 
-    // Record decision for summary
+    // Record decision for summary with enhanced context
+    const decisionType = isExplorationMalicious ? 'educational' : (isManualAfterPrompt ? 'manual_exploration' : 'intentional');
+    const context = isManualMode ? 'manual_mode' : 'agentic_mode';
+    
     setDecisions(prev => [...prev, {
       site: {
         isMalicious: site.isMalicious,
         isVerified: site.isVerified,
         name: site.name
       },
-      timeTaken
+      timeTaken,
+      decisionType,
+      context,
+      scoreImpact: isExplorationMalicious || isManualMode ? 0 : (site.isMalicious ? -30 : 0),
+      timestamp: Date.now()
     }]);
 
     // Educational exploration mode - no penalties for clicking malicious sites after safe verified purchase
@@ -98,20 +112,20 @@ export const useRetailDemolition = () => {
     } else if (!isManualMode) {
       // Phase 1: Selection Logic – base penalties (only in agentic mode, not during educational exploration)
       if (!site.isMalicious) {
-        updateScore(0); // No deduction for safe choice
+        applyScoreChange(0, 'safe_site_selected', { siteName: site.name });
       } else {
-        updateScore(-30); // Major deduction for choosing a malicious site
+        applyScoreChange(-30, 'selected_malicious_site', { siteName: site.name });
 
         // Additional penalty when the malicious choice is made slowly (more considered)
         if (timeTaken >= 5 && timeTaken < 12) {
-          updateScore(-5);
+          applyScoreChange(-5, 'slow_malicious_decision', { siteName: site.name, timeTaken });
         } else if (timeTaken >= 12) {
-          updateScore(-10);
+          applyScoreChange(-10, 'very_slow_malicious_decision', { siteName: site.name, timeTaken });
         }
       }
 
       // Speed Penalty – rushing to any decision too quickly
-      if (timeTaken < 3) updateScore(-10);
+      if (timeTaken < 3) applyScoreChange(-10, 'too_fast_decision', { siteName: site.name, timeTaken });
     }
 
     // Manual exploration after explicit prompt – track completion only for malicious sites (no penalties in manual mode)
@@ -203,22 +217,22 @@ export const useRetailDemolition = () => {
     
     // Penalty for ignoring manual inspection after being prompted
     if (hasBeenPromptedForManual && !manualRunCompleted) {
-      updateScore(-10);
+      applyScoreChange(-10, 'skipped_manual_inspection', {});
     }
 
     // Scoring based on answer – reward shared-responsibility understanding
     if (answer === 'all') {
-      updateScore(0); // Fully correct: no deduction
+      applyScoreChange(0, 'quiz_all_correct', { answer });
     } else if (answer === 'attacker') {
-      updateScore(-5); // Second-best: identifies the malicious actor
+      applyScoreChange(-5, 'quiz_answer_attacker', { answer });
     } else if (answer === 'developer') {
-      updateScore(-10); // Partial: focuses on unsafe system design
+      applyScoreChange(-10, 'quiz_answer_developer', { answer });
     } else if (answer === 'platform') {
-      updateScore(-15); // Narrow: over-weights platform responsibility
+      applyScoreChange(-15, 'quiz_answer_platform', { answer });
     } else if (answer === 'user') {
-      updateScore(-20); // Least accurate: primarily blames the end user
+      applyScoreChange(-20, 'quiz_answer_user', { answer });
     } else {
-      updateScore(-25); // Fallback for unexpected values
+      applyScoreChange(-25, 'quiz_answer_unknown', { answer });
     }
   };
 
@@ -264,6 +278,7 @@ export const useRetailDemolition = () => {
     logs,
     selectedProduct,
     score,
+    scoreEvents,
     vettedPolicy,
     vettedLogs,
     showQuiz,
