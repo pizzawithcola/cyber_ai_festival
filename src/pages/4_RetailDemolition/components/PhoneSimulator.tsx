@@ -56,7 +56,7 @@ const PhoneSimulator = ({
             <Bot size={48} className="text-white" />
           </div>
           <h1 className="text-3xl font-black text-slate-900 mb-2">ShopAI</h1>
-          <p className="text-slate-500 text-sm mb-12 max-w-[200px] leading-relaxed">2-Minute Security Challenge: Test your agentic AI shopping skills</p>
+          <p className="text-slate-500 text-sm mb-12 max-w-[200px] leading-relaxed">Security Challenge: Test your agentic AI shopping skills</p>
           <button onClick={setGameState.bind(null, 'assistant')} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">
             Start Mission
           </button>
