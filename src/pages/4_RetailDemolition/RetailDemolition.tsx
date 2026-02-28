@@ -21,12 +21,14 @@ const RetailDemolition = () => {
     showQuiz,
     quizAnswers,
     decisions,
+    billingCompleted,
     logRef,
     chatRef,
     chatBottomRef,
     startSearch,
     handleRetailerClick,
     handleQuizAnswer,
+    handleBillingComplete,
     setNotifications,
     setShowQuiz,
     setGameState,
@@ -67,6 +69,7 @@ const RetailDemolition = () => {
         setGameState={setGameState}
         score={score}
         decisions={decisions}
+        handleBillingComplete={handleBillingComplete}
       />
     </div>
   );

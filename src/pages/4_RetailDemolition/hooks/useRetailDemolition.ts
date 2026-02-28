@@ -28,6 +28,7 @@ export const useRetailDemolition = () => {
   const [manualRunCompleted, setManualRunCompleted] = useState(false);
   const [explorationMaliciousFree, setExplorationMaliciousFree] = useState(false);
   const [decisions, setDecisions] = useState([]);
+  const [billingCompleted, setBillingCompleted] = useState(false);
 
   // Refs
   const logRef = useRef(null);
@@ -245,6 +246,11 @@ export const useRetailDemolition = () => {
     }
   }, [logs]);
 
+  const handleBillingComplete = () => {
+    setBillingCompleted(true);
+    setGameState('assistant');
+  };
+
   return {
     // State
     gameState,
@@ -263,6 +269,7 @@ export const useRetailDemolition = () => {
     showQuiz,
     quizAnswers,
     decisions,
+    billingCompleted,
     
     // Refs
     logRef,
@@ -273,6 +280,7 @@ export const useRetailDemolition = () => {
     startSearch,
     handleRetailerClick,
     handleQuizAnswer,
+    handleBillingComplete,
     setNotifications,
     setShowQuiz,
     setGameState,
