@@ -323,7 +323,15 @@ const Hallucinate: React.FC = () => {
                         <InfoOutlinedIcon sx={{ fontSize: 14, mr: 0.6, verticalAlign: 'text-bottom' }} />
                         Note
                       </Typography>
-                      <Typography variant="caption" sx={{ lineHeight: 1.5, color: '#d7f2ff', fontSize: '0.82rem !important', fontStyle: 'italic' }}>
+                      <Typography
+                        variant="inherit"
+                        sx={{
+                          lineHeight: 1.5,
+                          color: '#d7f2ff',
+                          fontSize: '0.95rem',
+                          fontStyle: 'italic',
+                        }}
+                      >
                         • JWST = James Webb Space Telescope, NASA/ESA/CSA&apos;s flagship space observatory.
                         <br />
                         • Exoplanet = a planet outside our solar system.
