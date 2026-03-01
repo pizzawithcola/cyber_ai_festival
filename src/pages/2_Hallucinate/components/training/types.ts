@@ -19,7 +19,7 @@ export interface SentenceItem {
   isDecoySafe?: boolean;
 }
 
-export type ResultPage = 'summary' | 'correct' | 'missed' | 'falsePos' | 'complete';
+export type ResultPage = 'summary' | 'complete';
 
 export interface ResultPitfalls {
   pitfalls: SentenceItem[];
@@ -29,4 +29,3 @@ export interface ResultPitfalls {
   correctPass: SentenceItem[];
   unanswered: SentenceItem[];
 }
-

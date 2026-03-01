@@ -6,7 +6,7 @@ import { NEON_BLUE, PRIMARY_HEADER_GRADIENT, PANEL_BODY_BACKGROUND, panelCardSx,
 import { BOSS_TYPES, NORMALIZED_SENTENCE_POOL } from './training/data';
 import { ChapterComplete } from './training/ChapterComplete';
 import { ResultsPanel } from './training/ResultsPanel';
-import { shuffle } from './training/utils';
+import { evidenceChecklistForSentence, shuffle } from './training/utils';
 import { type ResultPage, type ResultPitfalls, type SentenceItem } from './training/types';
 
 /** =========================================================
@@ -122,11 +122,10 @@ export function TrainingArena({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const endRound = React.useCallback((finalSelected?: Record<string, boolean>) => {
+  const endRound = React.useCallback(() => {
     setIsRunning(false);
 
-    const selectedMap = finalSelected ?? selected;
-    const flaggedIds = new Set(Object.entries(selectedMap).filter(([, v]) => v).map(([k]) => k));
+    const flaggedIds = new Set(Object.entries(selected).filter(([, v]) => v).map(([k]) => k));
     const missedBoss = bossId ? !flaggedIds.has(bossId) : false;
 
     if (missedBoss) {
@@ -160,9 +159,9 @@ export function TrainingArena({
     window.setTimeout(() => setShake(false), 280);
   };
 
-  const moveToNextCard = (nextSelected?: Record<string, boolean>) => {
+  const advanceToNextCard = () => {
     if (currentCardIndex >= sentences.length - 1) {
-      endRound(nextSelected);
+      endRound();
       return;
     }
     setCurrentCardIndex((idx) => idx + 1);
@@ -172,6 +171,7 @@ export function TrainingArena({
     if (!isRunning) return;
     const card = sentences[currentCardIndex];
     if (!card) return;
+    if (resolved[card.id]) return;
 
     const flagged = selected[card.id];
     const nextSelected = flagged ? selected : { ...selected, [card.id]: true };
@@ -187,20 +187,24 @@ export function TrainingArena({
       delete next[card.id];
       return next;
     });
-
-    moveToNextCard(nextSelected);
   };
 
   const handleFlashPass = () => {
     if (!isRunning) return;
     const card = sentences[currentCardIndex];
     if (!card) return;
+    if (resolved[card.id]) return;
 
     setPassed((prev) => ({ ...prev, [card.id]: true }));
     setResolved((r) => ({ ...r, [card.id]: card.isPitfall ? 'wrong' : 'correct' }));
     if (card.isPitfall) nudgeShake();
+  };
 
-    moveToNextCard();
+  const handleAdvanceFromFeedback = () => {
+    const card = sentences[currentCardIndex];
+    if (!card) return;
+    if (!resolved[card.id]) return;
+    advanceToNextCard();
   };
 
   const resultPitfalls = useMemo<ResultPitfalls>(() => {
@@ -229,6 +233,23 @@ export function TrainingArena({
   }, [resolved]);
   const accuracy = sentences.length === 0 ? 0 : Math.round(((resultPitfalls.correct.length + resultPitfalls.correctPass.length) / sentences.length) * 100);
   const activeCard = sentences[currentCardIndex];
+  const activeDecision = activeCard
+    ? selected[activeCard.id]
+      ? 'flag'
+      : passed[activeCard.id]
+      ? 'pass'
+      : undefined
+    : undefined;
+  const activeFeedbackKind = !activeCard || !activeDecision
+    ? undefined
+    : activeCard.isPitfall
+    ? activeDecision === 'flag'
+      ? 'correct'
+      : 'missed'
+    : activeDecision === 'flag'
+    ? 'falsePos'
+    : 'correctPass';
+  const isCardAnswered = Boolean(activeFeedbackKind);
   const progressPct = sentences.length === 0 ? 0 : (answeredCount / sentences.length) * 100;
   const feedback = accuracy >= 80 ? 'Well done' : accuracy < 40 ? 'Almost there' : 'Keep going';
   const feedbackDetail =
@@ -239,11 +260,104 @@ export function TrainingArena({
       : 'Solid progress. Tighten checks on scope and evidence cues.';
   const feedbackColor = accuracy >= 80 ? '#2ecc71' : accuracy < 40 ? '#ffb74d' : '#00c2ff';
 
+  const renderImmediateFeedback = () => {
+    if (!activeCard || !activeFeedbackKind) return null;
+
+    const heading =
+      activeFeedbackKind === 'correct'
+        ? 'Correct pitfalls you flagged'
+        : activeFeedbackKind === 'missed'
+        ? 'Missed pitfalls'
+        : activeFeedbackKind === 'falsePos'
+        ? 'False positives'
+        : 'Safe pass';
+
+    const reasonText =
+      activeFeedbackKind === 'correct' || activeFeedbackKind === 'missed'
+        ? activeCard.reason
+        : activeFeedbackKind === 'falsePos'
+        ? activeCard.isDecoySafe
+          ? 'Decoy (safe) - cautious language is good.'
+          : 'Not a pitfall. Avoid over-flagging.'
+        : activeCard.isDecoySafe
+        ? 'Decoy (safe) - cautious language is good.'
+        : 'Safe pass - claim stays cautious and checkable.';
+
+    const showChecklist =
+      activeFeedbackKind === 'correct' ||
+      activeFeedbackKind === 'missed' ||
+      activeFeedbackKind === 'correctPass' ||
+      (activeFeedbackKind === 'falsePos' && activeCard.isDecoySafe);
+
+    const paperBorder =
+      activeFeedbackKind === 'missed'
+        ? `2px solid ${activeCard.severity === 'critical' ? '#f44336' : '#ff9800'}`
+        : activeFeedbackKind === 'falsePos' && activeCard.isDecoySafe
+        ? '2px solid #00bcd4'
+        : '1px solid rgba(0, 255, 217, 0.25)';
+
+    return (
+      <Box sx={{ mt: 1.5 }}>
+        <Divider sx={{ mb: 1.25 }} />
+        <Typography variant="subtitle1" sx={{ fontWeight: 900, mb: 1, fontSize: { xs: '1.05rem', sm: '1.12rem' } }}>
+          {heading}
+        </Typography>
+        <Paper sx={{ p: 1.2, border: paperBorder }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 900,
+              color: '#eaffff',
+              letterSpacing: '0.2px',
+              backgroundColor: 'rgba(0, 255, 217, 0.08)',
+              border: '1px solid rgba(0, 255, 217, 0.35)',
+              borderRadius: 1,
+              px: 1,
+              py: 0.4,
+              display: 'inline-block',
+              fontFamily: activeCard.type === 'CITATION_FABRICATION' ? "'VT323', 'Courier New', monospace" : undefined,
+            }}
+          >
+            {activeCard.text}
+          </Typography>
+          <Box
+            sx={{
+              mt: 0.9,
+              p: 0.9,
+              borderRadius: 1,
+              border: '1px solid rgba(91, 46, 255, 0.35)',
+              backgroundColor: 'rgba(91, 46, 255, 0.08)',
+            }}
+          >
+            {reasonText && (
+              <Typography variant="caption" sx={{ color: '#cdd9ff', display: 'block', lineHeight: 1.4 }}>
+                {reasonText}
+              </Typography>
+            )}
+            {showChecklist && (
+              <Stack spacing={0.25} sx={{ mt: reasonText ? 0.5 : 0 }}>
+                {evidenceChecklistForSentence(activeCard).map((line) => (
+                  <Typography key={line} variant="caption" sx={{ color: '#c7d3ff', lineHeight: 1.5, display: 'block' }}>
+                    - {line}
+                  </Typography>
+                ))}
+              </Stack>
+            )}
+          </Box>
+        </Paper>
+        <Box sx={{ mt: 1.25, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button variant="contained" onClick={handleAdvanceFromFeedback} sx={{ fontWeight: 900 }}>
+            {currentCardIndex >= sentences.length - 1 ? 'Finish round' : 'Next card'}
+          </Button>
+        </Box>
+      </Box>
+    );
+  };
+
+
   if (showResults && resultPage === 'complete') {
     return (
       <ChapterComplete
-        accuracy={accuracy}
-        score={score}
         onReviewResults={() => setResultPage('summary')}
         onStartFromBeginning={onExitToScenarios}
       />
@@ -339,14 +453,29 @@ export function TrainingArena({
                       </Typography>
 
                       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="stretch">
-                        <Button size="large" variant="contained" startIcon={<FlagIcon />} onClick={handleFlashFlag} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%)' }}>
+                        <Button
+                          size="large"
+                          variant="contained"
+                          startIcon={<FlagIcon />}
+                          onClick={handleFlashFlag}
+                          disabled={isCardAnswered}
+                          sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%)' }}
+                        >
                           Flag
                         </Button>
-                        <Button size="large" variant="contained" startIcon={<CheckCircleIcon />} onClick={handleFlashPass} sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #2ecc71 0%, #1abc9c 100%)' }}>
+                        <Button
+                          size="large"
+                          variant="contained"
+                          startIcon={<CheckCircleIcon />}
+                          onClick={handleFlashPass}
+                          disabled={isCardAnswered}
+                          sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #2ecc71 0%, #1abc9c 100%)' }}
+                        >
                           Pass
                         </Button>
                       </Stack>
 
+                      {isCardAnswered && renderImmediateFeedback()}
                     </Paper>
                   </Stack>
                 )}
@@ -355,21 +484,12 @@ export function TrainingArena({
                   <ResultsPanel
                     resultPage={resultPage}
                     score={score}
-                    resultPitfalls={resultPitfalls}
+                    accuracy={accuracy}
+                    totalQuestionsAnswered={answeredCount}
                     feedback={feedback}
                     feedbackDetail={feedbackDetail}
                     feedbackColor={feedbackColor}
-                    onNext={() =>
-                      setResultPage(
-                        resultPage === 'summary'
-                          ? 'correct'
-                          : resultPage === 'correct'
-                          ? 'missed'
-                          : resultPage === 'missed'
-                          ? 'falsePos'
-                          : 'complete'
-                      )
-                    }
+                    onNext={() => setResultPage('complete')}
                   />
                 )}
 

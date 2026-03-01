@@ -22,7 +22,7 @@ export interface Scenario {
   };
   riskDrivers: Array<{ title: string; detail: string }>;
   promptChain: Array<{ from: string; text: string; label?: string }>;
-  saferRewrite: string;
+  safePromptOptions: Array<{ title: string; text: string; isCorrect: boolean; whyIncorrect?: string }>;
   takeaway: string;
 }
 
@@ -79,8 +79,28 @@ export const SCENARIOS: Scenario[] = [
       { from: 'User', text: 'Can you list 3 more major firsts?' },
       { from: 'Model', text: "Sure—(lists additional 'firsts' with similar confident tone)…", label: 'Compounding' },
     ],
-    saferRewrite:
-      "Please answer only if you can cite a reliable source. If you are uncertain, say \"I'm not sure\". Provide 2–3 examples with dates, and include links or citations to the source material.",
+    safePromptOptions: [
+      {
+        title: 'A',
+        text:
+          'Answer only if you can cite a reliable source. If you are uncertain, say "I am not sure" and suggest where to verify. Provide 2-3 examples with dates and citations.',
+        isCorrect: true,
+      },
+      {
+        title: 'B',
+        text:
+          'Summarize three JWST discoveries in a confident tone. If unsure, use words like “likely” and move on.',
+        isCorrect: false,
+        whyIncorrect: 'Still encourages guessing without verification or citations.',
+      },
+      {
+        title: 'C',
+        text:
+          'Provide the top three “first-ever” JWST achievements and include dates. No need to cite sources unless asked.',
+        isCorrect: false,
+        whyIncorrect: 'Pushes bold “first-ever” claims without sourcing, a classic hallucination trigger.',
+      },
+    ],
     takeaway:
       "When a prompt asks for specific highlights, allow uncertainty + require sources to avoid forced guessing.",
   },
@@ -127,8 +147,28 @@ export const SCENARIOS: Scenario[] = [
       { from: 'User', text: 'Can you provide the PDFs?' },
       { from: 'Model', text: "I'm unable to access PDFs… but here are more details…", label: 'Mismatch exposed' },
     ],
-    saferRewrite:
-      'Only cite papers you can verify by searching. If you cannot verify, say so. Provide a short summary without references, and optionally list suggested search queries instead of citations.',
+    safePromptOptions: [
+      {
+        title: 'A',
+        text:
+          'Only cite papers you can verify by searching. If you cannot verify, say so. Provide a short summary without references and optionally list suggested search queries instead of citations.',
+        isCorrect: true,
+      },
+      {
+        title: 'B',
+        text:
+          'Write a polished abstract and include five references with DOIs to make it look academic.',
+        isCorrect: false,
+        whyIncorrect: 'It asks for citations without verification, which leads to fabricated references.',
+      },
+      {
+        title: 'C',
+        text:
+          'If you cannot verify sources, provide citations anyway and mark them as “approximate.”',
+        isCorrect: false,
+        whyIncorrect: '“Approximate” citations are still invented and misleading.',
+      },
+    ],
     takeaway:
       "Never ask for citations from a model that can't verify sources. Add retrieval or allow no-citation outputs.",
   },

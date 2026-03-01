@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Typography,
   Box,
@@ -304,20 +304,29 @@ const Hallucinate: React.FC = () => {
                     <Paper
                       sx={{
                         mb: 2,
-                        p: 1.2,
+                        p: 0.8,
                         border: `1px solid ${NEON_CYAN}`,
                         backgroundColor: 'rgba(0, 255, 217, 0.08)',
                       }}
                     >
                       <Typography
                         variant="caption"
-                        sx={{ display: 'block', fontWeight: 900, color: NEON_CYAN, mb: 0.5, fontFamily: "'Press Start 2P', 'VT323', monospace" }}
+                        sx={{
+                          display: 'block',
+                          fontWeight: 900,
+                          color: NEON_CYAN,
+                          mb: 0.35,
+                          fontFamily: "'Press Start 2P', 'VT323', monospace",
+                          fontSize: '0.7rem',
+                        }}
                       >
                         <InfoOutlinedIcon sx={{ fontSize: 14, mr: 0.6, verticalAlign: 'text-bottom' }} />
                         Note
                       </Typography>
-                      <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#d7f2ff' }}>
-                        JWST = James Webb Space Telescope, NASA/ESA/CSA&apos;s flagship space observatory.
+                      <Typography variant="caption" sx={{ lineHeight: 1.5, color: '#d7f2ff', fontSize: '0.82rem !important', fontStyle: 'italic' }}>
+                        • JWST = James Webb Space Telescope, NASA/ESA/CSA&apos;s flagship space observatory.
+                        <br />
+                        • Exoplanet = a planet outside our solar system.
                       </Typography>
                     </Paper>
                   )}

@@ -1,5 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { Typography, Box, Card, CardContent, CardHeader, Button, Paper, Grid, Divider, Alert, AlertTitle, Stack, Avatar } from '@mui/material';
+import {
+  Typography,
+  Box,
+  Card,
+  CardContent,
+  CardHeader,
+  Button,
+  Paper,
+  Grid,
+  Divider,
+  Alert,
+  AlertTitle,
+  Stack,
+  Avatar,
+  FormControl,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+} from '@mui/material';
 
 import { SCENARIOS } from '../scenarios';
 import { SCENARIO_PROMPTS } from '../scenarioPrompts';
@@ -33,10 +51,13 @@ export function InteractiveScenarioChat({
 
   const [saferRewriteUsed, setSaferRewriteUsed] = useState(false);
   const [isOverviewVisible, setIsOverviewVisible] = useState(false);
+  const [isSaferRewriteVisible, setIsSaferRewriteVisible] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isWaitingReply, setIsWaitingReply] = useState(false);
   const [safeStepIndex, setSafeStepIndex] = useState(0);
   const [safeSteps, setSafeSteps] = useState<Array<ChatMessage>>([]);
+  const [selectedSafePromptIndex, setSelectedSafePromptIndex] = useState<number | null>(null);
+  const [safePromptError, setSafePromptError] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [completeAcknowledged, setCompleteAcknowledged] = useState(false);
 
@@ -56,19 +77,24 @@ export function InteractiveScenarioChat({
     ]);
     setSaferRewriteUsed(false);
     setIsOverviewVisible(false);
+    setIsSaferRewriteVisible(false);
     setCurrentStepIndex(0);
     setIsWaitingReply(false);
     setSafeStepIndex(0);
     setSafeSteps([]);
+    setSelectedSafePromptIndex(null);
+    setSafePromptError(null);
     setCompleteAcknowledged(false);
   }, [scenarioId, scenario?.title]);
 
   if (!scenario) return null;
+  const safePromptOptions = scenario.safePromptOptions;
   const scenarioCompleted = prompts.length > 0 && currentStepIndex >= prompts.length;
-  const showOverview = scenarioCompleted && isOverviewVisible && !saferRewriteUsed;
-  const showInteractive = !showOverview;
+  const showOverview = scenarioCompleted && isOverviewVisible;
+  const showSaferRewrite = scenarioCompleted && isSaferRewriteVisible && !saferRewriteUsed;
+  const showInteractive = !showOverview && !showSaferRewrite;
   const CHAT_PANEL_HEIGHT = { xs: 760, md: 860 };
-  const isScenarioCompleteReady = scenarioCompleted && (saferRewriteUsed || isOverviewVisible);
+  const isScenarioCompleteReady = scenarioCompleted && saferRewriteUsed;
 
   const handleScenarioComplete = () => {
     if (completeAcknowledged) return;
@@ -98,7 +124,9 @@ export function InteractiveScenarioChat({
     }
 
     if (scenarioCompleted) {
-      if (!saferRewriteUsed) setIsOverviewVisible(true);
+      if (!saferRewriteUsed && !isOverviewVisible && !isSaferRewriteVisible) {
+        setIsOverviewVisible(true);
+      }
       return;
     }
 
@@ -123,14 +151,15 @@ export function InteractiveScenarioChat({
     }, 550);
   };
 
-  const handleUseSaferRewrite = () => {
+  const handleUseSaferRewrite = (promptText: string) => {
     if (saferRewriteUsed) return;
+    if (!promptText) return;
 
     setSaferRewriteUsed(true);
 
     setMessages((prev) => [
       ...prev,
-      { id: Date.now().toString(), role: 'user', content: scenario.saferRewrite },
+      { id: Date.now().toString(), role: 'user', content: promptText },
     ]);
 
     setTimeout(() => {
@@ -179,6 +208,19 @@ export function InteractiveScenarioChat({
       }))
     );
     setSafeStepIndex(0);
+  };
+
+  const handleSafePromptSubmit = () => {
+    if (selectedSafePromptIndex === null) return;
+    const option = safePromptOptions[selectedSafePromptIndex];
+    if (!option) return;
+    if (!option.isCorrect) {
+      setSafePromptError(option.whyIncorrect || 'This prompt still invites hallucinations.');
+      return;
+    }
+    setSafePromptError(null);
+    setIsSaferRewriteVisible(false);
+    handleUseSaferRewrite(option.text);
   };
 
   return (
@@ -422,26 +464,27 @@ export function InteractiveScenarioChat({
 
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
-                    💡 Safer rewrite
+                    🧪 Safer rewrite challenge
                   </Typography>
-                  <Paper sx={{ p: 1.2, backgroundColor: '#f6fbff', border: '1px solid #d4eefc' }}>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                      {scenario.saferRewrite}
-                    </Typography>
-                  </Paper>
-
+                  <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7, mb: 1 }}>
+                    Pick the best safe prompt from three options. Only one is correct. If you choose wrong, you will see why and can try again.
+                  </Typography>
                   <Button
                     fullWidth
                     variant="contained"
-                    onClick={handleUseSaferRewrite}
-                    disabled={saferRewriteUsed}
+                    onClick={() => {
+                      setIsOverviewVisible(false);
+                      setIsSaferRewriteVisible(true);
+                      setSafePromptError(null);
+                      setSelectedSafePromptIndex(null);
+                    }}
                     sx={{
-                      mt: 1.2,
+                      mt: 0.5,
                       fontWeight: 900,
                       background: `linear-gradient(135deg, ${NEON_CYAN} 0%, ${NEON_BLUE} 100%)`,
                     }}
                   >
-                    {saferRewriteUsed ? '✓ Used' : '📤 Inject safer prompt into chat'}
+                    🧪 Start safer rewrite challenge
                   </Button>
                 </Box>
 
@@ -451,6 +494,101 @@ export function InteractiveScenarioChat({
                     {scenario.takeaway}
                   </Typography>
                 </Alert>
+            </CardContent>
+          </Card>
+        )}
+
+        {showSaferRewrite && (
+          <Card
+            sx={{
+              width: '100%',
+              height: CHAT_PANEL_HEIGHT,
+              minHeight: CHAT_PANEL_HEIGHT,
+              maxHeight: CHAT_PANEL_HEIGHT,
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 18px 50px rgba(0, 255, 217, 0.12)',
+              border: '1px solid rgba(0, 255, 217, 0.24)',
+              overflow: 'hidden',
+            }}
+          >
+            <CardHeader
+              title="🧪 Safer Rewrite Challenge"
+              sx={{
+                background: `linear-gradient(135deg, ${NEON_CYAN} 0%, ${NEON_BLUE} 100%)`,
+                color: '#07101d',
+                py: 1,
+                px: 2,
+              }}
+            />
+            <Divider />
+            <CardContent
+              sx={{
+                pt: 1.5,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                scrollbarGutter: 'stable',
+              }}
+            >
+              <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
+                Choose the safest prompt. Only one option is correct. If you choose wrong, you will see why and can try again.
+              </Typography>
+
+              <FormControl component="fieldset" sx={{ width: '100%' }}>
+                <RadioGroup
+                  value={selectedSafePromptIndex !== null ? String(selectedSafePromptIndex) : ''}
+                  onChange={(event) => {
+                    setSelectedSafePromptIndex(Number(event.target.value));
+                    setSafePromptError(null);
+                  }}
+                >
+                  <Stack spacing={1}>
+                    {safePromptOptions.map((option, index) => (
+                      <Paper key={`${scenario.id}-safe-${index}`} sx={{ p: 1.2, backgroundColor: '#f6fbff', border: '1px solid #d4eefc' }}>
+                        <FormControlLabel
+                          value={String(index)}
+                          control={<Radio sx={{ color: NEON_BLUE, '&.Mui-checked': { color: NEON_BLUE } }} />}
+                          sx={{ alignItems: 'flex-start', gap: 1, m: 0 }}
+                          label={
+                            <Box>
+                              <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                                {option.text}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </Paper>
+                    ))}
+                  </Stack>
+                </RadioGroup>
+              </FormControl>
+
+              {safePromptError && (
+                <Alert severity="warning">
+                  <AlertTitle sx={{ fontWeight: 900 }}>Why this is risky</AlertTitle>
+                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                    {safePromptError}
+                  </Typography>
+                </Alert>
+              )}
+
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleSafePromptSubmit}
+                disabled={selectedSafePromptIndex === null}
+                sx={{
+                  mt: 0.5,
+                  fontWeight: 900,
+                  background: `linear-gradient(135deg, ${NEON_CYAN} 0%, ${NEON_BLUE} 100%)`,
+                }}
+              >
+                Submit answer
+              </Button>
             </CardContent>
           </Card>
         )}
