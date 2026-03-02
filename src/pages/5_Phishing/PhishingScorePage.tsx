@@ -114,47 +114,65 @@ const PhishingScorePage: React.FC = () => {
     try {
       console.log('[PhishingScorePage] Phishing scores - Current:', phishingTotalScore, 'Session High:', sessionHighScore);
       
-      // Only update and submit if current score beats session high score
-      let scoreToSubmit = phishingTotalScore;
-      
-      if (phishingTotalScore > sessionHighScore && userId) {
-        // New session high score! Update localStorage and submit new score
-        localStorage.setItem(`phishing_session_highscore_${userId}`, phishingTotalScore.toString());
-        localStorage.setItem('phishing_attempt_count', attemptCount.toString());
-        setSessionHighScore(phishingTotalScore);
-        scoreToSubmit = phishingTotalScore;
-        console.log('[PhishingScorePage] New session high score! Submitting:', scoreToSubmit);
-      } else {
-        // Didn't beat session high score, just submit current score
-        console.log('[PhishingScorePage] Did not beat session high. Submitting current:', scoreToSubmit);
+      // First, get the existing score from server
+      let serverScore = 0;
+      try {
+        const getUrl = `http://localhost:8848/scores/${userId}`;
+        console.log('[PhishingScorePage] Fetching existing score from:', getUrl);
+        const getResponse = await fetch(getUrl);
+        
+        if (getResponse.ok) {
+          const userData = await getResponse.json();
+          serverScore = userData.game5_score || 0;
+          console.log('[PhishingScorePage] Existing server score:', serverScore);
+        } else {
+          console.log('[PhishingScorePage] No existing score found or error:', getResponse.status);
+        }
+      } catch (err) {
+        console.log('[PhishingScorePage] Error fetching existing score:', err);
       }
-
-      const url = `http://localhost:8848/scores/${userId}`;
-      const requestBody = {
-        game5_score: scoreToSubmit  // Upload Phishing TOTAL score to game5_score
-      };
       
-      console.log('[PhishingScorePage] Calling API:', {
-        method: 'PUT',
-        url,
-        body: requestBody
-      });
+      // Only submit if current score is higher than server score
+      if (phishingTotalScore > serverScore) {
+        console.log('[PhishingScorePage] New score is higher than server score! Submitting:', phishingTotalScore);
+        
+        // Update localStorage if this is also a new session high
+        if (phishingTotalScore > sessionHighScore && userId) {
+          localStorage.setItem(`phishing_session_highscore_${userId}`, phishingTotalScore.toString());
+          localStorage.setItem('phishing_attempt_count', attemptCount.toString());
+          setSessionHighScore(phishingTotalScore);
+          console.log('[PhishingScorePage] Updated session high score to:', phishingTotalScore);
+        }
 
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
+        const url = `http://localhost:8848/scores/${userId}`;
+        const requestBody = {
+          game5_score: phishingTotalScore  // Upload Phishing TOTAL score to game5_score
+        };
+      
+        console.log('[PhishingScorePage] Calling API:', {
+          method: 'PUT',
+          url,
+          body: requestBody
+        });
 
-      console.log('[PhishingScorePage] API Response:', {
-        status: response.status,
-        ok: response.ok
-      });
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
 
-      if (!response.ok) {
-        console.error('Failed to submit score:', response.status);
+        console.log('[PhishingScorePage] API Response:', {
+          status: response.status,
+          ok: response.ok
+        });
+
+        if (!response.ok) {
+          console.error('Failed to submit score:', response.status);
+        } else {
+          console.log('[PhishingScorePage] Score submitted successfully!');
+        }
       } else {
-        console.log('[PhishingScorePage] Score submitted successfully!');
+        console.log(`[PhishingScorePage] Current score (${phishingTotalScore}) is not higher than server score (${serverScore}). Not submitting.`);
       }
     } catch (err) {
       console.error('Error submitting score:', err);
