@@ -1,0 +1,71 @@
+/* DataShadows layout */
+.data-shadows-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.data-shadows-phone-only {
+  justify-content: center;
+  align-items: center;
+}
+
+.data-shadows-reveal-layout {
+  align-items: stretch;
+  gap: 24px;
+}
+
+.phone-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 390px;
+  height: 844px; /* Match phone height exactly */
+}
+
+.truth-reveal-right {
+  flex: 0 0 0;
+  min-width: 0;
+  max-width: 0;
+  height: 844px; /* Match phone height exactly */
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: min-width 0.3s, max-width 0.3s, opacity 0.3s;
+}
+
+.truth-reveal-right-visible {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+  height: 844px; /* Match phone height exactly */
+  opacity: 1;
+  pointer-events: auto;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 1200px) {
+  .data-shadows-reveal-layout {
+    flex-direction: column;
+  }
+
+  .phone-panel {
+    width: 100%;
+    max-width: 390px;
+  }
+
+  .truth-reveal-right-visible {
+    width: 100%;
+  }
+}
