@@ -16,17 +16,20 @@ const RetailDemolition = () => {
     logs,
     selectedProduct,
     score,
+    scoreEvents,
     vettedPolicy,
     vettedLogs,
     showQuiz,
     quizAnswers,
     decisions,
+    billingCompleted,
     logRef,
     chatRef,
     chatBottomRef,
     startSearch,
     handleRetailerClick,
     handleQuizAnswer,
+    handleBillingComplete,
     setNotifications,
     setShowQuiz,
     setGameState,
@@ -66,7 +69,9 @@ const RetailDemolition = () => {
         setShowQuiz={setShowQuiz}
         setGameState={setGameState}
         score={score}
+        scoreEvents={scoreEvents}
         decisions={decisions}
+        handleBillingComplete={handleBillingComplete}
       />
     </div>
   );

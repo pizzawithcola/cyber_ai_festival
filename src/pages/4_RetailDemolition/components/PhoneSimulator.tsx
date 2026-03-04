@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { ArrowLeft, ChevronRight, Globe, Search, Loader2, Trophy, Bot, Smartphone, X } from 'lucide-react';
 import QuizComponent from './QuizComponent';
 import GameSummary from './GameSummary';
+import BillingInfo from './BillingInfo';
 
 const PhoneSimulator = ({ 
   gameState, 
@@ -25,7 +26,9 @@ const PhoneSimulator = ({
   setShowQuiz,
   setGameState,
   score,
-  decisions
+  scoreEvents,
+  decisions,
+  handleBillingComplete
 }) => {
   const pushSMS = (title, body, delay = 0) => {
     setTimeout(() => {
@@ -57,10 +60,16 @@ const PhoneSimulator = ({
           </div>
           <h1 className="text-3xl font-black text-slate-900 mb-2">ShopAI</h1>
           <p className="text-slate-500 text-sm mb-12 max-w-[200px] leading-relaxed">Security Challenge: Test your agentic AI shopping skills</p>
-          <button onClick={setGameState.bind(null, 'assistant')} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">
+          <button onClick={setGameState.bind(null, 'billing')} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">
             Start Mission
           </button>
         </div>
+      );
+    }
+
+    if (gameState === 'billing') {
+      return (
+        <BillingInfo onContinue={handleBillingComplete} />
       );
     }
 
@@ -306,6 +315,7 @@ const PhoneSimulator = ({
           score={score}
           logs={[]}
           decisions={decisions}
+          scoreEvents={scoreEvents}
           onRestart={() => window.location.reload()}
         />
       );
