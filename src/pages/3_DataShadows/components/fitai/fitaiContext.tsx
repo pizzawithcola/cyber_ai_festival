@@ -34,6 +34,7 @@ type FitAIState = {
   hasCompletedTerms: boolean
   hasCompletedSurvey: boolean
   hasSeenTermsPrompt: boolean
+  hasSeenSimulationNotice: boolean
   setScreen: (screen: AppScreen) => void
   toggleMenu: () => void
   updateUserData: (data: Partial<UserData>) => void
@@ -42,6 +43,7 @@ type FitAIState = {
   completeSurvey: () => void
   completeRegistration: () => void
   initiateRegistrationFlow: () => void
+  dismissSimulationNotice: () => void
 }
 
 const FitAICtx = createContext<FitAIState | null>(null)
@@ -61,6 +63,7 @@ export const FitAIProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [hasCompletedTerms, setHasCompletedTerms] = useState(false)
   const [hasCompletedSurvey, setHasCompletedSurvey] = useState(false)
   const [hasSeenTermsPrompt, setHasSeenTermsPrompt] = useState(false)
+  const [hasSeenSimulationNotice, setHasSeenSimulationNotice] = useState(false)
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
@@ -92,6 +95,10 @@ export const FitAIProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setScreen('terms')
   }
 
+  const dismissSimulationNotice = () => {
+    setHasSeenSimulationNotice(true)
+  }
+
   return (
     <FitAICtx.Provider
       value={{
@@ -103,6 +110,7 @@ export const FitAIProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         hasCompletedTerms,
         hasCompletedSurvey,
         hasSeenTermsPrompt,
+        hasSeenSimulationNotice,
         setScreen,
         toggleMenu,
         updateUserData,
@@ -111,6 +119,7 @@ export const FitAIProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         completeSurvey,
         completeRegistration,
         initiateRegistrationFlow,
+        dismissSimulationNotice,
       }}
     >
       {children}

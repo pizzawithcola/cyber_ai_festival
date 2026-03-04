@@ -1,3 +1,9 @@
+/* Import pixel-style font */
+@import url('https://fonts.googleapis.com/css2?family=Press Start 2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+
 .network-data-flow-diagram {
   padding: 12px 20px;
   color: #fff;
@@ -8,6 +14,11 @@
   overflow: hidden;
   box-sizing: border-box;
   justify-content: center;
+  background: #0a0a0a; /* Dark background */
+  background-image: 
+    linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px; /* Grid texture */
 }
 
 .data-flow-header {
@@ -17,6 +28,9 @@
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+  border-bottom: 2px dashed #00ffff;
+  padding-bottom: 8px;
+  box-shadow: 0 4px 0 rgba(0, 255, 255, 0.2);
 }
 
 .data-flow-header > div:first-child {
@@ -24,52 +38,72 @@
 }
 
 .data-flow-title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 400;
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: 2px;
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
+  color: #ffff00;
+  text-shadow: 
+    0 0 5px #ffff00,
+    0 0 10px #ffff00,
+    0 0 20px #ffaa00;
 }
 
 .data-flow-subtitle {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #ff00ff;
   margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  text-shadow: 0 0 3px #ff00ff;
 }
 
 .privacy-score-block {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  padding: 8px 16px;
+  background: #000000;
+  border: 2px solid #ff00ff;
+  border-radius: 0; /* Right-angle pixel feel */
+  box-shadow: 
+    0 0 0 2px #000,
+    0 0 0 4px #ff00ff,
+    0 0 20px #ff00ff;
   flex-shrink: 0;
 }
 
 .privacy-score-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 400;
+  color: #ffffff;
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 3px #fff;
 }
 
 .privacy-score-value {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 400;
+  font-family: 'Press Start 2P', monospace;
+  line-height: 1;
 }
 
 .privacy-score-value.score-high {
-  background: linear-gradient(135deg, #10b981, #3b82f6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #00ffff;
+  text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff;
 }
 
 .privacy-score-value.score-mid {
-  color: #f59e0b;
+  color: #ffff00;
+  text-shadow: 0 0 5px #ffff00, 0 0 10px #ffff00;
 }
 
 .privacy-score-value.score-low {
-  color: #ef4444;
+  color: #ff4444;
+  text-shadow: 0 0 5px #ff4444, 0 0 10px #ff4444;
 }
 
 .network-diagram-container {
@@ -77,8 +111,10 @@
   min-height: 180px;
   max-height: 220px;
   width: 100%;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
+  background: #000000;
+  border: 2px dashed #00ffff;
+  box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.3), 0 0 20px #00ffff;
+  border-radius: 0;
   overflow: hidden;
   position: relative;
   display: flex;
@@ -93,103 +129,246 @@
   display: block;
 }
 
+/* Connection line styles */
 .connection-line-active {
-  stroke: #10b981;
-  stroke-width: 2;
-  opacity: 0.9;
+  stroke: #00ffff;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 6px #00ffff);
+  opacity: 1;
 }
 
 .connection-line-inactive {
-  stroke: rgba(255, 255, 255, 0.35);
+  stroke: rgba(255, 255, 255, 0.25);
   stroke-width: 2;
-  opacity: 0.6;
+  stroke-dasharray: 4 4;
 }
 
+/* Connection labels */
 .connection-label {
-  fill: rgba(255, 255, 255, 0.8);
+  fill: #ffffff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  text-transform: uppercase;
   pointer-events: none;
-  font-weight: 500;
+  font-weight: 400;
+  text-shadow: 0 0 3px #000;
 }
 
 .connection-label-active {
-  fill: rgba(16, 185, 129, 0.95);
+  fill: #00ffff;
+  text-shadow: 0 0 5px #00ffff;
 }
 
 .connection-label-inactive {
   fill: rgba(255, 255, 255, 0.5);
 }
 
+/* Node base styles */
 .network-node {
   transition: all 0.2s;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  cursor: pointer;
+  filter: drop-shadow(0 0 8px currentColor);
 }
 
 .network-node:hover {
-  r: 28;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 20px currentColor);
 }
 
 .network-node-selected {
-  r: 30;
-  stroke: #fff;
+  filter: drop-shadow(0 0 15px #ffffff) drop-shadow(0 0 30px #00ffff);
+  stroke: #ffffff;
   stroke-width: 3;
-  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8));
 }
 
 .node-label {
-  fill: #fff;
-  font-weight: 600;
+  fill: #ffffff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  font-weight: 400;
+  text-transform: uppercase;
   pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  font-size: 11px;
+  text-shadow: 0 0 3px #000;
 }
 
+/* Node emphasis animation - neon pulse */
+.node-low-reading {
+  animation: arcade-pulse-muted 2s infinite;
+}
+
+.node-high-reading {
+  animation: arcade-glow-bright 1.5s infinite;
+}
+
+.node-low-consent {
+  opacity: 0.5;
+}
+
+.node-high-consent {
+  animation: arcade-glow-bright 1.5s infinite;
+}
+
+.node-low-exposure {
+  opacity: 0.6;
+}
+
+.node-high-exposure {
+  animation: arcade-pulse-warning 1.2s infinite;
+}
+
+@keyframes arcade-glow-bright {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px #00ff00) drop-shadow(0 0 10px #00ff00);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px #00ff00) drop-shadow(0 0 20px #00ff00) drop-shadow(0 0 30px #00ff00);
+  }
+}
+
+@keyframes arcade-pulse-muted {
+  0%, 100% {
+    opacity: 0.5;
+    filter: drop-shadow(0 0 2px #aaa);
+  }
+  50% {
+    opacity: 0.3;
+    filter: drop-shadow(0 0 5px #aaa);
+  }
+}
+
+@keyframes arcade-pulse-warning {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px #ff4444) drop-shadow(0 0 10px #ff4444);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px #ff4444) drop-shadow(0 0 20px #ff4444) drop-shadow(0 0 30px #ff4444);
+  }
+}
+
+/* Details panel */
 .flow-node-detail {
   margin-top: 10px;
   padding: 14px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #000000;
+  border: 2px solid #ffaa00;
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px #ffaa00, 0 0 30px #ffaa00;
+  border-radius: 0;
   flex: 1;
   min-height: 180px;
   max-height: 100%;
   overflow-y: auto;
+  font-family: 'Press Start 2P', monospace;
 }
 
 .flow-node-detail-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 400;
   margin: 0 0 12px;
+  font-family: 'Press Start 2P', monospace;
+  color: #ffff00;
+  text-shadow: 0 0 5px #ffff00, 0 0 10px #ffff00;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .flow-node-detail-desc {
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  line-height: 1.4;
+  color: #d1d1d1;
   margin: 0 0 12px;
+  text-shadow: none;
+  font-family: 'Space Mono', monospace;
 }
 
 .flow-node-detail-status {
-  font-size: 12px;
-  color: rgba(16, 185, 129, 0.95);
+  font-size: 10px;
+  color: #00ffff;
   margin: 0 0 12px;
+  text-shadow: 0 0 3px #00ffff;
 }
 
+/* Data module - new class to replace inline styles */
+.flow-node-inbound {
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  border-left: 4px solid #3b82f6;
+  box-shadow: 0 0 10px #3b82f6;
+  border-radius: 0;
+}
+
+.flow-node-outbound {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  border-left: 4px solid #22c55e;
+  box-shadow: 0 0 10px #22c55e;
+  border-radius: 0;
+}
+
+.flow-node-inbound strong,
+.flow-node-outbound strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 3px currentColor;
+}
+
+.flow-node-inbound p,
+.flow-node-outbound p {
+  margin: 0;
+  font-size: 14px;
+  color: #d1d1d1;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  font-family: 'Space Mono', monospace;
+}
+
+/* Score impact indicator */
+.flow-node-impact {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #000;
+  border-left: 4px solid;
+  border-radius: 0;
+  font-size: 10px;
+  color: #fff;
+  text-shadow: 0 0 2px #000;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.flow-node-impact.high-impact {
+  border-color: #ef4444;
+  color: #ff8888;
+}
+
+.flow-node-impact.low-impact {
+  border-color: #10b981;
+  color: #a5f3d3;
+}
+
+/* Data field list */
 .flow-node-fields {
   margin-top: 12px;
-  font-size: 13px;
+  font-size: 10px;
 }
 
 .flow-node-fields strong {
   display: block;
   margin-bottom: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .flow-node-fields ul {
   margin: 0 0 12px 20px;
   padding: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: #00ffff;
+  list-style-type: square;
 }
 
 .flow-node-fields li {
@@ -198,108 +377,72 @@
 
 .flow-node-sample {
   margin-top: 12px;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .flow-node-sample strong {
   display: block;
   margin-bottom: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  color: #fff;
 }
 
 .flow-node-sample pre {
-  background: rgba(0, 0, 0, 0.3);
+  background: #090909;
   padding: 8px;
-  border-radius: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   overflow-x: auto;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  color: #d6d2d2;
+  font-family: 'Space Mono', monospace;
   margin: 0;
+  box-shadow: none;
 }
 
-.flow-node-detail-close {
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 8px;
-  color: #fff;
+/* Score details */
+.flow-node-score-breakdown {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 2px dashed #ddd;
+  font-size: 14px;
+  color: #767474;
+  font-family: 'Space Mono', monospace;
+}
+
+.flow-node-score-breakdown strong {
   font-size: 13px;
-  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+  color: #ffff00;
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 3px #ffff00;
+}
+
+.flow-node-score-breakdown div {
+  line-height: 1.6;
+}
+
+/* Close button */
+.flow-node-detail-close {
+  margin-top: 20px;
+  padding: 8px 16px;
+  background: #000;
+  border: 2px solid #ff00ff;
+  border-radius: 0;
+  color: #ff00ff;
+  font-size: 16px;
+  font-weight: 400;
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
   cursor: pointer;
+  box-shadow: 0 0 10px #ff00ff;
+  transition: all 0.2s;
 }
 
 .flow-node-detail-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-/* Node Emphasis Classes - Score Impact Visualization */
-
-/*
-* Reading Dimension Emphasis
-* Applied to AppCloud and AIModeling nodes based on terms reading progress
-* Low reading % (< 50%) → muted appearance (difficulty understanding internal processes)
-* High reading % (>= 50%) → bright appearance (user informed about internal processing)
-*/
-.node-low-reading {
-  animation: pulse-muted 2s ease-in-out infinite;
-}
-
-.node-high-reading {
-  animation: glow-bright 1.5s ease-in-out infinite;
-}
-
-/*
-* Consent Dimension Emphasis
-* Applied to ThirdPartySdk based on privacy toggle state
-* Low consent (many toggles disabled) → less data sharing
-* High consent (many toggles enabled) → more data sharing
-*/
-.node-low-consent {
-  /* Lower opacity already applied in component logic */
-}
-
-.node-high-consent {
-  animation: glow-bright 1.5s ease-in-out infinite;
-}
-
-/*
-* Exposure Dimension Emphasis
-* Applied to DataBrokers, ProfileUsage, AdPlatforms, Downstream
-* Low exposure (few optional fields filled) → contained risk
-* High exposure (all optional fields filled) → elevated risk, prominent warning
-*/
-.node-low-exposure {
-  /* Muted appearance in component logic */
-}
-
-.node-high-exposure {
-  animation: pulse-warning 1.2s ease-in-out infinite;
-}
-
-/* Animations */
-
-@keyframes glow-bright {
-  0%, 100% {
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-  }
-  50% {
-    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
-  }
-}
-
-@keyframes pulse-muted {
-  0%, 100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 0.4;
-  }
-}
-
-@keyframes pulse-warning {
-  0%, 100% {
-    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
-  }
-  50% {
-    filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.8));
-  }
+  background: #ff00ff;
+  color: #000;
+  box-shadow: 0 0 20px #ff00ff;
 }

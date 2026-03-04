@@ -202,7 +202,7 @@ const RegistrationSurvey: React.FC = () => {
           <QuestionCard
             title="What's your name?"
             description="Help us personalize your experience"
-            hint="Use your real name for personalized coaching"
+            hint="Use your name for personalized coaching"
             dataCollection="Name stored for profile identification and personalized marketing"
             isCompleted={!!data.name}
           >
