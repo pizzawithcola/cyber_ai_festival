@@ -90,6 +90,11 @@ const Hallucinate: React.FC = () => {
       '50%': { filter: 'drop-shadow(0 0 14px rgba(255, 46, 147, 0.4))' },
       '100%': { filter: 'drop-shadow(0 0 6px rgba(0, 255, 217, 0.25))' },
     },
+    '@keyframes arcadeGlow': {
+      '0%': { textShadow: '0 0 6px rgba(0, 255, 217, 0.4), 0 0 12px rgba(0, 255, 217, 0.25)' },
+      '50%': { textShadow: '0 0 12px rgba(255, 46, 147, 0.55), 0 0 24px rgba(255, 46, 147, 0.3)' },
+      '100%': { textShadow: '0 0 6px rgba(0, 255, 217, 0.4), 0 0 12px rgba(0, 255, 217, 0.25)' },
+    },
     '& .MuiTypography-root': {
       fontFamily: "'Helvetica Neue', Arial, sans-serif",
       color: '#f2fbff',
@@ -100,6 +105,7 @@ const Hallucinate: React.FC = () => {
     '& .MuiTypography-h4, & .MuiTypography-h5, & .MuiTypography-h6': {
       fontFamily: "'Press Start 2P', 'VT323', monospace",
       textTransform: 'uppercase',
+      animation: 'arcadeGlow 2.6s ease-in-out infinite',
     },
     '& .MuiTypography-h4': {
       fontSize: { xs: '1.55rem', sm: '1.9rem' },

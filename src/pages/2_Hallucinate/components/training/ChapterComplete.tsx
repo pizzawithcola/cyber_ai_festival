@@ -65,8 +65,18 @@ export function ChapterComplete({
             <Typography variant="h4" sx={{ fontWeight: 900, color: '#eaffff', mb: 0.75, animation: 'arcadeGlow 2.6s ease-in-out infinite' }}>
               Congratulations!
             </Typography>
-            <Typography variant="body1" sx={{ lineHeight: 1.8, color: '#d7f2ff', maxWidth: 760 }}>
-              You&apos;ve completed all content in this chapter. Your training run is now logged as a clear win.
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 900,
+                color: '#eaffff',
+                maxWidth: 760,
+                fontFamily: "'Press Start 2P', 'VT323', monospace",
+                lineHeight: 1.6,
+                animation: 'arcadeGlow 2.6s ease-in-out infinite',
+              }}
+            >
+              You&apos;ve completed all content in this chapter.
             </Typography>
           </Box>
 
