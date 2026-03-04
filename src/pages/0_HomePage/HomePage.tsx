@@ -5,8 +5,7 @@ import {
   Box, 
   Card,
   CardContent,
-  styled,
-  useTheme
+  styled
 } from '@mui/material';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
@@ -54,7 +53,6 @@ const GameIcon = styled(Box)(({ theme }) => ({
 }));
 
 const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
-  const theme = useTheme();
   const navigate = useNavigate();
 
   const games = [

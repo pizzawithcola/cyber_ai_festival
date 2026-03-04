@@ -1,10 +1,6 @@
 import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 import { type PaletteMode } from '@mui/material';
 
-interface CustomThemeOptions {
-  paletteMode: PaletteMode;
-}
-
 export const getTheme = (paletteMode: PaletteMode) => {
   let theme = createTheme({
     palette: {
