@@ -4,7 +4,7 @@ import HomePage from '../pages/0_HomePage/HomePage';
 import DeepFake from '../pages/1_DeepFake/DeepFake';
 import Hallucinate from '../pages/2_Hallucinate/Hallucinate';
 import DataShadows from '../pages/3_DataShadows/DataShadows';
-import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition';
+import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition.tsx';
 import Phishing from '../pages/5_Phishing/Phishing';
 
 
