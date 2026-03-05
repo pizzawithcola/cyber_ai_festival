@@ -180,9 +180,9 @@ const RankingPage: React.FC = () => {
                 // Clear all session data when going back to home
                 const storedUser = getStoredUser();
                 if (storedUser?.id) {
-                  localStorage.removeItem(`phishing_session_highscore_${storedUser.id}`);
+                  sessionStorage.removeItem(`phishing_session_highscore_${storedUser.id}`);
                 }
-                localStorage.removeItem('phishing_attempt_count');
+                sessionStorage.removeItem('phishing_attempt_count');
                 console.log('[RankingPage] Cleared session data');
                 navigate('/');
               }}

@@ -35,7 +35,7 @@ export const targets: Target[] = [
     position: 'Senior Security Analyst',
     hobbies: ['Cybersecurity Research', 'Penetration Testing', 'AI Ethics'],
     personality: 'Detail-oriented, skeptical, tech-savvy',
-    photo: 'public/phishing/man1.png'
+    photo: '/phishing/man1.png'
   },
   {
     id: 2,
@@ -45,7 +45,7 @@ export const targets: Target[] = [
     position: 'Social Media Coordinator',
     hobbies: ['Online Shopping', 'Travel Photography', 'Food Blogging'],
     personality: 'Enthusiastic, curious, easily excited by new opportunities',
-    photo: 'public/phishing/woman1.png'
+    photo: '/phishing/woman1.png'
   },
   {
     id: 3,
@@ -55,7 +55,7 @@ export const targets: Target[] = [
     position: 'Junior Financial Analyst',
     hobbies: ['Yoga', 'Book Club', 'Volunteering'],
     personality: 'Diligent, people-pleasing, eager to impress superiors',
-    photo: 'public/phishing/woman2.png'
+    photo: '/phishing/woman2.png'
   }
 ];
 

@@ -9,7 +9,7 @@ export interface StoredUser {
 
 export function setStoredUser(user: StoredUser): void {
   try {
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
   } catch {
     // ignore storage errors
   }
@@ -17,7 +17,7 @@ export function setStoredUser(user: StoredUser): void {
 
 export function getStoredUser(): StoredUser | null {
   try {
-    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    const raw = sessionStorage.getItem(USER_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredUser;
     return parsed?.firstname ? parsed : null;

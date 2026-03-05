@@ -32,9 +32,10 @@ const PhishingScorePage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [attemptCount, setAttemptCount] = useState(() => {
-    // Get initial attempt count from state or localStorage
+    // Get initial attempt count from state or sessionStorage
+    // Start from 0, increment after each submission
     const stateAttempts = (location.state as any)?.attemptCount || 0;
-    const storedAttempts = localStorage.getItem('phishing_attempt_count');
+    const storedAttempts = sessionStorage.getItem('phishing_attempt_count');
     return stateAttempts > 0 ? stateAttempts : parseInt(storedAttempts || '0', 10);
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,11 +50,11 @@ const PhishingScorePage: React.FC = () => {
 
   console.log('[PhishingScorePage] State:', state);
   
-  // Get user ID from localStorage (stored during login)
+  // Get user ID from sessionStorage (stored during login)
   const storedUser = getStoredUser();
   const userId = storedUser?.id;
   
-  console.log('[PhishingScorePage] User ID from localStorage:', userId);
+  console.log('[PhishingScorePage] User ID from sessionStorage:', userId);
   
   // Get current game5 score first
   const currentGame5Score = state?.reply?.score_details?.['5']?.[0] || 0;
@@ -62,7 +63,7 @@ const PhishingScorePage: React.FC = () => {
   // Otherwise, reset to current score (this attempt becomes the new baseline)
   const getSessionHighScore = (): number => {
     if (!userId) return currentGame5Score;
-    const stored = localStorage.getItem(`phishing_session_highscore_${userId}`);
+    const stored = sessionStorage.getItem(`phishing_session_highscore_${userId}`);
     const storedHigh = stored ? parseFloat(stored) : 0;
     
     // If current score beats stored high, use current (will update storage later)
@@ -136,10 +137,10 @@ const PhishingScorePage: React.FC = () => {
       if (phishingTotalScore > serverScore) {
         console.log('[PhishingScorePage] New score is higher than server score! Submitting:', phishingTotalScore);
         
-        // Update localStorage if this is also a new session high
+        // Update sessionStorage if this is also a new session high
         if (phishingTotalScore > sessionHighScore && userId) {
-          localStorage.setItem(`phishing_session_highscore_${userId}`, phishingTotalScore.toString());
-          localStorage.setItem('phishing_attempt_count', attemptCount.toString());
+          sessionStorage.setItem(`phishing_session_highscore_${userId}`, phishingTotalScore.toString());
+          sessionStorage.setItem('phishing_attempt_count', attemptCount.toString());
           setSessionHighScore(phishingTotalScore);
           console.log('[PhishingScorePage] Updated session high score to:', phishingTotalScore);
         }
@@ -305,21 +306,29 @@ const PhishingScorePage: React.FC = () => {
             })}
           </Box>
           
+          {/* Maximum attempts message */}
+          {attemptCount >= 2 && (
+            <Typography variant="body2" sx={{ mt: 2, mb: 4, color: 'text.secondary', textAlign: 'center' }}>
+              Maximum attempts reached. Click "Next" to finish the challenge.
+            </Typography>
+          )}
+          
           {/* Buttons section */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 5 }}>
-            {attemptCount < 3 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 3 }}>
+            {attemptCount < 2 ? (
               <Button
                 variant="contained"
                 onClick={() => {
-                  setAttemptCount((prev: number) => prev + 1);
-                  localStorage.setItem('phishing_attempt_count', (attemptCount + 1).toString());
+                  const newCount = attemptCount + 1;
+                  setAttemptCount(newCount);
+                  sessionStorage.setItem('phishing_attempt_count', newCount.toString());
                   navigate('/phishing');
                 }}
                 sx={{ px: 3 }}
               >
-                Try Again ({3 - attemptCount})
+                Try Again ({2 - attemptCount} left)
               </Button>
-            )}
+            ) : null}
             <Button
               variant="contained"
               onClick={handleSubmitScoreAndNavigate}
@@ -330,11 +339,6 @@ const PhishingScorePage: React.FC = () => {
               {isSubmitting ? 'Submitting...' : 'Next'}
             </Button>
           </Box>
-          {attemptCount >= 3 && (
-            <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary', textAlign: 'center' }}>
-              Maximum attempts reached. Click "Next" to finish the challenge.
-            </Typography>
-          )}
         </Box>
       </Box>
       </Box>

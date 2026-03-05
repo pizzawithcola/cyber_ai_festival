@@ -132,13 +132,13 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
       subject,
       content: editor.getHTML(),
     };
-    localStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
+    sessionStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
     setSnackbar({ open: true, message: 'Draft saved!', severity: 'success' });
   }, [editor, senderEmail, recipient, subject, target.id, getDraftKey]);
 
   const handleLoadDraft = useCallback(() => {
     if (!editor) return;
-    const raw = localStorage.getItem(getDraftKey(target.id));
+    const raw = sessionStorage.getItem(getDraftKey(target.id));
     if (!raw) {
       setSnackbar({ open: true, message: 'No draft found for this target.', severity: 'warning' });
       return;
@@ -204,12 +204,12 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
         subject,
         content: editor.getHTML(),
       };
-      localStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
+      sessionStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
 
       const reply = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
       
-      // Get current attempt count from localStorage
-      const attemptCount = parseInt(localStorage.getItem('phishing_attempt_count') || '0', 10);
+      // Get current attempt count from sessionStorage
+      const attemptCount = parseInt(sessionStorage.getItem('phishing_attempt_count') || '0', 10);
       
       navigate('/phishing/score', { 
         state: { 
