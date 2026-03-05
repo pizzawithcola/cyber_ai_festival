@@ -5,7 +5,12 @@ import DeepFake from '../pages/1_DeepFake/DeepFake';
 import Hallucinate from '../pages/2_Hallucinate/Hallucinate';
 import DataShadows from '../pages/3_DataShadows/DataShadows';
 import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition.tsx';
-import Phishing from '../pages/5_Phishing/Phishing';
+import PhishingPanel from '../pages/5_Phishing/PhishingPanel';
+import PhishingScorePage from '../pages/5_Phishing/PhishingScorePage';
+import PhishingEducationPage from '../pages/5_Phishing/PhishingEducationPage';
+import RankingPage from '../components/sharedPages/RankingPage';
+import AdminPage from '../components/functional/AdminPage';
+import LoginPage from '../components/sharedPages/LoginPage';
 
 
 interface AppRoutesProps {
@@ -16,11 +21,17 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
   return (
     <Routes>
       <Route path="/" element={<HomePage toggleColorMode={toggleColorMode} />} />
+      <Route path="/login/:game" element={<LoginPage />} />
+      <Route path="/phishing/edu" element={<PhishingEducationPage />} />
       <Route path="/deepfake" element={<DeepFake />} />
       <Route path="/hallucinate" element={<Hallucinate />} />
       <Route path="/datashadows" element={<DataShadows />} />
       <Route path="/retaildemolition" element={<RetailDemolition />} />
-      <Route path="/phishing" element={<Phishing />} />
+      <Route path="/phishing" element={<PhishingPanel />} />
+      <Route path="/phishing/score" element={<PhishingScorePage />} />
+      <Route path="/ranking" element={<RankingPage />} />
+      <Route path="/ranking/game/:game" element={<RankingPage />} />
+      <Route path="/admin" element={<AdminPage />} />
     </Routes>
   );
 };
