@@ -54,6 +54,8 @@ const Hallucinate: React.FC = () => {
     () => REQUIRED_SCENARIO_IDS.every((id) => completedScenarioIds.has(id)),
     [completedScenarioIds]
   );
+  const temporaryUnlockTrainingGame = true;
+  const isTrainingGameUnlocked = temporaryUnlockTrainingGame || allScenariosCompleted;
   const scenarioProgressLabel = `${completedScenarioIds.size}/${REQUIRED_SCENARIO_IDS.length}`;
 
   const arcadeFontCss = `
@@ -247,7 +249,7 @@ const Hallucinate: React.FC = () => {
             }
           />
           {/*<Tab label="Quiz" />*/}
-          <Tab label={allScenariosCompleted ? 'Training Game' : 'Training Game (Locked)'} disabled={!allScenariosCompleted} />
+          <Tab label={isTrainingGameUnlocked ? 'Training Game' : 'Training Game (Locked)'} disabled={!isTrainingGameUnlocked} />
           {/*<Tab label="Overview" />*/}
         </Tabs>
       </Container>
@@ -454,7 +456,7 @@ const Hallucinate: React.FC = () => {
 
         {tabValue === 1 && (
           <Container maxWidth="lg" sx={{ py: 4 }}>
-            {!allScenariosCompleted ? (
+            {!isTrainingGameUnlocked ? (
               <Card sx={panelCardSx}>
                 <CardHeader
                   title={
