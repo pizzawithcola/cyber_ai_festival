@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Container, useTheme } from '@mui/material';
+import { Box, Typography, Container, useTheme, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 
@@ -85,6 +85,31 @@ const PhishingEducationPage: React.FC = () => {
           bgcolor: 'transparent', // Make background transparent to show matrix rain
         }}
       >
+        {/* Skip button in top-right corner */}
+        <Box
+          sx={{
+          position: 'absolute',
+            top: 20,
+            right: 20,
+            zIndex: 10,
+          }}
+        >
+          <Button
+          variant="outlined"
+          onClick={() => navigate('/phishing')}
+            sx={{
+            color: theme.palette.primary.main,
+              borderColor: theme.palette.primary.main,
+              '&:hover': {
+                backgroundColor: theme.palette.primary.main,
+              color: '#fff',
+              },
+            }}
+          >
+            Skip
+          </Button>
+        </Box>
+        
         <Container maxWidth="lg">
           <Box
             sx={{

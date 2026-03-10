@@ -937,6 +937,10 @@ const AdminPage: React.FC = () => {
                       max: 100,
                       step: 0.1
                     }}
+                    fullWidth
+                   variant="outlined"
+                   value={formData.game1_score}
+                   onChange={handleInputChange}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField
@@ -1092,6 +1096,10 @@ const AdminPage: React.FC = () => {
                       max: 100,
                       step: 0.1
                     }}
+                    fullWidth
+                   variant="outlined"
+                   value={formData.game1_score}
+                   onChange={handleInputChange}
                     sx={{ flex: '1 1 30%', minWidth: 100 }}
                   />
                   <TextField

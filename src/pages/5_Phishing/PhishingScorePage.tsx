@@ -59,16 +59,14 @@ const PhishingScorePage: React.FC = () => {
   // Get current game5 score first
   const currentGame5Score = state?.reply?.score_details?.['5']?.[0] || 0;
   
-  // Session high score: only keep it if current score beats it
-  // Otherwise, reset to current score (this attempt becomes the new baseline)
+  // Session high score: get from sessionStorage, or use current score if none stored
   const getSessionHighScore = (): number => {
     if (!userId) return currentGame5Score;
     const stored = sessionStorage.getItem(`phishing_session_highscore_${userId}`);
     const storedHigh = stored ? parseFloat(stored) : 0;
     
-    // If current score beats stored high, use current (will update storage later)
-    // If not, keep stored high for comparison
-    return storedHigh > currentGame5Score ? storedHigh : currentGame5Score;
+    // Return the stored high score if it exists, otherwise use current score
+    return storedHigh > 0 ? storedHigh : currentGame5Score;
   };
   
   const [sessionHighScore, setSessionHighScore] = useState(getSessionHighScore());
@@ -124,18 +122,32 @@ const PhishingScorePage: React.FC = () => {
         
         if (getResponse.ok) {
           const userData = await getResponse.json();
-          serverScore = userData.game5_score || 0;
+          console.log('[PhishingScorePage] Raw API response:', userData);
+          serverScore = Number(userData.game5_score) || 0;
           console.log('[PhishingScorePage] Existing server score:', serverScore);
         } else {
           console.log('[PhishingScorePage] No existing score found or error:', getResponse.status);
+          // If no existing score (404), treat as 0
+          serverScore = 0;
         }
       } catch (err) {
         console.log('[PhishingScorePage] Error fetching existing score:', err);
+        serverScore = 0;
       }
       
-      // Only submit if current score is higher than server score
-      if (phishingTotalScore > serverScore) {
-        console.log('[PhishingScorePage] New score is higher than server score! Submitting:', phishingTotalScore);
+      // Use the MAX of server score and session high score to determine what to submit
+      const maxScore = Math.max(serverScore, sessionHighScore);
+      console.log('[PhishingScorePage] Score comparison:', {
+        currentScore: phishingTotalScore,
+        serverScore,
+        sessionHighScore,
+        maxScore,
+        shouldSubmit: phishingTotalScore > maxScore
+      });
+      
+      // Only submit if current score is higher than BOTH server score and session high score
+      if (phishingTotalScore > maxScore) {
+        console.log('[PhishingScorePage] New high score! Submitting:', phishingTotalScore);
         
         // Update sessionStorage if this is also a new session high
         if (phishingTotalScore > sessionHighScore && userId) {

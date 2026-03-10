@@ -81,6 +81,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
   const [senderEmail, setSenderEmail] = useState('');
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'warning' }>({ open: false, message: '', severity: 'success' });
 
   const editor = useEditor({
@@ -158,31 +159,33 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
 
   const handleSend = useCallback(async () => {
     if (!editor) return;
-    const html = editor.getHTML();
-    const markdown = turndown.turndown(html);
-
-    const prompt = `From: ${senderEmail}\nTo: ${recipient}\nSubject: ${subject}\n\n${markdown}`;
-
-    console.log('=== Email Sent ===');
-    console.log('Prompt:', prompt);
-
-    const targetInformation = {
-      name: target.name,
-      email: target.email,
-      department: target.department,
-      position: target.position,
-      hobbies: target.hobbies,
-      personality: target.personality,
-      mission: {
-        title: mission.title,
-        description: mission.description,
-        targetLink: mission.targetLink,
-        difficulty: mission.difficulty,
-        hint: mission.hint,
-      },
-    };
-
+    setIsLoading(true);
+    
     try {
+      const html = editor.getHTML();
+      const markdown = turndown.turndown(html);
+
+      const prompt = `From: ${senderEmail}\nTo: ${recipient}\nSubject: ${subject}\n\n${markdown}`;
+
+      console.log('=== Email Sent ===');
+      console.log('Prompt:', prompt);
+
+      const targetInformation = {
+        name: target.name,
+        email: target.email,
+        department: target.department,
+        position: target.position,
+        hobbies: target.hobbies,
+        personality: target.personality,
+        mission: {
+          title: mission.title,
+          description: mission.description,
+          targetLink: mission.targetLink,
+          difficulty: mission.difficulty,
+          hint: mission.hint,
+        },
+      };
+
       const res = await fetch('http://localhost:8848/llm/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -220,6 +223,8 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
     } catch (err) {
       console.error('Failed to send:', err);
       alert(`Failed to send email: ${err}`);
+    } finally {
+      setIsLoading(false);
     }
   }, [editor, senderEmail, recipient, subject, navigate, getDraftKey, target.id]);
 
@@ -240,225 +245,299 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
         PHISHING EMAIL EDITOR
       </Typography>
       
-      <Paper 
-        sx={{ 
-          flex: 1, 
-          minHeight: 0,
-          display: 'flex', 
-          flexDirection: 'column',
-          border: `1px solid ${theme.palette.divider}`,
-          backgroundColor: theme.palette.background.paper,
-          overflow: 'hidden'
-        }}
-      >
-        {/* From / To / Subject + Send */}
-        <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', flexDirection: 'row', gap: 1 }}>
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>From:</Typography>
-              <StyledTextField
-                fullWidth
-                value={senderEmail}
-                onChange={(e) => setSenderEmail(e.target.value)}
-                variant='outlined'
-                size='small'
-                placeholder='Enter sender email address'
-              />
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>To:</Typography>
-              <StyledTextField
-                fullWidth
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                variant='outlined'
-                size='small'
-                placeholder='Enter recipient email address'
-              />
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>Subject:</Typography>
-              <StyledTextField
-                fullWidth
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                variant='outlined'
-                size='small'
-                placeholder='Enter email subject'
-              />
-            </Box>
-          </Box>
-          <Button
-            variant='contained'
-            color='primary'
-            onClick={handleSend}
-            sx={{
-              width: 60,
-              minWidth: 50,
-              height: 'auto',
-              alignSelf: 'stretch',
-              backgroundColor: '#1976d2',
-              '&:hover': { backgroundColor: '#1565c0' },
-            }}
-          >
-            <Send />
-          </Button>
-        </Box>
-        
-        {/* 格式化工具栏 */}
-        <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', gap: 0.5, alignItems: 'center' }}>
-          <IconButton 
-            size='small' 
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-            sx={{ 
-              borderRadius: 1,
-              backgroundColor: editor?.isActive('bold') ? '#1976d2' : 'transparent',
-              color: editor?.isActive('bold') ? '#ffffff' : '#666666',
-              '&:hover': {
-                backgroundColor: editor?.isActive('bold') ? '#1565c0' : '#f5f5f5'
-              }
-            }}
-          >
-            <FormatBold />
-          </IconButton>
-          
-          <IconButton 
-            size='small' 
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
-            sx={{ 
-              borderRadius: 1,
-              backgroundColor: editor?.isActive('italic') ? '#1976d2' : 'transparent',
-              color: editor?.isActive('italic') ? '#ffffff' : '#666666',
-              '&:hover': {
-                backgroundColor: editor?.isActive('italic') ? '#1565c0' : '#f5f5f5'
-              }
-            }}
-          >
-            <FormatItalic />
-          </IconButton>
-          
-          <IconButton 
-            size='small' 
-            onClick={() => editor?.chain().focus().toggleUnderline().run()}
-            sx={{ 
-              borderRadius: 1,
-              backgroundColor: editor?.isActive('underline') ? '#1976d2' : 'transparent',
-              color: editor?.isActive('underline') ? '#ffffff' : '#666666',
-              '&:hover': {
-                backgroundColor: editor?.isActive('underline') ? '#1565c0' : '#f5f5f5'
-              }
-            }}
-          >
-            <FormatUnderlined />
-          </IconButton>
-          
-          <Divider orientation='vertical' flexItem sx={{ mx: 1 }} />
-          
-          <FormControl size='small' sx={{ minWidth: 120 }}>
-            <InputLabel>Text Color</InputLabel>
-            <Select
-              value={currentColor}
-              label='Text Color'
-              onChange={(e) => handleColorChange(e.target.value as string)}
-            >
-              <MenuItem value='unset'>Default</MenuItem>
-              <MenuItem value='#dc2626'>Red</MenuItem>
-              <MenuItem value='#2563eb'>Blue</MenuItem>
-              <MenuItem value='#059669'>Green</MenuItem>
-              <MenuItem value='#d97706'>Orange</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Box sx={{ flex: 1 }} />
-
-          <Button
-            size='small'
-            variant='contained'
-            onClick={() => {
-              const demo = demoEmails.find(d => d.targetId === target.id);
-              if (demo) {
-                setSenderEmail(demo.senderEmail);
-                setRecipient(demo.recipient);
-                setSubject(demo.subject);
-                editor.commands.setContent(demo.content);
-              }
-            }}
-            sx={{
-              textTransform: 'none',
-              whiteSpace: 'nowrap',
-              height: 40,
-              mr: 1,
-            }}
-          >
-            Demo
-          </Button>
-          <Button
-            size='small'
-            variant='outlined'
-            onClick={handleSaveDraft}
-            sx={{
-              textTransform: 'none',
-              whiteSpace: 'nowrap',
-              height: 40,
-              color: '#fff',
-              borderColor: 'rgba(255,255,255,0.3)',
-              '&:hover': { borderColor: '#fff' },
-              '&:focus': { outline: 'none', boxShadow: 'none' },
-              '&:focus-visible': { outline: 'none', boxShadow: 'none' },
-            }}
-          >
-            Save Draft
-          </Button>
-          <Button
-            size='small'
-            variant='outlined'
-            onClick={handleLoadDraft}
-            sx={{
-              textTransform: 'none',
-              whiteSpace: 'nowrap',
-              height: 40,
-              color: '#fff',
-              borderColor: 'rgba(255,255,255,0.3)',
-              '&:hover': { borderColor: '#fff' },
-              '&:focus': { outline: 'none', boxShadow: 'none' },
-              '&:focus-visible': { outline: 'none', boxShadow: 'none' },
-            }}
-          >
-            Load Draft
-          </Button>
-        </Box>
-        
-        {/* 富文本编辑器 */}
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            overflow: 'auto',
-            cursor: 'text',
-            '& .tiptap': {
-              height: '100%',
-              outline: 'none',
-              p: { margin: '0 0 0.5em 0' },
-              'p:last-child': { marginBottom: 0 },
-            },
-            '& .tiptap p.is-editor-empty:first-child::before': {
-              content: 'attr(data-placeholder)',
-              color: theme.palette.text.disabled,
-              pointerEvents: 'none',
-              float: 'left',
-              height: 0,
-            },
+      {isLoading ? (
+        <Paper 
+          sx={{ 
+            flex: 1, 
+           display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: `1px solid ${theme.palette.primary.main}`,
+            backgroundColor: theme.palette.background.paper,
+            gap: 3,
           }}
-          onClick={() => editor?.chain().focus().run()}
         >
-          <EditorContent
-            editor={editor}
-            style={{ height: '100%' }}
+          {/* Animated loading icon */}
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+             position: 'relative',
+              '&::before': {
+               content: '""',
+               position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: '50%',
+                border: '4px solid transparent',
+                borderTopColor: theme.palette.primary.main,
+                animation: 'spin 1s linear infinite',
+                '@keyframes spin': {
+                  '0%': { transform: 'rotate(0deg)' },
+                  '100%': { transform: 'rotate(360deg)' },
+                },
+              },
+            }}
           />
-        </Box>
-        
-      </Paper>
+          
+          {/* Loading text with typing effect */}
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography 
+             variant="h5" 
+              sx={{ 
+                fontWeight: 600,
+               color: theme.palette.primary.main,
+                mb: 1,
+              }}
+            >
+              AI Analysis in Progress
+            </Typography>
+            <Typography 
+             variant="body1" 
+              sx={{ 
+               color: 'text.secondary',
+                fontSize: '1rem',
+              }}
+            >
+              Analyzing phishing email effectiveness...
+            </Typography>
+            <Typography 
+             variant="body2" 
+              sx={{ 
+               color: 'text.disabled',
+                fontSize: '0.875rem',
+                mt: 2,
+                fontStyle: 'italic',
+              }}
+            >
+              Evaluating persuasion techniques and security bypass strategies
+            </Typography>
+          </Box>
+        </Paper>
+      ) : (
+        <Paper 
+          sx={{ 
+            flex: 1, 
+            minHeight: 0,
+            display: 'flex', 
+            flexDirection: 'column',
+            border: `1px solid ${theme.palette.divider}`,
+            backgroundColor: theme.palette.background.paper,
+            overflow: 'hidden'
+          }}
+        >
+          {/* From / To / Subject + Send */}
+          <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', flexDirection: 'row', gap: 1 }}>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>From:</Typography>
+                <StyledTextField
+                  fullWidth
+                  value={senderEmail}
+                  onChange={(e) => setSenderEmail(e.target.value)}
+                  variant='outlined'
+                  size='small'
+                  placeholder='Enter sender email address'
+                />
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>To:</Typography>
+                <StyledTextField
+                  fullWidth
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  variant='outlined'
+                  size='small'
+                  placeholder='Enter recipient email address'
+                />
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>Subject:</Typography>
+                <StyledTextField
+                  fullWidth
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  variant='outlined'
+                  size='small'
+                  placeholder='Enter email subject'
+                />
+              </Box>
+            </Box>
+            <Button
+              variant='contained'
+              color='primary'
+              onClick={handleSend}
+              sx={{
+                width: 60,
+                minWidth: 50,
+                height: 'auto',
+                alignSelf: 'stretch',
+                backgroundColor: '#1976d2',
+                '&:hover': { backgroundColor: '#1565c0' },
+              }}
+            >
+              <Send />
+            </Button>
+          </Box>
+          
+          {/* 格式化工具栏 */}
+          <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            <IconButton 
+              size='small' 
+              onClick={() => editor?.chain().focus().toggleBold().run()}
+              sx={{ 
+                borderRadius: 1,
+                backgroundColor: editor?.isActive('bold') ? '#1976d2' : 'transparent',
+                color: editor?.isActive('bold') ? '#ffffff' : '#666666',
+                '&:hover': {
+                  backgroundColor: editor?.isActive('bold') ? '#1565c0' : '#f5f5f5'
+                }
+              }}
+            >
+              <FormatBold />
+            </IconButton>
+            
+            <IconButton 
+              size='small' 
+              onClick={() => editor?.chain().focus().toggleItalic().run()}
+              sx={{ 
+                borderRadius: 1,
+                backgroundColor: editor?.isActive('italic') ? '#1976d2' : 'transparent',
+                color: editor?.isActive('italic') ? '#ffffff' : '#666666',
+                '&:hover': {
+                  backgroundColor: editor?.isActive('italic') ? '#1565c0' : '#f5f5f5'
+                }
+              }}
+            >
+              <FormatItalic />
+            </IconButton>
+            
+            <IconButton 
+              size='small' 
+              onClick={() => editor?.chain().focus().toggleUnderline().run()}
+              sx={{ 
+                borderRadius: 1,
+                backgroundColor: editor?.isActive('underline') ? '#1976d2' : 'transparent',
+                color: editor?.isActive('underline') ? '#ffffff' : '#666666',
+                '&:hover': {
+                  backgroundColor: editor?.isActive('underline') ? '#1565c0' : '#f5f5f5'
+                }
+              }}
+            >
+              <FormatUnderlined />
+            </IconButton>
+            
+            <Divider orientation='vertical' flexItem sx={{ mx: 1 }} />
+            
+            <FormControl size='small' sx={{ minWidth: 120 }}>
+              <InputLabel>Text Color</InputLabel>
+              <Select
+                value={currentColor}
+                label='Text Color'
+                onChange={(e) => handleColorChange(e.target.value as string)}
+              >
+                <MenuItem value='unset'>Default</MenuItem>
+                <MenuItem value='#dc2626'>Red</MenuItem>
+                <MenuItem value='#2563eb'>Blue</MenuItem>
+                <MenuItem value='#059669'>Green</MenuItem>
+                <MenuItem value='#d97706'>Orange</MenuItem>
+              </Select>
+            </FormControl>
 
+            <Box sx={{ flex: 1 }} />
+
+            <Button
+              size='small'
+              variant='contained'
+              onClick={() => {
+                const demo = demoEmails.find(d => d.targetId === target.id);
+                if (demo) {
+                  setSenderEmail(demo.senderEmail);
+                  setRecipient(demo.recipient);
+                  setSubject(demo.subject);
+                  editor.commands.setContent(demo.content);
+                }
+              }}
+              sx={{
+                textTransform: 'none',
+                whiteSpace: 'nowrap',
+                height: 40,
+                mr: 1,
+              }}
+            >
+              Demo
+            </Button>
+            <Button
+              size='small'
+              variant='outlined'
+              onClick={handleSaveDraft}
+              sx={{
+                textTransform: 'none',
+                whiteSpace: 'nowrap',
+                height: 40,
+                color: '#fff',
+                borderColor: 'rgba(255,255,255,0.3)',
+                '&:hover': { borderColor: '#fff' },
+                '&:focus': { outline: 'none', boxShadow: 'none' },
+                '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+              }}
+            >
+              Save Draft
+            </Button>
+            <Button
+              size='small'
+              variant='outlined'
+              onClick={handleLoadDraft}
+              sx={{
+                textTransform: 'none',
+                whiteSpace: 'nowrap',
+                height: 40,
+                color: '#fff',
+                borderColor: 'rgba(255,255,255,0.3)',
+                '&:hover': { borderColor: '#fff' },
+                '&:focus': { outline: 'none', boxShadow: 'none' },
+                '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+              }}
+            >
+              Load Draft
+            </Button>
+          </Box>
+          
+          {/* 富文本编辑器 */}
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+              cursor: 'text',
+              '& .tiptap': {
+                height: '100%',
+                outline: 'none',
+                p: { margin: '0 0 0.5em 0' },
+                'p:last-child': { marginBottom: 0 },
+              },
+              '& .tiptap p.is-editor-empty:first-child::before': {
+                content: 'attr(data-placeholder)',
+                color: theme.palette.text.disabled,
+                pointerEvents: 'none',
+                float: 'left',
+                height: 0,
+              },
+            }}
+            onClick={() => editor?.chain().focus().run()}
+          >
+            <EditorContent
+              editor={editor}
+              style={{ height: '100%' }}
+            />
+          </Box>
+          
+        </Paper>
+
+      )}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
