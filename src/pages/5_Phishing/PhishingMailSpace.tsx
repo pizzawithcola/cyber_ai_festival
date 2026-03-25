@@ -31,6 +31,7 @@ import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import TurndownService from 'turndown';
+import { apiFetch } from '../../services/api';
 
 const turndown = new TurndownService({
   headingStyle: 'atx',
@@ -186,9 +187,8 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
         },
       };
 
-      const res = await fetch('http://localhost:8848/llm/chat', {
+      const res = await apiFetch('/llm/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt,
           model: 'deepseek-chat',

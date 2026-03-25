@@ -33,6 +33,7 @@ import { Close, ArrowUpward, Search } from '@mui/icons-material';
 import Header from '../common/Header';
 import { getStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
+import { apiFetch } from '../../services/api';
 
 // User score interface
 interface UserScore {
@@ -121,7 +122,7 @@ const AdminPage: React.FC = () => {
     const fetchUserScores = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8848/users/userscores');
+        const response = await apiFetch('/users/userscores');
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -250,7 +251,7 @@ const AdminPage: React.FC = () => {
     try {
       // Delete users via API calls
       const deletePromises = selectedUsers.map(id => 
-        fetch(`http://localhost:8848/users/${id}`, { method: 'DELETE' })
+        apiFetch(`/users/${id}`, { method: 'DELETE' })
       );
       
       const responses = await Promise.all(deletePromises);
@@ -389,9 +390,8 @@ const AdminPage: React.FC = () => {
     if (!validateForm() || !editingUser) return;
 
     try {
-      const userRes = await fetch(`http://localhost:8848/users/${editingUser.id}`, {
+      const userRes = await apiFetch(`/users/${editingUser.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstname: formData.firstname,
           lastname: formData.lastname,
@@ -404,9 +404,8 @@ const AdminPage: React.FC = () => {
         throw new Error(`Failed to update user: ${userRes.status} ${userRes.statusText}`);
       }
 
-      const scoresRes = await fetch(`http://localhost:8848/scores/${editingUser.id}`, {
+      const scoresRes = await apiFetch(`/scores/${editingUser.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           game1_score: formData.game1_score,
           game2_score: formData.game2_score,
@@ -453,9 +452,8 @@ const AdminPage: React.FC = () => {
     if (!validateForm()) return;
 
     try {
-      const userRes = await fetch('http://localhost:8848/users', {
+      const userRes = await apiFetch('/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstname: formData.firstname,
           lastname: formData.lastname,
@@ -471,9 +469,8 @@ const AdminPage: React.FC = () => {
       const newUser = await userRes.json();
       
       // Update scores for the newly created user
-      const scoresRes = await fetch(`http://localhost:8848/scores/${newUser.id}`, {
+      const scoresRes = await apiFetch(`/scores/${newUser.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           game1_score: formData.game1_score,
           game2_score: formData.game2_score,

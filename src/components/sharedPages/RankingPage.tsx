@@ -3,6 +3,7 @@ import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableConta
 import { useNavigate, useParams } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
+import { apiFetch } from '../../services/api';
 
 interface RankingEntry {
   rank: number;
@@ -73,7 +74,7 @@ const RankingPage: React.FC = () => {
     const fetchRankings = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:8848/rankings/${scoreType}?limit=10`);
+        const response = await apiFetch(`/rankings/${scoreType}?limit=10`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

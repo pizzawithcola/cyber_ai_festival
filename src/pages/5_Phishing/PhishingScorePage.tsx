@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getStoredUser, type StoredUser } from '../../utils/userStorage';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
+import { apiFetch } from '../../services/api';
 import {
   Box,
   Typography,
@@ -63,6 +64,7 @@ const PhishingScorePage: React.FC = () => {
   const getSessionHighScore = (): number => {
     if (!userId) return currentGame5Score;
     const stored = sessionStorage.getItem(`phishing_session_highscore_${userId}`);
+    console.log('[PhishingScorePage] Reading session high score:', { userId, stored, currentGame5Score });
     const storedHigh = stored ? parseFloat(stored) : 0;
     
     // Return the stored high score if it exists, otherwise use current score
@@ -97,95 +99,68 @@ const PhishingScorePage: React.FC = () => {
       return;
     }
 
-    // The TOTAL score of Phishing game should be submitted to game5_score
-    // total_score = sum of all 5 scoring criteria in Phishing
-    const phishingTotalScore = total_score;
+    // Current score from this attempt
+    const currentScore = total_score;
     
     console.log('[PhishingScorePage] Submitting score...', {
       userId,
-      phishing_total_score: phishingTotalScore,
-      explanation: 'Phishing game has 5 criteria, total_score is their sum, which should be uploaded to game5_score',
+      currentScore,
       sessionHighScore,
-      score_details_all_criteria: score_details
     });
 
     setIsSubmitting(true);
     try {
-      console.log('[PhishingScorePage] Phishing scores - Current:', phishingTotalScore, 'Session High:', sessionHighScore);
-      
-      // First, get the existing score from server
+      // Get existing score from server
       let serverScore = 0;
       try {
-        const getUrl = `http://localhost:8848/scores/${userId}`;
-        console.log('[PhishingScorePage] Fetching existing score from:', getUrl);
-        const getResponse = await fetch(getUrl);
+        const getUrl = `/scores/${userId}`;
+        const getResponse = await apiFetch(getUrl);
         
         if (getResponse.ok) {
           const userData = await getResponse.json();
-          console.log('[PhishingScorePage] Raw API response:', userData);
           serverScore = Number(userData.game5_score) || 0;
-          console.log('[PhishingScorePage] Existing server score:', serverScore);
-        } else {
-          console.log('[PhishingScorePage] No existing score found or error:', getResponse.status);
-          // If no existing score (404), treat as 0
-          serverScore = 0;
         }
       } catch (err) {
         console.log('[PhishingScorePage] Error fetching existing score:', err);
-        serverScore = 0;
       }
       
-      // Use the MAX of server score and session high score to determine what to submit
-      const maxScore = Math.max(serverScore, sessionHighScore);
+      // Calculate the highest score from this session (current vs session high)
+      const thisSessionHigh = Math.max(currentScore, sessionHighScore);
+      
+      // Determine what to submit: use the highest of server score and this session's high score
       console.log('[PhishingScorePage] Score comparison:', {
-        currentScore: phishingTotalScore,
-        serverScore,
+        currentScore,
         sessionHighScore,
-        maxScore,
-        shouldSubmit: phishingTotalScore > maxScore
+        thisSessionHigh,
+        serverScore
       });
       
-      // Only submit if current score is higher than BOTH server score and session high score
-      if (phishingTotalScore > maxScore) {
-        console.log('[PhishingScorePage] New high score! Submitting:', phishingTotalScore);
-        
-        // Update sessionStorage if this is also a new session high
-        if (phishingTotalScore > sessionHighScore && userId) {
-          sessionStorage.setItem(`phishing_session_highscore_${userId}`, phishingTotalScore.toString());
-          sessionStorage.setItem('phishing_attempt_count', attemptCount.toString());
-          setSessionHighScore(phishingTotalScore);
-          console.log('[PhishingScorePage] Updated session high score to:', phishingTotalScore);
-        }
+      // Update session high score if current is higher
+      console.log('[PhishingScorePage] Before update:', { currentScore, sessionHighScore, willUpdate: currentScore > sessionHighScore });
+      if (currentScore > sessionHighScore) {
+        sessionStorage.setItem(`phishing_session_highscore_${userId}`, currentScore.toString());
+        sessionStorage.setItem('phishing_attempt_count', attemptCount.toString());
+        console.log('[PhishingScorePage] Updated sessionStorage to:', currentScore);
+      }
 
-        const url = `http://localhost:8848/scores/${userId}`;
-        const requestBody = {
-          game5_score: phishingTotalScore  // Upload Phishing TOTAL score to game5_score
-        };
+      // Always submit the highest score from this session (even if same as server)
+      const scoreToSubmit = Math.max(serverScore, thisSessionHigh);
       
-        console.log('[PhishingScorePage] Calling API:', {
-          method: 'PUT',
-          url,
-          body: requestBody
-        });
+      // Submit to server
+      const url = `/scores/${userId}`;
+      const requestBody = {
+        game5_score: scoreToSubmit
+      };
+    
+      console.log('[PhishingScorePage] Submitting score:', scoreToSubmit);
 
-        const response = await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        });
+      const response = await apiFetch(url, {
+        method: 'PUT',
+        body: JSON.stringify(requestBody)
+      });
 
-        console.log('[PhishingScorePage] API Response:', {
-          status: response.status,
-          ok: response.ok
-        });
-
-        if (!response.ok) {
-          console.error('Failed to submit score:', response.status);
-        } else {
-          console.log('[PhishingScorePage] Score submitted successfully!');
-        }
-      } else {
-        console.log(`[PhishingScorePage] Current score (${phishingTotalScore}) is not higher than server score (${serverScore}). Not submitting.`);
+      if (response.ok) {
+        console.log('[PhishingScorePage] Score submitted successfully!');
       }
     } catch (err) {
       console.error('Error submitting score:', err);
@@ -231,27 +206,10 @@ const PhishingScorePage: React.FC = () => {
               >
                 {total_score}
               </Typography>
-              {sessionHighScore > 0 && currentGame5Score <= sessionHighScore && (
-                <Typography 
-                  variant='h6' 
-                  sx={{ 
-                    color: 'text.secondary',
-                    fontWeight: 500,
-                    fontSize: '1rem'
-                  }}
-                >
-                  (Session High: {sessionHighScore})
-                </Typography>
-              )}
             </Box>
             <Typography variant='subtitle2' sx={{ color: 'text.secondary' }}>
               out of {maxTotal}
             </Typography>
-            {isHighScore && (
-              <Typography variant='body2' sx={{ mt: 1, color: 'success.main', fontWeight: 600 }}>
-                🎉 New High Score!
-              </Typography>
-            )}
             <LinearProgress
               variant='determinate'
               value={totalRatio * 100}
@@ -331,6 +289,12 @@ const PhishingScorePage: React.FC = () => {
               <Button
                 variant="contained"
                 onClick={() => {
+                  // Update session high score before going back
+                  const thisScore = total_score;
+                  if (thisScore > sessionHighScore) {
+                    sessionStorage.setItem(`phishing_session_highscore_${userId}`, thisScore.toString());
+                    console.log('[PhishingScorePage] Try Again - Updated session high to:', thisScore);
+                  }
                   const newCount = attemptCount + 1;
                   setAttemptCount(newCount);
                   sessionStorage.setItem('phishing_attempt_count', newCount.toString());

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { setStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
+import { apiFetch } from '../../services/api';
 import {
   Box,
   Paper,
@@ -71,9 +72,8 @@ const LoginPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8848/users/login', {
+      const res = await apiFetch('/users/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, firstname: loginFirstname }),
       });
       if (!res.ok) {
@@ -107,9 +107,8 @@ const LoginPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8848/users/', {
+      const res = await apiFetch('/users/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstname: regFirstname,
           lastname: regLastname,
