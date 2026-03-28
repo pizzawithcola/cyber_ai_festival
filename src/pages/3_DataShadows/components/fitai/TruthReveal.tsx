@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { useFitAI } from './fitaiContext'
 import { useDataShadowsLayout } from '../../DataShadowsLayoutContext'
 import { NetworkDataFlowDiagram } from './NetworkDataFlowDiagram'
 import type { TermsConsent, SurveyData } from './dataFlowLogic'
+import { getStoredUser } from '../../../../utils/userStorage'
+import { apiFetch } from '../../../../services/api'
 
 const TruthReveal: React.FC = () => {
   const { setScreen, userChoices } = useFitAI()
   const layout = useDataShadowsLayout()
+  const navigate = useNavigate()
   const [phase, setPhase] = useState(0)
   const [showTwist, setShowTwist] = useState(false)
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
@@ -15,6 +19,9 @@ const TruthReveal: React.FC = () => {
   const [screenShake, setScreenShake] = useState(false)
   const [privacyScore, setPrivacyScore] = useState<number>(0)
   const [showAllLayers, setShowAllLayers] = useState(false)
+  const hasSyncedScoreRef = useRef(false)
+  const storedUser = getStoredUser()
+  const userId = storedUser?.id
 
   // 计算隐私分数
   useEffect(() => {
@@ -86,6 +93,64 @@ const TruthReveal: React.FC = () => {
     if (showAllLayers) layout.setTruthRevealFinalStep(true)
     return () => { layout.setTruthRevealFinalStep(false) }
   }, [showAllLayers, layout])
+
+  useEffect(() => {
+    const syncScore = async () => {
+      if (phase < 3 || !userId || hasSyncedScoreRef.current) return
+
+      hasSyncedScoreRef.current = true
+
+      const sessionKey = `datashadows_session_highscore_${userId}`
+      const currentScore = Number(privacyScore) || 0
+      const storedSessionHigh = Number(sessionStorage.getItem(sessionKey) || '0')
+      const sessionHighScore = Math.max(currentScore, storedSessionHigh)
+
+      if (sessionHighScore > storedSessionHigh) {
+        sessionStorage.setItem(sessionKey, sessionHighScore.toString())
+      }
+
+      try {
+        const existingScoreResponse = await apiFetch(`/scores/${userId}`)
+
+        if (existingScoreResponse.ok) {
+          const existingScore = await existingScoreResponse.json()
+          const serverScore = Number(existingScore?.game3_score) || 0
+          const scoreToSubmit = Math.max(serverScore, sessionHighScore)
+
+          const updateResponse = await apiFetch(`/scores/${userId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ game3_score: scoreToSubmit }),
+          })
+
+          if (!updateResponse.ok) {
+            console.error('[TruthReveal] Failed to update Data Shadows score:', updateResponse.status)
+          }
+          return
+        }
+
+        if (existingScoreResponse.status === 404) {
+          const createResponse = await apiFetch('/scores/', {
+            method: 'POST',
+            body: JSON.stringify({
+              user_id: userId,
+              game3_score: sessionHighScore,
+            }),
+          })
+
+          if (!createResponse.ok) {
+            console.error('[TruthReveal] Failed to create Data Shadows score:', createResponse.status)
+          }
+          return
+        }
+
+        console.error('[TruthReveal] Failed to fetch existing score:', existingScoreResponse.status)
+      } catch (error) {
+        console.error('[TruthReveal] Failed to sync Data Shadows score:', error)
+      }
+    }
+
+    void syncScore()
+  }, [phase, privacyScore, userId])
 
   const rightSlotEl = layout.rightSlotMounted ? layout.rightSlotRef.current : null
   const termsConsent: TermsConsent = {
@@ -569,13 +634,28 @@ const TruthReveal: React.FC = () => {
             {(showAllLayers || scrollPhase >= 4) && (
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
+                gridTemplateColumns: '1fr 1fr',
                 gap: '12px',
                 marginBottom: '40px',
                 opacity: showAllLayers ? 1 : (scrollPhase >= 4 ? 1 : 0),
                 transform: showAllLayers ? 'translateY(0)' : (scrollPhase >= 4 ? 'translateY(0)' : 'translateY(20px)'),
                 transition: 'all 0.5s ease-out 0.6s'
               }}>
+                <button
+                  onClick={() => navigate('/ranking/game/datashadows')}
+                  style={{
+                    padding: '16px',
+                    background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  View Leaderboard
+                </button>
                 <button
                   onClick={() => setScreen('home')}
                   style={{
