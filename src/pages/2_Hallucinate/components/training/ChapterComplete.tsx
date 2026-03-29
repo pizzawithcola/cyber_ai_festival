@@ -5,9 +5,13 @@ import { NEON_CYAN, PRIMARY_HEADER_GRADIENT, PANEL_BODY_BACKGROUND, panelCardSx,
 
 export function ChapterComplete({
   onReviewResults,
+  onViewRanking,
+  isNavigatingToRanking = false,
   onStartFromBeginning,
 }: {
   onReviewResults: () => void;
+  onViewRanking?: () => void;
+  isNavigatingToRanking?: boolean;
   onStartFromBeginning?: () => void;
 }) {
   const animationCss = `
@@ -85,16 +89,25 @@ export function ChapterComplete({
               variant="outlined"
               onClick={onReviewResults}
               sx={{ fontWeight: 900, borderColor: NEON_CYAN, color: NEON_CYAN }}
+              disabled={isNavigatingToRanking}
             >
               Review Results
             </Button>
             <Button
-              variant="contained"
+              variant="outlined"
               onClick={onStartFromBeginning}
-              sx={{ fontWeight: 900, background: PRIMARY_HEADER_GRADIENT }}
-              disabled={!onStartFromBeginning}
+              sx={{ fontWeight: 900, borderColor: 'rgba(255,255,255,0.28)', color: '#eaffff' }}
+              disabled={!onStartFromBeginning || isNavigatingToRanking}
             >
               Start From Beginning
+            </Button>
+            <Button
+              variant="contained"
+              onClick={onViewRanking}
+              sx={{ fontWeight: 900, background: PRIMARY_HEADER_GRADIENT }}
+              disabled={!onViewRanking || isNavigatingToRanking}
+            >
+              {isNavigatingToRanking ? 'Loading Ranking...' : 'View Ranking'}
             </Button>
           </Stack>
         </Stack>
