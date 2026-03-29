@@ -1,0 +1,305 @@
+.network-data-flow-diagram {
+  padding: 12px 20px;
+  color: #fff;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  justify-content: center;
+}
+
+.data-flow-header {
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.data-flow-header > div:first-child {
+  flex: 1;
+}
+
+.data-flow-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.data-flow-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.privacy-score-block {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.privacy-score-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.privacy-score-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.privacy-score-value.score-high {
+  background: linear-gradient(135deg, #10b981, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.privacy-score-value.score-mid {
+  color: #f59e0b;
+}
+
+.privacy-score-value.score-low {
+  color: #ef4444;
+}
+
+.network-diagram-container {
+  flex: 1;
+  min-height: 180px;
+  max-height: 220px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.network-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  display: block;
+}
+
+.connection-line-active {
+  stroke: #10b981;
+  stroke-width: 2;
+  opacity: 0.9;
+}
+
+.connection-line-inactive {
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 2;
+  opacity: 0.6;
+}
+
+.connection-label {
+  fill: rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+  font-weight: 500;
+}
+
+.connection-label-active {
+  fill: rgba(16, 185, 129, 0.95);
+}
+
+.connection-label-inactive {
+  fill: rgba(255, 255, 255, 0.5);
+}
+
+.network-node {
+  transition: all 0.2s;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.network-node:hover {
+  r: 28;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.network-node-selected {
+  r: 30;
+  stroke: #fff;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8));
+}
+
+.node-label {
+  fill: #fff;
+  font-weight: 600;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  font-size: 11px;
+}
+
+.flow-node-detail {
+  margin-top: 10px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  flex: 1;
+  min-height: 180px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.flow-node-detail-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.flow-node-detail-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 12px;
+}
+
+.flow-node-detail-status {
+  font-size: 12px;
+  color: rgba(16, 185, 129, 0.95);
+  margin: 0 0 12px;
+}
+
+.flow-node-fields {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.flow-node-fields strong {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.flow-node-fields ul {
+  margin: 0 0 12px 20px;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.flow-node-fields li {
+  margin-bottom: 4px;
+}
+
+.flow-node-sample {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.flow-node-sample strong {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.flow-node-sample pre {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.flow-node-detail-close {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.flow-node-detail-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+/* Node Emphasis Classes - Score Impact Visualization */
+
+/*
+* Reading Dimension Emphasis
+* Applied to AppCloud and AIModeling nodes based on terms reading progress
+* Low reading % (< 50%) → muted appearance (difficulty understanding internal processes)
+* High reading % (>= 50%) → bright appearance (user informed about internal processing)
+*/
+.node-low-reading {
+  animation: pulse-muted 2s ease-in-out infinite;
+}
+
+.node-high-reading {
+  animation: glow-bright 1.5s ease-in-out infinite;
+}
+
+/*
+* Consent Dimension Emphasis
+* Applied to ThirdPartySdk based on privacy toggle state
+* Low consent (many toggles disabled) → less data sharing
+* High consent (many toggles enabled) → more data sharing
+*/
+.node-low-consent {
+  /* Lower opacity already applied in component logic */
+}
+
+.node-high-consent {
+  animation: glow-bright 1.5s ease-in-out infinite;
+}
+
+/*
+* Exposure Dimension Emphasis
+* Applied to DataBrokers, ProfileUsage, AdPlatforms, Downstream
+* Low exposure (few optional fields filled) → contained risk
+* High exposure (all optional fields filled) → elevated risk, prominent warning
+*/
+.node-low-exposure {
+  /* Muted appearance in component logic */
+}
+
+.node-high-exposure {
+  animation: pulse-warning 1.2s ease-in-out infinite;
+}
+
+/* Animations */
+
+@keyframes glow-bright {
+  0%, 100% {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+  }
+}
+
+@keyframes pulse-muted {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.8));
+  }
+}
