@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Typography,
   Box,
@@ -38,18 +39,22 @@ import {
 import { SCENARIOS, REQUIRED_SCENARIO_IDS } from './scenarios';
 import { InteractiveScenarioChat } from './components/InteractiveScenarioChat';
 import { TrainingArena } from './components/TrainingArena';
+import { getStoredUser } from '../../utils/userStorage';
+import { apiFetch } from '../../services/api';
 
 /** =========================================================
  *  MAIN PAGE (Tabs)
  *  ========================================================= */
 
 const Hallucinate: React.FC = () => {
+  const navigate = useNavigate();
   const [showLanding, setShowLanding] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [scenarioId, setScenarioId] = useState<string>(SCENARIOS[0].id);
   const [showGameIntro, setShowGameIntro] = useState(true);
   const [showScenarioChat, setShowScenarioChat] = useState(false);
   const [completedScenarioIds, setCompletedScenarioIds] = useState<Set<string>>(new Set());
+  const [hasVerifiedSession, setHasVerifiedSession] = useState(false);
   const selectedScenario = SCENARIOS.find((s) => s.id === scenarioId);
   const chatAnchorRef = useRef<HTMLDivElement>(null);
   const allScenariosCompleted = useMemo(
@@ -294,12 +299,66 @@ const Hallucinate: React.FC = () => {
   }, [scenarioId]);
 
   useEffect(() => {
+    const storedUser = getStoredUser();
+
+    if (!storedUser) {
+      navigate('/login/hallucinate', { replace: true });
+      return;
+    }
+
+    setHasVerifiedSession(true);
+  }, [navigate]);
+
+  useEffect(() => {
     if (!showScenarioChat) return;
     const handle = window.setTimeout(() => {
       chatAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 80);
     return () => window.clearTimeout(handle);
   }, [showScenarioChat]);
+
+  const handleViewRanking = async (finalScore: number) => {
+    const storedUser = getStoredUser();
+    const userId = storedUser?.id;
+
+    if (!userId) {
+      navigate('/login/hallucinate', { replace: true });
+      return;
+    }
+
+    try {
+      let serverScore = 0;
+
+      try {
+        const getResponse = await apiFetch(`/scores/${userId}`);
+
+        if (getResponse.ok) {
+          const userData = await getResponse.json();
+          serverScore = Number(userData.game2_score) || 0;
+        }
+      } catch (err) {
+        console.error('[Hallucinate] Failed to fetch existing score:', err);
+      }
+
+      const scoreToSubmit = Math.max(serverScore, finalScore);
+      const updateResponse = await apiFetch(`/scores/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ game2_score: scoreToSubmit }),
+      });
+
+      if (!updateResponse.ok) {
+        console.error('[Hallucinate] Failed to submit score:', updateResponse.status);
+      }
+    } catch (err) {
+      console.error('[Hallucinate] Error submitting score:', err);
+    } finally {
+      navigate('/ranking/game/hallucinate');
+    }
+  };
+
+  if (!hasVerifiedSession) {
+    return null;
+  }
 
   return (
     <Box
@@ -1070,6 +1129,7 @@ const Hallucinate: React.FC = () => {
             ) : (
               <TrainingArena
                 autoStart
+                onViewRanking={handleViewRanking}
                 onExitToScenarios={() => {
                   setShowLanding(true);
                   setShowGameIntro(true);

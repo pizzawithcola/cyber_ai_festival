@@ -54,9 +54,11 @@ const animationCss = `
 
 export function TrainingArena({
   autoStart = false,
+  onViewRanking,
   onExitToScenarios,
 }: {
   autoStart?: boolean;
+  onViewRanking?: (score: number) => Promise<void> | void;
   onExitToScenarios?: () => void;
 }) {
   const [isRunning, setIsRunning] = useState(false);
@@ -75,6 +77,7 @@ export function TrainingArena({
 
   const [showResults, setShowResults] = useState(false);
   const [resultPage, setResultPage] = useState<ResultPage>('summary');
+  const [isNavigatingToRanking, setIsNavigatingToRanking] = useState(false);
 
   const initRound = () => {
     setShowResults(false);
@@ -249,6 +252,18 @@ export function TrainingArena({
       : 'Solid progress. Tighten checks on scope and evidence cues.';
   const feedbackColor = accuracy >= 80 ? '#2ecc71' : accuracy < 40 ? '#ffb74d' : '#00c2ff';
 
+  const handleViewRanking = async () => {
+    if (!onViewRanking || isNavigatingToRanking) return;
+
+    setIsNavigatingToRanking(true);
+
+    try {
+      await onViewRanking(score);
+    } finally {
+      setIsNavigatingToRanking(false);
+    }
+  };
+
   const renderImmediateFeedback = () => {
     if (!activeCard || !activeFeedbackKind) return null;
 
@@ -379,6 +394,8 @@ export function TrainingArena({
     return (
       <ChapterComplete
         onReviewResults={() => setResultPage('summary')}
+        onViewRanking={onViewRanking ? handleViewRanking : undefined}
+        isNavigatingToRanking={isNavigatingToRanking}
         onStartFromBeginning={onExitToScenarios}
       />
     );
