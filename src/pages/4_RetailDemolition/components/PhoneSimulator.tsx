@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ArrowLeft, ChevronRight, Globe, Search, Loader2, Trophy, Bot, Smartphone, X } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Globe, Loader2, Trophy, Bot, Smartphone, X } from 'lucide-react';
 import QuizComponent from './QuizComponent';
 import GameSummary from './GameSummary';
 import BillingInfo from './BillingInfo';
@@ -28,15 +28,11 @@ const PhoneSimulator = ({
   score,
   scoreEvents,
   decisions,
-  handleBillingComplete
+  handleBillingComplete,
+  onSubmitScore,
+  isSubmittingScore,
+  submitError
 }) => {
-  const pushSMS = (title, body, delay = 0) => {
-    setTimeout(() => {
-      const id = Math.random();
-      setNotifications(prev => [{ id, title, body }, ...prev]);
-    }, delay);
-  };
-
   useEffect(() => {
     if (chatBottomRef.current) {
       chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -317,6 +313,9 @@ const PhoneSimulator = ({
           decisions={decisions}
           scoreEvents={scoreEvents}
           onRestart={() => window.location.reload()}
+          onSubmitScore={onSubmitScore}
+          isSubmittingScore={isSubmittingScore}
+          submitError={submitError}
         />
       );
     }

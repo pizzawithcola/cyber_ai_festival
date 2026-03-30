@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Trophy, AlertTriangle, CheckCircle, Clock, Shield, Brain, Target, RefreshCw, Eye } from 'lucide-react';
+import { Trophy, AlertTriangle, Clock, Shield, Brain, Target, RefreshCw, Eye } from 'lucide-react';
 import DecisionCard from './DecisionCard';
 
 interface Decision {
@@ -17,13 +17,24 @@ interface Decision {
 
 interface GameSummaryProps {
   score: number;
-  logs: any[];
+  logs: unknown[];
   decisions: Decision[];
-  scoreEvents: Array<{ change: number; reason: string; meta: any; timestamp: number }>;
+  scoreEvents: Array<{ change: number; reason: string; meta: Record<string, unknown>; timestamp: number }>;
   onRestart: () => void;
+  onSubmitScore: () => Promise<void>;
+  isSubmittingScore: boolean;
+  submitError: string | null;
 }
 
-const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents, onRestart }) => {
+const GameSummary: React.FC<GameSummaryProps> = ({
+  score,
+  decisions,
+  scoreEvents,
+  onRestart,
+  onSubmitScore,
+  isSubmittingScore,
+  submitError,
+}) => {
 
   const deductionEvents = useMemo(() => {
     return (scoreEvents || [])
@@ -31,7 +42,7 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [scoreEvents]);
 
-  const formatScoreReason = (reason, meta) => {
+  const formatScoreReason = (reason: string, meta?: { siteName?: string }) => {
     if (reason === 'selected_malicious_site') return `Selected a malicious retailer${meta?.siteName ? `: ${meta.siteName}` : ''}`;
     if (reason === 'slow_malicious_decision') return `Hesitated on malicious retailer${meta?.siteName ? `: ${meta.siteName}` : ''}`;
     if (reason === 'very_slow_malicious_decision') return `Very slow decision on malicious retailer${meta?.siteName ? `: ${meta.siteName}` : ''}`;
@@ -215,7 +226,7 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
               <DecisionCard 
                 key={decision.timestamp} 
                 decision={decision} 
-                index={decisions.indexOf(decision)}
+                index={index}
               />
             ))
           ) : (
@@ -301,6 +312,20 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
 
       {/* Action Buttons */}
       <div className="mt-auto space-y-3">
+        <button
+          onClick={() => {
+            void onSubmitScore();
+          }}
+          disabled={isSubmittingScore}
+          className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {isSubmittingScore ? 'Submitting score...' : 'Submit Score & View Leaderboard'}
+        </button>
+        {submitError && (
+          <div className="text-xs text-amber-300 bg-amber-900/30 border border-amber-700/50 rounded-xl p-3">
+            {submitError}
+          </div>
+        )}
         <button 
           onClick={onRestart}
           className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors"
