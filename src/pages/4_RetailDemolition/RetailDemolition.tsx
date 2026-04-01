@@ -1,9 +1,17 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getStoredUser } from '../../utils/userStorage';
+import { submitGameScoreMax } from '../../services/scoreSubmission';
 import PhoneSimulator from './components/PhoneSimulator';
 import { useRetailDemolition } from './hooks/useRetailDemolition';
 import { PREDEFINED_PRODUCTS, RETAILERS } from './constants/gameData';
 
 const RetailDemolition = () => {
+  const navigate = useNavigate();
+  const [hasVerifiedSession, setHasVerifiedSession] = useState(false);
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const {
     gameState,
     isAgentic,
@@ -13,18 +21,11 @@ const RetailDemolition = () => {
     activeSite,
     automationStep,
     notifications,
-    logs,
     selectedProduct,
     score,
     scoreEvents,
-    vettedPolicy,
-    vettedLogs,
     showQuiz,
-    quizAnswers,
     decisions,
-    billingCompleted,
-    logRef,
-    chatRef,
     chatBottomRef,
     startSearch,
     handleRetailerClick,
@@ -33,11 +34,52 @@ const RetailDemolition = () => {
     setNotifications,
     setShowQuiz,
     setGameState,
-    getRank,
-    updateScore,
-    setVettedPolicy,
-    setVettedLogs
+  
   } = useRetailDemolition();
+
+  useEffect(() => {
+    const storedUser = getStoredUser();
+    if (!storedUser?.id) {
+      navigate('/login/retaildemolition', { replace: true });
+      return;
+    }
+    setHasVerifiedSession(true);
+  }, [navigate]);
+
+  const handleSubmitScore = async (): Promise<void> => {
+    if (isSubmittingScore) return;
+
+    const storedUser = getStoredUser();
+    const userId = storedUser?.id;
+    if (!userId) {
+      navigate('/login/retaildemolition', { replace: true });
+      return;
+    }
+
+    setSubmitError(null);
+    setIsSubmittingScore(true);
+    try {
+      const result = await submitGameScoreMax({
+        userId,
+        game: 'retaildemolition',
+        currentScore: score,
+      });
+
+      if (!result.ok) {
+        setSubmitError('Failed to sync score to server. Redirecting to leaderboard.');
+      }
+    } catch (error) {
+      console.error('[RetailDemolition] Error submitting score:', error);
+      setSubmitError('Network error while syncing score. Redirecting to leaderboard.');
+    } finally {
+      setIsSubmittingScore(false);
+      navigate('/ranking/game/retaildemolition');
+    }
+  };
+
+  if (!hasVerifiedSession) {
+    return null;
+  }
 
   return (
     <div className="relative flex h-screen w-full bg-[#0a0a0c] text-slate-300 font-sans overflow-hidden">
@@ -72,6 +114,9 @@ const RetailDemolition = () => {
         scoreEvents={scoreEvents}
         decisions={decisions}
         handleBillingComplete={handleBillingComplete}
+        onSubmitScore={handleSubmitScore}
+        isSubmittingScore={isSubmittingScore}
+        submitError={submitError}
       />
     </div>
   );
