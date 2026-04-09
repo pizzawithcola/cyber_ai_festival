@@ -8,7 +8,7 @@ interface HeaderProps {
   countryCode?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, firstname, lastname, countryCode }) => {
+const Header: React.FC<HeaderProps> = ({ title, firstname, lastname }) => {
   const normalizedFirstname =
     firstname && firstname.length > 0
       ? firstname[0].toUpperCase() + firstname.slice(1).toLowerCase()

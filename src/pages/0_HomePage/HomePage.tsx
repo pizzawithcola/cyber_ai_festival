@@ -86,7 +86,7 @@ const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
     },
     {
       id: 'phishing',
-      title: 'Phishing Defense',
+      title: 'Phishing Attack',
       description: 'Spot phishing attempts',
       icon: '🎣',
       path: '/phishing'

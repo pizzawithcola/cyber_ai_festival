@@ -29,7 +29,7 @@ const GAME_TITLES: Record<string, string> = {
   hallucinate: 'AI Hallucination',
   datashadows: 'Data Shadows',
   retaildemolition: 'Retail Demolition',
-  phishing: 'Phishing Defense',
+  phishing: 'Phishing Attack',
 };
 
 function countryCodeToFlag(code: string) {

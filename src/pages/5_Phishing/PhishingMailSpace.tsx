@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Target, Mission, DemoEmail } from './phishingData';
+import type { Target, Mission } from './phishingData';
 import { demoEmails } from './phishingData';
 import { 
   Box, 
@@ -226,7 +226,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
     } finally {
       setIsLoading(false);
     }
-  }, [editor, senderEmail, recipient, subject, navigate, getDraftKey, target.id]);
+  }, [editor, senderEmail, recipient, subject, navigate, getDraftKey, target.id, mission, target.name, target.email, target.department, target.position, target.hobbies, target.personality]);
 
   const handleColorChange = useCallback((color: string) => {
     if (!editor) return;

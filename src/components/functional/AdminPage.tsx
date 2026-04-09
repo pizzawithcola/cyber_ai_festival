@@ -763,7 +763,7 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game1_score >= 80 ? '#4caf50' : user.game1_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game1_score}
+                      {user.game1_score.toFixed(1)}
                     </EditableCell>
                     <EditableCell 
                       onDoubleClick={(e) => {
@@ -772,7 +772,7 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game2_score >= 80 ? '#4caf50' : user.game2_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game2_score}
+                      {user.game2_score.toFixed(1)}
                     </EditableCell>
                     <EditableCell 
                       onDoubleClick={(e) => {
@@ -781,7 +781,7 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game3_score >= 80 ? '#4caf50' : user.game3_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game3_score}
+                      {user.game3_score.toFixed(1)}
                     </EditableCell>
                     <EditableCell 
                       onDoubleClick={(e) => {
@@ -790,7 +790,7 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game4_score >= 80 ? '#4caf50' : user.game4_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game4_score}
+                      {user.game4_score.toFixed(1)}
                     </EditableCell>
                     <EditableCell 
                       onDoubleClick={(e) => {
@@ -799,10 +799,10 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game5_score >= 80 ? '#4caf50' : user.game5_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game5_score}
+                      {user.game5_score.toFixed(1)}
                     </EditableCell>
                     <TableCell sx={{ fontWeight: 'bold', color: user.total_score >= 400 ? '#4caf50' : user.total_score >= 300 ? '#ff9800' : '#f44336' }}>
-                      {user.total_score}
+                      {user.total_score.toFixed(1)}
                     </TableCell>
                   </TableRow>
                 ))}

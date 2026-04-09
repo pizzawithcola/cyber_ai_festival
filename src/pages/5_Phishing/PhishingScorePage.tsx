@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getStoredUser, type StoredUser } from '../../utils/userStorage';
+import { getStoredUser } from '../../utils/userStorage';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 import { apiFetch } from '../../services/api';
 import {
@@ -35,7 +35,7 @@ const PhishingScorePage: React.FC = () => {
   const [attemptCount, setAttemptCount] = useState(() => {
     // Get initial attempt count from state or sessionStorage
     // Start from 0, increment after each submission
-    const stateAttempts = (location.state as any)?.attemptCount || 0;
+    const stateAttempts = (location.state as { attemptCount?: number })?.attemptCount || 0;
     const storedAttempts = sessionStorage.getItem('phishing_attempt_count');
     return stateAttempts > 0 ? stateAttempts : parseInt(storedAttempts || '0', 10);
   });
@@ -71,8 +71,7 @@ const PhishingScorePage: React.FC = () => {
     return storedHigh > 0 ? storedHigh : currentGame5Score;
   };
   
-  const [sessionHighScore, setSessionHighScore] = useState(getSessionHighScore());
-  const isHighScore = currentGame5Score >= sessionHighScore;
+  const [sessionHighScore] = useState(getSessionHighScore());
 
   if (!state?.reply) {
     return (
@@ -87,7 +86,7 @@ const PhishingScorePage: React.FC = () => {
     );
   }
 
-  const { total_score, score_details, user_id } = state.reply;
+  const { total_score, score_details } = state.reply;
   const maxTotal = Object.values(CATEGORY_LABELS).reduce((sum, c) => sum + c.maxScore, 0);
   const totalRatio = total_score / maxTotal;
   const user = getStoredUser();
