@@ -39,7 +39,7 @@ export interface NodeData {
   enabled: boolean
   fields: string[]          // Names of fields being sent
   description: string       // Brief explanation of how the data is used
-  sample?: any               // Example (optional)
+  sample?: unknown           // Example (optional)
 }
 
 export interface DataFlowResult {
@@ -146,15 +146,6 @@ export function determineDataFlow(
   if ((privacy.thirdParty || privacy.aiTraining) && hasField('height') && hasField('weight')) {
     healthAnalysisFields.push('bmi')
   }
-
-  // Calculate privacy score: +20 per enabled toggle, -5 per optional field filled (more data revealed), clamped 0‑100
-  const enabledCount = Object.values(privacy).filter(Boolean).length
-  const optionalFilledCount = [
-    hasField('height') && hasField('weight'),
-    hasField('occupation'),
-    hasField('homeAddress')
-  ].filter(Boolean).length
-  const privacyScore = Math.min(100, Math.max(0, enabledCount * 20 - optionalFilledCount * 5))
 
   return {
     analytics: {

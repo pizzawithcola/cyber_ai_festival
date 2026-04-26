@@ -1,17 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import { useFitAI } from './fitaiContext'
 import { useDataShadowsLayout } from '../../DataShadowsLayoutContext'
 import { NetworkDataFlowDiagram } from './NetworkDataFlowDiagram'
 import type { TermsConsent, SurveyData } from './dataFlowLogic'
 import { getStoredUser } from '../../../../utils/userStorage'
 import { apiFetch } from '../../../../services/api'
+import './TruthReveal.css'
+
+function getPrivacyScoreBreakdown(
+  termsReadingProgress: number,
+  termsReadingScore: number,
+  privacyOptionsScore: number,
+  surveyScore: number,
+  surveyData: SurveyData
+) {
+  const lines: string[] = []
+
+  lines.push(`Reading: ${termsReadingProgress}% (${termsReadingScore} pts)`)
+  lines.push(`Privacy Toggles: ${privacyOptionsScore} pts`)
+  lines.push(`Survey Disclosure: ${surveyScore} pts`)
+
+  const heightWeightFilled = !!(surveyData.height && surveyData.weight)
+  const occupationFilled = !!surveyData.occupation
+  const addressFilled = !!surveyData.homeAddress
+
+  lines.push(`Height/Weight: ${heightWeightFilled ? 'shared' : 'not shared'}`)
+  lines.push(`Occupation: ${occupationFilled ? 'shared' : 'not shared'}`)
+  lines.push(`Home Address: ${addressFilled ? 'shared' : 'not shared'}`)
+
+  return lines
+}
 
 const TruthReveal: React.FC = () => {
-  const { setScreen, userChoices } = useFitAI()
-  const layout = useDataShadowsLayout()
-  const navigate = useNavigate()
+  const { userChoices } = useFitAI()
+  const { rightSlotEl, setTruthRevealFinalStep } = useDataShadowsLayout()
   const [phase, setPhase] = useState(0)
   const [showTwist, setShowTwist] = useState(false)
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
@@ -19,9 +42,20 @@ const TruthReveal: React.FC = () => {
   const [screenShake, setScreenShake] = useState(false)
   const [privacyScore, setPrivacyScore] = useState<number>(0)
   const [showAllLayers, setShowAllLayers] = useState(false)
+  const [isTransitioningToReveal, setIsTransitioningToReveal] = useState(false)
   const hasSyncedScoreRef = useRef(false)
   const storedUser = getStoredUser()
   const userId = storedUser?.id
+  const confettiPieces = useMemo(
+    () =>
+      [...Array(20)].map((_, i) => ({
+        id: i,
+        color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'][i % 4],
+        duration: 2 + (i % 5) * 0.18,
+        left: 4 + ((i * 17) % 92),
+      })),
+    []
+  )
 
   // 计算隐私分数
   useEffect(() => {
@@ -59,40 +93,51 @@ const TruthReveal: React.FC = () => {
   useEffect(() => {
     const phases = [
       { delay: 0, action: () => setPhase(1) },
-      { delay: 2500, action: () => setPhase(2) },
-      { delay: 5000, action: () => {
+      { delay: 1700, action: () => setPhase(2) },
+      { delay: 3400, action: () => {
         setShowTwist(true)
         setScreenShake(true)
-        setTimeout(() => setScreenShake(false), 500)
+        setTimeout(() => setScreenShake(false), 360)
       }},
-      { delay: 7000, action: () => setPhase(3) },
+      { delay: 4600, action: () => setPhase(3) },
     ]
 
-    phases.forEach(({ delay, action }) => {
-      const timer = setTimeout(action, delay)
-      return () => clearTimeout(timer)
-    })
+    const timers = phases.map(({ delay, action }) => window.setTimeout(action, delay))
+    return () => timers.forEach((timer) => window.clearTimeout(timer))
   }, [])
 
-  const handleScroll = (e: React.WheelEvent) => {
-    if (phase !== 3 || showAllLayers) return
-    
-    if (e.deltaY > 0) {
-      // 向下滚动，增加scrollPhase，最多到5
-      if (scrollPhase < 5) {
-        setScrollPhase(scrollPhase + 1)
-      } else if (scrollPhase === 5) {
-        // 当到达第5层时，设置showAllLayers为true，停止滚动动画
-        setShowAllLayers(true)
-      }
+  useEffect(() => {
+    if (phase !== 3 || showAllLayers || isTransitioningToReveal) return
+
+    const sequence = [
+      window.setTimeout(() => setScrollPhase(1), 360),
+      window.setTimeout(() => setScrollPhase(2), 760),
+      window.setTimeout(() => setScrollPhase(3), 1160),
+      window.setTimeout(() => setScrollPhase(4), 1560),
+      window.setTimeout(() => setIsTransitioningToReveal(true), 2050),
+    ]
+
+    return () => {
+      sequence.forEach((timer) => window.clearTimeout(timer))
     }
-  }
+  }, [phase, showAllLayers, isTransitioningToReveal])
+
+  useEffect(() => {
+    if (!isTransitioningToReveal) return
+
+    const timer = window.setTimeout(() => {
+      setShowAllLayers(true)
+      setIsTransitioningToReveal(false)
+    }, 520)
+
+    return () => window.clearTimeout(timer)
+  }, [isTransitioningToReveal])
 
   // Sync final-step layout (phone left, diagram right) and portal diagram into right slot
   useEffect(() => {
-    if (showAllLayers) layout.setTruthRevealFinalStep(true)
-    return () => { layout.setTruthRevealFinalStep(false) }
-  }, [showAllLayers, layout])
+    setTruthRevealFinalStep(showAllLayers)
+    return () => { setTruthRevealFinalStep(false) }
+  }, [showAllLayers, setTruthRevealFinalStep])
 
   useEffect(() => {
     const syncScore = async () => {
@@ -152,7 +197,6 @@ const TruthReveal: React.FC = () => {
     void syncScore()
   }, [phase, privacyScore, userId])
 
-  const rightSlotEl = layout.rightSlotMounted ? layout.rightSlotRef.current : null
   const termsConsent: TermsConsent = {
     privacySettings: (userChoices?.privacySettings as TermsConsent['privacySettings']) ?? {
       analytics: false,
@@ -170,6 +214,10 @@ const TruthReveal: React.FC = () => {
     occupation: typeof userChoices?.surveyOccupation === 'string' ? userChoices.surveyOccupation : undefined,
     homeAddress: typeof userChoices?.surveyHomeAddress === 'string' ? userChoices.surveyHomeAddress : undefined,
   }
+  const termsReadingProgress = termsConsent.termsReadingProgress ?? 0
+  const termsReadingScore = typeof userChoices?.termsReadingScore === 'number' ? userChoices.termsReadingScore : 0
+  const privacyOptionsScore = typeof userChoices?.privacyOptionsScore === 'number' ? userChoices.privacyOptionsScore : 0
+  const surveyScore = typeof userChoices?.surveyScore === 'number' ? userChoices.surveyScore : 0
   const portalContent =
     showAllLayers && rightSlotEl
       ? createPortal(
@@ -186,7 +234,7 @@ const TruthReveal: React.FC = () => {
     <>
       {portalContent}
       <div
-        onWheel={handleScroll}
+        className={`truth-reveal-arcade ${showAllLayers ? 'truth-reveal-arcade-final' : ''} ${isTransitioningToReveal ? 'truth-reveal-arcade-loading' : ''}`}
         style={{
           width: '100%',
           height: '100%',
@@ -198,6 +246,64 @@ const TruthReveal: React.FC = () => {
           transform: screenShake ? 'translateX(-5px)' : 'translateX(0)',
         }}
       >
+        {isTransitioningToReveal && (
+          <div className="truth-reveal-loading-overlay" style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            background: 'radial-gradient(circle at center, rgba(34,211,238,0.2), rgba(0,0,0,0.9) 58%)',
+            backdropFilter: 'blur(8px)',
+            animation: 'revealOverlayIn 0.35s ease-out',
+          }}>
+            <div className="truth-reveal-loading-card" style={{
+              width: '100%',
+              maxWidth: '300px',
+              padding: '22px 20px',
+              borderRadius: '8px',
+              border: '2px solid rgba(34,211,238,0.48)',
+              background: 'rgba(9, 14, 28, 0.9)',
+              textAlign: 'center',
+              boxShadow: '0 0 30px rgba(34,211,238,0.22), 0 24px 48px rgba(0,0,0,0.35)',
+            }}>
+              <div style={{
+                fontSize: '12px',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: '#67e8f9',
+                fontWeight: 700,
+                marginBottom: '12px',
+              }}>
+                Truth Review
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '10px' }}>
+                Loading Dataflow Map...
+              </div>
+              <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.6 }}>
+                Your phone stays in view while the network unfolds beside it.
+              </div>
+              <div style={{
+                marginTop: '18px',
+                height: '6px',
+                borderRadius: '999px',
+                overflow: 'hidden',
+                background: 'rgba(255,255,255,0.08)',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: '100%',
+                  background: 'linear-gradient(90deg, #f472b6, #22d3ee, #a3e635)',
+                  transformOrigin: 'left center',
+                  animation: 'revealProgress 0.52s linear forwards',
+                }} />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Phase 0-2: 保持不变 */}
         {/* Phase 0: Completion Celebration */}
         {phase === 0 && (
@@ -212,17 +318,17 @@ const TruthReveal: React.FC = () => {
             animation: 'fadeIn 0.5s ease-out',
           }}>
             {/* Confetti Animation */}
-            {[...Array(20)].map((_, i) => (
+            {confettiPieces.map((piece) => (
               <div
-                key={i}
+                key={piece.id}
                 style={{
                   position: 'absolute',
                   width: '10px',
                   height: '10px',
-                  background: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'][i % 4],
+                  background: piece.color,
                   borderRadius: '50%',
-                  animation: `confetti ${2 + Math.random()}s ease-out forwards`,
-                  left: `${Math.random() * 100}%`,
+                  animation: `confetti ${piece.duration}s ease-out forwards`,
+                  left: `${piece.left}%`,
                   top: '-10px',
                   opacity: 0.8,
                 }}
@@ -349,16 +455,35 @@ const TruthReveal: React.FC = () => {
         {phase >= 3 && (
           <div style={{ 
             padding: '20px',
-            transition: 'all 0.3s ease-out'
+            transition: 'all 0.3s ease-out',
+            backgroundImage: 'radial-gradient(circle at top, rgba(59,130,246,0.08), transparent 28%)',
           }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '22px',
+              padding: '8px 14px',
+              borderRadius: '999px',
+              background: 'rgba(16,185,129,0.12)',
+              border: '1px solid rgba(16,185,129,0.22)',
+              color: '#86efac',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+            }}>
+              Truth Reveal Sequence
+            </div>
             {/* Level 1: Fitness Plan Truth - 修改描述 */}
             {(showAllLayers || scrollPhase >= 0) && (
               <div style={{
                 marginBottom: '40px',
                 padding: '20px',
-                background: 'rgba(16,185,129,0.05)',
-                borderRadius: '12px',
-                border: '1px solid rgba(16,185,129,0.2)',
+                background: 'linear-gradient(180deg, rgba(16,185,129,0.08), rgba(2,6,23,0.88))',
+                borderRadius: '14px',
+                border: '1px solid rgba(16,185,129,0.28)',
+                boxShadow: '0 0 24px rgba(16,185,129,0.08)',
                 opacity: showAllLayers ? 1 : (scrollPhase >= 0 ? 1 : 0),
                 transform: showAllLayers ? 'translateY(0)' : (scrollPhase >= 0 ? 'translateY(0)' : 'translateY(20px)'),
                 transition: 'all 0.5s ease-out'
@@ -394,9 +519,10 @@ const TruthReveal: React.FC = () => {
               <div style={{
                 marginBottom: '40px',
                 padding: '20px',
-                background: 'rgba(59,130,246,0.05)',
-                borderRadius: '12px',
-                border: '1px solid rgba(59,130,246,0.2)',
+                background: 'linear-gradient(180deg, rgba(59,130,246,0.08), rgba(2,6,23,0.88))',
+                borderRadius: '14px',
+                border: '1px solid rgba(59,130,246,0.24)',
+                boxShadow: '0 0 24px rgba(59,130,246,0.08)',
                 opacity: showAllLayers ? 1 : (scrollPhase >= 1 ? 1 : 0),
                 transform: showAllLayers ? 'translateY(0)' : (scrollPhase >= 1 ? 'translateY(0)' : 'translateY(20px)'),
                 transition: 'all 0.5s ease-out 0.1s'
@@ -443,9 +569,10 @@ const TruthReveal: React.FC = () => {
               <div style={{
                 marginBottom: '40px',
                 padding: '20px',
-                background: 'rgba(139,92,246,0.05)',
-                borderRadius: '12px',
-                border: '1px solid rgba(139,92,246,0.2)',
+                background: 'linear-gradient(180deg, rgba(139,92,246,0.08), rgba(2,6,23,0.88))',
+                borderRadius: '14px',
+                border: '1px solid rgba(139,92,246,0.24)',
+                boxShadow: '0 0 24px rgba(139,92,246,0.08)',
                 opacity: showAllLayers ? 1 : (scrollPhase >= 2 ? 1 : 0),
                 transform: showAllLayers ? 'translateY(0)' : (scrollPhase >= 2 ? 'translateY(0)' : 'translateY(20px)'),
                 transition: 'all 0.5s ease-out 0.2s'
@@ -478,9 +605,10 @@ const TruthReveal: React.FC = () => {
               <div style={{
                 marginBottom: '40px',
                 padding: '20px',
-                background: 'rgba(139,92,246,0.05)',
-                borderRadius: '12px',
-                border: '1px solid rgba(139,92,246,0.2)',
+                background: 'linear-gradient(180deg, rgba(14,165,233,0.08), rgba(2,6,23,0.9))',
+                borderRadius: '14px',
+                border: '1px solid rgba(14,165,233,0.24)',
+                boxShadow: '0 0 24px rgba(14,165,233,0.08)',
                 opacity: showAllLayers ? 1 : (scrollPhase >= 3 ? 1 : 0),
                 transform: showAllLayers ? 'translateY(0)' : (scrollPhase >= 3 ? 'translateY(0)' : 'translateY(20px)'),
                 transition: 'all 0.5s ease-out 0.3s'
@@ -519,6 +647,40 @@ const TruthReveal: React.FC = () => {
                     {privacyScore >= 70 ? 'Privacy Champion!' :
                      privacyScore >= 40 ? 'Aware User' : 'Privacy Novice'}
                   </p>
+
+                  <div style={{
+                    marginTop: '18px',
+                    paddingTop: '16px',
+                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                    textAlign: 'left',
+                  }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      marginBottom: '10px',
+                      textAlign: 'center',
+                    }}>
+                      Score Breakdown
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gap: '6px',
+                      fontSize: '12px',
+                      lineHeight: 1.6,
+                      color: '#d1d5db',
+                    }}>
+                      {getPrivacyScoreBreakdown(
+                        termsReadingProgress,
+                        termsReadingScore,
+                        privacyOptionsScore,
+                        surveyScore,
+                        surveyData
+                      ).map((line) => (
+                        <div key={line}>{line}</div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -528,9 +690,10 @@ const TruthReveal: React.FC = () => {
               <div style={{
                 marginBottom: '40px',
                 padding: '20px',
-                background: 'rgba(168,85,247,0.05)',
-                borderRadius: '12px',
-                border: '1px solid rgba(168,85,247,0.2)',
+                background: 'linear-gradient(180deg, rgba(244,63,94,0.08), rgba(2,6,23,0.9))',
+                borderRadius: '14px',
+                border: '1px solid rgba(244,63,94,0.24)',
+                boxShadow: '0 0 24px rgba(244,63,94,0.08)',
                 opacity: showAllLayers ? 1 : (scrollPhase >= 4 ? 1 : 0),
                 transform: showAllLayers ? 'translateY(0)' : (scrollPhase >= 4 ? 'translateY(0)' : 'translateY(20px)'),
                 transition: 'all 0.5s ease-out 0.4s'
@@ -634,43 +797,13 @@ const TruthReveal: React.FC = () => {
             {(showAllLayers || scrollPhase >= 4) && (
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: '1fr',
                 gap: '12px',
                 marginBottom: '40px',
                 opacity: showAllLayers ? 1 : (scrollPhase >= 4 ? 1 : 0),
                 transform: showAllLayers ? 'translateY(0)' : (scrollPhase >= 4 ? 'translateY(0)' : 'translateY(20px)'),
                 transition: 'all 0.5s ease-out 0.6s'
               }}>
-                <button
-                  onClick={() => navigate('/ranking/game/datashadows')}
-                  style={{
-                    padding: '16px',
-                    background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                  }}
-                >
-                  View Leaderboard
-                </button>
-                <button
-                  onClick={() => setScreen('home')}
-                  style={{
-                    padding: '16px',
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                  }}
-                >
-                  Back to Home
-                </button>
                 <button
                   onClick={() => window.location.reload()}
                   style={{
@@ -686,26 +819,10 @@ const TruthReveal: React.FC = () => {
                 >
                   Restart Experience
                 </button>
-                {/* 新增：跳转到TermsAndConditions的按钮 */}
-                <button
-                  onClick={() => setScreen('terms')}
-                  style={{
-                    padding: '16px',
-                    background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                  }}
-                >
-                  Would you like to try again?
-                </button>
               </div>
             )}
 
-            {/* 滚动提示 */}
+            {/* Auto transition hint */}
             {!showAllLayers && phase >= 3 && scrollPhase < 4 && (
               <div style={{
                 textAlign: 'center',
@@ -714,7 +831,7 @@ const TruthReveal: React.FC = () => {
                 fontSize: '12px',
                 animation: 'fadeInOut 2s ease-in-out infinite'
               }}>
-                <p>Scroll down to continue...</p>
+                <p>Decrypting the rest of the network...</p>
                 <div style={{
                   width: '20px',
                   height: '20px',
@@ -773,6 +890,24 @@ const TruthReveal: React.FC = () => {
           }
           15% {
             clip-path: inset(0 0 0 0);
+          }
+        }
+        @keyframes revealOverlayIn {
+          from {
+            opacity: 0;
+            transform: scale(1.02);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes revealProgress {
+          from {
+            transform: scaleX(0);
+          }
+          to {
+            transform: scaleX(1);
           }
         }
         @keyframes fadeIn {
