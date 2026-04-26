@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useFitAI } from './fitaiContext'
 import {
   determineDataFlow,
   type TermsConsent,
@@ -19,6 +21,8 @@ interface NodePosition {
   y: number // percentage of container height
   label: string
   shortLabel: string
+  labelLines?: string[]
+  labelPosition?: 'above' | 'below' | 'left' | 'right'
   description: string
   inboundData?: string // Data flowing IN to this node
   outboundData?: string // Data flowing OUT from this node
@@ -41,63 +45,61 @@ interface Connection {
   style?: 'solid' | 'dashed'
   // Which privacy setting controls this connection
   controlledBy?: keyof TermsConsent['privacySettings']
-  // Which survey fields must be filled for this connection to activate
-  // If any field in this array is filled, connection can activate (OR logic)
+  // Which optional fields make this route richer. These do not gate the line:
+  // toggles decide whether a route exists, optional data decides how risky it is.
   requiredSurveyFields?: ('height' | 'weight' | 'occupation' | 'homeAddress')[]
 }
 
-// Detailed node positions with new layered branching topology
-// Topology refactor: simplified branching structure, clearer convergence
-// Layer 1: User → Layer 2: App → Layer 3: [Cloud, AI, SDK] → Layer 4: [Broker, Ads] → Layer 5: Insurance/Credit/Hiring
+// Vertical topology for final reveal panel
+// Top-to-bottom flow: User → App → internal/SDK branches → downstream platforms → real-world outcomes
 const NODE_POSITIONS: NodePosition[] = [
-  // Layer 1: Entry Point
   {
     id: 'user',
-    x: 2,
-    y: 50,
+    x: 50,
+    y: 8,
     label: 'You (the user)',
     shortLabel: 'You',
+    labelLines: ['You'],
+    labelPosition: 'above',
     description: `Your profile data: name, fitness goals, body measurements, location, work hours. App behavior: taps, swipes, viewing duration, feature usage. Foundation for all downstream data flows.`,
     color: '#3b82f6',
     category: 'user',
     scoreImpactCategory: 'none',
   },
-  
-  // Layer 2: Central Collection Hub
   {
     id: 'app',
-    x: 18,
-    y: 50,
+    x: 50,
+    y: 22,
     label: 'FitAI App',
     shortLabel: 'FitAI',
+    labelLines: ['FitAI'],
+    labelPosition: 'left',
     description: `Central hub that collects, stores, and processes your data. The primary decision point for where your data flows internally (cloud, AI) and externally (SDKs, ads).`,
     color: '#10b981',
     category: 'app',
     scoreImpactCategory: 'none',
   },
-  
-  // Layer 3: Three Diverging Branches from App
-  
-  // Top branch: Internal cloud infrastructure
   {
     id: 'cloud',
-    x: 28,
-    y: 18,
+    x: 27,
+    y: 43,
     label: 'Cloud Services / Logs / Analytics',
     shortLabel: 'Cloud',
+    labelLines: ['Cloud', 'Services'],
+    labelPosition: 'left',
     description: `Servers storing your data, activity logs, and analytics. Includes crash reports, performance metrics, session duration, and feature usage patterns. Stays within FitAI infrastructure for optimization and debugging.`,
     color: '#93c5fd',
     category: 'internal',
     scoreImpactCategory: 'reading',
   },
-  
-  // Middle branch: AI personalization
   {
     id: 'ai',
-    x: 28,
-    y: 82,
+    x: 50,
+    y: 44,
     label: 'AI Profiling & Recommendations',
     shortLabel: 'AI',
+    labelLines: ['AI', 'Profiling'],
+    labelPosition: 'right',
     description: `Machine learning models for fitness recommendations and health risk inference.`,
     inboundData: `Fitness data (goals, schedule) + Demographics (Height/Weight, Occupation)`,
     outboundData: `Personalized recommendations + Health risk inferences → Forms basis for downstream targeting`,
@@ -105,14 +107,14 @@ const NODE_POSITIONS: NodePosition[] = [
     category: 'internal',
     scoreImpactCategory: 'reading',
   },
-  
-  // Left-middle branch: Third-party SDKs (analytics/ads)
   {
     id: 'sdk',
-    x: 42,
-    y: 50,
+    x: 70,
+    y: 43,
     label: 'Third-Party SDKs (Analytics / Ads)',
     shortLabel: 'SDKs',
+    labelLines: ['Third-Party', 'SDKs'],
+    labelPosition: 'right',
     description: `Analytics & ad tracking SDKs embedded in the app.`,
     inboundData: `App data (ad IDs, behavior) + Any survey data (Height/Weight, Occupation, Home Address)`,
     outboundData: `Segmented data profiles to Data Brokers and Ad Platforms → Entry point for external data sharing`,
@@ -120,16 +122,14 @@ const NODE_POSITIONS: NodePosition[] = [
     category: 'sdk',
     scoreImpactCategory: 'consent',
   },
-  
-  // Layer 4: Aggregation & Targeting Platforms
-  
-  // Top-right: Data brokers (aggregation)
   {
     id: 'broker',
-    x: 60,
-    y: 18,
+    x: 34,
+    y: 68,
     label: 'Data Brokers & Aggregators',
     shortLabel: 'Brokers',
+    labelLines: ['Data', 'Brokers'],
+    labelPosition: 'left',
     description: `Data aggregation and profiling companies.`,
     inboundData: `Health/fitness data from SDKs (Height/Weight, Occupation, Home Address) + External sources (health searches, purchases, social media)`,
     outboundData: `Comprehensive risk profiles → Insurance/Credit/Hiring companies for underwriting & screening`,
@@ -137,14 +137,14 @@ const NODE_POSITIONS: NodePosition[] = [
     category: 'broker',
     scoreImpactCategory: 'exposure',
   },
-  
-  // Middle-right: Ad platforms (targeting)
   {
     id: 'ads',
-    x: 60,
-    y: 50,
+    x: 66,
+    y: 68,
     label: 'Ad Platforms / Audience Targeting',
     shortLabel: 'Ads',
+    labelLines: ['Ad', 'Platforms'],
+    labelPosition: 'right',
     description: `Ad networks building cross-app targeting profiles.`,
     inboundData: `Location data (Home Address) directly from app + Behavior/advertising IDs from SDKs`,
     outboundData: `Your ad profile across hundreds of apps/sites + Audience segments to advertisers + Behavioral data to Insurance/Credit/Hiring`,
@@ -152,14 +152,14 @@ const NODE_POSITIONS: NodePosition[] = [
     category: 'adplatform',
     scoreImpactCategory: 'exposure',
   },
-  
-  // Layer 5: Final Impact
   {
     id: 'ins',
-    x: 82,
-    y: 68,
+    x: 50,
+    y: 86,
     label: 'Insurance / Credit / Hiring Profiles',
     shortLabel: 'Downstream',
+    labelLines: ['Downstream', 'Impact'],
+    labelPosition: 'below',
     description: `Where data determines your real-world outcomes.`,
     inboundData: `From Brokers: Complete profiles (Height/Weight risk, Occupation screening)\nFrom Ads: Behavioral + location targeting data`,
     outboundData: `Insurance premiums set by health data + risk factors\nCredit scores influenced by spending/lifestyle patterns\nJob screening based on fitness level & demographics`,
@@ -289,79 +289,200 @@ function getNodeEmphasis(
   }
 }
 
-/**
- * Generate score breakdown message for detail panel
- */
-function getScoreBreakdown(
+function getOverviewContent(
   termsReadingProgress: number,
-  termsReadingScore: number,
-  privacyOptionsScore: number,
-  surveyScore: number,
-  surveyData: SurveyData
-): string[] {
-  const lines: string[] = []
+  privacySettings: TermsConsent['privacySettings'],
+  optionalFieldsCount: number
+) {
+  const enabledCount = Object.values(privacySettings).filter(Boolean).length
+  const readingBucket = termsReadingProgress < 40 ? 'low' : termsReadingProgress < 80 ? 'mid' : 'high'
+  const consentBucket = enabledCount <= 1 ? 'strict' : enabledCount <= 3 ? 'mixed' : 'open'
+  const exposureBucket = optionalFieldsCount === 0 ? 'low' : optionalFieldsCount <= 2 ? 'medium' : 'high'
 
-  lines.push(`📖 Reading: ${termsReadingProgress}% (${termsReadingScore} pts)`)
-  if (termsReadingProgress < 50) lines.push('  → You skipped important privacy details')
-  if (termsReadingProgress === 100) lines.push('  → You carefully read all terms')
+  if (termsReadingProgress <= 0 && enabledCount === 0 && optionalFieldsCount === 0) {
+    return {
+      title: 'No optional data routes are active yet',
+      summary: 'There is not enough valid user input to build a rich profile. The core user-to-app path remains visible, but external sharing, targeting, and downstream profiling stay largely dormant.',
+      bullets: [
+        'This is the safest fallback state for missing or skipped data: the diagram still renders, but it does not invent extra exposure.',
+        'Choose any node below to inspect which fields would appear there if later choices activate that path.',
+      ],
+    }
+  }
 
-  lines.push(`🔐 Privacy Toggles: ${privacyOptionsScore} pts`)
-  if (privacyOptionsScore === 0) lines.push('  → Maximum data visibility to partners')
-  if (privacyOptionsScore > 30) lines.push('  → Strong privacy protection')
+  const titleMap = {
+    'low-open-high': 'High visibility and high downstream risk',
+    'low-open-medium': 'Broad sharing with moderate personal exposure',
+    'low-open-low': 'Broad consent but limited personal inputs',
+    'low-mixed-high': 'Partial controls, but sensitive data still spreads',
+    'low-mixed-medium': 'Some barriers exist, but leakage paths remain',
+    'low-mixed-low': 'Muted exposure, though key terms were still skipped',
+    'low-strict-high': 'You blocked many paths, but exposed sensitive details',
+    'low-strict-medium': 'Restricted sharing, with some details still exposed',
+    'low-strict-low': 'Tightest flow, but the policy context was missed',
+    'mid-open-high': 'Convenience-first setup with strong downstream reach',
+    'mid-open-medium': 'Useful protections, but sharing still stays broad',
+    'mid-open-low': 'Low personal exposure despite generous permissions',
+    'mid-mixed-high': 'Balanced settings, but optional data raises risk',
+    'mid-mixed-medium': 'Moderate exposure across several branches',
+    'mid-mixed-low': 'Fairly contained flow with manageable risk',
+    'mid-strict-high': 'Most sharing blocked, but sensitive disclosures still matter',
+    'mid-strict-medium': 'Reduced spread with some remaining exposure',
+    'mid-strict-low': 'Contained network with relatively low downstream reach',
+    'high-open-high': 'Well-understood risks, but you still allowed deep sharing',
+    'high-open-medium': 'You read carefully, yet broad consent keeps routes open',
+    'high-open-low': 'Low exposure today, though broad sharing stays available',
+    'high-mixed-high': 'Good awareness, but sensitive disclosures activate risk',
+    'high-mixed-medium': 'Informed and partly protected, with some downstream flow',
+    'high-mixed-low': 'Good control with limited exposure',
+    'high-strict-high': 'Strong consent control, but disclosed data still propagates',
+    'high-strict-medium': 'Tight sharing model with a few exposed branches',
+    'high-strict-low': 'Best-case setup: informed, restricted, and low exposure',
+  } as const
 
-  // Survey Disclosure: Break down by individual fields
-  lines.push(`📋 Survey Disclosure: ${surveyScore} pts`)
-  
-  // Height/Weight score
-  const heightWeightFilled = !!(surveyData.height && surveyData.weight)
-  const heightWeightPts = heightWeightFilled ? 0 : 10
-  lines.push(`  - Height/Weight: ${heightWeightPts} pts ${heightWeightFilled ? '✓' : ''}`)
-  
-  // Occupation score
-  const occupationFilled = !!surveyData.occupation
-  const occupationPts = occupationFilled ? 0 : 10
-  lines.push(`  - Occupation: ${occupationPts} pts ${occupationFilled ? '✓' : ''}`)
-  
-  // Address score
-  const addressFilled = !!surveyData.homeAddress
-  const addressPts = addressFilled ? 0 : 10
-  lines.push(`  - Home Address: ${addressPts} pts ${addressFilled ? '✓' : ''}`)
+  const key = `${readingBucket}-${consentBucket}-${exposureBucket}` as keyof typeof titleMap
 
-  return lines
+  const readingLine =
+    readingBucket === 'low'
+      ? 'You skipped a large share of the terms, so internal processing and downstream reuse stayed harder to anticipate.'
+      : readingBucket === 'mid'
+        ? 'You caught some of the policy detail, but not enough to fully map the data routes.'
+        : 'You read enough of the policy to understand more of the network before revealing data.'
+
+  const consentLine =
+    consentBucket === 'strict'
+      ? 'Most optional sharing paths were blocked, which keeps the outer branches dimmer.'
+      : consentBucket === 'mixed'
+        ? 'Some sharing stayed enabled, so parts of the external network still activate.'
+        : 'Most sharing switches stayed on, which lights up analytics, SDK, and downstream partner routes.'
+
+  const exposureLine =
+    exposureBucket === 'low'
+      ? 'You shared very little optional personal data, so downstream profiles stay relatively thin.'
+      : exposureBucket === 'medium'
+        ? 'A few optional data points were disclosed, which strengthens audience and profiling paths.'
+        : 'Several optional personal details were shared, creating richer profiles for targeting and screening.'
+
+  return {
+    title: titleMap[key],
+    summary: `${readingLine} ${consentLine}`,
+    bullets: [exposureLine, 'Tap a node to focus the full inbound/outbound detail. The map itself keeps only short route keywords so the network stays readable.'],
+  }
 }
 
-/**
- * SCORE IMPACT SEMANTICS
- * 
- * Scoring is decomposed into three independent dimensions:
- * 
- * 1. READING DIMENSION (0-20 points)
- *    - Source: Terms reading progress (0-100%)
- *    - Affects: Cloud, AI (internal processing visibility)
- *    - Semantic: "Did user understand what happens internally?"
- *    - Emphasis: Low reading % → muted internal nodes
- * 
- * 2. CONSENT DIMENSION (0-50 points)
- *    - Source: Privacy toggles unchecked (-10 each, max 5 toggles)
- *    - Affects: All nodes' connection activation
- *    - Semantic: "Did user explicitly opt into data sharing?"
- *    - Emphasis: More toggles disabled → fewer active connections
- * 
- * 3. EXPOSURE DIMENSION (0-30 points)
- *    - Source: Optional personal fields filled (-5 each, max 6 fields)
- *    - Affects: Broker→Downstream chain intensity
- *    - Semantic: "How much personal data did user voluntarily share?"
- *    - Emphasis: All optional fields filled → bright downstream, high-risk warning
- */
+function getNodeFlowSummary(nodeId: string): { inbound: string; outbound: string } {
+  switch (nodeId) {
+    case 'user':
+      return {
+        inbound: 'profile choices',
+        outbound: 'answers + taps',
+      }
+    case 'app':
+      return {
+        inbound: 'signup + settings',
+        outbound: 'routes to systems',
+      }
+    case 'cloud':
+      return {
+        inbound: 'usage logs',
+        outbound: 'app analytics',
+      }
+    case 'ai':
+      return {
+        inbound: 'goals/body/work',
+        outbound: 'recs + risk signals',
+      }
+    case 'sdk':
+      return {
+        inbound: 'ad ID + behavior',
+        outbound: 'partner segments',
+      }
+    case 'broker':
+      return {
+        inbound: 'SDK + public data',
+        outbound: 'risk profile',
+      }
+    case 'ads':
+      return {
+        inbound: 'location + ad ID',
+        outbound: 'audience targeting',
+      }
+    case 'ins':
+      return {
+        inbound: 'broker/ad profiles',
+        outbound: 'pricing/screening',
+      }
+    default:
+      return {
+        inbound: 'data in',
+        outbound: 'data out',
+      }
+  }
+}
+
+function getConnectionTriggerLabel(conn: Connection): string {
+  const key = `${conn.from}-${conn.to}`
+  switch (key) {
+    case 'user-app':
+      return 'signup'
+    case 'app-cloud':
+      return 'analytics'
+    case 'app-ai':
+      return 'AI training'
+    case 'app-sdk':
+      return 'SDK events'
+    case 'app-ads':
+      return 'third-party'
+    case 'sdk-broker':
+      return 'data share'
+    case 'sdk-ads':
+      return 'ad ID'
+    case 'broker-ins':
+      return 'risk profile'
+    case 'ads-ins':
+      return 'targeting'
+    default:
+      return conn.label ?? 'data'
+  }
+}
+
+function getNodeConsequence(nodeId: string): string {
+  switch (nodeId) {
+    case 'user':
+      return 'Your answers become the source record that every downstream route depends on.'
+    case 'app':
+      return 'Centralized collection makes the app the main gatekeeper for which data leaves the phone.'
+    case 'cloud':
+      return 'Usage logs can reveal routines, engagement patterns, and moments when you are most reachable.'
+    case 'ai':
+      return 'Model inferences can turn fitness inputs into health, lifestyle, or risk assumptions.'
+    case 'sdk':
+      return 'Embedded trackers can connect your FitAI behavior to profiles built outside the app.'
+    case 'broker':
+      return 'Aggregated profiles may be resold or matched with outside records you never directly provided.'
+    case 'ads':
+      return 'Audience segments can follow you across apps and shape what offers, prices, or messages you see.'
+    case 'ins':
+      return 'Downstream profiles can influence eligibility, pricing, screening, or other real-world judgments.'
+    default:
+      return 'This route can increase how far your data travels beyond the original app experience.'
+  }
+}
 
 export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   termsConsent,
   surveyData,
   overridePrivacyScore,
 }) => {
+  const navigate = useNavigate()
+  const { setScreen } = useFitAI()
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [containerSize, setContainerSize] = useState({ width: 1000, height: 240 })
+  const [containerSize, setContainerSize] = useState({ width: 780, height: 520 })
+  const [nodePositionOverrides, setNodePositionOverrides] = useState<Record<string, { x: number; y: number }>>({})
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+  const dragMovedRef = useRef(false)
 
   // Update container size when it changes
   useEffect(() => {
@@ -371,10 +492,9 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
     const updateSize = () => {
       const rect = container.getBoundingClientRect()
       if (rect.width > 0 && rect.height > 0) {
-        // Compact height for horizontal layout, use full width
-        setContainerSize({ 
-          width: rect.width, 
-          height: Math.max(rect.height, 220) 
+        setContainerSize({
+          width: rect.width,
+          height: Math.max(420, rect.height),
         })
       }
     }
@@ -392,13 +512,6 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   // Extract score components for emphasis calculation
   // These come from context/props that track scoring across the form flow
   const termsReadingProgress = termsConsent.termsReadingProgress ?? 0
-  const termsReadingScore = Math.floor(termsReadingProgress / 25) * 5
-  
-  // Count unchecked privacy options (each represents -10 points potential)
-  const privacySettings = termsConsent.privacySettings
-  const uncheckedCount = Object.values(privacySettings).filter(v => !v).length
-  const privacyOptionsScore = uncheckedCount * 10
-  
   // Count filled optional survey fields (each represents -5 points potential)
   const optionalFieldsCount = [
     !!(surveyData.height && surveyData.weight),
@@ -421,164 +534,114 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   const nodesWithPixels = useMemo(() => {
     return NODE_POSITIONS.map((node) => ({
       ...node,
-      px: (node.x / 100) * containerSize.width,
-      py: (node.y / 100) * containerSize.height,
+      x: nodePositionOverrides[node.id]?.x ?? node.x,
+      y: nodePositionOverrides[node.id]?.y ?? node.y,
+      px: ((nodePositionOverrides[node.id]?.x ?? node.x) / 100) * containerSize.width,
+      py: ((nodePositionOverrides[node.id]?.y ?? node.y) / 100) * containerSize.height,
     }))
-  }, [containerSize])
+  }, [containerSize, nodePositionOverrides])
 
-  /**
-   * Generate curved path for connection to avoid overlaps
-   * Uses quadratic Bezier curves based on connection type
-   */
-  const generateConnectionPath = (from: NodePosition & {px: number, py: number}, to: NodePosition & {px: number, py: number}): string => {
-    const dx = to.px - from.px
-    const dy = to.py - from.py
-    const distance = Math.sqrt(dx * dx + dy * dy)
-    
-    // Curved paths based on layer progression to avoid overlaps
-    const controlFactor = Math.max(0.3, Math.min(0.6, distance / 400))
-    
-    // Routing strategy based on connection pattern
-    const routingKey = `${from.id}→${to.id}`
-    let controlX = from.px + dx * controlFactor
-    let controlY = from.py + dy * controlFactor
-    
-    switch(routingKey) {
-      // APP DIVERGENCE BRANCHES: Create stronger upward/downward curves
-      case 'app→cloud':
-        // Upward curve: control point higher to create arc above direct line
-        controlX = from.px + dx * 0.35
-        controlY = from.py + dy * 0.25 - 45 // INCREASED from 20 to 45
-        break
-        
-      case 'app→ai':
-        // Downward curve: control point lower
-        controlX = from.px + dx * 0.35
-        controlY = from.py + dy * 0.25 + 45 // INCREASED from 20 to 45
-        break
-        
-      case 'app→ads':
-        // Avoid crossing sdk line: curve downward
-        controlX = from.px + dx * 0.4
-        controlY = from.py + dy * 0.4 + 80 // INCREASED from 15 to 30
-        break
-        
-      case 'app→sdk':
-        // Reference straight line (slight straightness)
-        controlX = from.px + dx * 0.5
-        controlY = from.py + dy * 0.5
-        break
-        
-      // SDK BRANCHES: Stronger divergence
-      case 'sdk→broker':
-        // Upward arc
-        controlX = from.px + dx * 0.4
-        controlY = from.py + dy * 0.2 - 30 // INCREASED from 15 to 30
-        break
-        
-      case 'sdk→ads':
-        // Nearly straight, slight curve
-        controlX = from.px + dx * 0.5
-        controlY = from.py + dy * 0.5
-        break
-        
-      // DOWNSTREAM CONVERGENCE: Stronger separation curves
-      case 'broker→ins':
-        controlX = from.px + dx * 0.5
-        controlY = from.py + dy * 0.5 - 20 // INCREASED from 10 to 20
-        break
-        
-      case 'ads→ins':
-        controlX = from.px + dx * 0.5
-        controlY = from.py + dy * 0.5 + 20 // INCREASED from 10 to 20
-        break
-        
-      default:
-        // Generic curve
-        controlX = from.px + dx * controlFactor
-        controlY = from.py + dy * controlFactor
+  const getPointerPercent = (event: React.PointerEvent<SVGElement>) => {
+    const svg = svgRef.current
+    if (!svg) return null
+
+    const rect = svg.getBoundingClientRect()
+    const x = ((event.clientX - rect.left) / rect.width) * 100
+    const y = ((event.clientY - rect.top) / rect.height) * 100
+
+    return {
+      x: Number(Math.min(94, Math.max(6, x)).toFixed(1)),
+      y: Number(Math.min(94, Math.max(4, y)).toFixed(1)),
     }
-    
-    // Quadratic Bezier: M (start) Q (control point) (end)
-    return `M ${from.px} ${from.py} Q ${controlX} ${controlY} ${to.px} ${to.py}`
   }
 
-  /**
-   * Calculate label position along curved path
-   * For quadratic Bezier at t=0.5: P(0.5) = (1-t)²·P0 + 2(1-t)t·P1 + t²·P2
-   */
-  const getPathMidpoint = (from: NodePosition & {px: number, py: number}, to: NodePosition & {px: number, py: number}): [number, number] => {
-    const dx = to.px - from.px
-    const dy = to.py - from.py
-    
-    // Get control point using same logic as generateConnectionPath
-    let controlX = from.px + dx * 0.5
-    let controlY = from.py + dy * 0.5 - 20
-    
-    const routingKey = `${from.id}→${to.id}`
-    switch(routingKey) {
-      case 'app→cloud':
-        controlX = from.px + dx * 0.35
-        controlY = from.py + dy * 0.25 - 45
-        break
-      case 'app→ai':
-        controlX = from.px + dx * 0.35
-        controlY = from.py + dy * 0.25 + 45
-        break
-      case 'app→ads':
-        controlX = from.px + dx * 0.4
-        controlY = from.py + dy * 0.4 + 80
-        break
-      case 'sdk→broker':
-        controlX = from.px + dx * 0.4
-        controlY = from.py + dy * 0.2 - 30
-        break
-      case 'broker→ins':
-        controlX = from.px + dx * 0.5
-        controlY = from.py + dy * 0.5 - 20
-        break
-      case 'ads→ins':
-        controlX = from.px + dx * 0.5
-        controlY = from.py + dy * 0.5 + 20
-        break
-    }
-    
-    // Quadratic Bezier midpoint at t=0.5
-    const t = 0.5
-    const posX = (1-t)*(1-t)*from.px + 2*(1-t)*t*controlX + t*t*to.px
-    const posY = (1-t)*(1-t)*from.py + 2*(1-t)*t*controlY + t*t*to.py
-    
-    return [posX, posY]
+  const logNodePositionsForHardcoding = (nextOverrides: Record<string, { x: number; y: number }>) => {
+    const positions = NODE_POSITIONS.map((node) => ({
+      id: node.id,
+      x: nextOverrides[node.id]?.x ?? node.x,
+      y: nextOverrides[node.id]?.y ?? node.y,
+    }))
+
+    console.table(positions)
+    console.log(
+      '[DataShadows] Dragged node positions for NODE_POSITIONS:',
+      positions.map((node) => `{ id: '${node.id}', x: ${node.x}, y: ${node.y} }`).join(',\n')
+    )
   }
 
-  // Helper to check if a connection/node is enabled based on flowResult and survey data
+  const handleNodePointerDown = (event: React.PointerEvent<SVGCircleElement>, nodeId: string) => {
+    event.preventDefault()
+    event.stopPropagation()
+    dragMovedRef.current = false
+    setDraggingNodeId(nodeId)
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const handleNodePointerMove = (event: React.PointerEvent<SVGElement>) => {
+    if (!draggingNodeId) return
+
+    const nextPosition = getPointerPercent(event)
+    if (!nextPosition) return
+
+    dragMovedRef.current = true
+    setNodePositionOverrides((prev) => ({
+      ...prev,
+      [draggingNodeId]: nextPosition,
+    }))
+  }
+
+  const handleNodePointerUp = (event: React.PointerEvent<SVGElement>) => {
+    if (!draggingNodeId) return
+
+    const finalPosition = getPointerPercent(event)
+    const nextOverrides = finalPosition
+      ? {
+          ...nodePositionOverrides,
+          [draggingNodeId]: finalPosition,
+        }
+      : nodePositionOverrides
+
+    setNodePositionOverrides(nextOverrides)
+    logNodePositionsForHardcoding(nextOverrides)
+    setDraggingNodeId(null)
+    window.setTimeout(() => {
+      dragMovedRef.current = false
+    }, 0)
+  }
+
+  const getConnectionGeometry = (
+    from: NodePosition & { px: number; py: number },
+    to: NodePosition & { px: number; py: number },
+    t = 0.5
+  ): { pathD: string; labelPoint: { x: number; y: number } } => {
+    const dx = to.px - from.px
+    const dy = to.py - from.py
+    const curvature = Math.max(24, Math.abs(dx) * 0.24)
+    const control1X = from.px + dx * 0.12
+    const control1Y = from.py + Math.max(36, dy * 0.34) + (dx < 0 ? -curvature * 0.2 : curvature * 0.2)
+    const control2X = to.px - dx * 0.12
+    const control2Y = to.py - Math.max(36, dy * 0.34) - (dx < 0 ? -curvature * 0.2 : curvature * 0.2)
+    const cubic = (start: number, c1: number, c2: number, end: number) => {
+      const invT = 1 - t
+      return invT ** 3 * start + 3 * invT ** 2 * t * c1 + 3 * invT * t ** 2 * c2 + t ** 3 * end
+    }
+
+    return {
+      pathD: `M ${from.px} ${from.py} C ${control1X} ${control1Y}, ${control2X} ${control2Y}, ${to.px} ${to.py}`,
+      labelPoint: {
+        x: cubic(from.px, control1X, control2X, to.px),
+        y: cubic(from.py, control1Y, control2Y, to.py),
+      },
+    }
+  }
+
+  // Helper to check if a connection/node is enabled. A toggle creates the route;
+  // optional survey fields only enrich the route detail and risk explanation.
   const isConnectionActive = (conn: Connection): boolean => {
-    // Check privacy toggle control
     if (conn.controlledBy && termsConsent.privacySettings[conn.controlledBy] !== true) {
       return false
     }
-    
-    // Check if required survey fields are filled (OR logic: any field filled = active)
-    if (conn.requiredSurveyFields && conn.requiredSurveyFields.length > 0) {
-      const hasRequiredField = conn.requiredSurveyFields.some(field => {
-        switch(field) {
-          case 'height':
-            return !!surveyData.height
-          case 'weight':
-            return !!surveyData.weight
-          case 'occupation':
-            return !!surveyData.occupation
-          case 'homeAddress':
-            return !!surveyData.homeAddress
-          default:
-            return false
-        }
-      })
-      if (!hasRequiredField) {
-        return false
-      }
-    }
-    
+
     return true
   }
 
@@ -602,6 +665,125 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   }
 
   const selectedNode = selectedNodeId ? NODE_POSITIONS.find((n) => n.id === selectedNodeId) : null
+  const overview = getOverviewContent(termsReadingProgress, termsConsent.privacySettings, optionalFieldsCount)
+
+  const getConnectionLabelPosition = (
+    conn: Connection,
+    from: NodePosition & { px: number; py: number },
+    to: NodePosition & { px: number; py: number }
+  ) => {
+    const width = Math.min(108, Math.max(78, containerSize.width * 0.14))
+    const height = 24
+    const gutter = 8
+    const key = `${conn.from}-${conn.to}`
+    const offsetMap: Record<string, { x: number; y: number; t?: number }> = {
+      'user-app': { x: 30, y: -4, t: 0.5 },
+      'app-cloud': { x: -12, y: -18, t: 0.48 },
+      'app-ai': { x: -20, y: 4, t: 0.58 },
+      'app-sdk': { x: 5, y: -12, t: 0.5 },
+      'app-ads': { x: 0, y: 50, t: 0.56 },
+      'sdk-broker': { x: -50, y: 10, t: 0.55 },
+      'sdk-ads': { x: -10, y: -30, t: 0.45 },
+      'broker-ins': { x: -30, y: -20, t: 0.54 },
+      'ads-ins': { x: 15, y: -30, t: 0.56 },
+    }
+    const offset = offsetMap[key] ?? { x: 0, y: 0, t: 0.5 }
+    const { labelPoint } = getConnectionGeometry(from, to, offset.t ?? 0.5)
+    const x = labelPoint.x + offset.x - width / 2
+    const y = labelPoint.y + offset.y - height / 2
+
+    return {
+      width,
+      height,
+      x: Math.min(Math.max(gutter, x), containerSize.width - width - gutter),
+      y: Math.min(Math.max(gutter, y), containerSize.height - height - gutter),
+    }
+  }
+
+  const getNodeLabelLayout = (
+    node: NodePosition & { px: number; py: number },
+    radius: number
+  ): { x: number; y: number; width: number; height: number; className: string } => {
+    const lineCount = node.labelLines?.length ?? 1
+    const width = node.category === 'downstream' ? 142 : 128
+    const height = lineCount > 1 ? 42 : 24
+    const gutter = 6
+    const clampX = (x: number) => Math.min(Math.max(gutter, x), containerSize.width - width - gutter)
+    const clampY = (y: number) => Math.min(Math.max(gutter, y), containerSize.height - height - gutter)
+    const nodeSpecificLayout: Record<string, { x: number; y: number; className: string }> = {
+      ai: {
+        x: node.px + radius - 70,
+        y: node.py - height / 2 + 24,
+        className: 'node-label-box node-label-box-right',
+      },
+      sdk: {
+        x: node.px + radius + 2,
+        y: node.py - height / 2 ,
+        className: 'node-label-box node-label-box-right',
+      },
+      ads: {
+        x: node.px + radius + 2,
+        y: node.py - height / 2 ,
+        className: 'node-label-box node-label-box-right',
+      },
+      broker: {
+        x: node.px - radius - width - 2,
+        y: node.py - height / 2 ,
+        className: 'node-label-box node-label-box-left',
+      },
+      ins: {
+        x: node.px - width / 2,
+        y: node.py + radius + 18,
+        className: 'node-label-box node-label-box-center',
+      },
+    }
+    const override = nodeSpecificLayout[node.id]
+    if (override) {
+      return {
+        x: clampX(override.x),
+        y: clampY(override.y),
+        width,
+        height,
+        className: override.className,
+      }
+    }
+
+    switch (node.labelPosition) {
+      case 'left':
+        return {
+          x: clampX(node.px - radius - width - 2),
+          y: clampY(node.py - height / 2),
+          width,
+          height,
+          className: 'node-label-box node-label-box-left',
+        }
+      case 'right':
+        return {
+          x: clampX(node.px + radius + 2),
+          y: clampY(node.py - height / 2),
+          width,
+          height,
+          className: 'node-label-box node-label-box-right',
+        }
+      case 'above':
+        return {
+          x: clampX(node.px - width / 2),
+          y: clampY(node.py - radius - height - 2),
+          width,
+          height,
+          className: 'node-label-box node-label-box-center',
+        }
+      case 'below':
+      default:
+        return {
+          x: clampX(node.px - width / 2),
+          y: clampY(node.py + radius + 2),
+          width,
+          height,
+          className: 'node-label-box node-label-box-center',
+        }
+    }
+  }
 
   const getScoreClass = (score: number) => {
     if (score >= 70) return 'score-high'
@@ -630,9 +812,9 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   return (
     <div className="network-data-flow-diagram">
       <div className="data-flow-header">
-        <div>
+        <div className="data-flow-header-copy">
           <h2 className="data-flow-title">Your Data Flow Network</h2>
-          <p className="data-flow-subtitle">See where your data flows based on your privacy choices</p>
+          <p className="data-flow-subtitle">Tap a node to inspect what data it receives and passes onward.</p>
         </div>
         <div className="privacy-score-block">
           <span className="privacy-score-label">Privacy Score</span>
@@ -642,270 +824,264 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
         </div>
       </div>
 
-      <div className="network-diagram-container" ref={containerRef}>
-        <svg
-          className="network-svg"
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <marker
-              id="arrowhead-active"
-              markerWidth="10"
-              markerHeight="10"
-              refX="9"
-              refY="3"
-              orient="auto"
-              markerUnits="strokeWidth"
-            >
-              <polygon points="0 0, 10 3, 0 6" fill="#10b981" />
-            </marker>
-            <marker
-              id="arrowhead-inactive"
-              markerWidth="10"
-              markerHeight="10"
-              refX="9"
-              refY="3"
-              orient="auto"
-              markerUnits="strokeWidth"
-            >
-              <polygon points="0 0, 10 3, 0 6" fill="rgba(255,255,255,0.35)" />
-            </marker>
-            <filter id="node-glow-active">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
+      <div className="network-data-flow-body">
+        <section className="network-visual-panel">
+          <div className="network-diagram-container" ref={containerRef}>
+            <div className="network-diagram-stage">
+              <svg
+                ref={svgRef}
+                className="network-svg"
+                width="100%"
+                height="100%"
+                viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
+                preserveAspectRatio="xMidYMid meet"
+                onPointerMove={handleNodePointerMove}
+                onPointerUp={handleNodePointerUp}
+                onPointerCancel={handleNodePointerUp}
+              >
+              <defs>
+                <marker
+                  id="arrowhead-active"
+                  markerWidth="12"
+                  markerHeight="12"
+                  refX="10"
+                  refY="4"
+                  orient="auto"
+                  markerUnits="strokeWidth"
+                >
+                  <polygon points="0 0, 12 4, 0 8" fill="#22d3ee" />
+                </marker>
+                <marker
+                  id="arrowhead-inactive"
+                  markerWidth="12"
+                  markerHeight="12"
+                  refX="10"
+                  refY="4"
+                  orient="auto"
+                  markerUnits="strokeWidth"
+                >
+                  <polygon points="0 0, 12 4, 0 8" fill="rgba(255,255,255,0.35)" />
+                </marker>
+              </defs>
 
-          {/* Render connections first (so they appear behind nodes) */}
-          <g className="connections">
-            {CONNECTIONS.map((conn, idx) => {
-              const fromNode = nodesWithPixels.find((n) => n.id === conn.from)
-              const toNode = nodesWithPixels.find((n) => n.id === conn.to)
-              if (!fromNode || !toNode) return null
+              <g className="connections">
+                {CONNECTIONS.map((conn, idx) => {
+                  const fromNode = nodesWithPixels.find((n) => n.id === conn.from)
+                  const toNode = nodesWithPixels.find((n) => n.id === conn.to)
+                  if (!fromNode || !toNode) return null
 
-              const style = getConnectionStyle(conn)
-              const pathD = generateConnectionPath(fromNode, toNode)
-              const [labelX, labelY] = getPathMidpoint(fromNode, toNode)
-
-              return (
-                <g key={`conn-${idx}`}>
-                  {/* Curved connection path */}
-                  <path
-                    d={pathD}
-                    className={style.isActive ? 'connection-line-active' : 'connection-line-inactive'}
-                    strokeDasharray={style.strokeDasharray}
-                    strokeWidth={2}
-                    fill="none"
-                    markerEnd={style.isActive ? 'url(#arrowhead-active)' : 'url(#arrowhead-inactive)'}
-                  />
-                  
-                  {/* Label with background for readability */}
-                  {conn.label && (
-                    <g>
-                      {/* Background rectangle for label readability */}
-                      <rect
-                        x={labelX - 26}
-                        y={labelY - 10}
-                        width={52}
-                        height={16}
-                        fill="hsla(222, 46%, 11%, 0.51)"
-                        rx={3}
-                        ry={3}
-                        pointerEvents="none"
+                  const style = getConnectionStyle(conn)
+                  const { pathD } = getConnectionGeometry(fromNode, toNode)
+                  const label = getConnectionTriggerLabel(conn)
+                  const labelPosition = getConnectionLabelPosition(conn, fromNode, toNode)
+                  return (
+                    <g key={`conn-${idx}`}>
+                      <path
+                        d={pathD}
+                        className={style.isActive ? 'connection-line-active' : 'connection-line-inactive'}
+                        strokeDasharray={style.strokeDasharray}
+                        strokeWidth={3}
+                        fill="none"
+                        markerEnd={style.isActive ? 'url(#arrowhead-active)' : 'url(#arrowhead-inactive)'}
                       />
-                      {/* Label text */}
-                      <text
-                        x={labelX}
-                        y={labelY + 3}
-                        className={`connection-label ${style.isActive ? 'connection-label-active' : 'connection-label-inactive'}`}
-                        textAnchor="middle"
-                        fontSize="9"
-                        fontWeight="500"
+                      <foreignObject
+                        x={labelPosition.x}
+                        y={labelPosition.y}
+                        width={labelPosition.width}
+                        height={labelPosition.height}
+                        className="connection-flow-label-object"
                         pointerEvents="none"
                       >
-                        {conn.label}
-                      </text>
+                        <div
+                          className={[
+                            'connection-flow-label',
+                            style.isActive ? 'connection-flow-label-active' : 'connection-flow-label-inactive',
+                          ].join(' ')}
+                          title={conn.label}
+                        >
+                          {label}
+                        </div>
+                      </foreignObject>
                     </g>
-                  )}
-                </g>
-              )
-            })}
-          </g>
+                  )
+                })}
+              </g>
 
-          {/* Render nodes */}
-          <g className="nodes">
-            {nodesWithPixels.map((node) => {
-              const isSelected = selectedNodeId === node.id
-              const nodeActive = isNodeActive(node.id)
-              const nodeRadius = node.category === 'user' || node.category === 'app' ? 18 : 16
+              <g className="nodes">
+                {nodesWithPixels.map((node) => {
+                  const isSelected = selectedNodeId === node.id
+                  const nodeActive = isNodeActive(node.id)
+                  const nodeRadius = node.category === 'user' || node.category === 'app' ? 22 : 18
+                  const nodeLabelLayout = getNodeLabelLayout(node, nodeRadius)
+                  const emphasis = getNodeEmphasis(
+                    node.id,
+                    termsReadingProgress,
+                    privacyScore,
+                    optionalFieldsCount
+                  )
 
-              // Calculate visual emphasis based on score dimensions
-              const emphasis = getNodeEmphasis(
-                node.id,
-                termsReadingProgress,
-                privacyScore,
-                optionalFieldsCount
-              )
+                  return (
+                    <g key={node.id}>
+                      <circle
+                        cx={node.px}
+                        cy={node.py}
+                        r={nodeRadius}
+                        fill={node.color}
+                        opacity={nodeActive ? emphasis.opacity : 0.28}
+                        className={`network-node network-node-draggable ${isSelected ? 'network-node-selected' : ''} ${nodeActive ? 'network-node-active' : 'network-node-inactive'} ${draggingNodeId === node.id ? 'network-node-dragging' : ''} ${emphasis.className}`}
+                        onPointerDown={(event) => handleNodePointerDown(event, node.id)}
+                        onClick={() => {
+                          if (dragMovedRef.current) return
+                          setSelectedNodeId(isSelected ? null : node.id)
+                        }}
+                        style={{ transition: 'opacity 0.2s' }}
+                      />
+                      <foreignObject
+                        x={nodeLabelLayout.x}
+                        y={nodeLabelLayout.y}
+                        width={nodeLabelLayout.width}
+                        height={nodeLabelLayout.height}
+                        pointerEvents="none"
+                      >
+                        <div
+                          className={[
+                            nodeLabelLayout.className,
+                            nodeActive ? 'node-label-active' : 'node-label-inactive',
+                          ].join(' ')}
+                        >
+                          {(node.labelLines ?? [node.shortLabel]).map((line) => (
+                            <span key={`${node.id}-${line}`}>{line}</span>
+                          ))}
+                        </div>
+                      </foreignObject>
 
-              return (
-                <g key={node.id}>
-                  <circle
-                    cx={node.px}
-                    cy={node.py}
-                    r={nodeRadius}
-                    fill={node.color}
-                    opacity={nodeActive ? emphasis.opacity : 0.3}
-                    className={`network-node ${isSelected ? 'network-node-selected' : ''} ${nodeActive ? 'network-node-active' : 'network-node-inactive'} ${emphasis.className}`}
-                    onClick={() => setSelectedNodeId(isSelected ? null : node.id)}
-                    style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
-                  />
-                  {/* Node label below */}
-                  <text
-                    x={node.px}
-                    y={node.py + nodeRadius + 14}
-                    className={`node-label ${nodeActive ? 'node-label-active' : 'node-label-inactive'}`}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fill="#fff"
-                    pointerEvents="none"
-                  >
-                    {node.shortLabel}
-                  </text>
-                  
-                  {/* Visual indicator badge for high-impact nodes */}
-                  {emphasis.indicator && nodeActive && (
-                    <title>{emphasis.indicator}</title>
-                  )}
-                </g>
-              )
-            })}
-          </g>
-        </svg>
-      </div>
-
-      {selectedNode && (() => {
-        const isAlwaysEnabled = selectedNode.id === 'user' || selectedNode.id === 'app'
-        const nodeActive = isAlwaysEnabled || isNodeActive(selectedNode.id)
-        const nodeData = getNodeFlowData(selectedNode.id)
-        const emphasis = getNodeEmphasis(
-          selectedNode.id,
-          termsReadingProgress,
-          privacyScore,
-          optionalFieldsCount
-        )
-
-        return (
-          <div className="flow-node-detail" role="dialog" aria-label={selectedNode.label}>
-            <h3 className="flow-node-detail-title">{selectedNode.label}</h3>
-            
-            {/* Description */}
-            <p className="flow-node-detail-desc">{selectedNode.description}</p>
-            
-            {/* Inbound Data Module */}
-            {selectedNode.inboundData && (
-              <div style={{
-                marginTop: '12px',
-                padding: '10px',
-                background: 'rgba(59, 130, 246, 0.1)',
-                borderLeft: '3px solid #3b82f6',
-                borderRadius: '4px',
-              }}>
-                <strong style={{ display: 'block', marginBottom: '6px', color: '#1e40af', fontSize: '12px' }}>📥 Inbound Data</strong>
-                <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255, 255, 255, 0.85)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                  {selectedNode.inboundData}
-                </p>
-              </div>
-            )}
-            
-            {/* Outbound Data Module */}
-            {selectedNode.outboundData && (
-              <div style={{
-                marginTop: '10px',
-                padding: '10px',
-                background: 'rgba(34, 197, 94, 0.1)',
-                borderLeft: '3px solid #22c55e',
-                borderRadius: '4px',
-              }}>
-                <strong style={{ display: 'block', marginBottom: '6px', color: '#15803d', fontSize: '12px' }}>📤 Outbound Data</strong>
-                <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255, 255, 255, 0.85)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                  {selectedNode.outboundData}
-                </p>
-              </div>
-            )}
-            
-            {/* Score Impact Indicator */}
-            {selectedNode.scoreImpactCategory && selectedNode.scoreImpactCategory !== 'none' && (
-              <div style={{
-                marginTop: '12px',
-                marginBottom: '12px',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                background: emphasis.className.includes('low') ? '#fef2f2' : '#f0fdf4',
-                borderLeft: `3px solid ${emphasis.className.includes('low') ? '#ef4444' : '#10b981'}`,
-              }}>
-                <strong style={{ fontSize: '13px', color: '#374151' }}>
-                  {emphasis.indicator ? emphasis.indicator + ' — ' : ''}
-                  {selectedNode.scoreImpactCategory === 'reading' && 'Visibility depends on terms comprehension'}
-                  {selectedNode.scoreImpactCategory === 'consent' && 'Affected by your privacy toggle choices'}
-                  {selectedNode.scoreImpactCategory === 'exposure' && 'Increases with personal data disclosure'}
-                </strong>
-              </div>
-            )}
-            
-            <div className="flow-node-detail-status">
-              <strong>Status:</strong>{' '}
-              {isAlwaysEnabled || nodeActive
-                ? '✓ Your data flows to this node' + (isAlwaysEnabled ? '' : ' (you consented)')
-                : '✗ No data flows here (you did not consent)'}
+                      {emphasis.indicator && nodeActive && (
+                        <title>{emphasis.indicator}</title>
+                      )}
+                    </g>
+                  )
+                })}
+              </g>
+            </svg>
             </div>
-            
-            {(isAlwaysEnabled || nodeActive) && nodeData && 'fields' in nodeData && Array.isArray(nodeData.fields) && nodeData.fields.length > 0 && (
-              <div className="flow-node-fields">
-                <strong>Data fields sent:</strong>
-                <ul>
-                  {(nodeData.fields as string[]).map((field: string) => (
-                    <li key={field}>{field}</li>
-                  ))}
-                </ul>
-                {'sample' in nodeData && nodeData.sample && (
-                  <div className="flow-node-sample">
-                    <strong>Example:</strong>
-                    <pre>{JSON.stringify(nodeData.sample as any, null, 2)}</pre>
+          </div>
+        </section>
+
+        <section className="data-flow-info-strip">
+          <div className="data-flow-info-content">
+            {selectedNode ? (() => {
+            const isAlwaysEnabled = selectedNode.id === 'user' || selectedNode.id === 'app'
+            const nodeActive = isAlwaysEnabled || isNodeActive(selectedNode.id)
+            const nodeData = getNodeFlowData(selectedNode.id)
+            const emphasis = getNodeEmphasis(
+              selectedNode.id,
+              termsReadingProgress,
+              privacyScore,
+              optionalFieldsCount
+            )
+            const ioSummary = getNodeFlowSummary(selectedNode.id)
+            const consequence = getNodeConsequence(selectedNode.id)
+
+            return (
+              <div className="flow-node-detail flow-node-detail-selected" role="dialog" aria-label={selectedNode.label}>
+                <div className="flow-node-detail-main">
+                  <div>
+                    <h3 className="flow-node-detail-title">{selectedNode.label}</h3>
+                    <p className="flow-node-detail-desc">{selectedNode.description}</p>
+                  </div>
+
+                  <div className="flow-node-compact-io">
+                    <div className="flow-node-module flow-node-module-in">
+                      <strong>Inbound</strong>
+                      <p>{selectedNode.inboundData ?? ioSummary.inbound}</p>
+                    </div>
+
+                    <div className="flow-node-module flow-node-module-out">
+                      <strong>Outbound</strong>
+                      <p>{selectedNode.outboundData ?? ioSummary.outbound}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedNode.scoreImpactCategory && selectedNode.scoreImpactCategory !== 'none' && (
+                  <div className={`flow-node-impact ${emphasis.className.includes('low') ? 'flow-node-impact-risk' : 'flow-node-impact-safe'}`}>
+                    <strong>
+                      {emphasis.indicator ? emphasis.indicator + ' — ' : ''}
+                      {selectedNode.scoreImpactCategory === 'reading' && 'Visibility depends on terms comprehension'}
+                      {selectedNode.scoreImpactCategory === 'consent' && 'Affected by your privacy toggle choices'}
+                      {selectedNode.scoreImpactCategory === 'exposure' && 'Increases with personal data disclosure'}
+                    </strong>
                   </div>
                 )}
+
+                <div className="flow-node-consequence">
+                  <strong>Possible consequence</strong>
+                  <p>{consequence}</p>
+                </div>
+
+                <div className="flow-node-detail-footer">
+                  <div
+                    className={[
+                      'flow-node-detail-status',
+                      isAlwaysEnabled || nodeActive
+                        ? 'flow-node-detail-status-risk'
+                        : 'flow-node-detail-status-safe',
+                    ].join(' ')}
+                  >
+                    <strong>Status:</strong>{' '}
+                    {isAlwaysEnabled || nodeActive
+                      ? 'Your data reaches this node' + (isAlwaysEnabled ? '' : ' through active consent paths')
+                      : 'No active data route with your current choices'}
+                  </div>
+
+                  {(isAlwaysEnabled || nodeActive) && nodeData && 'fields' in nodeData && Array.isArray(nodeData.fields) && nodeData.fields.length > 0 && (
+                    <div className="flow-node-fields">
+                      <strong>Fields:</strong> {(nodeData.fields as string[]).join(', ')}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="flow-node-detail-close"
+                  onClick={() => setSelectedNodeId(null)}
+                >
+                  Clear Selection
+                </button>
               </div>
-            )}
-            
-            {/* Expanded Score Breakdown - shown for all nodes */}
-            <div style={{
-              marginTop: '12px',
-              paddingTop: '12px',
-              borderTop: '1px solid #e5e7eb',
-              fontSize: '12px',
-              color: '#6b7280',
-            }}>
-              <strong style={{ display: 'block', marginBottom: '8px', color: '#374151' }}>Score Breakdown:</strong>
-              {getScoreBreakdown(termsReadingProgress, termsReadingScore, privacyOptionsScore, (3 - optionalFieldsCount) * 10, surveyData).map((line, idx) => (
-                <div key={idx} style={{ lineHeight: '1.6' }}>{line}</div>
-              ))}
+            )
+          })() : (
+            <div className="flow-node-detail flow-node-detail-placeholder">
+              <div className="flow-node-overview-heading">
+                <div className="flow-node-overview-badge">Overview</div>
+                <h3 className="flow-node-detail-title">{overview.title}</h3>
+              </div>
+              <p className="flow-node-detail-desc">{overview.summary}</p>
+              <div className="flow-node-overview-list">
+                {overview.bullets.map((bullet) => (
+                  <div key={bullet} className="flow-node-overview-item">{bullet}</div>
+                ))}
+              </div>
             </div>
-            
-            <button
-              type="button"
-              className="flow-node-detail-close"
-              onClick={() => setSelectedNodeId(null)}
-            >
-              Close
-            </button>
+            )}
           </div>
-        )
-      })()}
+
+          <button
+            type="button"
+            className="data-flow-leaderboard-button"
+            onClick={() => navigate('/ranking/game/datashadows')}
+          >
+            View Leaderboard
+          </button>
+          <button
+            type="button"
+            className="data-flow-retry-button"
+            onClick={() => setScreen('terms')}
+          >
+            Would you like to try again?
+          </button>
+        </section>
+      </div>
     </div>
   )
 }

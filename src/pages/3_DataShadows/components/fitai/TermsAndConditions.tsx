@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useFitAI } from './fitaiContext'
 
 /**
@@ -20,7 +20,7 @@ const TermsAndConditions: React.FC = () => {
   const [privacySettings, setPrivacySettings] = useState({
     analytics: true,
     marketing: true,
-    thirdParty: false,
+    thirdParty: true,
     dataRetention: true,
     aiTraining: true, // 原 crashReports → 改为 AI 训练选项
   })
@@ -108,7 +108,7 @@ For questions about these terms, contact: legal@fitai.com`
   }, [])
 
   // Calculate and save terms scoring
-  const calculateAndSaveScore = () => {
+  const calculateAndSaveScore = useCallback(() => {
     // Calculate reading score: +5 for every 25% read
     const readingScore = Math.floor(termsReadingProgress / 25) * 5
     
@@ -157,7 +157,7 @@ For questions about these terms, contact: legal@fitai.com`
       privacyOptionsScore,
       totalTermsScore
     })
-  }
+  }, [privacySettings, termsReadingProgress, updateUserChoices])
 
   useEffect(() => {
     if (countdown <= 0) return
@@ -171,7 +171,7 @@ For questions about these terms, contact: legal@fitai.com`
     }, 1000)
     
     return () => clearTimeout(timer)
-  }, [countdown, completeTerms, termsReadingProgress, privacySettings, updateUserChoices])
+  }, [countdown, calculateAndSaveScore, completeTerms])
 
   const handleConsentGiven = () => {
     if (hasReadTerms) {
