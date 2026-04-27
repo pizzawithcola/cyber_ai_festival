@@ -48,6 +48,9 @@ import { apiFetch } from '../../services/api';
 
 const Hallucinate: React.FC = () => {
   const navigate = useNavigate();
+  const [showAnimatedIntro, setShowAnimatedIntro] = useState(true);
+  const [currentIntroTextIndex, setCurrentIntroTextIndex] = useState(-1);
+  const [isIntroFadingOut, setIsIntroFadingOut] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [scenarioId, setScenarioId] = useState<string>(SCENARIOS[0].id);
@@ -65,6 +68,12 @@ const Hallucinate: React.FC = () => {
   const isTrainingGameUnlocked = temporaryUnlockTrainingGame || allScenariosCompleted;
   const scenarioProgressLabel = `${completedScenarioIds.size}/${REQUIRED_SCENARIO_IDS.length}`;
   const statusText = isTrainingGameUnlocked ? 'ARCADE READY' : 'SCENARIO LOCK';
+  const introLines = [
+    'AI hallucination is not just a weird chatbot mistake.',
+    'When a model sounds confident, people can copy false facts into homework, reports, code, medical searches, or legal work.',
+    'ChatGPT alone has been reported at more than 2.5 billion prompts per day: about 29,000 chances for a bad answer every second.',
+    'The skill is simple: slow down, spot the confidence trap, and verify before you trust.',
+  ];
 
   const arcadeFontCss = `
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;700&family=VT323&display=swap');
@@ -310,6 +319,36 @@ const Hallucinate: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
+    if (!showAnimatedIntro) return;
+
+    if (currentIntroTextIndex === -1) {
+      const initialTimer = window.setTimeout(() => {
+        setCurrentIntroTextIndex(0);
+      }, 500);
+
+      return () => window.clearTimeout(initialTimer);
+    }
+
+    const fadeOutTimer = window.setTimeout(() => {
+      setIsIntroFadingOut(true);
+    }, 3600);
+
+    const nextTextTimer = window.setTimeout(() => {
+      if (currentIntroTextIndex < introLines.length - 1) {
+        setIsIntroFadingOut(false);
+        setCurrentIntroTextIndex((prev) => prev + 1);
+      } else {
+        setShowAnimatedIntro(false);
+      }
+    }, 4200);
+
+    return () => {
+      window.clearTimeout(fadeOutTimer);
+      window.clearTimeout(nextTextTimer);
+    };
+  }, [currentIntroTextIndex, introLines.length, showAnimatedIntro]);
+
+  useEffect(() => {
     if (!showScenarioChat) return;
     const handle = window.setTimeout(() => {
       chatAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -397,7 +436,81 @@ const Hallucinate: React.FC = () => {
           pointerEvents: 'none',
         }}
       />
-      {showLanding ? (
+      {showAnimatedIntro ? (
+        <Container
+          maxWidth="lg"
+          sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            py: 6,
+            position: 'relative',
+          }}
+        >
+          <Button
+            variant="outlined"
+            onClick={() => setShowAnimatedIntro(false)}
+            sx={{
+              position: 'absolute',
+              top: 24,
+              right: 24,
+              zIndex: 2,
+              fontFamily: "'Press Start 2P', 'VT323', monospace",
+              fontSize: '0.68rem',
+              color: '#00ffd9 !important',
+              borderColor: 'rgba(0, 255, 217, 0.62) !important',
+              backgroundColor: 'rgba(0, 255, 217, 0.06)',
+              '&:hover': {
+                backgroundColor: 'rgba(0, 255, 217, 0.14)',
+                borderColor: 'rgba(0, 255, 217, 0.84) !important',
+              },
+            }}
+          >
+            Skip
+          </Button>
+          <Box
+            sx={{
+              textAlign: 'center',
+              px: 3,
+              maxWidth: 980,
+              minHeight: 260,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              width: '100%',
+            }}
+          >
+            {introLines.map((line, index) => (
+              <Typography
+                key={line}
+                variant="h3"
+                sx={{
+                  opacity: index === currentIntroTextIndex ? (isIntroFadingOut ? 0 : 1) : 0,
+                  transition: 'opacity 0.4s ease-in-out, transform 0.4s ease-in-out',
+                  transform:
+                    index === currentIntroTextIndex && !isIntroFadingOut ? 'translateY(0)' : 'translateY(10px)',
+                  position: index === currentIntroTextIndex ? 'relative' : 'absolute',
+                  pointerEvents: 'none',
+                  maxWidth: 860,
+                  wordWrap: 'break-word',
+                  lineHeight: 1.7,
+                  textAlign: 'center',
+                  fontFamily: "'Press Start 2P', 'VT323', monospace",
+                  fontWeight: 900,
+                  fontSize: { xs: '0.92rem', sm: '1.12rem', md: '1.42rem' },
+                  letterSpacing: '0.06em',
+                  color: '#ffffff',
+                  textShadow: '0 0 10px rgba(0,0,0,0.24), 0 0 24px rgba(0,255,217,0.12)',
+                }}
+              >
+                {line}
+              </Typography>
+            ))}
+          </Box>
+        </Container>
+      ) : showLanding ? (
         <Container
           maxWidth="lg"
           sx={{
@@ -654,6 +767,111 @@ const Hallucinate: React.FC = () => {
         {tabValue === 0 && (
           <Container maxWidth="lg" sx={{ pt: 2, pb: 3 }}>
             <Stack spacing={2}>
+              <Paper
+                sx={{
+                  ...fadeUpSx,
+                  p: 2.2,
+                  background: 'linear-gradient(135deg, rgba(10,16,32,0.95), rgba(7,10,24,0.92)) !important',
+                  border: '1px solid rgba(0,255,217,0.2)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: 12,
+                    border: '1px solid rgba(255,46,147,0.12)',
+                    borderRadius: 2,
+                    pointerEvents: 'none',
+                  },
+                }}
+              >
+                <Box sx={{ mb: 1.1 }}>
+                  <Typography variant="caption" sx={arcadeLabelSx}>
+                    Why Hallucinations Happen
+                  </Typography>
+                </Box>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 900,
+                    mb: 1.2,
+                    color: '#f7fcff',
+                    textShadow: '0 0 10px rgba(0,255,217,0.16)',
+                  }}
+                >
+                  What is an AI hallucination?
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    lineHeight: 1.8,
+                    color: 'rgba(228, 241, 255, 0.92)',
+                    mb: 1.6,
+                    maxWidth: 980,
+                  }}
+                >
+                  An AI hallucination happens when a model gives information that sounds fluent and confident, but is
+                  wrong, unsupported, or made up. This matters because AI answers are now produced at enormous scale:
+                  OpenAI told Axios in 2025 that ChatGPT users send more than 2.5 billion prompts per day, which is
+                  roughly 29,000 prompts every second. Even a small error rate can turn into a large number of people
+                  seeing plausible misinformation.
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper
+                      sx={{
+                        p: 1.75,
+                        height: '100%',
+                        border: '1px solid rgba(0,255,217,0.16)',
+                        background: 'rgba(0, 255, 217, 0.05) !important',
+                      }}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.8, color: '#00ffd9' }}>
+                        Definition
+                      </Typography>
+                      <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                        False or misleading output presented with the tone of a real answer.
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper
+                      sx={{
+                        p: 1.75,
+                        height: '100%',
+                        border: '1px solid rgba(255,46,147,0.16)',
+                        background: 'rgba(255, 46, 147, 0.05) !important',
+                      }}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.8, color: '#ff7cbc' }}>
+                        Why it happens
+                      </Typography>
+                      <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                        Models fill gaps from patterns in training data. Without grounding, retrieval, or a reliable
+                        source to check against, they may guess.
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper
+                      sx={{
+                        p: 1.75,
+                        height: '100%',
+                        border: '1px solid rgba(174,227,255,0.16)',
+                        background: 'rgba(174, 227, 255, 0.05) !important',
+                      }}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.8, color: '#a6eaff' }}>
+                        Why it is serious
+                      </Typography>
+                      <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                        Stanford HAI reported that even specialized legal AI tools hallucinated in more than 17% of
+                        answers in benchmark tests, with one tested system above 34%.
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </Paper>
               <Paper
                 sx={{
                   ...fadeUpSx,
