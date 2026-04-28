@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Typography, Box, Button, Chip, Collapse, LinearProgress, Slider, Stack, Avatar } from '@mui/material';
 import { Flag as FlagIcon, CheckCircle as CheckCircleIcon, Cancel as CancelIcon } from '@mui/icons-material';
 
@@ -83,19 +83,23 @@ const trainingIntroSlides = [
   },
 ];
 
-const READABLE_FONT = "'Space Grotesk', 'Helvetica Neue', Arial, sans-serif !important";
-const BASE_CORRECT_POINTS = 20;
-const BASE_WRONG_PENALTY = 12;
-const CONFIDENCE_LEVELS = [
-  { value: 1, label: 'Low', multiplier: 1 },
-  { value: 2, label: 'Med', multiplier: 1.5 },
-  { value: 3, label: 'High', multiplier: 2 },
+const READABLE_FONT = "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important";
+const BASE_SCORE_POINTS = 20;
+const MIN_CONFIDENCE_SLIDER_VALUE = 0;
+const MIN_CONFIDENCE_MULTIPLIER = 0.1;
+const MAX_CONFIDENCE_MULTIPLIER = 1;
+const DEFAULT_CONFIDENCE_MULTIPLIER = 0.5;
+const CONFIDENCE_MARKS = [
+  { value: 0.1, label: 'x0.1' },
+  { value: 0.5, label: 'x0.5' },
+  { value: 1, label: 'x1.0' },
 ];
-const getConfidenceMeta = (value = 2) =>
-  CONFIDENCE_LEVELS.find((level) => level.value === value) ?? CONFIDENCE_LEVELS[1];
+const clampConfidenceMultiplier = (value = DEFAULT_CONFIDENCE_MULTIPLIER) =>
+  Math.min(MAX_CONFIDENCE_MULTIPLIER, Math.max(MIN_CONFIDENCE_MULTIPLIER, Number(value.toFixed(1))));
+const formatConfidenceMultiplier = (value: number) => `x${value.toFixed(1)}`;
 const getScoreDelta = (isCorrect: boolean, confidenceValue: number) => {
-  const multiplier = getConfidenceMeta(confidenceValue).multiplier;
-  const basePoints = isCorrect ? BASE_CORRECT_POINTS : -BASE_WRONG_PENALTY;
+  const multiplier = clampConfidenceMultiplier(confidenceValue);
+  const basePoints = isCorrect ? BASE_SCORE_POINTS : -BASE_SCORE_POINTS;
   return Math.round(basePoints * multiplier);
 };
 
@@ -161,7 +165,7 @@ export function TrainingArena({
     setSelected({});
     setPassed({});
     setResolved({});
-    setConfidenceById(Object.fromEntries(pick.map((card) => [card.id, 2])));
+    setConfidenceById(Object.fromEntries(pick.map((card) => [card.id, DEFAULT_CONFIDENCE_MULTIPLIER])));
     setScoreDeltaById({});
     setScore(0);
     setResultPage('summary');
@@ -237,7 +241,7 @@ export function TrainingArena({
     const nextSelected = flagged ? selected : { ...selected, [card.id]: true };
     if (!flagged) {
       const isCorrect = card.isPitfall;
-      const confidenceValue = confidenceById[card.id] ?? 2;
+      const confidenceValue = confidenceById[card.id] ?? DEFAULT_CONFIDENCE_MULTIPLIER;
       const scoreDelta = getScoreDelta(isCorrect, confidenceValue);
       setSelected(nextSelected);
       setResolved((r) => ({ ...r, [card.id]: isCorrect ? 'correct' : 'wrong' }));
@@ -261,7 +265,7 @@ export function TrainingArena({
     if (resolved[card.id]) return;
 
     const isCorrect = !card.isPitfall;
-    const confidenceValue = confidenceById[card.id] ?? 2;
+    const confidenceValue = confidenceById[card.id] ?? DEFAULT_CONFIDENCE_MULTIPLIER;
     const scoreDelta = getScoreDelta(isCorrect, confidenceValue);
 
     setPassed((prev) => ({ ...prev, [card.id]: true }));
@@ -299,9 +303,7 @@ export function TrainingArena({
   }, [selected, passed]);
   const accuracy = sentences.length === 0 ? 0 : Math.round(((resultPitfalls.correct.length + resultPitfalls.correctPass.length) / sentences.length) * 100);
   const activeCard = sentences[currentCardIndex];
-  const activeConfidenceValue = activeCard ? confidenceById[activeCard.id] ?? 2 : 2;
-  const activeConfidenceMeta = getConfidenceMeta(activeConfidenceValue);
-  const activeScoreDelta = activeCard ? scoreDeltaById[activeCard.id] : undefined;
+  const activeConfidenceValue = activeCard ? confidenceById[activeCard.id] ?? DEFAULT_CONFIDENCE_MULTIPLIER : DEFAULT_CONFIDENCE_MULTIPLIER;
   const activeDecision = activeCard
     ? selected[activeCard.id]
       ? 'flag'
@@ -350,10 +352,12 @@ export function TrainingArena({
     role,
     children,
     tone = 'assistant',
+    wide = false,
   }: {
     role: 'assistant' | 'user';
     children: React.ReactNode;
     tone?: 'assistant' | 'user' | 'success' | 'warning';
+    wide?: boolean;
   }) => {
     const isUser = role === 'user';
     const backgroundByTone = {
@@ -377,7 +381,7 @@ export function TrainingArena({
           sx={{
             width: { xs: 30, sm: 34 },
             height: { xs: 30, sm: 34 },
-            fontSize: { xs: '0.72rem', sm: '0.78rem' },
+            fontSize: { xs: '0.875rem', sm: '0.9375rem' },
             fontWeight: 900,
             bgcolor: isUser ? 'rgba(0, 255, 217, 0.9)' : 'rgba(255, 46, 147, 0.9)',
             color: '#031017',
@@ -388,8 +392,8 @@ export function TrainingArena({
         </Avatar>
         <Box
           sx={{
-            width: isUser ? { xs: '72%', sm: '54%' } : { xs: '88%', sm: '76%' },
-            maxWidth: isUser ? 520 : 700,
+            width: isUser ? (wide ? { xs: '92%', sm: '82%' } : { xs: '72%', sm: '54%' }) : { xs: '88%', sm: '76%' },
+            maxWidth: isUser ? (wide ? 760 : 520) : 700,
             px: { xs: 1.8, sm: 2.2 },
             py: { xs: 1.55, sm: 1.85 },
             borderRadius: isUser ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
@@ -413,8 +417,7 @@ export function TrainingArena({
     const statusIcon = isCorrectFeedback ? <CheckCircleIcon sx={{ fontSize: 16 }} /> : <CancelIcon sx={{ fontSize: 16 }} />;
     const statusColor = isCorrectFeedback ? '#49d17d' : activeFeedbackKind === 'missed' ? '#ff8a65' : '#ff5f7a';
     const statusBackground = isCorrectFeedback ? 'rgba(73, 209, 125, 0.14)' : activeFeedbackKind === 'missed' ? 'rgba(255, 138, 101, 0.16)' : 'rgba(255, 95, 122, 0.14)';
-    const confidenceValue = confidenceById[activeCard.id] ?? 2;
-    const confidenceMeta = getConfidenceMeta(confidenceValue);
+    const confidenceValue = confidenceById[activeCard.id] ?? DEFAULT_CONFIDENCE_MULTIPLIER;
     const scoreDelta = scoreDeltaById[activeCard.id] ?? 0;
 
     const shortReason =
@@ -475,7 +478,7 @@ export function TrainingArena({
               }}
             />
             <Chip
-              label={`${confidenceMeta.label} x${confidenceMeta.multiplier}`}
+              label={formatConfidenceMultiplier(confidenceValue)}
               size="small"
               sx={{
                 alignSelf: 'flex-start',
@@ -497,7 +500,7 @@ export function TrainingArena({
                 color: `${statusColor} !important`,
                 borderColor: `${statusColor} !important`,
                 fontWeight: 900,
-                fontSize: '0.75rem',
+                fontSize: '0.875rem',
                 px: 1.2,
                 animation: 'none !important',
               }}
@@ -528,7 +531,7 @@ export function TrainingArena({
             </Stack>
           </Collapse>
           <Box sx={{ pt: 0.4 }}>
-            <Button variant="contained" onClick={handleAdvanceFromFeedback} sx={{ fontWeight: 900 }}>
+            <Button variant="contained" onClick={handleAdvanceFromFeedback} sx={{ fontWeight: 900, minWidth: 160, minHeight: 46 }}>
               {currentCardIndex >= sentences.length - 1 ? 'Finish round' : 'Next card'}
             </Button>
           </Box>
@@ -557,7 +560,7 @@ export function TrainingArena({
         mx: 'auto',
         minHeight: 'calc(100vh - 150px)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: (isIntroMode || showResults) ? 'center' : 'flex-start',
         justifyContent: 'center',
         px: { xs: 1.2, md: 2 },
         py: { xs: 3.5, md: 5 },
@@ -578,9 +581,10 @@ export function TrainingArena({
                   fontWeight: 900,
                   display: 'block',
                   mb: 0.75,
-                  fontSize: { xs: '0.92rem', sm: '1.1rem', md: '1.28rem' },
-                  lineHeight: 1.55,
-                  letterSpacing: '0.08em',
+                  fontFamily: "'Press Start 2P', 'VT323', monospace !important",
+                  fontSize: { xs: '1.1rem', sm: '1.35rem', md: '1.6rem' },
+                  lineHeight: 1.45,
+                  letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                   textShadow: '0 3px 0 rgba(0,0,0,0.45), 0 0 18px rgba(0,255,217,0.22)',
                 }}
@@ -594,8 +598,8 @@ export function TrainingArena({
                   fontWeight: 900,
                   display: 'block',
                   mb: 0.9,
-                  fontSize: { xs: '0.6rem', sm: '0.68rem' },
-                  fontFamily: "'Press Start 2P', 'VT323', monospace",
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                  fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                 }}
@@ -624,10 +628,9 @@ export function TrainingArena({
             width: '100%',
             maxWidth: 920,
             mx: 'auto',
-            minHeight: { xs: 430, md: 520 },
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             alignItems: 'center',
           }}
         >
@@ -665,7 +668,7 @@ export function TrainingArena({
                             sx={{
                               color: 'rgba(228, 241, 255, 0.88)',
                               lineHeight: 1.8,
-                              fontSize: { xs: '0.88rem', sm: '0.96rem' },
+                              fontSize: { xs: '1rem', sm: '1.06rem' },
                             }}
                           >
                             {activeIntro.body}
@@ -684,116 +687,48 @@ export function TrainingArena({
                       ),
                     })}
 
-                    <Box
-                      sx={{
-                        width: '100%',
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        pt: 0.35,
-                      }}
-                    >
-                      <Stack spacing={1} alignItems="flex-end" sx={{ width: { xs: '88%', sm: 'auto' } }}>
-                        <Stack direction="row" spacing={0.7} sx={{ justifyContent: 'flex-end' }}>
-                          {trainingIntroSlides.map((slide, index) => (
-                            <Box
-                              key={slide.label}
-                              sx={{
-                                width: index === introStep ? 24 : 8,
-                                height: 8,
-                                borderRadius: 999,
-                                backgroundColor: index === introStep ? '#00ffd9' : 'rgba(228, 241, 255, 0.24)',
-                                transition: 'width 220ms ease, background-color 220ms ease',
-                              }}
-                            />
-                          ))}
+                    {renderBubble({
+                      role: 'user',
+                      tone: 'user',
+                      children: (
+                        <Stack spacing={1.1}>
+                          <Stack direction="row" spacing={0.7} sx={{ justifyContent: 'flex-end' }}>
+                            {trainingIntroSlides.map((slide, index) => (
+                              <Box
+                                key={slide.label}
+                                sx={{
+                                  width: index === introStep ? 24 : 8,
+                                  height: 8,
+                                  borderRadius: 999,
+                                  backgroundColor: index === introStep ? '#00ffd9' : 'rgba(228, 241, 255, 0.24)',
+                                  transition: 'width 220ms ease, background-color 220ms ease',
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                          <Button
+                            size="large"
+                            variant="contained"
+                            onClick={advanceIntro}
+                            sx={{
+                              alignSelf: 'flex-end',
+                              fontWeight: 900,
+                              minHeight: 46,
+                              minWidth: { xs: 132, sm: 160 },
+                              borderRadius: 2.5,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {introStep < trainingIntroSlides.length - 1 ? 'Next' : 'Start cards'}
+                          </Button>
                         </Stack>
-                        <Button
-                          size="large"
-                          variant="contained"
-                          onClick={advanceIntro}
-                          sx={{
-                            fontWeight: 900,
-                            minHeight: 48,
-                            minWidth: { xs: '100%', sm: 180 },
-                            borderRadius: 2.5,
-                            fontSize: '0.78rem',
-                          }}
-                        >
-                          {introStep < trainingIntroSlides.length - 1 ? 'Next cue' : 'Start cards'}
-                        </Button>
-                      </Stack>
-                    </Box>
+                      ),
+                    })}
                   </Stack>
                 )}
 
                 {isRunning && activeCard && (
                   <Stack spacing={1.8} sx={{ width: '100%', alignItems: 'stretch', animation: 'fadeRise 360ms ease-out' }}>
-                    <Box
-                      sx={{
-                        width: '100%',
-                        display: 'flex',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: '100%',
-                          maxWidth: 720,
-                          px: { xs: 1.4, sm: 2 },
-                          py: 1.2,
-                          borderRadius: 3,
-                          background: 'linear-gradient(180deg, rgba(11, 18, 36, 0.92), rgba(8, 13, 28, 0.88))',
-                          border: '1px solid rgba(0, 255, 217, 0.16)',
-                          boxShadow: '0 12px 28px rgba(0,0,0,0.18)',
-                        }}
-                      >
-                        <Stack spacing={0.8}>
-                          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-                            <Typography variant="caption" sx={{ color: '#00ffd9', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                              Confidence wager
-                            </Typography>
-                            <Stack direction="row" spacing={0.8} sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                              <Chip label={`${activeConfidenceMeta.label} x${activeConfidenceMeta.multiplier}`} size="small" sx={{ fontWeight: 900, color: '#07101d', backgroundColor: '#00ffd9' }} />
-                              <Chip label={`Right +${getScoreDelta(true, activeConfidenceValue)}`} size="small" sx={{ fontWeight: 900, color: '#d8ffea', backgroundColor: 'rgba(73, 209, 125, 0.16)' }} />
-                              <Chip label={`Wrong ${getScoreDelta(false, activeConfidenceValue)}`} size="small" sx={{ fontWeight: 900, color: '#ffd9df', backgroundColor: 'rgba(255, 95, 122, 0.14)' }} />
-                            </Stack>
-                          </Stack>
-                          <Slider
-                            value={activeConfidenceValue}
-                            min={1}
-                            max={3}
-                            step={1}
-                            marks={CONFIDENCE_LEVELS.map((level) => ({ value: level.value, label: level.label }))}
-                            onChange={(_, value) => {
-                              if (Array.isArray(value)) return;
-                              setConfidenceById((current) => ({ ...current, [activeCard.id]: value }));
-                            }}
-                            disabled={isCardAnswered}
-                            sx={{
-                              color: '#00ffd9',
-                              px: 0.5,
-                              '& .MuiSlider-markLabel': {
-                                color: 'rgba(228, 241, 255, 0.76)',
-                                fontSize: '0.72rem',
-                                fontFamily: READABLE_FONT,
-                              },
-                              '& .MuiSlider-thumb': {
-                                width: 18,
-                                height: 18,
-                                boxShadow: '0 0 0 6px rgba(0, 255, 217, 0.08)',
-                              },
-                              '& .MuiSlider-rail': {
-                                opacity: 0.24,
-                              },
-                            }}
-                          />
-                          <Typography variant="caption" sx={{ color: 'rgba(228, 241, 255, 0.72)', lineHeight: 1.65 }}>
-                            高 confidence 答对赚更多，答错也会扣更多，先押注再判断。
-                          </Typography>
-                        </Stack>
-                      </Box>
-                    </Box>
-
                     {renderBubble({
                       role: 'assistant',
                       children: (
@@ -813,66 +748,112 @@ export function TrainingArena({
                     })}
 
                     {!isCardAnswered ? (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          display: 'flex',
-                          justifyContent: 'flex-end',
-                          pt: 0.35,
-                        }}
-                      >
-                        <Stack
-                          direction={{ xs: 'column', sm: 'row' }}
-                          spacing={1}
-                          alignItems="stretch"
-                          sx={{ width: { xs: '88%', sm: 'auto' }, maxWidth: { xs: '88%', sm: 'none' } }}
-                        >
-                          <Button
-                            size="large"
-                            variant="contained"
-                            startIcon={<FlagIcon />}
-                            onClick={handleFlashFlag}
-                            sx={{
-                              fontWeight: 900,
-                              minHeight: 48,
-                              minWidth: { xs: '100%', sm: 132 },
-                              borderRadius: 2.5,
-                              fontSize: '0.9rem',
-                              background: 'linear-gradient(135deg, #ff6b6b 0%, #ff2e93 100%)',
-                              boxShadow: '0 12px 28px rgba(255, 46, 147, 0.28)',
-                              transition: 'transform 220ms ease, box-shadow 220ms ease',
-                              '&:hover': {
-                                transform: 'translateY(-2px)',
-                                boxShadow: '0 16px 34px rgba(255, 46, 147, 0.38)',
-                              },
-                            }}
-                          >
-                            Flag
-                          </Button>
-                          <Button
-                            size="large"
-                            variant="contained"
-                            startIcon={<CheckCircleIcon />}
-                            onClick={handleFlashPass}
-                            sx={{
-                              fontWeight: 900,
-                              minHeight: 48,
-                              minWidth: { xs: '100%', sm: 132 },
-                              borderRadius: 2.5,
-                              fontSize: '0.9rem',
-                              background: 'linear-gradient(135deg, #00ffd9 0%, #2ee3ff 100%)',
-                              boxShadow: '0 12px 28px rgba(0, 255, 217, 0.24)',
-                              transition: 'transform 220ms ease, box-shadow 220ms ease',
-                              '&:hover': {
-                                transform: 'translateY(-2px)',
-                                boxShadow: '0 16px 34px rgba(0, 255, 217, 0.34)',
-                              },
-                            }}
-                          >
-                            Pass
-                          </Button>
-                        </Stack>
-                      </Box>
+                      renderBubble({
+                        role: 'user',
+                        tone: 'user',
+                        wide: true,
+                        children: (
+                          <Stack spacing={1.1}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                              <Typography variant="caption" sx={{ color: '#031017', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                Confidence wager
+                              </Typography>
+                              <Chip label={formatConfidenceMultiplier(activeConfidenceValue)} size="small" sx={{ fontWeight: 900, color: '#07101d', backgroundColor: '#00ffd9' }} />
+                            </Stack>
+                            <Stack direction="row" spacing={0.8} sx={{ flexWrap: 'wrap' }}>
+                              <Chip label={`Right +${getScoreDelta(true, activeConfidenceValue)}`} size="small" sx={{ fontWeight: 900, color: '#d8ffea', backgroundColor: 'rgba(25, 80, 55, 0.45)' }} />
+                              <Chip label={`Wrong ${getScoreDelta(false, activeConfidenceValue)}`} size="small" sx={{ fontWeight: 900, color: '#ffd9df', backgroundColor: 'rgba(111, 29, 42, 0.45)' }} />
+                            </Stack>
+                            <Slider
+                              value={activeConfidenceValue}
+                              min={MIN_CONFIDENCE_SLIDER_VALUE}
+                              max={MAX_CONFIDENCE_MULTIPLIER}
+                              step={0.1}
+                              marks={CONFIDENCE_MARKS}
+                              valueLabelDisplay="auto"
+                              valueLabelFormat={(value) => formatConfidenceMultiplier(value)}
+                              onChange={(_, value) => {
+                                if (Array.isArray(value)) return;
+                                setConfidenceById((current) => ({
+                                  ...current,
+                                  [activeCard.id]: clampConfidenceMultiplier(value),
+                                }));
+                              }}
+                              disabled={isCardAnswered}
+                              sx={{
+                                color: '#00ffd9',
+                                width: { xs: '90%', sm: '86%' },
+                                alignSelf: 'center',
+                                px: 0,
+                                mt: 0.4,
+                                mb: { xs: 5, sm: 3.6 },
+                                '& .MuiSlider-markLabel': {
+                                  color: 'rgba(255, 255, 255, 0.96)',
+                                  fontSize: { xs: '0.62rem', sm: '0.72rem' },
+                                  fontFamily: READABLE_FONT,
+                                  fontWeight: 800,
+                                  whiteSpace: 'nowrap',
+                                  lineHeight: 1,
+                                  top: 22,
+                                  textShadow: '0 1px 4px rgba(0,0,0,0.45)',
+                                },
+                                '& .MuiSlider-thumb': {
+                                  width: 14,
+                                  height: 14,
+                                  boxShadow: '0 0 0 4px rgba(0, 255, 217, 0.12)',
+                                },
+                                '& .MuiSlider-track': {
+                                  height: 4,
+                                },
+                                '& .MuiSlider-rail': {
+                                  height: 4,
+                                  opacity: 0.3,
+                                },
+                              }}
+                            />
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2} sx={{ mt: { xs: 1.4, sm: 0.8 } }}>
+                              <Button
+                                size="large"
+                                variant="contained"
+                                startIcon={<FlagIcon />}
+                                onClick={handleFlashFlag}
+                                sx={{
+                                  fontWeight: 900,
+                                  minHeight: 46,
+                                  minWidth: { xs: '100%', sm: 150 },
+                                  borderRadius: 2.5,
+                                  fontSize: '0.95rem',
+                                  color: '#000000 !important',
+                                  '& .MuiButton-startIcon': { color: '#000000 !important' },
+                                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ff2e93 100%)',
+                                  boxShadow: '0 10px 22px rgba(255, 46, 147, 0.28)',
+                                }}
+                              >
+                                Flag
+                              </Button>
+                              <Button
+                                size="large"
+                                variant="contained"
+                                startIcon={<CheckCircleIcon />}
+                                onClick={handleFlashPass}
+                                sx={{
+                                  fontWeight: 900,
+                                  minHeight: 46,
+                                  minWidth: { xs: '100%', sm: 150 },
+                                  borderRadius: 2.5,
+                                  fontSize: '0.95rem',
+                                  color: '#000000 !important',
+                                  '& .MuiButton-startIcon': { color: '#000000 !important' },
+                                  background: 'linear-gradient(135deg, #00ffd9 0%, #2ee3ff 100%)',
+                                  boxShadow: '0 10px 22px rgba(0, 255, 217, 0.24)',
+                                }}
+                              >
+                                Pass
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        ),
+                      })
                     ) : (
                       <>
                         {renderBubble({
@@ -884,7 +865,7 @@ export function TrainingArena({
                                 {activeDecisionLabel}
                               </Typography>
                               <Typography variant="caption" sx={{ color: 'rgba(228, 241, 255, 0.76)' }}>
-                                Confidence: {activeConfidenceMeta.label} x{activeConfidenceMeta.multiplier}
+                                Confidence: {formatConfidenceMultiplier(activeConfidenceValue)}
                               </Typography>
                             </Stack>
                           ),

@@ -36,12 +36,12 @@ export function ResultsPanel({
               sx={{
                 fontWeight: 900,
                 color: '#00ffd9',
-                mb: 2,
+                mb: 2.5,
                 display: 'block',
-                fontFamily: "'Press Start 2P', 'VT323', monospace",
-                fontSize: { xs: '1.28rem', sm: '1.72rem', md: '2.08rem' },
-                lineHeight: 1.42,
-                letterSpacing: '0.08em',
+                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' },
+                lineHeight: 1.3,
+                letterSpacing: '0.06em',
                 textTransform: 'uppercase',
                 textShadow:
                   '0 3px 0 rgba(0,0,0,0.55), 0 0 18px rgba(0,255,217,0.32), 0 0 34px rgba(255,46,147,0.18)',
@@ -53,9 +53,16 @@ export function ResultsPanel({
               <Box
                 sx={{
                   flex: 1,
+                  px: { xs: 2, md: 3 },
+                  py: 2,
+                  borderRadius: 3,
+                  background: 'rgba(0, 255, 217, 0.07)',
+                  border: '1px solid rgba(0, 255, 217, 0.22)',
+                  backdropFilter: 'blur(8px)',
+                  textAlign: 'center',
                 }}
               >
-                <Typography variant="caption" sx={{ color: '#c8f7ff', display: 'block', mb: 0.4 }}>
+                <Typography variant="caption" sx={{ color: '#c8f7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em' }}>
                   SCORE
                 </Typography>
                 <Typography variant="h3" sx={{ fontWeight: 900, color: '#00ffd9', lineHeight: 1.1 }}>
@@ -65,9 +72,16 @@ export function ResultsPanel({
               <Box
                 sx={{
                   flex: 1,
+                  px: { xs: 2, md: 3 },
+                  py: 2,
+                  borderRadius: 3,
+                  background: 'rgba(214, 236, 255, 0.06)',
+                  border: '1px solid rgba(214, 236, 255, 0.16)',
+                  backdropFilter: 'blur(8px)',
+                  textAlign: 'center',
                 }}
               >
-                <Typography variant="caption" sx={{ color: '#dfe7ff', display: 'block', mb: 0.4 }}>
+                <Typography variant="caption" sx={{ color: '#dfe7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em' }}>
                   ACCURACY
                 </Typography>
                 <Typography variant="h3" sx={{ fontWeight: 900, color: '#d6ecff', lineHeight: 1.1 }}>

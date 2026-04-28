@@ -48,7 +48,7 @@ const Hallucinate: React.FC = () => {
     'The skill is simple: slow down, spot the confidence trap, and verify before you trust.',
   ];
   const arcadeFontCss = `
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;700&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Press+Start+2P&family=VT323&display=swap');
   `;
 
   const arcadeSx = {
@@ -103,14 +103,14 @@ const Hallucinate: React.FC = () => {
       '100%': { opacity: 1 },
     },
     '& .MuiTypography-root': {
-      fontFamily: "'Press Start 2P', 'VT323', monospace",
+      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
       color: '#f2fbff',
       letterSpacing: '0.06em',
       lineHeight: 1.75,
       textShadow: '0 1px 0 rgba(0,0,0,0.18)',
     },
     '& .MuiTypography-h4': {
-      fontFamily: "'Press Start 2P', 'VT323', monospace",
+      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
       textTransform: 'uppercase',
       textShadow: '0 10px 34px rgba(117, 123, 255, 0.35)',
       animation: 'softFadeUp 700ms ease-out',
@@ -119,28 +119,28 @@ const Hallucinate: React.FC = () => {
       letterSpacing: '0.08em',
     },
     '& .MuiTypography-h5, & .MuiTypography-h6': {
-      fontFamily: "'Press Start 2P', 'VT323', monospace",
+      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
       fontWeight: 700,
       letterSpacing: '0.06em',
     },
     '& .MuiTypography-h5': {
-      fontSize: { xs: '0.94rem', sm: '1.08rem' },
+      fontSize: { xs: '1.125rem', sm: '1.25rem' },
       lineHeight: 1.65,
     },
     '& .MuiTypography-h6': {
-      fontSize: { xs: '0.84rem', sm: '0.98rem' },
+      fontSize: { xs: '1rem', sm: '1.125rem' },
       lineHeight: 1.65,
     },
     '& .MuiTypography-body1': {
-      fontSize: { xs: '0.72rem', sm: '0.8rem' },
-      lineHeight: 1.95,
+      fontSize: { xs: '1rem', sm: '1rem' },
+      lineHeight: 1.75,
     },
     '& .MuiTypography-body2': {
-      fontSize: { xs: '0.66rem', sm: '0.72rem' },
-      lineHeight: 1.9,
+      fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+      lineHeight: 1.7,
     },
     '& .MuiTypography-caption': {
-      fontSize: '0.62rem',
+      fontSize: '0.875rem',
       opacity: 0.92,
     },
     '& .MuiTypography-colorTextSecondary': {
@@ -170,7 +170,7 @@ const Hallucinate: React.FC = () => {
       background: 'linear-gradient(180deg, rgba(7, 11, 24, 0.94), rgba(8, 12, 26, 0.88)) !important',
     },
     '& .MuiButton-contained': {
-      fontFamily: "'Press Start 2P', 'VT323', monospace !important",
+      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important",
       background: 'linear-gradient(135deg, rgba(0, 255, 217, 1) 0%, rgba(91, 46, 255, 1) 100%) !important',
       color: '#07101d !important',
       fontWeight: '900 !important',
@@ -184,7 +184,7 @@ const Hallucinate: React.FC = () => {
       },
     },
     '& .MuiButton-outlined': {
-      fontFamily: "'Press Start 2P', 'VT323', monospace !important",
+      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important",
       color: '#00ffd9 !important',
       borderColor: 'rgba(0, 255, 217, 0.62) !important',
       fontWeight: '900',
@@ -196,7 +196,7 @@ const Hallucinate: React.FC = () => {
       },
     },
     '& .MuiChip-root': {
-      fontFamily: "'Press Start 2P', 'VT323', monospace !important",
+      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important",
       backgroundColor: 'rgba(0, 255, 217, 0.1) !important',
       color: '#00ffd9 !important',
       border: '1px solid rgba(0, 255, 217, 0.42)',
@@ -236,7 +236,7 @@ const Hallucinate: React.FC = () => {
     border: '1px solid rgba(0,255,217,0.35)',
     background: 'linear-gradient(135deg, rgba(0,255,217,0.12), rgba(91,46,255,0.18))',
     boxShadow: '0 0 14px rgba(0,255,217,0.12)',
-    fontFamily: "'Press Start 2P', 'VT323', monospace",
+    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
     fontSize: '0.72rem',
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
@@ -258,7 +258,7 @@ const Hallucinate: React.FC = () => {
     mt: 2,
     mb: 1.5,
     fontWeight: 900,
-    fontFamily: "'Press Start 2P', 'VT323', monospace",
+    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
     lineHeight: 1.58,
     color: '#ffffff',
     textShadow: '0 0 10px rgba(0,0,0,0.24), 0 0 24px rgba(0,255,217,0.18)',
@@ -279,13 +279,13 @@ const Hallucinate: React.FC = () => {
     mx: 'auto',
     mb: 3,
     color: 'rgba(228, 241, 255, 0.76)',
-    fontFamily: "'Press Start 2P', 'VT323', monospace",
+    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
     fontSize: { xs: '0.66rem', sm: '0.72rem' },
     lineHeight: 1.9,
   } as const;
   const actionButtonSx = {
     fontWeight: 900,
-    fontFamily: "'Press Start 2P', 'VT323', monospace",
+    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
     fontSize: { xs: '0.7rem', sm: '0.78rem' },
     minHeight: 48,
     px: 4,
@@ -441,7 +441,7 @@ const Hallucinate: React.FC = () => {
               top: 24,
               right: 24,
               zIndex: 2,
-              fontFamily: "'Press Start 2P', 'VT323', monospace",
+              fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
               fontSize: '0.68rem',
               color: '#00ffd9 !important',
               borderColor: 'rgba(0, 255, 217, 0.62) !important',
@@ -482,7 +482,7 @@ const Hallucinate: React.FC = () => {
                   wordWrap: 'break-word',
                   lineHeight: { xs: 1.75, md: 1.65 },
                   textAlign: 'center',
-                  fontFamily: "'Press Start 2P', 'VT323', monospace",
+                  fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
                   fontWeight: 900,
                   fontSize: { xs: '1.04rem', sm: '1.36rem', md: '1.78rem', lg: '2rem' },
                   letterSpacing: '0.08em',
@@ -541,10 +541,10 @@ const Hallucinate: React.FC = () => {
                 color: '#00ffd9',
                 background: 'rgba(0,255,217,0.08)',
                 borderColor: 'rgba(0,255,217,0.34)',
-                fontFamily: "'Press Start 2P', 'VT323', monospace",
+                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
               }}
             />
-            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1.4 }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1.8, fontFamily: "'Press Start 2P', 'VT323', monospace !important", fontSize: { xs: '1.1rem', sm: '1.4rem', md: '1.7rem' }, lineHeight: 1.5, letterSpacing: '0.06em', textShadow: '0 0 24px rgba(0,255,217,0.4), 0 0 48px rgba(255,46,147,0.24), 0 3px 0 rgba(0,0,0,0.5)' }}>
               AI HALLUCINATION ARCADE
             </Typography>
             <Typography
@@ -596,6 +596,7 @@ const Hallucinate: React.FC = () => {
                         backgroundImage:
                           'linear-gradient(180deg, rgba(255, 118, 118, 1) 0%, rgba(245, 32, 32, 1) 30%, rgba(196, 10, 10, 1) 68%, rgba(110, 0, 0, 1) 100%) !important',
                         color: '#fff7f7 !important',
+                        fontFamily: "'Press Start 2P', 'VT323', monospace !important",
                         border: '2px solid rgba(255, 214, 214, 0.26) !important',
                         boxShadow:
                           'inset 0 8px 16px rgba(255,255,255,0.18), inset 0 -12px 18px rgba(72,0,0,0.46), 0 8px 0 rgba(74, 10, 10, 0.95), 0 18px 28px rgba(0,0,0,0.32), 0 0 24px rgba(255,40,40,0.24) !important',
@@ -605,8 +606,7 @@ const Hallucinate: React.FC = () => {
                       minHeight: 102,
                       borderRadius: 2,
                       fontWeight: 900,
-                      fontFamily: "'Press Start 2P', 'VT323', monospace",
-                      fontSize: '1rem',
+                      fontSize: '0.92rem',
                       lineHeight: 1.5,
                       letterSpacing: '0.08em',
                       textAlign: 'center',
@@ -650,9 +650,10 @@ const Hallucinate: React.FC = () => {
                 flex: '0 0 auto',
                 px: { xs: 2, sm: 3 },
                 color: index % 2 === 0 ? '#00ffd9' : '#ff70bf',
-                fontSize: { xs: '0.58rem', sm: '0.68rem' },
+                fontSize: { xs: '0.5rem', sm: '0.6rem' },
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
+                fontFamily: "'Press Start 2P', 'VT323', monospace !important",
                 textShadow: '0 0 12px rgba(0,255,217,0.22)',
                 whiteSpace: 'nowrap',
               }}
@@ -681,6 +682,10 @@ const Hallucinate: React.FC = () => {
                   onExitToScenarios={() => {
                     setShowTrainingGame(false);
                     setShowScenarioChat(false);
+                    setShowLanding(true);
+                    setCurrentIntroTextIndex(0);
+                    setIsIntroFadingOut(false);
+                    setShowAnimatedIntro(true);
                   }}
                 />
               ) : !showScenarioChat && (
@@ -692,7 +697,7 @@ const Hallucinate: React.FC = () => {
                       <Chip
                         icon={<FiberManualRecordIcon sx={{ fontSize: 12, animation: 'statusBlink 900ms ease-in-out infinite alternate' }} />}
                         label={statusText}
-                        sx={{ fontFamily: "'Press Start 2P', 'VT323', monospace", px: 0.4 }}
+                        sx={{ fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif", px: 0.4 }}
                       />
                     </Stack>
                     <Typography variant="caption" sx={arcadeLabelSx}>

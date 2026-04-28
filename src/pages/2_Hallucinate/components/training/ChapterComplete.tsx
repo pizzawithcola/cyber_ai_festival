@@ -57,8 +57,8 @@ export function ChapterComplete({
               sx={{
                 fontWeight: 900,
                 color: NEON_CYAN,
-                fontFamily: "'Press Start 2P', 'VT323', monospace",
-                fontSize: { xs: '0.68rem', sm: '0.72rem' },
+                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                fontSize: { xs: '0.875rem', sm: '0.9375rem' },
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
               }}
@@ -72,13 +72,13 @@ export function ChapterComplete({
               sx={{
                 fontWeight: 900,
                 color: '#eaffff',
-                mb: 1,
-                lineHeight: 1.58,
-                fontFamily: "'Press Start 2P', 'VT323', monospace",
-                fontSize: { xs: '1.1rem', sm: '1.42rem', md: '1.76rem' },
-                letterSpacing: '0.06em',
+                mb: 1.4,
+                lineHeight: 1.3,
+                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                fontSize: { xs: '1.6rem', sm: '2.2rem', md: '2.8rem' },
+                letterSpacing: '0.04em',
                 textTransform: 'uppercase',
-                textShadow: '0 0 18px rgba(0,255,217,0.18)',
+                textShadow: '0 0 24px rgba(0,255,217,0.22), 0 3px 0 rgba(0,0,0,0.45)',
               }}
             >
               Congratulations!
@@ -97,11 +97,11 @@ export function ChapterComplete({
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.3} sx={{ justifyContent: 'center', width: '100%', maxWidth: 700 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.3} sx={{ justifyContent: 'center', width: '100%', maxWidth: 740 }}>
             <Button
               variant="outlined"
               onClick={onReviewResults}
-              sx={{ fontWeight: 900, borderColor: NEON_CYAN, color: NEON_CYAN, minHeight: 46, borderRadius: 2.5 }}
+              sx={{ fontWeight: 900, borderColor: NEON_CYAN, color: NEON_CYAN, minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
               disabled={isNavigatingToRanking}
             >
               Review Results
@@ -109,7 +109,7 @@ export function ChapterComplete({
             <Button
               variant="outlined"
               onClick={onStartFromBeginning}
-              sx={{ fontWeight: 900, borderColor: 'rgba(255,255,255,0.28)', color: '#eaffff', minHeight: 46, borderRadius: 2.5 }}
+              sx={{ fontWeight: 900, borderColor: 'rgba(255,255,255,0.28)', color: '#eaffff', minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
               disabled={!onStartFromBeginning || isNavigatingToRanking}
             >
               Start From Beginning
@@ -117,7 +117,7 @@ export function ChapterComplete({
             <Button
               variant="contained"
               onClick={onViewRanking}
-              sx={{ fontWeight: 900, background: PRIMARY_HEADER_GRADIENT, minHeight: 46, borderRadius: 2.5 }}
+              sx={{ fontWeight: 900, background: PRIMARY_HEADER_GRADIENT, minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
               disabled={!onViewRanking || isNavigatingToRanking}
             >
               {isNavigatingToRanking ? 'Loading Ranking...' : 'View Ranking'}

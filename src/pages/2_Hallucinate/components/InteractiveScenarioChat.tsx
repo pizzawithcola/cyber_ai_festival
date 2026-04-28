@@ -219,7 +219,7 @@ export function InteractiveScenarioChat({
                             borderColor: 'rgba(255, 171, 64, 0.6) !important',
                             animation: 'none !important',
                             fontWeight: 900,
-                            fontSize: '0.75rem',
+                            fontSize: '0.875rem',
                           }}
                         >
                           {expandedAnalysisId === msg.id ? 'Hide analysis' : 'Reveal analysis'}
@@ -310,8 +310,8 @@ export function InteractiveScenarioChat({
                     background: 'rgba(0,255,217,0.08)',
                     color: '#00ffd9',
                     fontWeight: 900,
-                    fontFamily: "'Press Start 2P', 'VT323', monospace",
-                    fontSize: { xs: '0.62rem', sm: '0.68rem' },
+                    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
                     lineHeight: 1.6,
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
@@ -327,10 +327,10 @@ export function InteractiveScenarioChat({
 	                      fontWeight: 900,
 	                      mb: 1.6,
 	                      color: '#ffffff',
-	                      lineHeight: 1.45,
-	                      fontFamily: "'Press Start 2P', 'VT323', monospace",
-	                      fontSize: { xs: '1.22rem', sm: '1.62rem', md: '2.02rem' },
-	                      letterSpacing: '0.07em',
+	                      lineHeight: 1.35,
+	                      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+	                      fontSize: { xs: '1.5rem', sm: '2rem', md: '2.4rem' },
+	                      letterSpacing: '0.05em',
 	                      textTransform: 'uppercase',
 	                      textShadow:
 	                        '0 3px 0 rgba(0,0,0,0.48), 0 0 18px rgba(255,46,147,0.18), 0 0 28px rgba(0,255,217,0.16)',
@@ -345,7 +345,7 @@ export function InteractiveScenarioChat({
                       mx: 'auto',
                       color: 'rgba(228, 241, 255, 0.88)',
                       lineHeight: 1.82,
-                      fontSize: { xs: '1rem', sm: '1.08rem' },
+                      fontSize: { xs: '1rem', sm: '1.1rem' },
                     }}
                   >
                     {activeOverview.body}
@@ -382,8 +382,8 @@ export function InteractiveScenarioChat({
                     width: { xs: '100%', sm: 360 },
                     minHeight: 48,
                     borderRadius: 2.5,
-                    fontFamily: "'Press Start 2P', 'VT323', monospace",
-                    fontSize: { xs: '0.7rem', sm: '0.78rem' },
+                    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                    fontSize: { xs: '1rem', sm: '1.06rem' },
                   }}
                 >
                   {isLastOverviewStep ? 'Next: Training Game' : 'Next'}
