@@ -1,0 +1,92 @@
+.truth-reveal-arcade {
+  isolation: isolate;
+  font-family: 'SFMono-Regular', 'Monaco', 'Consolas', monospace;
+  background:
+    linear-gradient(rgba(34, 211, 238, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244, 114, 182, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.12), transparent 36%),
+    #020617 !important;
+  background-size: 18px 18px, 18px 18px, auto, auto !important;
+}
+
+.truth-reveal-arcade::before,
+.truth-reveal-arcade::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.truth-reveal-arcade::before {
+  z-index: 1;
+  background: linear-gradient(rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0.12) 50%);
+  background-size: 100% 4px;
+  mix-blend-mode: screen;
+  opacity: 0.16;
+}
+
+.truth-reveal-arcade::after {
+  z-index: 0;
+  box-shadow: inset 0 0 48px rgba(34, 211, 238, 0.14);
+}
+
+.truth-reveal-arcade > * {
+  position: relative;
+  z-index: 2;
+}
+
+.truth-reveal-arcade h1,
+.truth-reveal-arcade h2 {
+  color: #67e8f9;
+  letter-spacing: -0.03em;
+  text-shadow:
+    2px 0 rgba(244, 114, 182, 0.45),
+    0 0 18px rgba(34, 211, 238, 0.28);
+}
+
+.truth-reveal-arcade button {
+  border-radius: 4px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.12);
+}
+
+.truth-reveal-loading-overlay {
+  overflow: hidden;
+}
+
+.truth-reveal-loading-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.16), transparent),
+    linear-gradient(rgba(255, 255, 255, 0.08) 50%, transparent 50%);
+  background-size: 100% 100%, 100% 5px;
+  animation: arcade-scan 1.1s linear infinite;
+  pointer-events: none;
+}
+
+.truth-reveal-loading-card {
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+}
+
+.truth-reveal-loading-card::after {
+  content: 'PRESS START? AUTO';
+  display: block;
+  margin-top: 14px;
+  color: rgba(249, 168, 212, 0.72);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+@keyframes arcade-scan {
+  from {
+    transform: translateX(-30%);
+  }
+  to {
+    transform: translateX(30%);
+  }
+}

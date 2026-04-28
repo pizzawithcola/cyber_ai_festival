@@ -1,26 +1,46 @@
 import React from 'react'
 import { DataShadowsLayoutProvider, useDataShadowsLayout } from './DataShadowsLayoutContext'
 import RealApplePhone from './components/RealApplePhone'
+import DataShadowsIntro from './components/DataShadowsIntro'
+import DataShadowsSidebar from './components/DataShadowsSidebar'
 import './DataShadows.css'
 
 function DataShadowsContent() {
-  const { isTruthRevealFinalStep, setRightSlotEl } = useDataShadowsLayout()
+  const {
+    isTruthRevealFinalStep,
+    setRightSlotEl,
+    showIntroOverlay,
+    completeIntro,
+    showSidebarNotice,
+    isPhoneRecentering,
+  } = useDataShadowsLayout()
 
-  // Always render the same structure so the phone never remounts when switching to final step.
-  // When not final step, right column is hidden so layout stays stable and TruthReveal state is preserved.
+  const layoutClassName = isTruthRevealFinalStep
+    ? 'data-shadows-reveal-layout'
+    : showSidebarNotice
+      ? 'data-shadows-sidebar-layout'
+      : 'data-shadows-phone-only'
+
   return (
-    <div
-      className={`data-shadows-container ${isTruthRevealFinalStep ? 'data-shadows-reveal-layout' : 'data-shadows-phone-only'}`}
-    >
-      <div className="phone-panel">
-        <RealApplePhone />
+    <>
+      <div className={`data-shadows-container ${layoutClassName}`}>
+        <div className={`phone-panel ${isPhoneRecentering ? 'phone-panel-recentering' : ''} ${isTruthRevealFinalStep ? 'phone-panel-truth-reveal' : ''}`}>
+          <RealApplePhone />
+        </div>
+        <div
+          ref={setRightSlotEl}
+          className={[
+            'data-shadows-side-panel',
+            isTruthRevealFinalStep ? 'truth-reveal-right-visible' : '',
+            showSidebarNotice ? 'data-shadows-side-panel-visible' : '',
+          ].filter(Boolean).join(' ')}
+          aria-hidden={!(isTruthRevealFinalStep || showSidebarNotice)}
+        >
+          {!isTruthRevealFinalStep && showSidebarNotice ? <DataShadowsSidebar /> : null}
+        </div>
       </div>
-      <div
-        ref={setRightSlotEl}
-        className={`truth-reveal-right ${isTruthRevealFinalStep ? 'truth-reveal-right-visible' : ''}`}
-        aria-hidden={!isTruthRevealFinalStep}
-      />
-    </div>
+      {showIntroOverlay ? <DataShadowsIntro onComplete={completeIntro} /> : null}
+    </>
   )
 }
 
