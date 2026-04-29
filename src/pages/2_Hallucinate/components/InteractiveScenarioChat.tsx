@@ -2,26 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Typography,
   Box,
-  Card,
-  CardContent,
-  CardHeader,
   Button,
   Paper,
   Grid,
-  Divider,
-  Alert,
-  AlertTitle,
+  Collapse,
   Stack,
   Avatar,
-  FormControl,
-  FormControlLabel,
-  Radio,
-  RadioGroup,
 } from '@mui/material';
 
 import { SCENARIOS } from '../scenarios';
 import { SCENARIO_PROMPTS } from '../scenarioPrompts';
-import { NEON_CYAN, NEON_BLUE, PRIMARY_HEADER_GRADIENT, PANEL_SHADOW, PANEL_BORDER, PANEL_BODY_BACKGROUND } from '../hallucinateUi';
+import { PRIMARY_HEADER_GRADIENT } from '../hallucinateUi';
 
 type ChatMessage = {
   id: string;
@@ -34,9 +25,11 @@ type ChatMessage = {
 export function InteractiveScenarioChat({
   scenarioId,
   onComplete,
+  onStartGame,
 }: {
   scenarioId: string;
   onComplete?: (id: string) => void;
+  onStartGame?: () => void;
 }) {
   const scenario = SCENARIOS.find((s) => s.id === scenarioId);
   const prompts = SCENARIO_PROMPTS[scenarioId] || [];
@@ -49,17 +42,13 @@ export function InteractiveScenarioChat({
     },
   ]);
 
-  const [saferRewriteUsed, setSaferRewriteUsed] = useState(false);
   const [isOverviewVisible, setIsOverviewVisible] = useState(false);
-  const [isSaferRewriteVisible, setIsSaferRewriteVisible] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isWaitingReply, setIsWaitingReply] = useState(false);
-  const [safeStepIndex, setSafeStepIndex] = useState(0);
-  const [safeSteps, setSafeSteps] = useState<Array<ChatMessage>>([]);
-  const [selectedSafePromptIndex, setSelectedSafePromptIndex] = useState<number | null>(null);
-  const [safePromptError, setSafePromptError] = useState<string | null>(null);
+  const [expandedAnalysisId, setExpandedAnalysisId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [completeAcknowledged, setCompleteAcknowledged] = useState(false);
+  const [overviewStep, setOverviewStep] = useState(0);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -67,65 +56,26 @@ export function InteractiveScenarioChat({
     }
   }, [messages]);
 
-  useEffect(() => {
-    setMessages([
-      {
-        id: '0',
-        role: 'assistant',
-        content: `Welcome to "${scenario?.title}". Click "Next" to watch the conversation unfold and spot risky hallucinations.`,
-      },
-    ]);
-    setSaferRewriteUsed(false);
-    setIsOverviewVisible(false);
-    setIsSaferRewriteVisible(false);
-    setCurrentStepIndex(0);
-    setIsWaitingReply(false);
-    setSafeStepIndex(0);
-    setSafeSteps([]);
-    setSelectedSafePromptIndex(null);
-    setSafePromptError(null);
-    setCompleteAcknowledged(false);
-  }, [scenarioId, scenario?.title]);
-
   if (!scenario) return null;
-  const safePromptOptions = scenario.safePromptOptions;
   const scenarioCompleted = prompts.length > 0 && currentStepIndex >= prompts.length;
   const showOverview = scenarioCompleted && isOverviewVisible;
-  const showSaferRewrite = scenarioCompleted && isSaferRewriteVisible && !saferRewriteUsed;
-  const showInteractive = !showOverview && !showSaferRewrite;
-  const CHAT_PANEL_HEIGHT = { xs: 760, md: 860 };
-  const isScenarioCompleteReady = scenarioCompleted && saferRewriteUsed;
+  const showInteractive = !showOverview;
+  const visibleMessages = messages.length <= 1 ? messages : messages.slice(-2);
 
   const handleScenarioComplete = () => {
     if (completeAcknowledged) return;
     setCompleteAcknowledged(true);
+    setOverviewStep(0);
     onComplete?.(scenario.id);
   };
 
   const handleNextStep = () => {
     if (isWaitingReply) return;
 
-    const hasSafeSteps = safeSteps.length > 0;
-    if (hasSafeSteps) {
-      const first = safeSteps[safeStepIndex];
-      const second = safeSteps[safeStepIndex + 1];
-      if (!first) return;
-      const batch = [first, second].filter(Boolean).map((item) => ({ ...item!, id: Date.now().toString() + Math.random() }));
-      setMessages((prev) => [...prev, ...batch]);
-      setSafeStepIndex((prev) => prev + 2);
-      if (safeStepIndex + 2 >= safeSteps.length) {
-        setSafeSteps([]);
-        setSafeStepIndex(0);
-        if (isScenarioCompleteReady && !completeAcknowledged) {
-          handleScenarioComplete();
-        }
-      }
-      return;
-    }
-
     if (scenarioCompleted) {
-      if (!saferRewriteUsed && !isOverviewVisible && !isSaferRewriteVisible) {
+      if (!isOverviewVisible) {
         setIsOverviewVisible(true);
+        handleScenarioComplete();
       }
       return;
     }
@@ -147,81 +97,33 @@ export function InteractiveScenarioChat({
       };
       setMessages((prev) => [...prev, assistantMsg]);
       setCurrentStepIndex((prev) => prev + 1);
+      setExpandedAnalysisId(null);
       setIsWaitingReply(false);
     }, 550);
   };
 
-  const handleUseSaferRewrite = (promptText: string) => {
-    if (saferRewriteUsed) return;
-    if (!promptText) return;
-
-    setSaferRewriteUsed(true);
-
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), role: 'user', content: promptText },
-    ]);
-
-    setTimeout(() => {
-      const safeReply =
-        scenario.id === 'bard'
-          ? `Understood. I won't invent "firsts" or citations. If you want JWST findings, I should cite primary sources (e.g., NASA releases or peer-reviewed papers). If I can't verify a claim, I'll say I'm not sure and propose search queries.`
-          : `Understood. I will not fabricate citations or DOIs. If I can't verify a paper, I'll say so and provide search queries instead.`;
-
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 2).toString(), role: 'assistant', content: safeReply, hallucination: false },
-      ]);
-    }, 650);
-
-    const followups =
-      scenario.id === 'bard'
-        ? [
-            {
-              role: 'user' as const,
-              content: 'Try again: What new discoveries has JWST made? Please be careful.',
-            },
-            {
-              role: 'assistant' as const,
-              content:
-                "I don't have live sources here, so I can't verify specific discoveries. A safer response is to point to official sources (NASA/ESA press releases, peer-reviewed papers). If you share a source link, I can summarize it. Suggested searches: \"JWST press release\", \"NASA JWST discovery\", \"ESA JWST latest results\".",
-            },
-          ]
-        : [
-            {
-              role: 'user' as const,
-              content: 'Write an abstract and include 5 verified citations.',
-            },
-            {
-              role: 'assistant' as const,
-              content:
-                "I can draft an abstract, but I can't verify citations without sources. If you provide specific papers or DOIs, I'll include them. Otherwise, I can add suggested search queries instead.",
-            },
-          ];
-
-    setSafeSteps(
-      followups.map((item) => ({
-        id: Date.now().toString(),
-        role: item.role,
-        content: item.content,
-        hallucination: false,
-      }))
-    );
-    setSafeStepIndex(0);
-  };
-
-  const handleSafePromptSubmit = () => {
-    if (selectedSafePromptIndex === null) return;
-    const option = safePromptOptions[selectedSafePromptIndex];
-    if (!option) return;
-    if (!option.isCorrect) {
-      setSafePromptError(option.whyIncorrect || 'This prompt still invites hallucinations.');
-      return;
-    }
-    setSafePromptError(null);
-    setIsSaferRewriteVisible(false);
-    handleUseSaferRewrite(option.text);
-  };
+  const overviewSlides = [
+    {
+      label: 'Scenario Overview',
+      title: 'This is one form of hallucination.',
+      body:
+        'In this scenario, the AI gives a fluent answer that misses the real-world goal. Hallucination is broader than this: it is any confident AI output that is false, unsupported, or misleading.',
+    },
+    {
+      label: 'Common Forms',
+      title: 'It can invent more than plans.',
+      body:
+        'A model might fabricate references, make up facts to satisfy a question, overstate what it knows, or follow a leading prompt into a false answer. The risk is higher when the answer sounds polished.',
+    },
+    {
+      label: 'Key Lesson',
+      title: 'Confidence is not evidence.',
+      body:
+        'Before trusting an AI answer, ask what evidence supports it, whether the source can be checked, and what real-world constraints could make the answer fail.',
+    },
+  ];
+  const activeOverview = overviewSlides[overviewStep] ?? overviewSlides[0];
+  const isLastOverviewStep = overviewStep >= overviewSlides.length - 1;
 
   return (
     <Grid
@@ -231,70 +133,29 @@ export function InteractiveScenarioChat({
     >
       <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
         {showInteractive && (
-          <Card
+          <Box
             sx={{
               width: '100%',
-              height: CHAT_PANEL_HEIGHT,
-              minHeight: CHAT_PANEL_HEIGHT,
-              maxHeight: CHAT_PANEL_HEIGHT,
+              maxWidth: 920,
+              mx: 'auto',
+              minHeight: 'calc(100vh - 180px)',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: PANEL_SHADOW,
-              border: PANEL_BORDER,
-              overflow: 'hidden',
+              justifyContent: 'center',
+              px: { xs: 1, md: 2 },
             }}
           >
-            <CardHeader
-              title={
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 900,
-                      mb: 0.5,
-                      display: 'inline-block',
-                      minWidth: '22ch',
-                    }}
-                  >
-                    🎭 Interactive Scenario
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    noWrap
-                    sx={{
-                      color: 'rgba(255,255,255,0.85)',
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {scenario.title} — {scenario.subtitle}
-                  </Typography>
-                </Box>
-              }
-              sx={{
-                background: PRIMARY_HEADER_GRADIENT,
-                color: '#fff',
-                pb: 2,
-                '& .MuiCardHeader-content': { minWidth: 0 },
-              }}
-            />
-            <Divider />
-            <CardContent
+            <Box
               ref={chatContainerRef}
               sx={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                scrollbarGutter: 'stable',
                 display: 'flex',
                 flexDirection: 'column',
+                justifyContent: 'center',
                 gap: 2,
-                background: PANEL_BODY_BACKGROUND,
-                pt: 2.5,
+                minHeight: { xs: 320, md: 420 },
               }}
             >
-              {messages.map((msg) => (
+              {visibleMessages.map((msg) => (
                 <Box
                   key={msg.id}
                   sx={{
@@ -306,9 +167,9 @@ export function InteractiveScenarioChat({
                 >
                   <Avatar
                     sx={{
-                      width: 32,
-                      height: 32,
-                      fontSize: '1.1rem',
+                      width: { xs: 30, sm: 34 },
+                      height: { xs: 30, sm: 34 },
+                      fontSize: { xs: '1rem', sm: '1.08rem' },
                       fontWeight: 900,
                       bgcolor: msg.role === 'user' ? 'rgba(0, 255, 217, 0.9)' : 'rgba(255, 46, 147, 0.9)',
                       color: '#031017',
@@ -319,17 +180,20 @@ export function InteractiveScenarioChat({
                   </Avatar>
                   <Paper
                     sx={{
-                      p: 2,
-                      width: msg.role === 'user' ? { xs: '72%', sm: '58%' } : { xs: '88%', sm: '78%' },
-                      maxWidth: { xs: '88%', sm: '78%' },
-                      backgroundColor: msg.role === 'user'
-                        ? 'rgba(0, 255, 217, 0.15)'
+                      px: { xs: 1.8, sm: 2.2 },
+                      py: { xs: 1.55, sm: 1.85 },
+                      width: msg.role === 'user' ? { xs: '72%', sm: '54%' } : { xs: '88%', sm: '76%' },
+                      maxWidth: msg.role === 'user' ? 520 : 700,
+                      background: msg.role === 'user'
+                        ? 'linear-gradient(135deg, rgba(0, 255, 217, 0.18), rgba(46, 227, 255, 0.1))'
                         : msg.hallucination
-                        ? 'rgba(255, 171, 64, 0.12)'
-                        : 'rgba(9, 16, 30, 0.9)',
+                        ? 'linear-gradient(180deg, rgba(255, 171, 64, 0.16), rgba(36, 22, 20, 0.88))'
+                        : 'linear-gradient(180deg, rgba(12, 20, 42, 0.92), rgba(7, 12, 28, 0.88))',
                       color: msg.role === 'user' ? '#eaffff' : '#f2fbff',
-                      borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                      border: msg.hallucination ? '2px solid rgba(255, 171, 64, 0.9)' : '1px solid rgba(0, 255, 217, 0.25)',
+                      borderRadius: msg.role === 'user' ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
+                      border: 'none',
+                      boxShadow: '0 16px 34px rgba(0,0,0,0.2)',
+                      backdropFilter: 'blur(10px)',
                     }}
                   >
                     {msg.hallucination && (
@@ -337,43 +201,61 @@ export function InteractiveScenarioChat({
                         variant="caption"
                         sx={{ fontWeight: 900, color: '#ffb74d', display: 'block', mb: 0.7 }}
                       >
-                        ⚠️ Hallucination detected
+                        Checkpoint
                       </Typography>
                     )}
-                    <Typography variant="body2" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.72, whiteSpace: 'pre-wrap', fontSize: { xs: '0.98rem', sm: '1.04rem' } }}>
                       {msg.content}
                     </Typography>
                     {msg.hallucination && msg.why && (
                       <Box sx={{ mt: 1.1, pt: 1, borderTop: '1px solid rgba(255, 171, 64, 0.4)' }}>
-                        <Typography variant="caption" sx={{ fontWeight: 900, color: '#b26a00', display: 'block', mb: 0.4 }}>
-                          Why this is a hallucination risk
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: '#6b4e00', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                          {msg.why}
-                        </Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setExpandedAnalysisId((current) => (current === msg.id ? null : msg.id))}
+                          sx={{
+                            mb: expandedAnalysisId === msg.id ? 0.8 : 0,
+                            color: '#ffb74d !important',
+                            borderColor: 'rgba(255, 171, 64, 0.6) !important',
+                            animation: 'none !important',
+                            fontWeight: 900,
+                            fontSize: '0.875rem',
+                          }}
+                        >
+                          {expandedAnalysisId === msg.id ? 'Hide analysis' : 'Reveal analysis'}
+                        </Button>
+                        <Collapse in={expandedAnalysisId === msg.id}>
+                          <Typography variant="caption" sx={{ fontWeight: 900, color: '#b26a00', display: 'block', mb: 0.4 }}>
+                            Why this is a hallucination risk
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#ffdca8', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                            {msg.why}
+                          </Typography>
+                        </Collapse>
                       </Box>
                     )}
                   </Paper>
                 </Box>
               ))}
-            </CardContent>
-            <Divider />
-            <CardContent sx={{ pt: 2, pb: 2 }}>
+            </Box>
+            <Box
+              sx={{
+                pt: 3,
+                pb: { xs: 2, md: 0 },
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
               <Button
-                fullWidth
                 variant="contained"
-                onClick={() => {
-                  if (isScenarioCompleteReady && safeSteps.length === 0) {
-                    handleScenarioComplete();
-                    return;
-                  }
-                  handleNextStep();
-                }}
-                disabled={isWaitingReply || (isScenarioCompleteReady && safeSteps.length === 0 && completeAcknowledged)}
+                onClick={handleNextStep}
+                disabled={isWaitingReply}
                 sx={{
                   fontWeight: 900,
                   background: PRIMARY_HEADER_GRADIENT,
                   boxShadow: '0 0 0 1px rgba(0, 255, 217, 0.6), 0 12px 26px rgba(0, 255, 217, 0.32)',
+                  width: { xs: '100%', sm: 360 },
+                  minHeight: 48,
                   '&:hover': {
                     background: 'linear-gradient(135deg, #00ffd9 0%, #ff2e93 100%)',
                     boxShadow: '0 0 0 1px rgba(255, 46, 147, 0.7), 0 14px 32px rgba(255, 46, 147, 0.35)',
@@ -381,216 +263,133 @@ export function InteractiveScenarioChat({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {safeSteps.length > 0
-                  ? 'Next (safe)'
-                  : scenarioCompleted && !saferRewriteUsed && !isOverviewVisible
+                {scenarioCompleted && !isOverviewVisible
                   ? 'Next → Scenario Overview'
-                  : isScenarioCompleteReady
-                  ? '✓ Scenario Complete'
                   : isWaitingReply
                   ? '...'
                   : 'Next'}
               </Button>
-            </CardContent>
-          </Card>
+            </Box>
+          </Box>
         )}
 
         {showOverview && (
-          <Card
+          <Box
             sx={{
               width: '100%',
-              height: CHAT_PANEL_HEIGHT,
-              minHeight: CHAT_PANEL_HEIGHT,
-              maxHeight: CHAT_PANEL_HEIGHT,
+              maxWidth: 920,
+              mx: 'auto',
+              minHeight: 'calc(100vh - 180px)',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 18px 50px rgba(245, 87, 108, 0.14)',
-              border: '1px solid rgba(245, 87, 108, 0.2)',
-              overflow: 'hidden',
+              justifyContent: 'center',
+              textAlign: 'center',
+              px: { xs: 1, md: 2 },
+              py: { xs: 4, md: 6 },
             }}
           >
-            <CardHeader
-              title="📌 Scenario Overview"
+            <Box
               sx={{
-                background: 'linear-gradient(135deg, #ff2e93 0%, #5b2eff 100%)',
-                color: '#fff',
-                py: 1,
-                px: 2,
-              }}
-            />
-            <Divider />
-            <CardContent
-              sx={{
-                pt: 1,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 2,
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                scrollbarGutter: 'stable',
+                gap: 2.4,
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5, color: '#ff2e93' }}>
-                    What happened
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
-                    {scenario.story}
-                  </Typography>
-                </Box>
-
-                <Divider />
-
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
-                    ⚠️ Why it goes wrong
-                  </Typography>
-                  <Stack spacing={1}>
-                    {scenario.riskDrivers.map((r) => (
-                      <Paper key={r.title} sx={{ p: 1.2, backgroundColor: '#fff' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 900 }}>
-                          {r.title}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.6 }}>
-                          {r.detail}
-                        </Typography>
-                      </Paper>
-                    ))}
-                  </Stack>
-                </Box>
-
-                <Divider />
-
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 0.5 }}>
-                    🧪 Safer rewrite challenge
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7, mb: 1 }}>
-                    Pick the best safe prompt from three options. Only one is correct. If you choose wrong, you will see why and can try again.
-                  </Typography>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() => {
-                      setIsOverviewVisible(false);
-                      setIsSaferRewriteVisible(true);
-                      setSafePromptError(null);
-                      setSelectedSafePromptIndex(null);
-                    }}
-                    sx={{
-                      mt: 0.5,
-                      fontWeight: 900,
-                      background: `linear-gradient(135deg, ${NEON_CYAN} 0%, ${NEON_BLUE} 100%)`,
-                    }}
-                  >
-                    🧪 Start safer rewrite challenge
-                  </Button>
-                </Box>
-
-                <Alert severity="info">
-                  <AlertTitle sx={{ fontWeight: 900 }}>Key lesson</AlertTitle>
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                    {scenario.takeaway}
-                  </Typography>
-                </Alert>
-            </CardContent>
-          </Card>
-        )}
-
-        {showSaferRewrite && (
-          <Card
-            sx={{
-              width: '100%',
-              height: CHAT_PANEL_HEIGHT,
-              minHeight: CHAT_PANEL_HEIGHT,
-              maxHeight: CHAT_PANEL_HEIGHT,
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 18px 50px rgba(0, 255, 217, 0.12)',
-              border: '1px solid rgba(0, 255, 217, 0.24)',
-              overflow: 'hidden',
-            }}
-          >
-            <CardHeader
-              title="🧪 Safer Rewrite Challenge"
-              sx={{
-                background: `linear-gradient(135deg, ${NEON_CYAN} 0%, ${NEON_BLUE} 100%)`,
-                color: '#07101d',
-                py: 1,
-                px: 2,
-              }}
-            />
-            <Divider />
-            <CardContent
-              sx={{
-                pt: 1.5,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                scrollbarGutter: 'stable',
-              }}
-            >
-              <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.7 }}>
-                Choose the safest prompt. Only one option is correct. If you choose wrong, you will see why and can try again.
-              </Typography>
-
-              <FormControl component="fieldset" sx={{ width: '100%' }}>
-                <RadioGroup
-                  value={selectedSafePromptIndex !== null ? String(selectedSafePromptIndex) : ''}
-                  onChange={(event) => {
-                    setSelectedSafePromptIndex(Number(event.target.value));
-                    setSafePromptError(null);
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    px: 1.25,
+                    py: 0.55,
+                    borderRadius: 999,
+                    border: '1px solid rgba(0,255,217,0.36)',
+                    background: 'rgba(0,255,217,0.08)',
+                    color: '#00ffd9',
+                    fontWeight: 900,
+                    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    lineHeight: 1.6,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    textShadow: '0 0 12px rgba(0,255,217,0.24)',
                   }}
                 >
-                  <Stack spacing={1}>
-                    {safePromptOptions.map((option, index) => (
-                      <Paper key={`${scenario.id}-safe-${index}`} sx={{ p: 1.2, backgroundColor: '#f6fbff', border: '1px solid #d4eefc' }}>
-                        <FormControlLabel
-                          value={String(index)}
-                          control={<Radio sx={{ color: NEON_BLUE, '&.Mui-checked': { color: NEON_BLUE } }} />}
-                          sx={{ alignItems: 'flex-start', gap: 1, m: 0 }}
-                          label={
-                            <Box>
-                              <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                                {option.text}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </Paper>
-                    ))}
-                  </Stack>
-                </RadioGroup>
-              </FormControl>
-
-              {safePromptError && (
-                <Alert severity="warning">
-                  <AlertTitle sx={{ fontWeight: 900 }}>Why this is risky</AlertTitle>
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                    {safePromptError}
+                  {activeOverview.label}
+                </Typography>
+                <Box key={activeOverview.title} sx={{ maxWidth: 720, animation: 'softFadeUp 420ms ease-out both' }}>
+                  <Typography
+                    variant="h4"
+                    sx={{
+	                      fontWeight: 900,
+	                      mb: 1.6,
+	                      color: '#ffffff',
+	                      lineHeight: 1.35,
+	                      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+	                      fontSize: { xs: '1.5rem', sm: '2rem', md: '2.4rem' },
+	                      letterSpacing: '0.05em',
+	                      textTransform: 'uppercase',
+	                      textShadow:
+	                        '0 3px 0 rgba(0,0,0,0.48), 0 0 18px rgba(255,46,147,0.18), 0 0 28px rgba(0,255,217,0.16)',
+	                    }}
+	                  >
+                    {activeOverview.title}
                   </Typography>
-                </Alert>
-              )}
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      maxWidth: 680,
+                      mx: 'auto',
+                      color: 'rgba(228, 241, 255, 0.88)',
+                      lineHeight: 1.82,
+                      fontSize: { xs: '1rem', sm: '1.1rem' },
+                    }}
+                  >
+                    {activeOverview.body}
+                  </Typography>
+                </Box>
 
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleSafePromptSubmit}
-                disabled={selectedSafePromptIndex === null}
-                sx={{
-                  mt: 0.5,
-                  fontWeight: 900,
-                  background: `linear-gradient(135deg, ${NEON_CYAN} 0%, ${NEON_BLUE} 100%)`,
-                }}
-              >
-                Submit answer
-              </Button>
-            </CardContent>
-          </Card>
+                <Stack direction="row" spacing={1} sx={{ justifyContent: 'center' }}>
+                  {overviewSlides.map((slide, index) => (
+                    <Box
+                      key={slide.label}
+                      sx={{
+                        width: index === overviewStep ? 26 : 9,
+                        height: 9,
+                        borderRadius: 999,
+                        backgroundColor: index === overviewStep ? '#00ffd9' : 'rgba(228, 241, 255, 0.24)',
+                        transition: 'width 220ms ease, background-color 220ms ease',
+                      }}
+                    />
+                  ))}
+                </Stack>
+
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    if (!isLastOverviewStep) {
+                      setOverviewStep((step) => step + 1);
+                      return;
+                    }
+                    onStartGame?.();
+                  }}
+                  sx={{
+                    fontWeight: 900,
+                    background: PRIMARY_HEADER_GRADIENT,
+                    width: { xs: '100%', sm: 360 },
+                    minHeight: 48,
+                    borderRadius: 2.5,
+                    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                    fontSize: { xs: '1rem', sm: '1.06rem' },
+                  }}
+                >
+                  {isLastOverviewStep ? 'Next: Training Game' : 'Next'}
+                </Button>
+            </Box>
+          </Box>
         )}
       </Grid>
     </Grid>
