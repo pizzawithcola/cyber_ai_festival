@@ -33,11 +33,11 @@ export const SENTENCE_POOL: SentenceItem[] = [
   },
   {
     id: 'p3',
-    text: 'Airline policy allows bereavement fares to be refunded retroactively after travel, so submit the receipt and expect the discount back.',
+    text: 'Under federal banking regulations, your bank is required to reverse any unauthorised charge within 3 business days if you report it by phone — no written dispute is needed.',
     isPitfall: true,
     severity: 'high',
     type: 'UNVERIFIABLE_SPECIFIC',
-    reason: 'Customer-service AI can invent company policy. Refund, fare, warranty, and account rules should be checked against official policy.',
+    reason: 'AI can invent specific timelines and procedures for financial disputes. Real chargeback rules vary by card network, bank policy, and transaction type. Always check official bank documentation or consumer protection guidelines.',
   },
   {
     id: 'p4',

@@ -316,7 +316,7 @@ const Hallucinate: React.FC = () => {
 
     const fadeOutTimer = window.setTimeout(() => {
       setIsIntroFadingOut(true);
-    }, 3600);
+    }, 4300);
 
     const nextTextTimer = window.setTimeout(() => {
       if (currentIntroTextIndex < introLines.length - 1) {
@@ -325,7 +325,7 @@ const Hallucinate: React.FC = () => {
       } else {
         setShowAnimatedIntro(false);
       }
-    }, 4200);
+    }, 5000);
 
     return () => {
       window.clearTimeout(fadeOutTimer);

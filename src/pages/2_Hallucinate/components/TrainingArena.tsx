@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Typography, Box, Button, Chip, Collapse, LinearProgress, Slider, Stack, Avatar } from '@mui/material';
-import { Flag as FlagIcon, CheckCircle as CheckCircleIcon, Cancel as CancelIcon } from '@mui/icons-material';
+import { Flag as FlagIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 
 import { BOSS_TYPES, NORMALIZED_SENTENCE_POOL } from './training/data';
 import { ChapterComplete } from './training/ChapterComplete';
@@ -311,7 +311,7 @@ export function TrainingArena({
       ? 'pass'
       : undefined
     : undefined;
-  const activeDecisionLabel = activeDecision === 'flag' ? 'Flag this output' : activeDecision === 'pass' ? 'Pass this output' : '';
+
   const activeFeedbackKind = !activeCard || !activeDecision
     ? undefined
     : activeCard.isPitfall
@@ -413,32 +413,29 @@ export function TrainingArena({
     if (!activeCard || !activeFeedbackKind) return null;
 
     const isCorrectFeedback = activeFeedbackKind === 'correct' || activeFeedbackKind === 'correctPass';
-    const statusLabel = isCorrectFeedback ? 'Correct' : 'Incorrect';
-    const statusIcon = isCorrectFeedback ? <CheckCircleIcon sx={{ fontSize: 16 }} /> : <CancelIcon sx={{ fontSize: 16 }} />;
     const statusColor = isCorrectFeedback ? '#49d17d' : activeFeedbackKind === 'missed' ? '#ff8a65' : '#ff5f7a';
-    const statusBackground = isCorrectFeedback ? 'rgba(73, 209, 125, 0.14)' : activeFeedbackKind === 'missed' ? 'rgba(255, 138, 101, 0.16)' : 'rgba(255, 95, 122, 0.14)';
     const confidenceValue = confidenceById[activeCard.id] ?? DEFAULT_CONFIDENCE_MULTIPLIER;
     const scoreDelta = scoreDeltaById[activeCard.id] ?? 0;
 
-    const shortReason =
+    const openingLine =
       activeFeedbackKind === 'correct'
-        ? 'Good catch: this answer needs verification before it can be trusted.'
+        ? "Good catch — that one needed a closer look."
         : activeFeedbackKind === 'missed'
-        ? 'This should be flagged: it makes a claim that needs checking.'
+        ? "I'd flag that one. It slips past a lot of people."
         : activeFeedbackKind === 'falsePos'
-        ? 'This one is cautious enough to pass.'
-        : 'Good pass: it points toward checking sources instead of inventing details.';
+        ? "I'd actually let that through — the language stays cautious enough."
+        : "Agreed, nothing to flag here.";
 
-    const detailReason =
+    const bodyText =
       activeFeedbackKind === 'correct' || activeFeedbackKind === 'missed'
         ? activeCard.reason
         : activeFeedbackKind === 'falsePos'
         ? activeCard.isDecoySafe
-          ? 'Decoy (safe) - cautious language is good.'
-          : 'Not a pitfall. Avoid over-flagging.'
+          ? 'This is a decoy — it models cautious, uncertain language, which is exactly what good AI output looks like.'
+          : 'Not a pitfall. Watch for over-flagging; cautious language is fine to pass.'
         : activeCard.isDecoySafe
-        ? 'Decoy (safe) - cautious language is good.'
-        : 'Safe pass - claim stays cautious and checkable.';
+        ? 'This is a decoy — it models cautious, uncertain language, which is exactly what good AI output looks like.'
+        : 'Safe to pass — the claim stays cautious and points toward verification.';
 
     const showChecklist =
       activeFeedbackKind === 'correct' ||
@@ -451,77 +448,55 @@ export function TrainingArena({
       role: 'assistant',
       tone: isCorrectFeedback ? 'success' : 'warning',
       children: (
-        <Stack spacing={1.2}>
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-            <Chip
-              icon={statusIcon}
-              label={statusLabel}
-              size="small"
-              sx={{
-                alignSelf: 'flex-start',
-                fontWeight: 900,
-                color: statusColor,
-                backgroundColor: statusBackground,
-                '& .MuiChip-label': {
-                  px: 0.8,
-                },
-              }}
-            />
-            <Chip
-              label={`${scoreDelta >= 0 ? '+' : ''}${scoreDelta} pts`}
-              size="small"
-              sx={{
-                alignSelf: 'flex-start',
-                fontWeight: 900,
-                color: statusColor,
-                backgroundColor: statusBackground,
-              }}
-            />
-            <Chip
-              label={formatConfidenceMultiplier(confidenceValue)}
-              size="small"
-              sx={{
-                alignSelf: 'flex-start',
-                fontWeight: 900,
-                color: '#d6ecff',
-                backgroundColor: 'rgba(214, 236, 255, 0.12)',
-              }}
-            />
-          </Stack>
-          <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#ddffea' : '#ffd9df', lineHeight: 1.7, fontSize: { xs: '0.96rem', sm: '1rem' } }}>
-            {shortReason}
+        <Stack spacing={1.3}>
+          {/* Conversational opening */}
+          <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#ddffea' : '#ffd9df', lineHeight: 1.75, fontWeight: 700, fontSize: { xs: '0.97rem', sm: '1.02rem' } }}>
+            {openingLine}
           </Typography>
+
+          {/* Score line — subtle, inline */}
+          <Stack direction="row" spacing={0.8} alignItems="center">
+            <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, fontSize: '0.82rem' }}>
+              {scoreDelta >= 0 ? `+${scoreDelta}` : `${scoreDelta}`} pts
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(228,241,255,0.4)', fontSize: '0.78rem' }}>
+              · confidence {formatConfidenceMultiplier(confidenceValue)}
+            </Typography>
+          </Stack>
+
+          {/* Expand for the reason */}
           <Box>
             <Button
               size="small"
-              variant="outlined"
+              variant="text"
               onClick={() => setExpandedDetailId((current) => (current === activeCard.id ? null : activeCard.id))}
               sx={{
                 color: `${statusColor} !important`,
-                borderColor: `${statusColor} !important`,
                 fontWeight: 900,
                 fontSize: '0.875rem',
-                px: 1.2,
+                px: 0,
+                minWidth: 0,
+                textDecoration: 'underline',
+                textUnderlineOffset: 3,
                 animation: 'none !important',
               }}
             >
-              {isDetailOpen ? 'Hide details' : 'Reveal details'}
+              {isDetailOpen ? 'Hide explanation' : 'Why?'}
             </Button>
           </Box>
+
           <Collapse in={isDetailOpen}>
-            <Stack spacing={0.8}>
-              {detailReason && (
-                <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#ddffea' : '#ffd9df', lineHeight: 1.7, fontSize: { xs: '0.92rem', sm: '0.96rem' } }}>
-                  {detailReason}
-                </Typography>
-              )}
+            <Stack spacing={0.9}>
+              <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#c8ffe0' : '#ffd9df', lineHeight: 1.75, fontSize: { xs: '0.92rem', sm: '0.96rem' } }}>
+                {bodyText}
+              </Typography>
               {showChecklist && (
-                <Stack spacing={0.45}>
+                <Stack spacing={0.45} sx={{ pt: 0.3 }}>
                   {evidenceChecklistForSentence(activeCard).map((line) => (
                     <Typography
                       key={line}
                       variant="caption"
-                      sx={{ color: isCorrectFeedback ? '#d9fff0' : '#ffe1e6', lineHeight: 1.5, display: 'block' }}
+                      sx={{ color: isCorrectFeedback ? '#d9fff0' : '#ffe1e6', lineHeight: 1.55, display: 'block' }}
                     >
                       {line}
                     </Typography>
@@ -687,43 +662,36 @@ export function TrainingArena({
                       ),
                     })}
 
-                    {renderBubble({
-                      role: 'user',
-                      tone: 'user',
-                      children: (
-                        <Stack spacing={1.1}>
-                          <Stack direction="row" spacing={0.7} sx={{ justifyContent: 'flex-end' }}>
-                            {trainingIntroSlides.map((slide, index) => (
-                              <Box
-                                key={slide.label}
-                                sx={{
-                                  width: index === introStep ? 24 : 8,
-                                  height: 8,
-                                  borderRadius: 999,
-                                  backgroundColor: index === introStep ? '#00ffd9' : 'rgba(228, 241, 255, 0.24)',
-                                  transition: 'width 220ms ease, background-color 220ms ease',
-                                }}
-                              />
-                            ))}
-                          </Stack>
-                          <Button
-                            size="large"
-                            variant="contained"
-                            onClick={advanceIntro}
+                    <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1.8} sx={{ px: 0.5 }}>
+                      <Stack direction="row" spacing={0.7} alignItems="center">
+                        {trainingIntroSlides.map((slide, index) => (
+                          <Box
+                            key={slide.label}
                             sx={{
-                              alignSelf: 'flex-end',
-                              fontWeight: 900,
-                              minHeight: 46,
-                              minWidth: { xs: 132, sm: 160 },
-                              borderRadius: 2.5,
-                              fontSize: '0.95rem',
+                              width: index === introStep ? 24 : 8,
+                              height: 8,
+                              borderRadius: 999,
+                              backgroundColor: index === introStep ? '#00ffd9' : 'rgba(228, 241, 255, 0.24)',
+                              transition: 'width 220ms ease, background-color 220ms ease',
                             }}
-                          >
-                            {introStep < trainingIntroSlides.length - 1 ? 'Next' : 'Start cards'}
-                          </Button>
-                        </Stack>
-                      ),
-                    })}
+                          />
+                        ))}
+                      </Stack>
+                      <Button
+                        size="large"
+                        variant="contained"
+                        onClick={advanceIntro}
+                        sx={{
+                          fontWeight: 900,
+                          minHeight: 44,
+                          minWidth: { xs: 120, sm: 148 },
+                          borderRadius: 2.5,
+                          fontSize: '0.95rem',
+                        }}
+                      >
+                        {introStep < trainingIntroSlides.length - 1 ? 'Next' : 'Start cards'}
+                      </Button>
+                    </Stack>
                   </Stack>
                 )}
 
@@ -860,12 +828,14 @@ export function TrainingArena({
                           role: 'user',
                           tone: 'user',
                           children: (
-                            <Stack spacing={0.5}>
-                              <Typography variant="body2" sx={{ color: '#eaffff', fontWeight: 900 }}>
-                                {activeDecisionLabel}
+                            <Stack spacing={0.4}>
+                              <Typography variant="body2" sx={{ color: '#eaffff', fontWeight: 800, fontSize: { xs: '0.96rem', sm: '1rem' } }}>
+                                {activeDecision === 'flag'
+                                  ? "I'd flag this one."
+                                  : "I'll pass on this one."}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: 'rgba(228, 241, 255, 0.76)' }}>
-                                Confidence: {formatConfidenceMultiplier(activeConfidenceValue)}
+                              <Typography variant="caption" sx={{ color: 'rgba(228, 241, 255, 0.6)', fontSize: '0.78rem' }}>
+                                Confidence {formatConfidenceMultiplier(activeConfidenceValue)}
                               </Typography>
                             </Stack>
                           ),
