@@ -46,6 +46,7 @@ export function InteractiveScenarioChat({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isWaitingReply, setIsWaitingReply] = useState(false);
   const [expandedAnalysisId, setExpandedAnalysisId] = useState<string | null>(null);
+  const [revealedAnalysisIds, setRevealedAnalysisIds] = useState<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [completeAcknowledged, setCompleteAcknowledged] = useState(false);
   const [overviewStep, setOverviewStep] = useState(0);
@@ -61,6 +62,9 @@ export function InteractiveScenarioChat({
   const showOverview = scenarioCompleted && isOverviewVisible;
   const showInteractive = !showOverview;
   const visibleMessages = messages.length <= 1 ? messages : messages.slice(-2);
+
+  const lastMsg = messages[messages.length - 1];
+  const needsReveal = !isWaitingReply && lastMsg?.role === 'assistant' && lastMsg?.hallucination && !revealedAnalysisIds.has(lastMsg.id);
 
   const handleScenarioComplete = () => {
     if (completeAcknowledged) return;
@@ -99,6 +103,7 @@ export function InteractiveScenarioChat({
       setCurrentStepIndex((prev) => prev + 1);
       setExpandedAnalysisId(null);
       setIsWaitingReply(false);
+      setRevealedAnalysisIds(new Set());
     }, 550);
   };
 
@@ -212,7 +217,10 @@ export function InteractiveScenarioChat({
                         <Button
                           size="small"
                           variant="outlined"
-                          onClick={() => setExpandedAnalysisId((current) => (current === msg.id ? null : msg.id))}
+                          onClick={() => {
+                            setExpandedAnalysisId((current) => (current === msg.id ? null : msg.id));
+                            setRevealedAnalysisIds((prev) => new Set([...prev, msg.id]));
+                          }}
                           sx={{
                             mb: expandedAnalysisId === msg.id ? 0.8 : 0,
                             color: '#ffb74d !important',
@@ -249,7 +257,7 @@ export function InteractiveScenarioChat({
               <Button
                 variant="contained"
                 onClick={handleNextStep}
-                disabled={isWaitingReply}
+                disabled={isWaitingReply || needsReveal}
                 sx={{
                   fontWeight: 900,
                   background: PRIMARY_HEADER_GRADIENT,
@@ -267,6 +275,8 @@ export function InteractiveScenarioChat({
                   ? 'Next → Scenario Overview'
                   : isWaitingReply
                   ? '...'
+                  : needsReveal
+                  ? 'Reveal analysis to continue'
                   : 'Next'}
               </Button>
             </Box>

@@ -30,7 +30,7 @@ export const SCENARIO_PROMPTS: Record<string, SuggestedPrompt[]> = {
       label: 'Step 3: Generalize the lesson',
       text: 'So what did the first answer fail to understand?',
       response:
-        'It answered the literal distance question but failed to model the user’s intent. The better move is to ask: “What has to be true for this task to succeed?” In this case, the car must physically arrive at the car wash.',
+        'The first answer solved the wrong problem. Distance was never the real question. Getting the car washed was. Before answering, the better move is to ask: what actually has to happen for this task to succeed?',
       hallucination: false,
     },
   ],

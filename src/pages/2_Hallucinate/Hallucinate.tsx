@@ -7,6 +7,7 @@ import {
   Stack,
   Container,
   Chip,
+  Collapse,
 } from '@mui/material';
 import {
   FiberManualRecord as FiberManualRecordIcon,
@@ -31,22 +32,29 @@ const Hallucinate: React.FC = () => {
   const [showScenarioChat, setShowScenarioChat] = useState(false);
   const [showTrainingGame, setShowTrainingGame] = useState(false);
   const [hasVerifiedSession] = useState(() => Boolean(getStoredUser()));
+  const [caseFileOpen, setCaseFileOpen] = useState(false);
+  const [caseFileUnlocking, setCaseFileUnlocking] = useState(false);
   const scenarioId = SCENARIOS[0].id;
   const selectedScenario = SCENARIOS.find((s) => s.id === scenarioId);
   const chatAnchorRef = useRef<HTMLDivElement>(null);
-  const statusText = 'CASE FILE READY';
+  const unlockTimerRef = useRef<number | null>(null);
+  const statusText = caseFileUnlocking ? 'DECRYPTING FILE' : 'CASE FILE READY';
   const tickerItems = [
     'VERIFY BEFORE TRUST',
-    'CHECK THE HIDDEN CONSTRAINT',
     'CONFIDENCE IS NOT EVIDENCE',
-    'FOLLOW THE USER INTENT',
+    'AI DOES NOT KNOW WHAT IT DOES NOT KNOW',
+    'ALWAYS ASK: WHERE IS THIS FROM',
+    'SLOW DOWN BEFORE YOU COPY AND PASTE',
   ];
   const introLines = [
-    'AI hallucination is not just a weird chatbot mistake.',
+    'AI hallucination is not just a harmless chatbot mistake.',
     'When a model sounds confident, people can copy false facts into homework, reports, code, medical searches, or legal work.',
-    'ChatGPT alone has been reported at more than 2.5 billion prompts per day: about 29,000 chances for a bad answer every second.',
-    'The skill is simple: slow down, spot the confidence trap, and verify before you trust.',
+    'ChatGPT alone fields over 2.5 billion prompts a day — that is 29,000 chances for a confidently wrong answer every single second.',
+    'AI hallucinations have already triggered court sanctions, product rollbacks, and billion-dollar market losses.',
+    'But one habit can protect you: slow down, spot the confidence trap, and verify before you trust.',
   ];
+  const terminalLineOne = '> briefing packet detected';
+  const terminalLineTwo = '> authentication passed';
   const arcadeFontCss = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Press+Start+2P&family=VT323&display=swap');
   `;
@@ -101,6 +109,37 @@ const Hallucinate: React.FC = () => {
     '@keyframes startBlink': {
       '0%': { opacity: 0.45 },
       '100%': { opacity: 1 },
+    },
+    '@keyframes scanLine': {
+      '0%': { transform: 'translateY(-100%)' },
+      '100%': { transform: 'translateY(100%)' },
+    },
+    '@keyframes decryptPulse': {
+      '0%': { boxShadow: '0 0 0 0 rgba(0,255,217,0.32)' },
+      '100%': { boxShadow: '0 0 0 12px rgba(0,255,217,0)' },
+    },
+    '@keyframes decryptSweep': {
+      '0%': { transform: 'translateX(-115%)' },
+      '100%': { transform: 'translateX(115%)' },
+    },
+    '@keyframes terminalFlicker': {
+      '0%': { opacity: 0.92 },
+      '45%': { opacity: 1 },
+      '50%': { opacity: 0.82 },
+      '100%': { opacity: 0.98 },
+    },
+    '@keyframes cursorBlink': {
+      '0%': { opacity: 0 },
+      '45%': { opacity: 1 },
+      '100%': { opacity: 1 },
+    },
+    '@keyframes idleScan': {
+      '0%': { transform: 'translateY(-120%)' },
+      '100%': { transform: 'translateY(120%)' },
+    },
+    '@keyframes typeLine': {
+      '0%': { width: '0ch' },
+      '100%': { width: 'var(--target-width)' },
     },
     '& .MuiTypography-root': {
       fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
@@ -194,6 +233,11 @@ const Hallucinate: React.FC = () => {
         backgroundColor: 'rgba(0, 255, 217, 0.14)',
         borderColor: 'rgba(0, 255, 217, 0.84) !important',
       },
+    },
+    '& .arcade-start-button': {
+      fontFamily: "'Press Start 2P', 'VT323', monospace !important",
+      letterSpacing: '0.08em !important',
+      textTransform: 'uppercase',
     },
     '& .MuiChip-root': {
       fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important",
@@ -340,6 +384,24 @@ const Hallucinate: React.FC = () => {
     }, 80);
     return () => window.clearTimeout(handle);
   }, [showScenarioChat]);
+
+  useEffect(() => {
+    return () => {
+      if (unlockTimerRef.current) {
+        window.clearTimeout(unlockTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleOpenCaseFile = () => {
+    if (caseFileOpen || caseFileUnlocking) return;
+    setCaseFileUnlocking(true);
+    unlockTimerRef.current = window.setTimeout(() => {
+      setCaseFileUnlocking(false);
+      setCaseFileOpen(true);
+      unlockTimerRef.current = null;
+    }, 520);
+  };
 
   const handleViewRanking = async (finalScore: number) => {
     const storedUser = getStoredUser();
@@ -544,21 +606,10 @@ const Hallucinate: React.FC = () => {
                 fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
               }}
             />
-            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1.8, fontFamily: "'Press Start 2P', 'VT323', monospace !important", fontSize: { xs: '1.1rem', sm: '1.4rem', md: '1.7rem' }, lineHeight: 1.5, letterSpacing: '0.06em', textShadow: '0 0 24px rgba(0,255,217,0.4), 0 0 48px rgba(255,46,147,0.24), 0 3px 0 rgba(0,0,0,0.5)' }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1.2, fontFamily: "'Press Start 2P', 'VT323', monospace !important", fontSize: { xs: '1.1rem', sm: '1.4rem', md: '1.7rem' }, lineHeight: 1.5, letterSpacing: '0.06em', textShadow: '0 0 24px rgba(0,255,217,0.4), 0 0 48px rgba(255,46,147,0.24), 0 3px 0 rgba(0,0,0,0.5)' }}>
               AI HALLUCINATION ARCADE
             </Typography>
-            <Typography
-              variant="body1"
-              color="textSecondary"
-              sx={{
-                maxWidth: 560,
-                mx: 'auto',
-                mb: 3.5,
-                fontSize: { xs: '1rem', sm: '1.08rem' },
-              }}
-            >
-              Experience a short scenario, reveal the hidden assumption, then practice spotting confident-but-risky AI answers.
-            </Typography>
+            <Box sx={{ mb: 3 }} />
             <Box
               sx={{
                 display: 'flex',
@@ -588,6 +639,7 @@ const Hallucinate: React.FC = () => {
                   }}
                 >
                   <Button
+                    className="arcade-start-button"
                     variant="contained"
                     onClick={() => setShowLanding(false)}
                     sx={{
@@ -683,6 +735,8 @@ const Hallucinate: React.FC = () => {
                     setShowTrainingGame(false);
                     setShowScenarioChat(false);
                     setShowLanding(true);
+                    setCaseFileOpen(false);
+                    setCaseFileUnlocking(false);
                     setCurrentIntroTextIndex(0);
                     setIsIntroFadingOut(false);
                     setShowAnimatedIntro(true);
@@ -697,37 +751,223 @@ const Hallucinate: React.FC = () => {
                       <Chip
                         icon={<FiberManualRecordIcon sx={{ fontSize: 12, animation: 'statusBlink 900ms ease-in-out infinite alternate' }} />}
                         label={statusText}
-                        sx={{ fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif", px: 0.4 }}
+                        onClick={handleOpenCaseFile}
+                        sx={{
+                          fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                          px: 0.7,
+                          py: 0.15,
+                          cursor: caseFileOpen ? 'default' : 'pointer',
+                          transition: 'all 220ms ease',
+                          ...(caseFileUnlocking && {
+                            borderColor: 'rgba(0,255,217,0.85) !important',
+                            boxShadow: '0 0 0 1px rgba(0,255,217,0.3), 0 0 16px rgba(0,255,217,0.34)',
+                            animation: 'decryptPulse 520ms ease-out 1',
+                          }),
+                          ...(!caseFileOpen && {
+                            boxShadow: '0 0 0 1px rgba(0,255,217,0.26), 0 0 14px rgba(0,255,217,0.24)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(0, 255, 217, 0.18) !important',
+                              borderColor: 'rgba(0, 255, 217, 0.7) !important',
+                            },
+                          }),
+                        }}
                       />
                     </Stack>
-                    <Typography variant="caption" sx={arcadeLabelSx}>
-                      Briefing 01
-                    </Typography>
-                    <Typography
-                      variant="h3"
-                      sx={journeyTitleSx}
-                    >
-                      {selectedScenario?.background.headline}
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={journeyBodySx}
-                    >
-                      {selectedScenario?.background.dek}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={journeyPromptSx}
-                    >
-                      {selectedScenario?.background.question}
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      onClick={() => setShowScenarioChat(true)}
-                      sx={actionButtonSx}
-                    >
-                      Enter the chat
-                    </Button>
+
+                    {!caseFileOpen && (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          maxWidth: 660,
+                          mx: 'auto',
+                          mb: 2.4,
+                          px: { xs: 2, sm: 2.6 },
+                          py: { xs: 1.8, sm: 2.2 },
+                          borderRadius: 2.6,
+                          border: '1px solid rgba(0,255,217,0.24)',
+                          background: 'linear-gradient(155deg, rgba(4,9,20,0.96), rgba(8,14,30,0.98) 52%, rgba(7,12,27,0.95))',
+                          boxShadow: '0 0 0 1px rgba(0,255,217,0.08), inset 0 1px 0 rgba(255,255,255,0.04), 0 20px 46px rgba(3,8,18,0.52)',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          transition: 'all 220ms ease',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          animation: 'terminalFlicker 2.3s linear infinite',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            height: '34%',
+                            background: 'linear-gradient(180deg, transparent, rgba(0,255,217,0.08), transparent)',
+                            animation: 'idleScan 3.8s linear infinite',
+                            pointerEvents: 'none',
+                            opacity: 0.6,
+                          },
+                          '&::after': caseFileUnlocking ? {
+                            content: '""',
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'linear-gradient(100deg, transparent 35%, rgba(0,255,217,0.18) 50%, transparent 65%)',
+                            animation: 'decryptSweep 520ms linear 1',
+                            pointerEvents: 'none',
+                          } : {},
+                          '&:hover': {
+                            borderColor: 'rgba(0,255,217,0.44)',
+                            boxShadow: '0 0 0 1px rgba(0,255,217,0.16), 0 14px 28px rgba(0,0,0,0.24)',
+                            transform: 'translateY(-1px)',
+                          },
+                        }}
+                        onClick={handleOpenCaseFile}
+                      >
+                        <Box sx={{ position: 'relative', zIndex: 1 }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: 'block',
+                              mb: 0.9,
+                              color: 'rgba(0,255,217,0.72)',
+                              letterSpacing: '0.14em',
+                              textTransform: 'uppercase',
+                              fontFamily: "'Press Start 2P', 'VT323', monospace",
+                              fontSize: { xs: '0.52rem', sm: '0.58rem' },
+                            }}
+                          >
+                            Terminal Link: Standby
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'rgba(228,241,255,0.88)',
+                              lineHeight: 1.72,
+                              fontSize: { xs: '0.8rem', sm: '0.86rem' },
+                              mb: 0.55,
+                              fontFamily: "'VT323', 'Inter', monospace",
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            <Box
+                              component="span"
+                              sx={{
+                                '--target-width': `${terminalLineOne.length}ch`,
+                                display: 'inline-block',
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                width: '0ch',
+                                animation: `typeLine ${Math.max(1.2, terminalLineOne.length * 0.06)}s steps(${terminalLineOne.length}, end) 0.2s forwards`,
+                              }}
+                            >
+                              {terminalLineOne}
+                            </Box>
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'rgba(182,228,255,0.8)',
+                              lineHeight: 1.72,
+                              fontSize: { xs: '0.8rem', sm: '0.86rem' },
+                              mb: 1.25,
+                              fontFamily: "'VT323', 'Inter', monospace",
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            <Box
+                              component="span"
+                              sx={{
+                                '--target-width': `${terminalLineTwo.length}ch`,
+                                display: 'inline-block',
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                width: '0ch',
+                                animation: `typeLine ${Math.max(1.2, terminalLineTwo.length * 0.06)}s steps(${terminalLineTwo.length}, end) ${Math.max(1.2, terminalLineOne.length * 0.06) + 0.35}s forwards`,
+                              }}
+                            >
+                              {terminalLineTwo}
+                            </Box>
+                            <Box
+                              component="span"
+                              sx={{
+                                ml: 0.35,
+                                display: 'inline-block',
+                                width: 8,
+                                height: 14,
+                                backgroundColor: 'rgba(0,255,217,0.75)',
+                                animation: 'cursorBlink 900ms steps(1, end) infinite',
+                                verticalAlign: 'text-bottom',
+                              }}
+                            />
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            px: 1.1,
+                            py: 0.5,
+                            borderRadius: 999,
+                            border: '1px solid rgba(0,255,217,0.34)',
+                            color: 'rgba(0,255,217,0.9)',
+                            letterSpacing: '0.1em',
+                            textTransform: 'uppercase',
+                            fontSize: { xs: '0.58rem', sm: '0.64rem' },
+                            fontFamily: "'Press Start 2P', 'Inter', sans-serif",
+                            animation: 'statusBlink 1100ms ease-in-out infinite alternate',
+                            position: 'relative',
+                            zIndex: 1,
+                          }}
+                        >
+                          {caseFileUnlocking ? 'Decrypting...' : 'Open Case File'}
+                        </Box>
+                      </Box>
+                    )}
+
+                    <Collapse in={caseFileOpen} timeout={600}>
+                      <Box
+                        sx={{
+                          overflow: 'hidden',
+                          position: 'relative',
+                          '&::after': caseFileOpen ? {
+                            content: '""',
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            height: '2px',
+                            background: 'linear-gradient(90deg, transparent, rgba(0,255,217,0.6), transparent)',
+                            animation: 'scanLine 0.6s ease-out forwards',
+                            top: 0,
+                          } : {},
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ ...arcadeLabelSx, display: 'inline-flex', mt: 1.1, mb: 1 }}>
+                          Briefing
+                        </Typography>
+                        <Typography
+                          variant="h3"
+                          sx={journeyTitleSx}
+                        >
+                          {selectedScenario?.background.headline}
+                        </Typography>
+                        <Typography
+                          variant="body1"
+                          sx={journeyBodySx}
+                        >
+                          {selectedScenario?.background.dek}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={journeyPromptSx}
+                        >
+                          {selectedScenario?.background.question}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          onClick={() => setShowScenarioChat(true)}
+                          sx={actionButtonSx}
+                        >
+                          Enter the chat
+                        </Button>
+                      </Box>
+                    </Collapse>
                   </Box>
                 </Box>
               )}
