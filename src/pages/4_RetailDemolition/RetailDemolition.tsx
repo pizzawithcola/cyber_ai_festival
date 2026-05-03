@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import { submitGameScoreMax } from '../../services/scoreSubmission';
 import PhoneSimulator from './components/PhoneSimulator';
+import HintPanel from './components/HintPanel';
+import IntroScreen from './components/IntroScreen';
+import GameSummary from './components/GameSummary';
 import { useRetailDemolition } from './hooks/useRetailDemolition';
-import { PREDEFINED_PRODUCTS, RETAILERS } from './constants/gameData';
 
 const RetailDemolition = () => {
   const navigate = useNavigate();
@@ -12,30 +14,7 @@ const RetailDemolition = () => {
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const {
-    gameState,
-    isAgentic,
-    setIsAgentic,
-    messages,
-    isSearching,
-    activeSite,
-    automationStep,
-    notifications,
-    selectedProduct,
-    score,
-    scoreEvents,
-    showQuiz,
-    decisions,
-    chatBottomRef,
-    startSearch,
-    handleRetailerClick,
-    handleQuizAnswer,
-    handleBillingComplete,
-    setNotifications,
-    setShowQuiz,
-    setGameState,
-  
-  } = useRetailDemolition();
+  const game = useRetailDemolition();
 
   useEffect(() => {
     const storedUser = getStoredUser();
@@ -48,76 +27,106 @@ const RetailDemolition = () => {
 
   const handleSubmitScore = async (): Promise<void> => {
     if (isSubmittingScore) return;
-
     const storedUser = getStoredUser();
     const userId = storedUser?.id;
     if (!userId) {
       navigate('/login/retaildemolition', { replace: true });
       return;
     }
-
     setSubmitError(null);
     setIsSubmittingScore(true);
     try {
       const result = await submitGameScoreMax({
         userId,
         game: 'retaildemolition',
-        currentScore: score,
+        currentScore: game.score,
       });
-
       if (!result.ok) {
-        setSubmitError('Failed to sync score to server. Redirecting to leaderboard.');
+        setSubmitError('Failed to sync score. Redirecting to leaderboard.');
       }
     } catch (error) {
       console.error('[RetailDemolition] Error submitting score:', error);
-      setSubmitError('Network error while syncing score. Redirecting to leaderboard.');
+      setSubmitError('Network error. Redirecting to leaderboard.');
     } finally {
       setIsSubmittingScore(false);
       navigate('/ranking/game/retaildemolition');
     }
   };
 
-  if (!hasVerifiedSession) {
-    return null;
+  const currentHint = game.getHint();
+
+  if (!hasVerifiedSession) return null;
+
+  // ── Intro Screen (full-page, no phone) ──
+  if (game.gameState === 'intro') {
+    return (
+      <div className="flex h-screen w-full bg-[#0a0a0c] text-slate-300 font-sans overflow-hidden">
+        <IntroScreen onStart={() => game.setGameState('billing')} />
+      </div>
+    );
   }
 
+  // ── Main Layout: HintPanel + Phone ──
   return (
-    <div className="relative flex h-screen w-full bg-[#0a0a0c] text-slate-300 font-sans overflow-hidden">
-      <div className="absolute top-4 right-6 z-50">
-        <div className="px-3 py-1 rounded-full bg-indigo-600 text-xs font-bold tracking-wide shadow-lg">
-          SCORE: {score}
-        </div>
-      </div>
-
+    <div className="relative flex h-screen w-full bg-[#0a0a0c] text-slate-300 font-sans overflow-hidden items-center justify-center gap-8 px-8">
+      {/* Phone */}
       <PhoneSimulator
-        gameState={gameState}
-        isAgentic={isAgentic}
-        setIsAgentic={setIsAgentic}
-        messages={messages}
-        isSearching={isSearching}
-        activeSite={activeSite}
-        automationStep={automationStep}
-        showQuiz={showQuiz}
-        notifications={notifications}
-        selectedProduct={selectedProduct}
-        onProductSearch={startSearch}
-        onRetailerClick={handleRetailerClick}
-        onQuizAnswer={handleQuizAnswer}
-        onBackToAssistant={() => setGameState('assistant')}
-        PREDEFINED_PRODUCTS={PREDEFINED_PRODUCTS}
-        RETAILERS={RETAILERS}
-        chatBottomRef={chatBottomRef}
-        setNotifications={setNotifications}
-        setShowQuiz={setShowQuiz}
-        setGameState={setGameState}
-        score={score}
-        scoreEvents={scoreEvents}
-        decisions={decisions}
-        handleBillingComplete={handleBillingComplete}
+        gameState={game.gameState}
+        isAgentic={game.isAgentic}
+        setIsAgentic={game.setIsAgentic}
+        messages={game.messages}
+        isSearching={game.isSearching}
+        activeSite={game.activeSite}
+        automationStep={game.automationStep}
+        notifications={game.notifications}
+        selectedProduct={game.selectedProduct}
+        setNotifications={game.setNotifications}
+        billingFirstName={game.billingFirstName}
+        billingLastName={game.billingLastName}
+        billingCard={game.billingCard}
+        billingAddress={game.billingAddress}
+        manualProduct={game.manualProduct}
+        manualRetailerName={game.manualRetailerName}
+        cart={game.cart}
+        injectionFound={game.injectionFound}
+        agentConfirmProduct={game.agentConfirmProduct}
+        agentConfirmRetailer={game.agentConfirmRetailer}
+        agentSafePurchaseDone={game.agentSafePurchaseDone}
+        agentMaliciousDone={game.agentMaliciousDone}
+        onBillingComplete={game.handleBillingComplete}
+        onManualProductSelect={game.handleManualProductSelect}
+        onManualAddToCart={game.handleManualAddToCart}
+        onManualConfirmPurchase={game.handleManualConfirmPurchase}
+        onFoundInjection={game.handleFoundInjection}
+        onTransitionToAgent={game.handleTransitionToAgent}
+        onProductSearch={game.startSearch}
+        onRetailerClick={game.handleRetailerClick}
+        onAgentConfirm={game.handleAgentConfirm}
+        onAgentConfirmCancel={game.handleAgentConfirmCancel}
+        onBackToAgentChat={game.handleBackToAgentChat}
+        onInspectMaliciousSite={game.handleInspectMaliciousSite}
+        onQuizAnswer={game.handleQuizAnswer}
+        onStartQuiz={game.handleStartQuiz}
+        onQuizFinished={game.handleQuizFinished}
         onSubmitScore={handleSubmitScore}
         isSubmittingScore={isSubmittingScore}
         submitError={submitError}
+        score={game.score}
+        chatBottomRef={game.chatBottomRef}
+        setGameState={game.setGameState}
       />
+
+      {/* Hint Panel (right side) */}
+      <HintPanel hint={currentHint}>
+        {game.gameState === 'summary' && (
+          <GameSummary
+            score={game.score}
+            decisions={game.decisions}
+            scoreEvents={game.scoreEvents}
+            manualStepCount={game.manualStepCount}
+          />
+        )}
+      </HintPanel>
     </div>
   );
 };

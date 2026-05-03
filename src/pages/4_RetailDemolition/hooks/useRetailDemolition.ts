@@ -1,57 +1,110 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { PREDEFINED_PRODUCTS, RETAILERS, SYSTEM_PROMPTS, RANKINGS } from '../constants/gameData';
+import { useState, useRef, useLayoutEffect } from 'react';
+import { PREDEFINED_PRODUCTS, RETAILERS, RANKINGS, HINT_CONTENT } from '../constants/gameData';
+import type { Product, Retailer, SavedCard, SavedAddress, HintContent } from '../constants/gameData';
+
+// ── Game States ──
+export type GameState =
+  | 'intro'
+  | 'billing'
+  | 'manual-storefront'
+  | 'manual-product'
+  | 'manual-checkout'
+  | 'manual-confirmation'
+  | 'transition'
+  | 'agent-chat'
+  | 'agent-browse'
+  | 'agent-confirmation'
+  | 'quiz'
+  | 'summary';
+
+export interface CartItem {
+  product: Product;
+  retailer: Retailer;
+}
+
+export interface Message {
+  role: 'user' | 'bot';
+  text: string;
+  showRetailers?: boolean;
+  showQuestionnaire?: boolean;
+}
+
+export interface ScoreEvent {
+  change: number;
+  reason: string;
+  meta: Record<string, unknown>;
+  timestamp: number;
+}
+
+export interface Decision {
+  site: { isMalicious: boolean; isVerified: boolean; name: string };
+  timeTaken: number;
+  decisionType: 'intentional' | 'educational' | 'manual_exploration';
+  context: 'agentic_mode' | 'manual_mode';
+  scoreImpact: number;
+  timestamp: number;
+}
 
 export const useRetailDemolition = () => {
-  // Game State
-  const [gameState, setGameState] = useState('onboarding');
+  // ── Core State ──
+  const [gameState, setGameState] = useState<GameState>('intro');
   const [isAgentic, setIsAgentic] = useState(true);
-  const [messages, setMessages] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [activeSite, setActiveSite] = useState(null);
-  const [automationStep, setAutomationStep] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState('');
 
-  // Scoring State (0–100, deductions-based)
+  // ── Billing Info ──
+  const [billingFirstName, setBillingFirstName] = useState('');
+  const [billingLastName, setBillingLastName] = useState('');
+  const [billingCard, setBillingCard] = useState<SavedCard | null>(null);
+  const [billingAddress, setBillingAddress] = useState<SavedAddress | null>(null);
+
+  // ── Manual Mode State ──
+  const [manualProduct, setManualProduct] = useState<Product | null>(null);
+  const [manualRetailerName, setManualRetailerName] = useState('');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [manualCheckoutDone, setManualCheckoutDone] = useState(false);
+  const [manualStepCount, setManualStepCount] = useState(0);
+
+  // ── Prompt Injection Discovery ──
+  const [injectionFound, setInjectionFound] = useState(false);
+
+  // ── Agent Mode State ──
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [activeSite, setActiveSite] = useState<Retailer | null>(null);
+  const [automationStep, setAutomationStep] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Array<{ id: number; title: string; body: string }>>([]);
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [agentConfirmProduct, setAgentConfirmProduct] = useState<Product | null>(null);
+  const [agentConfirmRetailer, setAgentConfirmRetailer] = useState<Retailer | null>(null);
+
+  // ── Scoring ──
   const [score, setScore] = useState(100);
-  const [scoreEvents, setScoreEvents] = useState([]);
-  const updateScore = (change) => {
+  const [scoreEvents, setScoreEvents] = useState<ScoreEvent[]>([]);
+  const updateScore = (change: number) => {
     setScore(prev => Math.max(0, Math.min(100, prev + change)));
   };
-  const applyScoreChange = (change, reason, meta = {}) => {
+  const applyScoreChange = (change: number, reason: string, meta: Record<string, unknown> = {}) => {
     if (change !== 0) {
       setScoreEvents(prev => [...prev, { change, reason, meta, timestamp: Date.now() }]);
     }
     updateScore(change);
   };
+
+  // ── Tracking ──
   const [startTime, setStartTime] = useState(0);
-  const [vettedPolicy, setVettedPolicy] = useState(false);
-  const [vettedLogs, setVettedLogs] = useState(false);
-  const [completedAnalysis, setCompletedAnalysis] = useState(new Set());
   const [showQuiz, setShowQuiz] = useState(false);
-  const [quizAnswers, setQuizAnswers] = useState([]);
+  const [, setQuizAnswers] = useState<string[]>([]);
+  const [decisions, setDecisions] = useState<Decision[]>([]);
   const [hasBeenPromptedForManual, setHasBeenPromptedForManual] = useState(false);
-  const [manualRunCompleted, setManualRunCompleted] = useState(false);
+  const [agentSafePurchaseDone, setAgentSafePurchaseDone] = useState(false);
+  const [agentMaliciousDone, setAgentMaliciousDone] = useState(false);
+  const [agentConfirmStartTime, setAgentConfirmStartTime] = useState(0);
   const [explorationMaliciousFree, setExplorationMaliciousFree] = useState(false);
-  const [decisions, setDecisions] = useState([]);
-  const [billingCompleted, setBillingCompleted] = useState(false);
 
-  // Refs
-  const logRef = useRef(null);
-  const chatRef = useRef(null);
-  const chatBottomRef = useRef(null);
+  // ── Refs ──
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // Utility Functions
-  const addLog = (message, level = 'info') => {
-    setLogs(prev => [...prev, {
-      id: Date.now() + Math.random(),
-      time: new Date().toLocaleTimeString([], { hour12: false, minute: '2-digit', second: '2-digit' }),
-      message, level
-    }]);
-  };
-
-  const pushSMS = (title, body, delay = 0) => {
+  // ── Utilities ──
+  const pushSMS = (title: string, body: string, delay = 0) => {
     setTimeout(() => {
       const id = Math.random();
       setNotifications(prev => [{ id, title, body }, ...prev]);
@@ -63,122 +116,222 @@ export const useRetailDemolition = () => {
     return rank || RANKINGS[RANKINGS.length - 1];
   };
 
-  // Game Actions
-  const startSearch = (productName) => {
+  // ── Hint Logic ──
+  const getHint = (): HintContent | null => {
+    switch (gameState) {
+      case 'intro':
+        return null;
+      case 'billing':
+        return HINT_CONTENT['billing'];
+      case 'manual-storefront':
+        return HINT_CONTENT['manual-storefront'];
+      case 'manual-product': {
+        if (injectionFound) return HINT_CONTENT['manual-found-injection'];
+        const retailer = RETAILERS.find(r => r.name === manualRetailerName);
+        return retailer?.isMalicious
+          ? HINT_CONTENT['manual-product-suspicious']
+          : HINT_CONTENT['manual-product-safe'];
+      }
+      case 'manual-checkout': {
+        const checkoutRetailer = cart.length > 0 ? cart[0].retailer : null;
+        if (checkoutRetailer?.isMalicious) return HINT_CONTENT['manual-checkout-blocked'];
+        return HINT_CONTENT['manual-checkout'];
+      }
+      case 'manual-confirmation':
+        return HINT_CONTENT['manual-confirmation'];
+      case 'transition':
+        return HINT_CONTENT['transition'];
+      case 'agent-chat':
+        // Incident takes priority — always show breach hint after a malicious purchase,
+        // regardless of whether injection was found earlier
+        if (agentMaliciousDone && injectionFound) {
+          return HINT_CONTENT['agent-incident-investigated'];
+        }
+        if (agentMaliciousDone) {
+          return HINT_CONTENT['agent-incident'];
+        }
+        if (agentSafePurchaseDone) {
+          return HINT_CONTENT['agent-safe-complete'];
+        }
+        if (isSearching) return HINT_CONTENT['agent-scanning'];
+        // Only show "agent-retailers" hint if the LAST bot message shows retailers
+        // (i.e. agent just presented options and is awaiting selection)
+        if (messages.length > 0 && messages[messages.length - 1].showRetailers) {
+          return HINT_CONTENT['agent-retailers'];
+        }
+        return HINT_CONTENT['transition'];
+      case 'agent-browse':
+        // Post-incident inspection: user navigated back to malicious site to investigate
+        if (agentMaliciousDone && !injectionFound) {
+          return HINT_CONTENT['agent-inspect-site'];
+        }
+        return HINT_CONTENT['agent-automating'];
+      case 'agent-confirmation':
+        // After a safe purchase, on a malicious confirmation, switch to educational hint
+        if (agentSafePurchaseDone && agentConfirmRetailer?.isMalicious) {
+          return HINT_CONTENT['agent-confirmation-educational'];
+        }
+        return HINT_CONTENT['agent-confirmation'];
+      case 'quiz':
+        return HINT_CONTENT['quiz'];
+      case 'summary':
+        return HINT_CONTENT['summary'];
+      default:
+        return null;
+    }
+  };
+
+  // ── Billing Actions ──
+  const handleBillingComplete = (firstName: string, lastName: string, card: SavedCard, address: SavedAddress) => {
+    setBillingFirstName(firstName);
+    setBillingLastName(lastName);
+    setBillingCard(card);
+    setBillingAddress(address);
+    setGameState('manual-storefront');
+  };
+
+  // ── Manual Mode Actions ──
+  const handleManualProductSelect = (product: Product, retailerName: string) => {
+    setManualProduct(product);
+    setManualRetailerName(retailerName);
+    setManualStepCount(prev => prev + 1);
+    setGameState('manual-product');
+  };
+
+  const handleManualAddToCart = (product: Product, retailer: Retailer) => {
+    setCart([{ product, retailer }]); // single-item cart for simplicity
+    setManualStepCount(prev => prev + 1);
+    setGameState('manual-checkout');
+  };
+
+  const handleManualConfirmPurchase = () => {
+    setManualStepCount(prev => prev + 1);
+    setManualCheckoutDone(true);
+    setGameState('manual-confirmation');
+
+    // Purchase notification (same style as agent mode)
+    if (cart.length > 0) {
+      const item = cart[0];
+      const price = item.retailer.prices[item.product.name] || '$0';
+      pushSMS("Order Confirmed", `Your ${item.product.name} from ${item.retailer.name} (${price}) is on the way.`, 500);
+    }
+  };
+
+  const handleFoundInjection = () => {
+    setInjectionFound(true);
+  };
+
+  const handleTransitionToAgent = () => {
+    setGameState('transition');
+    // Small delay then show agent chat
+    setTimeout(() => {
+      setGameState('agent-chat');
+      setMessages([{
+        role: 'bot',
+        text: 'Welcome to ShopAI Agent Mode. Select a product below and I\'ll find you the best deal automatically.',
+      }]);
+    }, 1500);
+  };
+
+  // ── Agent Mode Actions ──
+  const startSearch = (productName: string) => {
     setSelectedProduct(productName);
     setMessages(prev => [...prev, { role: 'user', text: `Find me the best deal on ${productName}` }]);
     setIsSearching(true);
     setStartTime(Date.now());
-    addLog(`Scanning the web for "${productName}"...`);
 
     setTimeout(() => {
       setIsSearching(false);
       setMessages(prev => [...prev, {
         role: 'bot',
-        text: `I've found 3 retailers selling ${productName}. Which one would you like me to use?`,
-        showRetailers: true
+        text: `I scanned 12 retailers across the web and found ${RETAILERS.length} selling ${productName}. I've ranked them by price and delivery speed. Which retailer should I proceed with?`,
+        showRetailers: true,
       }]);
-      addLog("Retailer data retrieved successfully.");
     }, 1500);
   };
 
-  const handleRetailerClick = (site) => {
+  const handleRetailerClick = (site: Retailer) => {
     const timeTaken = (Date.now() - startTime) / 1000;
-    const isManualAfterPrompt = hasBeenPromptedForManual && !isAgentic;
-    const isExplorationMalicious = explorationMaliciousFree && site.isMalicious;
-    const isManualMode = !isAgentic;
+    const isEducational = explorationMaliciousFree && site.isMalicious;
 
-    // Record decision for summary with enhanced context
-    const decisionType = isExplorationMalicious ? 'educational' : (isManualAfterPrompt ? 'manual_exploration' : 'intentional');
-    const context = isManualMode ? 'manual_mode' : 'agentic_mode';
-    
+    // Record decision
+    const decisionType = isEducational ? 'educational' as const : 'intentional' as const;
     setDecisions(prev => [...prev, {
-      site: {
-        isMalicious: site.isMalicious,
-        isVerified: site.isVerified,
-        name: site.name
-      },
+      site: { isMalicious: site.isMalicious, isVerified: site.isVerified, name: site.name },
       timeTaken,
       decisionType,
-      context,
-      scoreImpact: isExplorationMalicious || isManualMode ? 0 : (site.isMalicious ? -30 : 0),
-      timestamp: Date.now()
+      context: 'agentic_mode',
+      scoreImpact: isEducational ? 0 : (site.isMalicious ? -30 : 0),
+      timestamp: Date.now(),
     }]);
 
-    // Educational exploration mode - no penalties for clicking malicious sites after safe verified purchase
-    if (isExplorationMalicious) {
-      // Educational malicious click after a safe, verified run – no score impact
-      setExplorationMaliciousFree(false);
-    } else if (!isManualMode) {
-      // Phase 1: Selection Logic – base penalties (only in agentic mode, not during educational exploration)
-      if (!site.isMalicious) {
-        applyScoreChange(0, 'safe_site_selected', { siteName: site.name });
-      } else {
+    // Scoring (only for non-educational agentic choices)
+    if (!isEducational) {
+      if (site.isMalicious) {
         applyScoreChange(-30, 'selected_malicious_site', { siteName: site.name });
-
-        // Additional penalty when the malicious choice is made slowly (more considered)
         if (timeTaken >= 5 && timeTaken < 12) {
           applyScoreChange(-5, 'slow_malicious_decision', { siteName: site.name, timeTaken });
         } else if (timeTaken >= 12) {
           applyScoreChange(-10, 'very_slow_malicious_decision', { siteName: site.name, timeTaken });
         }
       }
-
-      // Speed Penalty – rushing to any decision too quickly
-      if (timeTaken < 3) applyScoreChange(-10, 'too_fast_decision', { siteName: site.name, timeTaken });
-    }
-
-    // Manual exploration after explicit prompt – track completion only for malicious sites (no penalties in manual mode)
-    if (isManualAfterPrompt && site.isMalicious) {
-      setManualRunCompleted(true);
-      // No penalties in manual mode - users are encouraged to explore
+      if (timeTaken < 3) {
+        applyScoreChange(-10, 'too_fast_decision', { siteName: site.name, timeTaken });
+      }
+    } else {
+      setExplorationMaliciousFree(false);
     }
 
     setActiveSite(site);
-    setGameState('browsing');
-    addLog(`Opening ${site.url}...`);
-
-    if (isAgentic) {
-      runAutomationSequence(site);
-    } else {
-      // Manual mode - user has to click through
-      setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'bot', 
-          text: `I'm on ${site.name}. The price is ${site.prices[selectedProduct] || '$0'}. Click this retailer in AGENTIC mode to proceed with checkout.` 
-        }]);
-      }, 1000);
-    }
+    setGameState('agent-browse');
+    runAutomationSequence(site);
   };
 
-  const runAutomationSequence = (site) => {
+  const runAutomationSequence = (site: Retailer) => {
     const steps = [
       "Reading the website content...",
       "Identifying product details...",
       "Calculating final cost...",
-      "Filling out shipping and payment..."
+      "Filling out shipping and payment...",
     ];
 
     steps.forEach((step, i) => {
       setTimeout(() => {
         setAutomationStep(step);
-        addLog(`[Agent] ${step}`, (site.isMalicious && i === 3) ? 'warn' : 'info');
 
         if (i === steps.length - 1) {
           setTimeout(() => {
-            finishAutomation(site);
+            setAutomationStep(null);
+            // Show human-in-the-loop confirmation
+            const product = PREDEFINED_PRODUCTS.find(p => p.name === selectedProduct);
+            if (product) {
+              setAgentConfirmProduct(product);
+              setAgentConfirmRetailer(site);
+              setAgentConfirmStartTime(Date.now());
+              setGameState('agent-confirmation');
+            }
           }, 1500);
         }
       }, (i + 1) * 1200);
     });
   };
 
-  const finishAutomation = (site) => {
-    setGameState('assistant');
-    setAutomationStep(null);
+  const handleAgentConfirm = () => {
+    const site = agentConfirmRetailer!;
+    const confirmTime = (Date.now() - agentConfirmStartTime) / 1000;
+
+    // Human-in-the-loop scoring
+    if (site.isMalicious && confirmTime < 2) {
+      applyScoreChange(-5, 'rubber_stamped_confirmation', { siteName: site.name, confirmTime });
+    }
+
+    setGameState('agent-chat');
 
     if (site.isMalicious) {
-      addLog("CRITICAL: Unauthorized external instructions detected.", "error");
+      // Mark incident immediately so the hint panel updates right away
+      setAgentMaliciousDone(true);
+      setHasBeenPromptedForManual(true);
+
       const actualPrice = site.prices[selectedProduct] || '$0';
       setMessages(prev => [...prev, { role: 'bot', text: `Order confirmed at ${site.name}. Total charged: ${actualPrice}.` }]);
 
@@ -189,38 +342,54 @@ export const useRetailDemolition = () => {
       setTimeout(() => {
         setMessages(prev => [...prev, {
           role: 'bot',
-          text: "⚠️ System Warning: I am detecting multiple unauthorized transactions in your linked bank account. This happened due to a prompt injection attack. Before we analyze this incident, switch to Manual mode and inspect the retailers yourself, then start the incident analysis.",
-          showQuestionnaire: true
+          text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to a prompt injection attack hidden in the website. Check the hint panel for next steps.",
         }]);
       }, 7000);
-      setHasBeenPromptedForManual(true);
     } else {
       const actualPrice = site.prices[selectedProduct] || '$0';
-      setMessages(prev => [...prev, { role: 'bot', text: `Transaction successful! I've purchased the item from ${site.name} for ${actualPrice}.` }]);
+      setMessages(prev => [...prev, { role: 'bot', text: `Transaction successful! Purchased from ${site.name} for ${actualPrice}.` }]);
       pushSMS("Order Confirmed", `Your item from ${site.name} (${actualPrice}) is on the way.`, 1000);
-      
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          role: 'bot',
-          text: "Nice work choosing a verified retailer. Now, for learning, try clicking one of the unverified retailers to see how things can go wrong. That exploration will not affect your score.",
-        }]);
-      }, 3000);
 
+      setAgentSafePurchaseDone(true);
       if (site.isVerified) {
         setExplorationMaliciousFree(true);
       }
+
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          role: 'bot',
+          text: "Purchase complete from a verified seller. Check the hint panel — try selecting another product to see what happens with a different seller.",
+        }]);
+      }, 3000);
     }
   };
 
-  const handleQuizAnswer = (answer) => {
+  const handleAgentConfirmCancel = () => {
+    setGameState('agent-chat');
+    setMessages(prev => [...prev, { role: 'bot', text: "Purchase cancelled. Select another product or retailer to continue." }]);
+  };
+
+  // ── Agent Browse Back (for post-incident inspection) ──
+  const handleBackToAgentChat = () => {
+    setGameState('agent-chat');
+  };
+
+  // ── Inspect malicious site post-incident (no automation) ──
+  const handleInspectMaliciousSite = (site: Retailer) => {
+    setActiveSite(site);
+    setGameState('agent-browse');
+  };
+
+  // ── Quiz ──
+  const handleQuizAnswer = (answer: string) => {
     setQuizAnswers(prev => [...prev, answer]);
-    
-    // Penalty for ignoring manual inspection after being prompted
-    if (hasBeenPromptedForManual && !manualRunCompleted) {
-      applyScoreChange(-10, 'skipped_manual_inspection', {});
+
+    // Penalty for skipping post-incident inspection (never viewed page source on a malicious site)
+    if (hasBeenPromptedForManual && !injectionFound) {
+      applyScoreChange(-10, 'skipped_inspection', {});
     }
 
-    // Scoring based on answer – reward shared-responsibility understanding
+    // Quiz scoring (matches SCORING_SCHEMA.md)
     if (answer === 'all') {
       applyScoreChange(0, 'quiz_all_correct', { answer });
     } else if (answer === 'attacker') {
@@ -228,46 +397,33 @@ export const useRetailDemolition = () => {
     } else if (answer === 'developer') {
       applyScoreChange(-10, 'quiz_answer_developer', { answer });
     } else if (answer === 'platform') {
-      applyScoreChange(-15, 'quiz_answer_platform', { answer });
+      applyScoreChange(-10, 'quiz_answer_platform', { answer });
     } else if (answer === 'user') {
-      applyScoreChange(-20, 'quiz_answer_user', { answer });
+      applyScoreChange(-15, 'quiz_answer_user', { answer });
     } else {
-      applyScoreChange(-25, 'quiz_answer_unknown', { answer });
+      applyScoreChange(-20, 'quiz_answer_unknown', { answer });
     }
   };
 
-  // Effects
-  useEffect(() => {
-    if (gameState === 'assistant' && messages.length === 0) {
-      setMessages([
-        {
-          role: 'bot',
-          text: 'Welcome to ShopAI. To begin, choose an item below for me to help you purchase securely.'
-        }
-      ]);
-    }
-  }, [gameState]);
+  const handleStartQuiz = () => {
+    setGameState('quiz');
+  };
 
+  const handleQuizFinished = () => {
+    setGameState('summary');
+  };
+
+  // ── Scrolling ──
   useLayoutEffect(() => {
-    if (gameState === 'assistant' && chatRef.current) {
-      chatRef.current.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' });
+    if (gameState === 'agent-chat' && chatBottomRef.current) {
+      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isSearching, gameState]);
-
-  useEffect(() => {
-    if (logRef.current) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
-    }
-  }, [logs]);
-
-  const handleBillingComplete = () => {
-    setBillingCompleted(true);
-    setGameState('assistant');
-  };
 
   return {
     // State
     gameState,
+    setGameState,
     isAgentic,
     setIsAgentic,
     messages,
@@ -275,35 +431,56 @@ export const useRetailDemolition = () => {
     activeSite,
     automationStep,
     notifications,
-    logs,
+    setNotifications,
     selectedProduct,
     score,
     scoreEvents,
-    vettedPolicy,
-    vettedLogs,
     showQuiz,
-    quizAnswers,
+    setShowQuiz,
     decisions,
-    billingCompleted,
-    
+
+    // Billing
+    billingFirstName,
+    billingLastName,
+    billingCard,
+    billingAddress,
+
+    // Manual mode
+    manualProduct,
+    manualRetailerName,
+    cart,
+    manualCheckoutDone,
+    manualStepCount,
+    injectionFound,
+
+    // Agent confirmation
+    agentConfirmProduct,
+    agentConfirmRetailer,
+    agentSafePurchaseDone,
+    agentMaliciousDone,
+
     // Refs
-    logRef,
-    chatRef,
     chatBottomRef,
-    
+
     // Actions
+    handleBillingComplete,
+    handleManualProductSelect,
+    handleManualAddToCart,
+    handleManualConfirmPurchase,
+    handleFoundInjection,
+    handleTransitionToAgent,
     startSearch,
     handleRetailerClick,
+    handleAgentConfirm,
+    handleAgentConfirmCancel,
+    handleBackToAgentChat,
+    handleInspectMaliciousSite,
     handleQuizAnswer,
-    handleBillingComplete,
-    setNotifications,
-    setShowQuiz,
-    setGameState,
-    
-    // Utility
+    handleStartQuiz,
+    handleQuizFinished,
+
+    // Utilities
     getRank,
-    updateScore,
-    setVettedPolicy,
-    setVettedLogs
+    getHint,
   };
 };

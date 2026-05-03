@@ -135,6 +135,11 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const handleDevBypass = () => {
+    setStoredUser({ id: 99999, firstname: 'Dev', lastname: 'User', countryCode: 'US' });
+    navigate(gameRoute);
+  };
+
   return (
     <Box
       sx={{
@@ -266,6 +271,15 @@ const LoginPage: React.FC = () => {
           </Box>
         )}
       </Paper>
+
+      <Typography
+        variant='body2'
+        sx={{ position: 'fixed', bottom: 16, textAlign: 'center', width: '100%' }}
+      >
+        <Link component='button' onClick={handleDevBypass} underline='hover' sx={{ color: 'text.disabled', fontSize: 12 }}>
+          Skip login (dev mode)
+        </Link>
+      </Typography>
 
       <Snackbar
         open={snack.open}
