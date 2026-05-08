@@ -52,7 +52,7 @@ const GameIcon = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.primary.main}40`,
 }));
 
-const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
+const HomePage: React.FC<HomePageProps> = () => {
   const navigate = useNavigate();
 
   const games = [
@@ -103,9 +103,6 @@ const HomePage: React.FC<HomePageProps> = ({ toggleColorMode }) => {
         <Typography variant="h2" component="h1" gutterBottom>
           Welcome to Cyber AI Festival
         </Typography>
-        {/* <Box sx={{ display: 'inline-block', mb: 2 }}>
-          <ThemeToggle toggleColorMode={toggleColorMode} />
-        </Box> */}
       </Box>
       
       <Typography variant="h5" component="h2" gutterBottom sx={{ color: 'text.secondary', mb: 4 }}>
