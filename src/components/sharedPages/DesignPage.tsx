@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
-import { ArcadeButton, ArcadeTypography } from '../ui';
+import { ArcadeButton, ArcadeTypography, LightSign } from '../ui';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 
 const Scanlines: React.FC = () => (
@@ -385,6 +385,13 @@ const DesignPage: React.FC = () => {
                 QUIT
               </ArcadeButton>
             </Box>
+          </Box>
+        </Section>
+
+        {/* Light Sign */}
+        <Section title="LIGHT SIGN">
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <LightSign>CYBER AI ARCADE</LightSign>
           </Box>
         </Section>
 

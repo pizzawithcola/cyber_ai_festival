@@ -8,3 +8,6 @@ export { ARCADE_COLORS } from './ArcadeButton';
 export { default as ArcadeTypography } from './ArcadeTypography';
 export type { ArcadeTypographyProps, ArcadeSize } from './ArcadeTypography';
 export { ArcadeTitle, ArcadeSubtitle, ArcadeHeading, ArcadeText, ArcadeLabel } from './ArcadeTypography';
+
+export { default as LightSign } from './LightSign';
+export type { LightSignProps } from './LightSign';
