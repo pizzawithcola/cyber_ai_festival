@@ -1,55 +1,87 @@
 import React from 'react';
 import { 
   Container, 
-  Typography, 
   Box, 
-  Card,
-  CardContent,
-  styled
+  Paper,
+  styled,
+  keyframes
 } from '@mui/material';
-// import ThemeToggle from '../../components/common/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
+import { ArcadeTypography, LightSign } from '../../components/ui';
+import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 
 interface HomePageProps {
   toggleColorMode: () => void;
 }
 
-const StyledCard = styled(Card)(({ theme }) => ({
-  background: theme.palette.mode === 'light'
-    ? `linear-gradient(145deg, ${theme.palette.grey[50]}, ${theme.palette.common.white})`
-    : `linear-gradient(145deg, ${theme.palette.background.paper}, ${theme.palette.grey[800]})`,
-  borderRadius: '16px',
-  border: `1px solid ${
-    theme.palette.mode === 'dark' 
-      ? 'rgba(255,255,255,0.1)' 
-      : 'rgba(0,0,0,0.05)'
-  }`,
-  boxShadow: theme.palette.mode === 'dark'
-    ? `0 8px 32px rgba(0,0,0,0.3)`
-    : `0 8px 32px rgba(0,0,0,0.1)`,
-  backdropFilter: 'blur(4px)',
-  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const neonPulse = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+`;
+
+const GameCard = styled(Paper, {
+  shouldForwardProp: (prop) => prop !== 'accentColor'
+})<{ accentColor: string }>(({ accentColor }) => ({
+  position: 'relative',
+  backgroundColor: ARCADE_COLORS.dark,
+  border: `3px solid ${accentColor}`,
+  borderRadius: '4px',
+  padding: '32px 16px',
   cursor: 'pointer',
-  height: '100%',
+  transition: 'all 0.3s ease',
+  animation: `${fadeIn} 0.6s ease-out both`,
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundImage: `
+      repeating-linear-gradient(0deg, transparent, transparent 2px, ${GRID_COLOR}40 2px, ${GRID_COLOR}40 4px),
+      repeating-linear-gradient(90deg, transparent, transparent 2px, ${GRID_COLOR}40 2px, ${GRID_COLOR}40 4px)
+    `,
+    backgroundSize: '4px 4px',
+    opacity: 0.3,
+    pointerEvents: 'none',
+    zIndex: 0,
+  },
   '&:hover': {
-    transform: 'translateY(-8px)',
-    boxShadow: theme.palette.mode === 'dark'
-      ? `0 12px 40px ${theme.palette.primary.main}40` 
-      : `0 12px 40px ${theme.palette.primary.main}30`,
+    transform: 'translateY(-8px) scale(1.02)',
+    borderColor: accentColor,
+    boxShadow: `0 0 15px ${accentColor}80, 0 0 30px ${accentColor}40, inset 0 0 20px ${accentColor}20`,
+    '& .game-icon': {
+      transform: 'scale(1.15)',
+    },
+    '& .game-title': {
+      textShadow: `0 0 10px ${accentColor}, 0 0 20px ${accentColor}80`,
+    },
+  },
+  '& > *': {
+    position: 'relative',
+    zIndex: 1,
   },
 }));
 
-const GameIcon = styled(Box)(({ theme }) => ({
+const IconBox = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'accentColor'
+})<{ accentColor: string }>(({ accentColor }) => ({
   width: '64px',
   height: '64px',
   margin: '0 auto 16px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: '12px',
-  background: `linear-gradient(135deg, ${
-    theme.palette.primary.main}20, ${theme.palette.secondary.main}20)`,
-  border: `1px solid ${theme.palette.primary.main}40`,
+  border: `2px solid ${accentColor}`,
+  borderRadius: '8px',
+  backgroundColor: `${accentColor}15`,
+  transition: 'all 0.3s ease',
 }));
 
 const HomePage: React.FC<HomePageProps> = () => {
@@ -57,39 +89,32 @@ const HomePage: React.FC<HomePageProps> = () => {
 
   const games = [
     {
-      id: 'deepfake',
-      title: 'DeepFake',
-      description: 'Detect manipulated media content',
-      icon: '🔍',
-      path: '/deepfake'
-    },
-    {
       id: 'hallucinate',
-      title: 'AI Hallucination',
-      description: 'Identify false AI-generated content',
+      title: 'AI HALLUCINATION',
+      description: 'Spot the lies AI tells',
       icon: '🧠',
-      path: '/hallucinate'
+      color: ARCADE_COLORS.magenta,
     },
     {
       id: 'datashadows',
-      title: 'Data Shadows',
-      description: 'Discover hidden data traces',
+      title: 'DATA SHADOWS',
+      description: 'Uncover hidden traces',
       icon: '👻',
-      path: '/datashadows'
+      color: ARCADE_COLORS.cyan,
     },
     {
       id: 'retaildemolition',
-      title: 'Retail Demolition',
-      description: 'Analyze retail vulnerabilities',
+      title: 'RETAIL DEMOLITION',
+      description: 'Break the system',
       icon: '🏪',
-      path: '/retaildemolition'
+      color: ARCADE_COLORS.yellow,
     },
     {
       id: 'phishing',
-      title: 'Phishing Attack',
-      description: 'Spot phishing attempts',
+      title: 'PHISHING ATTACK',
+      description: 'Don\'t take the bait',
       icon: '🎣',
-      path: '/phishing'
+      color: ARCADE_COLORS.lime,
     }
   ];
 
@@ -98,44 +123,111 @@ const HomePage: React.FC<HomePageProps> = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', py: 4 }}>
-      <Box sx={{ textAlign: 'center', width: '100%', mb: 4 }}>
-        <Typography variant="h2" component="h1" gutterBottom>
-          Welcome to Cyber AI Festival
-        </Typography>
-      </Box>
-      
-      <Typography variant="h5" component="h2" gutterBottom sx={{ color: 'text.secondary', mb: 4 }}>
-        Choose a challenge to begin
-      </Typography>
-      
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
-        {games.map((game) => (
-          <Box 
-            key={game.id} 
+    <Box 
+      sx={{ 
+        minHeight: '100vh',
+        backgroundColor: ARCADE_COLORS.dark,
+        backgroundImage: `
+          repeating-linear-gradient(0deg, transparent, transparent 2px, ${GRID_COLOR} 2px, ${GRID_COLOR} 4px),
+          repeating-linear-gradient(90deg, transparent, transparent 2px, ${GRID_COLOR} 2px, ${GRID_COLOR} 4px)
+        `,
+        backgroundSize: '40px 40px',
+        py: 6,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Container maxWidth="md">
+        {/* Title */}
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <LightSign>CYBER AI FESTIVAL</LightSign>
+        </Box>
+
+        {/* Subtitle */}
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <ArcadeTypography 
+            arcadeSize="sm" 
+            component="h2" 
             sx={{ 
-              flex: { xs: '1 1 calc(50% - 16px)', sm: '1 1 calc(50% - 16px)', md: '1 1 calc(20% - 16px)' },
-              minWidth: { xs: '140px', sm: '160px', md: '180px' },
-              maxWidth: { md: 'calc(20% - 16px)' },
+              color: ARCADE_COLORS.cyan,
+              textShadow: `0 0 8px ${ARCADE_COLORS.cyan}, 0 0 16px ${ARCADE_COLORS.cyan}80`,
+              animation: `${neonPulse} 2s ease-in-out infinite`,
             }}
           >
-            <StyledCard onClick={() => handleGameClick(game.id)}>
-              <CardContent sx={{ textAlign: 'center', padding: 3 }}>
-                <GameIcon>
-                  <Typography variant="h4">{game.icon}</Typography>
-                </GameIcon>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+            SELECT YOUR CHALLENGE
+          </ArcadeTypography>
+        </Box>
+
+        {/* Game Cards */}
+        <Box 
+          sx={{ 
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+            gap: 3,
+          }}
+        >
+          {games.map((game, index) => (
+            <GameCard
+              key={game.id}
+              accentColor={game.color}
+              elevation={0}
+              onClick={() => handleGameClick(game.id)}
+              sx={{ animationDelay: `${index * 0.15}s` }}
+            >
+              <IconBox className="game-icon" accentColor={game.color}>
+                <span style={{ fontSize: '32px' }}>{game.icon}</span>
+              </IconBox>
+              
+              <Box sx={{ textAlign: 'center' }}>
+                <ArcadeTypography
+                  arcadeSize="xs"
+                  component="h3"
+                  className="game-title"
+                  sx={{
+                    color: game.color,
+                    mb: 1,
+                    transition: 'text-shadow 0.3s ease',
+                  }}
+                >
                   {game.title}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                </ArcadeTypography>
+                
+                <ArcadeTypography
+                  arcadeSize="xs"
+                  component="p"
+                  monospace
+                  sx={{
+                    color: ARCADE_COLORS.white,
+                    opacity: 0.6,
+                    fontSize: '0.65rem',
+                  }}
+                >
                   {game.description}
-                </Typography>
-              </CardContent>
-            </StyledCard>
-          </Box>
-        ))}
-      </Box>
-    </Container>
+                </ArcadeTypography>
+              </Box>
+            </GameCard>
+          ))}
+        </Box>
+
+        {/* Footer */}
+        <Box sx={{ textAlign: 'center', mt: 8 }}>
+          <ArcadeTypography
+            arcadeSize="xs"
+            component="p"
+            monospace
+            sx={{
+              color: ARCADE_COLORS.white,
+              opacity: 0.3,
+              fontSize: '0.6rem',
+            }}
+          >
+            PRESS START TO BEGIN • INSERT COIN TO CONTINUE
+          </ArcadeTypography>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 
