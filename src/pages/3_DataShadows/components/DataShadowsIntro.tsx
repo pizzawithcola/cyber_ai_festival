@@ -4,15 +4,33 @@ interface DataShadowsIntroProps {
   onComplete: () => void
 }
 
-const AUTO_CLOSE_MS = 6800
+const INTRO_LINES = [
+  {
+    label: 'What People Do',
+    line: '81% of people accept terms without reading them.',
+  },
+  {
+    label: 'What Can Happen',
+    line: 'Your health, location, and identity data can be shared, leaked, profiled, and reused.',
+  },
+  {
+    label: 'Real Consequences',
+    line: 'BetterHelp paid $7.8M, and 23andMe said attackers reached data tied to about 7M profiles.',
+  },
+  {
+    label: 'What This Round Asks',
+    line: 'Slow down, notice the defaults, and see what convenience is quietly asking you to give away.',
+  },
+] as const
+
+const INTRO_FADE_MS = 6500
+const INTRO_STEP_MS = 7500
 
 const DataShadowsIntro: React.FC<DataShadowsIntroProps> = ({ onComplete }) => {
   const [visible, setVisible] = useState(false)
-  const [showAllBlocks, setShowAllBlocks] = useState(false)
+  const [currentIntroIndex, setCurrentIntroIndex] = useState(0)
+  const [isFadingOut, setIsFadingOut] = useState(false)
   const completedRef = useRef(false)
-  const revealTimerRef = useRef<number | null>(null)
-  const exitTimerRef = useRef<number | null>(null)
-  const completeTimerRef = useRef<number | null>(null)
 
   const completeNow = useCallback(() => {
     if (completedRef.current) return
@@ -21,47 +39,53 @@ const DataShadowsIntro: React.FC<DataShadowsIntroProps> = ({ onComplete }) => {
     onComplete()
   }, [onComplete])
 
-  const revealAllText = useCallback(() => {
-    setShowAllBlocks(true)
-    if (revealTimerRef.current) {
-      window.clearTimeout(revealTimerRef.current)
-      revealTimerRef.current = null
-    }
-  }, [])
+  const advanceIntro = useCallback(() => {
+    setIsFadingOut(false)
 
-  const handleAdvanceIntro = useCallback(() => {
-    if (!showAllBlocks) {
-      revealAllText()
+    if (currentIntroIndex < INTRO_LINES.length - 1) {
+      setCurrentIntroIndex((prev) => prev + 1)
       return
     }
 
     completeNow()
-  }, [completeNow, revealAllText, showAllBlocks])
+  }, [completeNow, currentIntroIndex])
 
   useEffect(() => {
     const enterTimer = window.setTimeout(() => setVisible(true), 60)
-    revealTimerRef.current = window.setTimeout(() => setShowAllBlocks(true), 2100)
-    exitTimerRef.current = window.setTimeout(() => setVisible(false), AUTO_CLOSE_MS - 420)
-    completeTimerRef.current = window.setTimeout(() => completeNow(), AUTO_CLOSE_MS)
 
     return () => {
       window.clearTimeout(enterTimer)
-      if (revealTimerRef.current) window.clearTimeout(revealTimerRef.current)
-      if (exitTimerRef.current) window.clearTimeout(exitTimerRef.current)
-      if (completeTimerRef.current) window.clearTimeout(completeTimerRef.current)
     }
-  }, [completeNow])
+  }, [])
+
+  useEffect(() => {
+    const fadeTimer = window.setTimeout(() => {
+      setIsFadingOut(true)
+    }, INTRO_FADE_MS)
+
+    const nextTimer = window.setTimeout(() => {
+      advanceIntro()
+    }, INTRO_STEP_MS)
+
+    return () => {
+      window.clearTimeout(fadeTimer)
+      window.clearTimeout(nextTimer)
+    }
+  }, [advanceIntro, currentIntroIndex])
 
   return (
     <div
       className={`data-shadows-intro-overlay ${visible ? 'data-shadows-intro-overlay-visible' : ''}`}
-      onClick={handleAdvanceIntro}
+      onClick={advanceIntro}
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') handleAdvanceIntro()
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          advanceIntro()
+        }
       }}
-      aria-label="Reveal intro text, then continue to the Data Shadows experience"
+      aria-label="Advance the Data Shadows intro"
     >
       <div className="data-shadows-intro-shell">
         <div className="data-shadows-intro-frame" />
@@ -69,29 +93,30 @@ const DataShadowsIntro: React.FC<DataShadowsIntroProps> = ({ onComplete }) => {
         <div className="data-shadows-intro-content">
           <div className="data-shadows-intro-kicker">Data Shadows</div>
 
-          <div className={`data-shadows-intro-block data-shadows-intro-block-delay-1 ${showAllBlocks ? 'data-shadows-intro-block-force-visible' : ''}`}>
-            <div className="data-shadows-intro-label">What People Do</div>
-            <p className="data-shadows-intro-line">
-              <span className="data-shadows-intro-highlight">81%</span> of people accept terms without reading them.
-            </p>
-          </div>
+          <div className="data-shadows-intro-stage">
+            {INTRO_LINES.map((intro, index) => {
+              const isActive = index === currentIntroIndex
 
-          <div className={`data-shadows-intro-block data-shadows-intro-block-delay-2 ${showAllBlocks ? 'data-shadows-intro-block-force-visible' : ''}`}>
-            <div className="data-shadows-intro-label">What Can Happen</div>
-            <p className="data-shadows-intro-line">
-              Your health, location, and identity data can be shared, leaked, profiled, and reused.
-            </p>
-          </div>
-
-          <div className={`data-shadows-intro-block data-shadows-intro-block-delay-3 ${showAllBlocks ? 'data-shadows-intro-block-force-visible' : ''}`}>
-            <div className="data-shadows-intro-label">Real Consequences</div>
-            <p className="data-shadows-intro-line">
-              BetterHelp paid <span className="data-shadows-intro-highlight">$7.8M</span>; 23andMe said attackers reached data tied to about <span className="data-shadows-intro-highlight">7M</span> profiles.
-            </p>
+              return (
+                <div
+                  key={intro.label}
+                  className={[
+                    'data-shadows-intro-card',
+                    isActive ? 'data-shadows-intro-card-active' : '',
+                    isActive && isFadingOut ? 'data-shadows-intro-card-fading' : '',
+                  ].filter(Boolean).join(' ')}
+                >
+                  <div className="data-shadows-intro-label">{intro.label}</div>
+                  <p className="data-shadows-intro-line">{intro.line}</p>
+                </div>
+              )
+            })}
           </div>
 
           <div className="data-shadows-intro-footer">
-            Briefing complete. Loading app simulation...
+            {currentIntroIndex < INTRO_LINES.length - 1
+              ? `Tap anywhere to continue · ${currentIntroIndex + 1}/${INTRO_LINES.length}`
+              : 'Tap anywhere to begin the simulation'}
           </div>
         </div>
       </div>
