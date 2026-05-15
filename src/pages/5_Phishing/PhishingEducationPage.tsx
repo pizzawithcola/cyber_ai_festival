@@ -8,9 +8,11 @@ const PhishingEducationPage: React.FC = () => {
   const navigate = useNavigate();
   
   const texts = [
-    "Phishing nowadays, is still a big problem for Cybersecurity.",
-    "In HSBC, we have blocked more than 23,000,000 phishing emails last year (I just made it up)",
-    "Now, we want to invite you to be the one who write the phishing email..."
+    "PPhishing is the art of using fake emails to impersonate trusted brands, colleagues, or friends.",
+    "Today, nearly half of UK businesses are still falling victim to these digital traps.",
+    "And in many cases, the attacker's big breakthrough is an employee clicking like 'sure, why not' on a fake login page.",
+    "Today, you aren't the target, you are the attacker.",
+    "Craft the ultimate lure and see if our employees bite the bait."
   ];
   
   const [currentTextIndex, setCurrentTextIndex] = useState(-1); // Start with no text
