@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, styled, useTheme } from '@mui/material';
+import { Box, Typography, keyframes } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
+import { ArcadeButton, ArcadeTypography } from '../ui';
+import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 
 interface RankingEntry {
   rank: number;
@@ -22,64 +24,71 @@ interface RankingData {
 }
 
 const GAME_TO_SCORE_TYPE: Record<string, string> = {
-  'deepfake': 'game1',
-  'hallucinate': 'game2',
-  'datashadows': 'game3',
-  'retaildemolition': 'game4',
-  'phishing': 'game5',
+  deepfake: 'game1',
+  hallucinate: 'game2',
+  datashadows: 'game3',
+  retaildemolition: 'game4',
+  phishing: 'game5',
 };
 
 const SCORE_TYPE_LABELS: Record<string, string> = {
-  'game1': 'DeepFake',
-  'game2': 'AI Hallucination',
-  'game3': 'Data Shadows',
-  'game4': 'Retail Demolition',
-  'game5': 'Phishing Attack',
-  'total': 'Total Score',
+  game1: 'DEEPFAKE',
+  game2: 'AI HALLUCINATION',
+  game3: 'DATA SHADOWS',
+  game4: 'RETAIL DEMOLITION',
+  game5: 'PHISHING ATTACK',
+  total: 'TOTAL SCORE',
 };
 
-const MedalCell = styled(TableCell)({
-  fontWeight: 'bold',
-  fontSize: '1.5rem',
-  borderBottom: 'none',
-});
+// Game-specific theme colors
+const GAME_THEME_COLORS: Record<string, string> = {
+  game1: ARCADE_COLORS.magenta,
+  game2: ARCADE_COLORS.magenta,
+  game3: ARCADE_COLORS.cyan,
+  game4: ARCADE_COLORS.yellow,
+  game5: ARCADE_COLORS.lime,
+  total: ARCADE_COLORS.cyan,
+};
 
-const GoldMedal = styled(MedalCell)({
-  color: '#FFD700',
-  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-});
+const scanlineAnim = keyframes`
+  0% { top: -10%; }
+  100% { top: 110%; }
+`;
 
-const SilverMedal = styled(MedalCell)({
-  color: '#C0C0C0',
-  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-});
+const countryCodeToFlag = (code: string) => {
+  const country = COUNTRIES.find((c) => c.name === code);
+  const countryCode = country ? country.code : code;
+  return countryCode
+    .toUpperCase()
+    .split('')
+    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
+    .join('');
+};
 
-const BronzeMedal = styled(MedalCell)({
-  color: '#CD7F32',
-  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-});
+const getRankDisplay = (rank: number) => {
+  if (rank === 1) return { text: '1ST', color: '#FFD700' };
+  if (rank === 2) return { text: '2ND', color: '#C0C0C0' };
+  if (rank === 3) return { text: '3RD', color: '#CD7F32' };
+  return { text: `${rank}TH`, color: '' }; // color set dynamically
+};
 
 const RankingPage: React.FC = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const { game } = useParams<{ game: string }>();
   const [rankingData, setRankingData] = useState<RankingData | null>(null);
   const [loading, setLoading] = useState(true);
+  const user = getStoredUser();
 
-  // Determine score type based on game parameter or default to 'total'
   const scoreType = (game && GAME_TO_SCORE_TYPE[game]) || 'total';
-  const rankingTitle = SCORE_TYPE_LABELS[scoreType] || 'Global Rankings';
+  const rankingTitle = SCORE_TYPE_LABELS[scoreType] || 'RANKINGS';
+  const themeColor = GAME_THEME_COLORS[scoreType] || ARCADE_COLORS.cyan;
 
   useEffect(() => {
     const fetchRankings = async () => {
       try {
         setLoading(true);
-        const response = await apiFetch(`/rankings/${scoreType}?limit=10`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
+        const response = await apiFetch(`/rankings/${scoreType}?limit=50`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data: RankingData = await response.json();
         setRankingData(data);
       } catch (err) {
@@ -88,111 +97,199 @@ const RankingPage: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchRankings();
   }, [scoreType]);
 
-  const countryCodeToFlag = (code: string) => {
-    const country = COUNTRIES.find(c => c.name === code);
-    const countryCode = country ? country.code : code;
-    return countryCode
-      .toUpperCase()
-      .split('')
-      .map(c => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-      .join('');
-  };
+  const top10 = rankingData?.rankings.slice(0, 10) || [];
+  const currentUserId = user?.id;
+  const userInTop10 = top10.some((e) => e.user_id === currentUserId);
+  const userEntry = rankingData?.rankings.find((e) => e.user_id === currentUserId);
 
-  const getMedalStyle = (rank: number) => {
-    if (rank === 1) return GoldMedal;
-    if (rank === 2) return SilverMedal;
-    if (rank === 3) return BronzeMedal;
-    return MedalCell;
-  };
-
-  const getMedalEmoji = (rank: number) => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return `#${rank}`;
-  };
+  const pulseGlow = keyframes`
+    0%, 100% { box-shadow: 0 0 8px ${themeColor}30; }
+    50% { box-shadow: 0 0 16px ${themeColor}60; }
+  `;
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
-        <Box sx={{ maxWidth: 800, width: '100%' }}>
-          <Typography variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 4, fontWeight: 700 }}>
-            🏆 {rankingTitle} Leaderboard 🏆
-          </Typography>
-          
-          {loading ? (
-            <Typography sx={{ textAlign: 'center', py: 4, fontSize: '1.2rem' }}>Loading rankings...</Typography>
-          ) : rankingData && rankingData.rankings.length > 0 ? (
-            <TableContainer component={Paper} sx={{ mb: 4 }}>
-              <Table sx={{ minWidth: 650 }} aria-label="ranking table">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>Rank</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>Name</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>Region</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.3rem', textAlign: 'right' }}>Score</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rankingData.rankings.map((entry) => {
-                    const MedalComponent = getMedalStyle(entry.rank);
-                    return (
-                      <TableRow
-                        key={entry.user_id}
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: theme.palette.action.hover,
-                          },
-                        }}
-                      >
-                        <TableCell className="medal-cell" component="th" scope="row">
-                          <MedalComponent>
-                            {getMedalEmoji(entry.rank)}
-                          </MedalComponent>
-                        </TableCell>
-                        <TableCell sx={{ fontSize: '1.3rem', fontWeight: entry.rank <= 3 ? 600 : 400 }}>
-                          {entry.firstname} {entry.lastname}
-                        </TableCell>
-                        <TableCell sx={{ fontSize: '2rem' }}>
-                          {countryCodeToFlag(entry.region)}
-                        </TableCell>
-                        <TableCell sx={{ fontSize: '1.3rem', fontWeight: 600, textAlign: 'right' }}>
-                          {entry.score.toFixed(1)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Typography sx={{ textAlign: 'center', py: 4, fontSize: '1.2rem' }}>No rankings available yet.</Typography>
-          )}
-          
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Button 
-              variant="contained" 
-              size="large"
-              onClick={() => {
-                // Clear all session data when going back to home
-                const storedUser = getStoredUser();
-                if (storedUser?.id) {
-                  sessionStorage.removeItem(`phishing_session_highscore_${storedUser.id}`);
-                }
-                sessionStorage.removeItem('phishing_attempt_count');
-                console.log('[RankingPage] Cleared session data');
-                navigate('/');
-              }}
-              sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}
-            >
-              Back to Home
-            </Button>
+    <Box
+      sx={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        backgroundColor: ARCADE_COLORS.dark,
+        backgroundImage: `
+          linear-gradient(90deg, ${GRID_COLOR} 1px, transparent 1px),
+          linear-gradient(180deg, ${GRID_COLOR} 1px, transparent 1px)
+        `,
+        backgroundSize: '40px 40px',
+        overflow: 'auto',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          height: '4px',
+          background: `linear-gradient(90deg, transparent, ${themeColor}40, transparent)`,
+          animation: `${scanlineAnim} 4s linear infinite`,
+          zIndex: 10,
+          pointerEvents: 'none',
+        },
+      }}
+    >
+      {/* Title */}
+      <Box sx={{ textAlign: 'center', mt: 4, mb: 4 }}>
+        <ArcadeTypography font="pressstart2p" sx={{ color: themeColor, fontSize: '1.1rem' }}>
+          {rankingTitle}
+        </ArcadeTypography>
+        <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color: `${themeColor}60`, mt: 1 }}>
+          LEADERBOARD
+        </Typography>
+      </Box>
+
+      {/* Leaderboard Container */}
+      <Box sx={{ width: '100%', maxWidth: 700, px: 2, pb: 4 }}>
+        <Box
+          sx={{
+            border: `2px solid ${themeColor}40`,
+            backgroundColor: 'rgba(5, 5, 20, 0.95)',
+            animation: `${pulseGlow} 3s ease-in-out infinite`,
+            position: 'relative',
+            overflow: 'hidden',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${themeColor}03 2px, ${themeColor}03 4px)`,
+              pointerEvents: 'none',
+            },
+          }}
+        >
+          {/* Table Header */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '70px 1fr 60px 90px',
+              px: 2,
+              py: 1.5,
+              borderBottom: `1px solid ${themeColor}30`,
+              backgroundColor: `${themeColor}08`,
+            }}
+          >
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>RANK</Typography>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>NAME</Typography>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'center' }}>REG</Typography>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'right' }}>SCORE</Typography>
           </Box>
+
+          {/* Rows */}
+          {loading ? (
+            <Box sx={{ py: 6, textAlign: 'center' }}>
+              <ArcadeTypography font="electrolize" sx={{ color: themeColor, fontSize: '0.9rem' }}>
+                {'> LOADING...'}
+              </ArcadeTypography>
+            </Box>
+          ) : top10.length > 0 ? (
+            <>
+              {top10.map((entry) => {
+                const rankInfo = getRankDisplay(entry.rank);
+                const rankColor = rankInfo.color || `${themeColor}80`;
+                const isCurrentUser = entry.user_id === currentUserId;
+                return (
+                  <Box
+                    key={entry.user_id}
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: '70px 1fr 60px 90px',
+                      px: 2,
+                      py: 1.25,
+                      borderBottom: `1px solid ${GRID_COLOR}`,
+                      backgroundColor: isCurrentUser ? `${themeColor}12` : 'transparent',
+                      position: 'relative',
+                      zIndex: 1,
+                      '&:hover': { backgroundColor: `${themeColor}08` },
+                    }}
+                  >
+                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: rankColor, alignSelf: 'center' }}>
+                      {rankInfo.text}
+                    </Typography>
+                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: isCurrentUser ? themeColor : ARCADE_COLORS.white, fontWeight: isCurrentUser ? 700 : 400, alignSelf: 'center' }}>
+                      {entry.firstname} {entry.lastname} {isCurrentUser ? '◄' : ''}
+                    </Typography>
+                    <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
+                      {countryCodeToFlag(entry.region)}
+                    </Typography>
+                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: rankColor, textAlign: 'right', alignSelf: 'center' }}>
+                      {entry.score.toFixed(1)}
+                    </Typography>
+                  </Box>
+                );
+              })}
+
+              {/* If user NOT in top 10, show separator + user row */}
+              {!userInTop10 && userEntry && (
+                <>
+                  <Box sx={{ py: 1, textAlign: 'center', borderBottom: `1px solid ${GRID_COLOR}` }}>
+                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '4px' }}>
+                      {'· · ·'}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: '70px 1fr 60px 90px',
+                      px: 2,
+                      py: 1.25,
+                      backgroundColor: `${themeColor}12`,
+                      position: 'relative',
+                      zIndex: 1,
+                    }}
+                  >
+                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: themeColor, alignSelf: 'center' }}>
+                      {getRankDisplay(userEntry.rank).text}
+                    </Typography>
+                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: themeColor, fontWeight: 700, alignSelf: 'center' }}>
+                      {userEntry.firstname} {userEntry.lastname} ◄
+                    </Typography>
+                    <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
+                      {countryCodeToFlag(userEntry.region)}
+                    </Typography>
+                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: themeColor, textAlign: 'right', alignSelf: 'center' }}>
+                      {userEntry.score.toFixed(1)}
+                    </Typography>
+                  </Box>
+                </>
+              )}
+            </>
+          ) : (
+            <Box sx={{ py: 6, textAlign: 'center' }}>
+              <Typography sx={{ fontFamily: '"Electrolize", sans-serif', color: `${ARCADE_COLORS.white}60` }}>
+                No rankings available yet.
+              </Typography>
+            </Box>
+          )}
         </Box>
+      </Box>
+
+      {/* Back Button */}
+      <Box sx={{ pb: 4 }}>
+        <ArcadeButton
+          color="cyan"
+          variant="outline"
+          onClick={() => {
+            const storedUser = getStoredUser();
+            if (storedUser?.id) {
+              sessionStorage.removeItem(`phishing_session_highscore_${storedUser.id}`);
+            }
+            sessionStorage.removeItem('phishing_attempt_count');
+            navigate('/');
+          }}
+          sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '1px' }}
+        >
+          BACK TO HOME
+        </ArcadeButton>
       </Box>
     </Box>
   );
