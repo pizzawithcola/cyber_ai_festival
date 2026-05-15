@@ -1,5 +1,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import { ARCADE_COLORS } from '../../theme/theme';
+import { ArcadeTypography } from '../ui';
 
 interface HeaderProps {
   title: string;
@@ -25,25 +27,29 @@ const Header: React.FC<HeaderProps> = ({ title, firstname, lastname }) => {
         justifyContent: 'flex-end',
         px: 3,
         py: 1,
-        borderBottom: theme => `1px solid ${theme.palette.divider}`,
-        backgroundColor: theme => theme.palette.background.paper,
+        borderBottom: `1px solid ${ARCADE_COLORS.lime}30`,
+        backgroundColor: ARCADE_COLORS.dark,
         flexShrink: 0,
+        boxShadow: `0 2px 8px ${ARCADE_COLORS.lime}15`,
       }}
     >
-      <Typography
-        variant='h6'
+      <ArcadeTypography
+        font="electrolize"
+        arcadeColor="lime"
+        arcadeSize="sm"
+        component="h6"
         sx={{
           position: 'absolute',
           left: '50%',
           transform: 'translateX(-50%)',
-          fontWeight: 600,
+          fontSize: '1rem',
         }}
       >
         {title}
-      </Typography>
+      </ArcadeTypography>
       {(fullName) && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography variant='h6' sx={{ color: 'text.secondary', fontSize: '15px' }}>
+          <Typography sx={{ fontFamily: '"Courier New", monospace', color: ARCADE_COLORS.white, fontSize: '0.85rem' }}>
             {fullName || ''}
           </Typography>
         </Box>

@@ -5,9 +5,7 @@ import { demoEmails } from './phishingData';
 import { 
   Box, 
   TextField, 
-  Button, 
   Typography, 
-  Paper, 
   FormControl, 
   InputLabel, 
   Select, 
@@ -15,7 +13,6 @@ import {
   IconButton,
   Divider,
   styled,
-  useTheme,
   Snackbar,
   Alert,
 } from '@mui/material';
@@ -32,6 +29,8 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import TurndownService from 'turndown';
 import { apiFetch } from '../../services/api';
+import { ArcadeButton, ArcadeTypography } from '../../components/ui';
+import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 
 const turndown = new TurndownService({
   headingStyle: 'atx',
@@ -56,16 +55,27 @@ turndown.addRule('coloredText', {
   },
 });
 
-const StyledTextField = styled(TextField)(({ theme }) => ({
+const StyledTextField = styled(TextField)(() => ({
   '& .MuiOutlinedInput-root': {
+    backgroundColor: '#0d0d20',
+    color: ARCADE_COLORS.white,
+    fontFamily: '"Electrolize", sans-serif',
+    fontSize: '0.85rem',
     '& fieldset': {
-      borderColor: theme.palette.divider,
+      borderColor: GRID_COLOR,
     },
     '&:hover fieldset': {
-      borderColor: theme.palette.primary.main,
+      borderColor: ARCADE_COLORS.lime,
     },
     '&.Mui-focused fieldset': {
-      borderColor: theme.palette.primary.main,
+      borderColor: ARCADE_COLORS.lime,
+    },
+    '& input': {
+      color: ARCADE_COLORS.white,
+    },
+    '& input::placeholder': {
+      color: `${ARCADE_COLORS.white}60`,
+      opacity: 1,
     },
   },
 }));
@@ -76,7 +86,6 @@ interface PhishingMailSpaceProps {
 }
 
 const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }) => {
-  const theme = useTheme();
   const navigate = useNavigate();
   
   const [senderEmail, setSenderEmail] = useState('');
@@ -105,7 +114,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
           height: 100%;
           font-family: inherit;
           font-size: 14px;
-          color: ${theme.palette.text.primary};
+          color: #e0e0e0;
           padding: 12px;
         `,
       },
@@ -241,99 +250,96 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: 2, overflow: 'hidden' }}>
-      <Typography variant='h6' gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
+      <ArcadeTypography font="electrolize" arcadeColor="lime" arcadeSize="md" sx={{ mb: 1 }}>
         PHISHING EMAIL EDITOR
-      </Typography>
+      </ArcadeTypography>
       
       {isLoading ? (
-        <Paper 
+        <Box 
           sx={{ 
             flex: 1, 
-           display: 'flex', 
+            display: 'flex', 
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            border: `1px solid ${theme.palette.primary.main}`,
-            backgroundColor: theme.palette.background.paper,
-            gap: 3,
+            border: `1px solid ${ARCADE_COLORS.lime}40`,
+            backgroundColor: 'rgba(5, 5, 15, 0.98)',
+            borderRadius: 1,
+            gap: 2,
+            boxShadow: `0 0 12px ${ARCADE_COLORS.lime}20`,
+            position: 'relative',
+            overflow: 'hidden',
+            /* Scanline overlay */
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,0,0.03) 2px, rgba(0,255,0,0.03) 4px)',
+              pointerEvents: 'none',
+            },
           }}
         >
-          {/* Animated loading icon */}
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-             position: 'relative',
-              '&::before': {
-               content: '""',
-               position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderRadius: '50%',
-                border: '4px solid transparent',
-                borderTopColor: theme.palette.primary.main,
-                animation: 'spin 1s linear infinite',
-                '@keyframes spin': {
-                  '0%': { transform: 'rotate(0deg)' },
-                  '100%': { transform: 'rotate(360deg)' },
-                },
-              },
-            }}
-          />
-          
-          {/* Loading text with typing effect */}
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography 
-             variant="h5" 
-              sx={{ 
-                fontWeight: 600,
-               color: theme.palette.primary.main,
-                mb: 1,
-              }}
-            >
-              AI Analysis in Progress
-            </Typography>
-            <Typography 
-             variant="body1" 
-              sx={{ 
-               color: 'text.secondary',
-                fontSize: '1rem',
-              }}
-            >
-              Analyzing phishing email effectiveness...
-            </Typography>
-            <Typography 
-             variant="body2" 
-              sx={{ 
-               color: 'text.disabled',
-                fontSize: '0.875rem',
-                mt: 2,
-                fontStyle: 'italic',
-              }}
-            >
-              Evaluating persuasion techniques and security bypass strategies
-            </Typography>
+          {/* Retro loading bars */}
+          <Box sx={{ display: 'flex', gap: '3px', mb: 2 }}>
+            {[...Array(8)].map((_, i) => (
+              <Box
+                key={i}
+                sx={{
+                  width: 6,
+                  height: 24,
+                  backgroundColor: ARCADE_COLORS.lime,
+                  opacity: 0.3,
+                  animation: `barPulse 1.2s ease-in-out ${i * 0.15}s infinite`,
+                  '@keyframes barPulse': {
+                    '0%, 100%': { opacity: 0.2, transform: 'scaleY(0.6)' },
+                    '50%': { opacity: 1, transform: 'scaleY(1)' },
+                  },
+                }}
+              />
+            ))}
           </Box>
-        </Paper>
+          
+          {/* Main text - blinking */}
+          <ArcadeTypography font="electrolize" arcadeColor="lime" arcadeSize="sm" sx={{ 
+            animation: 'textBlink 1.5s step-end infinite',
+            '@keyframes textBlink': {
+              '0%, 100%': { opacity: 1 },
+              '50%': { opacity: 0.4 },
+            },
+          }}>
+            {'> ANALYZING...'}
+          </ArcadeTypography>
+          
+          {/* Progress dots */}
+          <Typography sx={{ 
+            fontFamily: '"Press Start 2P", monospace', 
+            fontSize: '0.6rem', 
+            color: `${ARCADE_COLORS.lime}80`,
+            letterSpacing: '2px',
+            mt: 1,
+          }}>
+            {'[██████░░░░]'}
+          </Typography>
+        </Box>
       ) : (
-        <Paper 
+        <Box 
           sx={{ 
             flex: 1, 
             minHeight: 0,
             display: 'flex', 
             flexDirection: 'column',
-            border: `1px solid ${theme.palette.divider}`,
-            backgroundColor: theme.palette.background.paper,
-            overflow: 'hidden'
+            border: `1px solid ${ARCADE_COLORS.lime}30`,
+            backgroundColor: 'rgba(10, 10, 26, 0.95)',
+            borderRadius: 1,
+            overflow: 'hidden',
+            boxShadow: `0 0 8px ${ARCADE_COLORS.lime}15`,
           }}
         >
           {/* From / To / Subject + Send */}
-          <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', flexDirection: 'row', gap: 1 }}>
+          <Box sx={{ p: 2, borderBottom: `1px solid ${ARCADE_COLORS.lime}20`, display: 'flex', flexDirection: 'row', gap: 1 }}>
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>From:</Typography>
+                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: `${ARCADE_COLORS.white}80`, minWidth: 60, fontFamily: '"Electrolize", sans-serif' }}>From:</Typography>
                 <StyledTextField
                   fullWidth
                   value={senderEmail}
@@ -344,7 +350,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
                 />
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>To:</Typography>
+                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: `${ARCADE_COLORS.white}80`, minWidth: 60, fontFamily: '"Electrolize", sans-serif' }}>To:</Typography>
                 <StyledTextField
                   fullWidth
                   value={recipient}
@@ -355,7 +361,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
                 />
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: '#666666', minWidth: 60 }}>Subject:</Typography>
+                <Typography variant='subtitle2' sx={{ fontWeight: 500, color: `${ARCADE_COLORS.white}80`, minWidth: 60, fontFamily: '"Electrolize", sans-serif' }}>Subject:</Typography>
                 <StyledTextField
                   fullWidth
                   value={subject}
@@ -366,34 +372,33 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
                 />
               </Box>
             </Box>
-            <Button
-              variant='contained'
-              color='primary'
+            <ArcadeButton
+              color="lime"
               onClick={handleSend}
               sx={{
                 width: 60,
                 minWidth: 50,
                 height: 'auto',
                 alignSelf: 'stretch',
-                backgroundColor: '#1976d2',
-                '&:hover': { backgroundColor: '#1565c0' },
+                fontFamily: '"Electrolize", sans-serif',
+                letterSpacing: '0.5px',
               }}
             >
               <Send />
-            </Button>
+            </ArcadeButton>
           </Box>
           
           {/* 格式化工具栏 */}
-          <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          <Box sx={{ p: 1, borderBottom: `1px solid ${ARCADE_COLORS.lime}20`, display: 'flex', gap: 0.5, alignItems: 'center' }}>
             <IconButton 
               size='small' 
               onClick={() => editor?.chain().focus().toggleBold().run()}
               sx={{ 
                 borderRadius: 1,
-                backgroundColor: editor?.isActive('bold') ? '#1976d2' : 'transparent',
-                color: editor?.isActive('bold') ? '#ffffff' : '#666666',
+                backgroundColor: editor?.isActive('bold') ? ARCADE_COLORS.lime : 'transparent',
+                color: editor?.isActive('bold') ? '#000' : `${ARCADE_COLORS.white}80`,
                 '&:hover': {
-                  backgroundColor: editor?.isActive('bold') ? '#1565c0' : '#f5f5f5'
+                  backgroundColor: editor?.isActive('bold') ? ARCADE_COLORS.lime : 'rgba(255,255,255,0.1)'
                 }
               }}
             >
@@ -405,10 +410,10 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
               onClick={() => editor?.chain().focus().toggleItalic().run()}
               sx={{ 
                 borderRadius: 1,
-                backgroundColor: editor?.isActive('italic') ? '#1976d2' : 'transparent',
-                color: editor?.isActive('italic') ? '#ffffff' : '#666666',
+                backgroundColor: editor?.isActive('italic') ? ARCADE_COLORS.lime : 'transparent',
+                color: editor?.isActive('italic') ? '#000' : `${ARCADE_COLORS.white}80`,
                 '&:hover': {
-                  backgroundColor: editor?.isActive('italic') ? '#1565c0' : '#f5f5f5'
+                  backgroundColor: editor?.isActive('italic') ? ARCADE_COLORS.lime : 'rgba(255,255,255,0.1)'
                 }
               }}
             >
@@ -420,24 +425,25 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
               onClick={() => editor?.chain().focus().toggleUnderline().run()}
               sx={{ 
                 borderRadius: 1,
-                backgroundColor: editor?.isActive('underline') ? '#1976d2' : 'transparent',
-                color: editor?.isActive('underline') ? '#ffffff' : '#666666',
+                backgroundColor: editor?.isActive('underline') ? ARCADE_COLORS.lime : 'transparent',
+                color: editor?.isActive('underline') ? '#000' : `${ARCADE_COLORS.white}80`,
                 '&:hover': {
-                  backgroundColor: editor?.isActive('underline') ? '#1565c0' : '#f5f5f5'
+                  backgroundColor: editor?.isActive('underline') ? ARCADE_COLORS.lime : 'rgba(255,255,255,0.1)'
                 }
               }}
             >
               <FormatUnderlined />
             </IconButton>
             
-            <Divider orientation='vertical' flexItem sx={{ mx: 1 }} />
+            <Divider orientation='vertical' flexItem sx={{ mx: 1, borderColor: GRID_COLOR }} />
             
-            <FormControl size='small' sx={{ minWidth: 120 }}>
+            <FormControl size='small' sx={{ minWidth: 120, '& .MuiOutlinedInput-root': { color: ARCADE_COLORS.white, fontFamily: '"Electrolize", sans-serif', fontSize: '0.8rem', '& fieldset': { borderColor: GRID_COLOR }, '&:hover fieldset': { borderColor: ARCADE_COLORS.lime } }, '& .MuiInputLabel-root': { color: `${ARCADE_COLORS.white}60` } }}>
               <InputLabel>Text Color</InputLabel>
               <Select
                 value={currentColor}
                 label='Text Color'
                 onChange={(e) => handleColorChange(e.target.value as string)}
+                sx={{ color: ARCADE_COLORS.white, '& .MuiSvgIcon-root': { color: `${ARCADE_COLORS.white}60` } }}
               >
                 <MenuItem value='unset'>Default</MenuItem>
                 <MenuItem value='#dc2626'>Red</MenuItem>
@@ -449,61 +455,40 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
 
             <Box sx={{ flex: 1 }} />
 
-            <Button
-              size='small'
-              variant='contained'
+            <ArcadeButton
+              color="lime"
+              size="sm"
               onClick={() => {
                 const demo = demoEmails.find(d => d.targetId === target.id);
                 if (demo) {
                   setSenderEmail(demo.senderEmail);
                   setRecipient(demo.recipient);
                   setSubject(demo.subject);
-                  editor.commands.setContent(demo.content);
+                  editor?.commands.setContent(demo.content);
                 }
               }}
-              sx={{
-                textTransform: 'none',
-                whiteSpace: 'nowrap',
-                height: 40,
-                mr: 1,
-              }}
+              sx={{ height: 36, mr: 1, fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
             >
               Demo
-            </Button>
-            <Button
-              size='small'
-              variant='outlined'
+            </ArcadeButton>
+            <ArcadeButton
+              color="white"
+              variant="ghost"
+              size="sm"
               onClick={handleSaveDraft}
-              sx={{
-                textTransform: 'none',
-                whiteSpace: 'nowrap',
-                height: 40,
-                color: '#fff',
-                borderColor: 'rgba(255,255,255,0.3)',
-                '&:hover': { borderColor: '#fff' },
-                '&:focus': { outline: 'none', boxShadow: 'none' },
-                '&:focus-visible': { outline: 'none', boxShadow: 'none' },
-              }}
+              sx={{ height: 36, fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px', border: `2px solid ${ARCADE_COLORS.white}30`, '&:hover': { borderColor: `${ARCADE_COLORS.lime}80` } }}
             >
               Save Draft
-            </Button>
-            <Button
-              size='small'
-              variant='outlined'
+            </ArcadeButton>
+            <ArcadeButton
+              color="white"
+              variant="ghost"
+              size="sm"
               onClick={handleLoadDraft}
-              sx={{
-                textTransform: 'none',
-                whiteSpace: 'nowrap',
-                height: 40,
-                color: '#fff',
-                borderColor: 'rgba(255,255,255,0.3)',
-                '&:hover': { borderColor: '#fff' },
-                '&:focus': { outline: 'none', boxShadow: 'none' },
-                '&:focus-visible': { outline: 'none', boxShadow: 'none' },
-              }}
+              sx={{ height: 36, ml: 1, fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px', border: `2px solid ${ARCADE_COLORS.white}30`, '&:hover': { borderColor: `${ARCADE_COLORS.lime}80` } }}
             >
               Load Draft
-            </Button>
+            </ArcadeButton>
           </Box>
           
           {/* 富文本编辑器 */}
@@ -521,7 +506,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
               },
               '& .tiptap p.is-editor-empty:first-child::before': {
                 content: 'attr(data-placeholder)',
-                color: theme.palette.text.disabled,
+                color: `${ARCADE_COLORS.white}40`,
                 pointerEvents: 'none',
                 float: 'left',
                 height: 0,
@@ -535,7 +520,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
             />
           </Box>
           
-        </Paper>
+        </Box>
 
       )}
       <Snackbar

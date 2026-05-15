@@ -6,13 +6,12 @@ import { apiFetch } from '../../services/api';
 import {
   Box,
   Typography,
-  Paper,
-  Button,
   LinearProgress,
-  useTheme,
 } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import Header from '../../components/common/Header';
+import { ArcadeButton, ArcadeTypography } from '../../components/ui';
+import { ARCADE_COLORS } from '../../theme/theme';
 
 const CATEGORY_LABELS: Record<string, { label: string; maxScore: number }> = {
   '1': { label: 'Personalization', maxScore: 20 },
@@ -29,7 +28,6 @@ function getScoreColor(ratio: number) {
 }
 
 const PhishingScorePage: React.FC = () => {
-  const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [attemptCount, setAttemptCount] = useState(() => {
@@ -77,10 +75,10 @@ const PhishingScorePage: React.FC = () => {
     return (
       <MatrixRainBackground>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 2 }}>
-          <Typography variant='h5'>No score data available</Typography>
-          <Button variant='contained' startIcon={<ArrowBack />} onClick={() => navigate('/phishing')}>
-            Back to Phishing Panel
-          </Button>
+          <ArcadeTypography font="electrolize" arcadeColor="white" arcadeSize="sm">No score data available</ArcadeTypography>
+          <ArcadeButton color="lime" onClick={() => navigate('/phishing')} sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}>
+            <ArrowBack sx={{ mr: 1 }} /> Back to Phishing Panel
+          </ArcadeButton>
         </Box>
       </MatrixRainBackground>
     );
@@ -181,49 +179,48 @@ const PhishingScorePage: React.FC = () => {
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
           <Box sx={{ maxWidth: 1200, width: '100%' }}>
             {/* Total Score */}
-            <Paper
+            <Box
               sx={{
                 p: 4,
-              mb: 4,
-              textAlign: 'center',
-              border: `2px solid ${getScoreColor(totalRatio)}`,
-              backgroundColor: theme.palette.background.paper,
-            }}
-          >
-            <Typography variant='subtitle1' sx={{ color: 'text.secondary', mb: 1 }}>
-              TOTAL SCORE
-            </Typography>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'baseline', 
-              gap: 1,
-              justifyContent: 'center'
-            }}>
-              <Typography
-                variant='h2'
-                sx={{ fontWeight: 800, color: getScoreColor(totalRatio) }}
-              >
-                {total_score}
-              </Typography>
-            </Box>
-            <Typography variant='subtitle2' sx={{ color: 'text.secondary' }}>
-              out of {maxTotal}
-            </Typography>
-            <LinearProgress
-              variant='determinate'
-              value={totalRatio * 100}
-              sx={{
-                mt: 2,
-                height: 10,
-                borderRadius: 5,
-                backgroundColor: theme.palette.action.hover,
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: getScoreColor(totalRatio),
-                  borderRadius: 5,
-                },
+                mb: 4,
+                textAlign: 'center',
+                border: `2px solid ${getScoreColor(totalRatio)}`,
+                backgroundColor: 'rgba(10, 10, 26, 0.95)',
+                borderRadius: 1,
+                boxShadow: `0 0 20px ${getScoreColor(totalRatio)}40`,
               }}
-            />
-          </Paper>
+            >
+              <Typography variant='subtitle1' sx={{ color: `${ARCADE_COLORS.white}80`, mb: 1, fontFamily: '"Electrolize", sans-serif' }}>
+                TOTAL SCORE
+              </Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'baseline', 
+                gap: 1,
+                justifyContent: 'center'
+              }}>
+                <ArcadeTypography font="electrolize" arcadeSize="xl" sx={{ color: getScoreColor(totalRatio) }}>
+                  {total_score}
+                </ArcadeTypography>
+              </Box>
+              <Typography variant='subtitle2' sx={{ color: `${ARCADE_COLORS.white}60`, fontFamily: '"Electrolize", sans-serif' }}>
+                out of {maxTotal}
+              </Typography>
+              <LinearProgress
+                variant='determinate'
+                value={totalRatio * 100}
+                sx={{
+                  mt: 2,
+                  height: 10,
+                  borderRadius: 5,
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: getScoreColor(totalRatio),
+                    borderRadius: 5,
+                  },
+                }}
+              />
+            </Box>
 
           {/* Category Scores - 横向排列 */}
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, flexWrap: 'wrap' }}>
@@ -232,24 +229,26 @@ const PhishingScorePage: React.FC = () => {
               const ratio = score / category.maxScore;
 
               return (
-                <Paper
+                <Box
                   key={key}
                   sx={{
                     p: 2.5,
                     flex: '1 1 0',
                     minWidth: 180,
-                    border: `1px solid ${theme.palette.divider}`,
-                    backgroundColor: theme.palette.background.paper,
+                    border: `1px solid ${getScoreColor(ratio)}30`,
+                    backgroundColor: 'rgba(10, 10, 26, 0.9)',
+                    borderRadius: 1,
                     display: 'flex',
                     flexDirection: 'column',
+                    boxShadow: `0 0 8px ${getScoreColor(ratio)}15`,
                   }}
                 >
-                  <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 0.5 }}>
+                  <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 0.5, color: ARCADE_COLORS.white, fontFamily: '"Electrolize", sans-serif' }}>
                     {category.label}
                   </Typography>
                   <Typography
                     variant='h5'
-                    sx={{ fontWeight: 700, color: getScoreColor(ratio), mb: 1 }}
+                    sx={{ fontWeight: 700, color: getScoreColor(ratio), mb: 1, fontFamily: '"Electrolize", sans-serif' }}
                   >
                     {score} / {category.maxScore}
                   </Typography>
@@ -260,24 +259,24 @@ const PhishingScorePage: React.FC = () => {
                       mb: 1.5,
                       height: 6,
                       borderRadius: 3,
-                      backgroundColor: theme.palette.action.hover,
+                      backgroundColor: 'rgba(255,255,255,0.1)',
                       '& .MuiLinearProgress-bar': {
                         backgroundColor: getScoreColor(ratio),
                         borderRadius: 3,
                       },
                     }}
                   />
-                  <Typography variant='body2' sx={{ color: 'text.secondary', flex: 1 }}>
+                  <Typography variant='body2' sx={{ color: `${ARCADE_COLORS.white}90`, fontFamily: '"Electrolize", sans-serif', flex: 1 }}>
                     {feedback}
                   </Typography>
-                </Paper>
+                </Box>
               );
             })}
           </Box>
           
           {/* Maximum attempts message */}
           {attemptCount >= 2 && (
-            <Typography variant="body2" sx={{ mt: 2, mb: 4, color: 'text.secondary', textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ mt: 2, mb: 4, color: `${ARCADE_COLORS.white}60`, textAlign: 'center', fontFamily: '"Electrolize", sans-serif' }}>
               Maximum attempts reached. Click "Next" to finish the challenge.
             </Typography>
           )}
@@ -285,8 +284,9 @@ const PhishingScorePage: React.FC = () => {
           {/* Buttons section */}
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 3 }}>
             {attemptCount < 2 ? (
-              <Button
-                variant="contained"
+              <ArcadeButton
+                color="lime"
+                variant="outline"
                 onClick={() => {
                   // Update session high score before going back
                   const thisScore = total_score;
@@ -299,20 +299,19 @@ const PhishingScorePage: React.FC = () => {
                   sessionStorage.setItem('phishing_attempt_count', newCount.toString());
                   navigate('/phishing');
                 }}
-                sx={{ px: 3 }}
+                sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
               >
                 Try Again ({2 - attemptCount} left)
-              </Button>
+              </ArcadeButton>
             ) : null}
-            <Button
-              variant="contained"
+            <ArcadeButton
+              color="lime"
               onClick={handleSubmitScoreAndNavigate}
               disabled={isSubmitting}
-              endIcon={<ArrowForward />}
-              sx={{ px: 3 }}
+              sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
             >
-              {isSubmitting ? 'Submitting...' : 'Next'}
-            </Button>
+              {isSubmitting ? 'Submitting...' : 'Next'} <ArrowForward sx={{ ml: 1 }} />
+            </ArcadeButton>
           </Box>
         </Box>
       </Box>
