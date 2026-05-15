@@ -28,7 +28,8 @@ export type ArcadeFont =
   | 'monoton'
   | 'bungeeoutline'
   | 'orbitron'
-  | 'rubikmonoone';
+  | 'audiowide'
+  | 'electrolize';
 
 export const ARCADE_FONT_MAP: Record<ArcadeFont, string> = {
   pressstart2p: '"Press Start 2P", monospace',
@@ -38,7 +39,8 @@ export const ARCADE_FONT_MAP: Record<ArcadeFont, string> = {
   monoton: '"Monoton", cursive',
   bungeeoutline: '"Bungee Outline", cursive',
   orbitron: '"Orbitron", sans-serif',
-  rubikmonoone: '"Rubik Mono One", monospace',
+  audiowide: '"Audiowide", sans-serif',
+  electrolize: '"Electrolize", sans-serif',
 };
 
 export const getTheme = (paletteMode: PaletteMode) => {

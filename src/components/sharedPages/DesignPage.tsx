@@ -261,8 +261,11 @@ const DesignPage: React.FC = () => {
                 <ArcadeTypography font="orbitron" arcadeSize="sm" arcadeColor="purple" sx={{ fontSize: '1.5rem', fontWeight: 900 }}>
                   ORBITRON SCIFI
                 </ArcadeTypography>
-                <ArcadeTypography font="rubikmonoone" arcadeSize="sm" arcadeColor="cyan" sx={{ fontSize: '1.25rem' }}>
-                  RUBIK MONO ONE
+                <ArcadeTypography font="audiowide" arcadeSize="sm" arcadeColor="cyan" sx={{ fontSize: '1.5rem' }}>
+                  AUDIOWIDE ARCADE
+                </ArcadeTypography>
+                <ArcadeTypography font="electrolize" arcadeSize="sm" arcadeColor="lime" sx={{ fontSize: '1.5rem' }}>
+                  ELECTROLIZE DIGITAL
                 </ArcadeTypography>
               </Box>
             </Paper>
