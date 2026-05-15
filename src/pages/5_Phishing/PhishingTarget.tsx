@@ -16,7 +16,7 @@ const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, 
   return (
     <Box sx={{ padding: 2, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative', mb: 1 }}>
-        <ArcadeTypography font="electrolize" arcadeColor="lime" arcadeSize="sm" component="h5" sx={{ fontSize: '1.1rem' }}>
+        <ArcadeTypography font="audiowide" arcadeColor="lime" arcadeSize="sm" component="h5" sx={{ fontSize: '1.1rem' }}>
           PHISHING TARGET
         </ArcadeTypography>
         {onSwitch && (
@@ -113,7 +113,7 @@ const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, 
         
         {/* Mission */}
         <Box sx={{ px: 2, py: 2, backgroundColor: 'rgba(10, 10, 26, 0.95)', border: `1px solid ${ARCADE_COLORS.lime}30`, borderRadius: '4px', boxShadow: `0 0 8px ${ARCADE_COLORS.lime}15` }}>
-          <ArcadeTypography font="electrolize" arcadeColor="lime" arcadeSize="sm" component="h5" sx={{ fontSize: '1.1rem', textAlign: 'center', mb: 2 }}>
+          <ArcadeTypography font="audiowide" arcadeColor="lime" arcadeSize="sm" component="h5" sx={{ fontSize: '1.1rem', textAlign: 'center', mb: 2 }}>
             YOUR MISSION
           </ArcadeTypography>
           

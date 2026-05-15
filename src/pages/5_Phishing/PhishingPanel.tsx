@@ -32,12 +32,12 @@ const PhishingPanel: React.FC = () => {
         />
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: 2, mt: 2, mb: 1, px: 2 }}>
           <Box sx={{ flex: 5, minWidth: 0, minHeight: 0 }}>
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${ARCADE_COLORS.lime}40`, borderRadius: '4px', overflow: 'hidden', backgroundColor: 'rgba(10, 10, 26, 0.9)', boxShadow: `0 0 12px ${ARCADE_COLORS.lime}20, inset 0 0 12px ${ARCADE_COLORS.lime}08` }}>
+            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${ARCADE_COLORS.lime}40`, borderRadius: '4px', overflow: 'hidden', backgroundColor: 'rgba(10, 10, 26, 0.9)', boxShadow: `0 0 12px ${ARCADE_COLORS.lime}20, inset 0 0 12px ${ARCADE_COLORS.lime}08`, position: 'relative', '&::after': { content: '""', position: 'absolute', inset: 0, background: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,255,0,0.03) 3px, rgba(0,255,0,0.03) 6px)', pointerEvents: 'none', borderRadius: '4px' } }}>
               <PhishingTarget target={currentTarget} mission={currentMission} onSwitch={handleSwitch} />
             </Box>
           </Box>
           <Box sx={{ flex: 7, minWidth: 0, minHeight: 0 }}>
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${ARCADE_COLORS.lime}40`, borderRadius: '4px', overflow: 'hidden', backgroundColor: 'rgba(10, 10, 26, 0.9)', boxShadow: `0 0 12px ${ARCADE_COLORS.lime}20, inset 0 0 12px ${ARCADE_COLORS.lime}08` }}>
+            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: `1px solid ${ARCADE_COLORS.lime}40`, borderRadius: '4px', overflow: 'hidden', backgroundColor: 'rgba(10, 10, 26, 0.9)', boxShadow: `0 0 12px ${ARCADE_COLORS.lime}20, inset 0 0 12px ${ARCADE_COLORS.lime}08`, position: 'relative', '&::after': { content: '""', position: 'absolute', inset: 0, background: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,255,0,0.03) 3px, rgba(0,255,0,0.03) 6px)', pointerEvents: 'none', borderRadius: '4px' } }}>
               <PhishingMailSpace target={currentTarget} mission={currentMission} />
             </Box>
           </Box>

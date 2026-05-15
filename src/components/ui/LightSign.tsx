@@ -96,20 +96,20 @@ const LightSign: React.FC<LightSignProps> = ({ children }) => {
           backgroundSize: 'auto, 100% 100%',
           border: '5px solid #1a1a1a',
           borderRadius: '2px',
-          px: 7,
-          py: 5,
+          px: 5,
+          py: 3.5,
           textAlign: 'center',
-          minWidth: 320,
+          minWidth: 270,
           zIndex: 1,
         }}
       >
         <Typography
           sx={{
             fontFamily: '"Monoton", cursive',
-            fontSize: '2.5rem',
+            fontSize: '2.1rem',
             color: '#ffff00',
             textShadow: '0 0 10px #ffff0090, 0 0 30px #ffff0050, 0 0 60px #ffff0020',
-            letterSpacing: '4px',
+            letterSpacing: '3px',
             lineHeight: 1.4,
             position: 'relative',
             zIndex: 2,

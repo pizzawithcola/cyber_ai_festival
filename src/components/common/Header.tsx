@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ title, firstname, lastname }) => {
       }}
     >
       <ArcadeTypography
-        font="electrolize"
+        font="audiowide"
         arcadeColor="lime"
         arcadeSize="sm"
         component="h6"

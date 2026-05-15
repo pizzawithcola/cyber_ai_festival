@@ -250,7 +250,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: 2, overflow: 'hidden' }}>
-      <ArcadeTypography font="electrolize" arcadeColor="lime" arcadeSize="md" sx={{ mb: 1 }}>
+      <ArcadeTypography font="audiowide" arcadeColor="lime" arcadeSize="md" sx={{ mb: 1 }}>
         PHISHING EMAIL EDITOR
       </ArcadeTypography>
       

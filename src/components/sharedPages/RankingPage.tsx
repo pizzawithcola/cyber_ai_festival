@@ -276,7 +276,7 @@ const RankingPage: React.FC = () => {
       {/* Back Button */}
       <Box sx={{ pb: 4 }}>
         <ArcadeButton
-          color="cyan"
+          color="white"
           variant="outline"
           onClick={() => {
             const storedUser = getStoredUser();
@@ -286,7 +286,13 @@ const RankingPage: React.FC = () => {
             sessionStorage.removeItem('phishing_attempt_count');
             navigate('/');
           }}
-          sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '1px' }}
+          sx={{
+            fontFamily: '"Electrolize", sans-serif',
+            letterSpacing: '1px',
+            borderColor: `${themeColor}80`,
+            color: themeColor,
+            '&:hover': { borderColor: themeColor, backgroundColor: `${themeColor}15` },
+          }}
         >
           BACK TO HOME
         </ArcadeButton>
