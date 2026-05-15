@@ -179,12 +179,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onAppTap }) => {
           aria-label="Launch FitAI"
         >
           <div className="icon-content">
-            <TechDumbbellLogo />
+            <FitAIActiveLogo />
           </div>
+          <span className="fitai-icon-beacon" aria-hidden="true" />
         </button>
-        
+
         <h1 className="app-name">FitAI</h1>
         <p className="app-tagline">Intelligent Fitness Training</p>
+        <div className="tap-hint" aria-hidden="true">
+          <span className="tap-hint-dot" />
+          Tap to open
+        </div>
       </div>
 
       {/* Description */}
@@ -202,197 +207,99 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onAppTap }) => {
 }
 
 /**
- * Tech Dumbbell Logo Component - Modern, tech-inspired dumbbell design
+ * FitAIActiveLogo - Fitness-first AI icon with a connected dumbbell mark
  */
-const TechDumbbellLogo: React.FC = () => (
+const FitAIActiveLogo: React.FC = () => (
   <svg
     className="fitai-logo"
     viewBox="0 0 100 100"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    {/* Main dumbbell bar - Tech gradient */}
+    <circle cx="50" cy="50" r="31" fill="url(#outerGlow)" opacity="0.3" />
+    <circle cx="50" cy="50" r="24" fill="url(#ringFill)" />
+    <circle
+      cx="50"
+      cy="50"
+      r="24"
+      stroke="rgba(255,255,255,0.42)"
+      strokeWidth="2"
+    />
+    <path
+      d="M21 43H28V57H21V43Z"
+      fill="rgba(255,255,255,0.96)"
+    />
+    <path
+      d="M29 39H34V61H29V39Z"
+      fill="#99f6e4"
+    />
+    <path
+      d="M66 39H71V61H66V39Z"
+      fill="#c4b5fd"
+    />
+    <path
+      d="M72 43H79V57H72V43Z"
+      fill="rgba(255,255,255,0.96)"
+    />
     <rect
-      x="20"
-      y="45"
-      width="60"
-      height="10"
-      rx="3"
-      fill="url(#dumbbellBarGradient)"
-      stroke="#fff"
+      x="34"
+      y="46"
+      width="32"
+      height="8"
+      rx="4"
+      fill="rgba(255,255,255,0.22)"
+    />
+    <path
+      d="M30 50H39L45 42L50 58L55 47L61 50H70"
+      stroke="white"
+      strokeWidth="4.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="50" cy="50" r="5.5" fill="rgba(7, 16, 28, 0.95)" />
+    <circle
+      cx="50"
+      cy="50"
+      r="8.5"
+      stroke="rgba(255,255,255,0.22)"
+      strokeWidth="1.6"
+    />
+    <path
+      d="M35 31C40 27 45 25 50 25"
+      stroke="rgba(255,255,255,0.62)"
       strokeWidth="2"
+      strokeLinecap="round"
     />
-    
-    {/* Left weight - Circular with tech pattern */}
-    <circle
-      cx="30"
-      cy="50"
-      r="15"
-      fill="url(#weightGradient1)"
-      stroke="#fff"
+    <path
+      d="M65 31C60 27 55 25 50 25"
+      stroke="rgba(255,255,255,0.28)"
       strokeWidth="2"
+      strokeLinecap="round"
     />
-    
-    {/* Right weight - Circular with tech pattern */}
-    <circle
-      cx="70"
-      cy="50"
-      r="15"
-      fill="url(#weightGradient2)"
-      stroke="#fff"
+    <path
+      d="M35 69C40 73 45 75 50 75"
+      stroke="rgba(255,255,255,0.22)"
       strokeWidth="2"
-    />
-    
-    {/* Tech rings on weights - Left */}
-    <circle
-      cx="30"
-      cy="50"
-      r="12"
-      stroke="rgba(255,255,255,0.7)"
-      strokeWidth="1.5"
-      fill="none"
-    />
-    <circle
-      cx="30"
-      cy="50"
-      r="8"
-      stroke="rgba(255,255,255,0.5)"
-      strokeWidth="1"
-      fill="none"
-    />
-    <circle
-      cx="30"
-      cy="50"
-      r="4"
-      stroke="rgba(255,255,255,0.9)"
-      strokeWidth="1.5"
-      fill="none"
-    />
-    
-    {/* Tech rings on weights - Right */}
-    <circle
-      cx="70"
-      cy="50"
-      r="12"
-      stroke="rgba(255,255,255,0.7)"
-      strokeWidth="1.5"
-      fill="none"
-    />
-    <circle
-      cx="70"
-      cy="50"
-      r="8"
-      stroke="rgba(255,255,255,0.5)"
-      strokeWidth="1"
-      fill="none"
-    />
-    <circle
-      cx="70"
-      cy="50"
-      r="4"
-      stroke="rgba(255,255,255,0.9)"
-      strokeWidth="1.5"
-      fill="none"
-    />
-    
-    {/* Hexagonal patterns on weights - Left */}
-    <path
-      d="M30,40 L33,42 L33,46 L30,48 L27,46 L27,42 Z"
-      fill="rgba(255,255,255,0.3)"
-      stroke="rgba(255,255,255,0.6)"
-      strokeWidth="0.5"
+      strokeLinecap="round"
     />
     <path
-      d="M30,52 L33,54 L33,58 L30,60 L27,58 L27,54 Z"
-      fill="rgba(255,255,255,0.3)"
-      stroke="rgba(255,255,255,0.6)"
-      strokeWidth="0.5"
+      d="M65 69C60 73 55 75 50 75"
+      stroke="rgba(255,255,255,0.52)"
+      strokeWidth="2"
+      strokeLinecap="round"
     />
-    
-    {/* Hexagonal patterns on weights - Right */}
-    <path
-      d="M70,40 L73,42 L73,46 L70,48 L67,46 L67,42 Z"
-      fill="rgba(255,255,255,0.3)"
-      stroke="rgba(255,255,255,0.6)"
-      strokeWidth="0.5"
-    />
-    <path
-      d="M70,52 L73,54 L73,58 L70,60 L67,58 L67,54 Z"
-      fill="rgba(255,255,255,0.3)"
-      stroke="rgba(255,255,255,0.6)"
-      strokeWidth="0.5"
-    />
-    
-    {/* Bar grip details */}
-    <rect
-      x="35"
-      y="47"
-      width="30"
-      height="6"
-      rx="1"
-      fill="rgba(255,255,255,0.15)"
-    />
-    
-    {/* Circuit lines - Tech detailing */}
-    <path
-      d="M25,50 L20,50"
-      stroke="rgba(255,255,255,0.7)"
-      strokeWidth="1"
-      strokeDasharray="2,2"
-    />
-    <path
-      d="M80,50 L85,50"
-      stroke="rgba(255,255,255,0.7)"
-      strokeWidth="1"
-      strokeDasharray="2,2"
-    />
-    
-    {/* Energy waves - Tech effect */}
-    <path
-      d="M50,40 Q55,35 60,40"
-      stroke="rgba(255,255,255,0.4)"
-      strokeWidth="1"
-      fill="none"
-      strokeDasharray="3,2"
-    />
-    <path
-      d="M50,60 Q55,65 60,60"
-      stroke="rgba(255,255,255,0.4)"
-      strokeWidth="1"
-      fill="none"
-      strokeDasharray="3,2"
-    />
-    
-    {/* Dot matrix pattern on bar */}
-    {Array.from({ length: 5 }).map((_, i) => (
-      <circle
-        key={`dot-${i}`}
-        cx={40 + i * 5}
-        cy="50"
-        r="0.8"
-        fill="rgba(255,255,255,0.6)"
-      />
-    ))}
-    
-    {/* Gradients */}
+
     <defs>
-      <linearGradient id="dumbbellBarGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#667eea" />
-        <stop offset="50%" stopColor="#764ba2" />
-        <stop offset="100%" stopColor="#667eea" />
+      <radialGradient id="outerGlow" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stopColor="#67e8f9" />
+        <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+      </radialGradient>
+
+      <linearGradient id="ringFill" x1="18" y1="18" x2="82" y2="82" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#22d3ee" />
+        <stop offset="52%" stopColor="#34d399" />
+        <stop offset="100%" stopColor="#8b5cf6" />
       </linearGradient>
-      
-      <radialGradient id="weightGradient1" cx="30%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#10b981" />
-        <stop offset="70%" stopColor="#059669" />
-        <stop offset="100%" stopColor="#047857" />
-      </radialGradient>
-      
-      <radialGradient id="weightGradient2" cx="70%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#3b82f6" />
-        <stop offset="70%" stopColor="#2563eb" />
-        <stop offset="100%" stopColor="#1d4ed8" />
-      </radialGradient>
     </defs>
   </svg>
 )
