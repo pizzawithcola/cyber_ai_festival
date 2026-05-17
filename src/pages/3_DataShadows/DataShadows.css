@@ -1,5 +1,6 @@
 /* DataShadows layout */
 .data-shadows-container {
+  --data-shadows-display-font: 'Electrolize', sans-serif;
   display: grid;
   grid-template-columns: minmax(24px, 1fr) 390px 0 minmax(24px, 1fr);
   min-height: 100vh;
@@ -11,6 +12,80 @@
   gap: 32px;
   overflow-x: hidden;
   transition: grid-template-columns 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.data-shadows-intro-kicker,
+.data-shadows-intro-label,
+.data-shadows-intro-line,
+.data-shadows-intro-footer,
+.data-shadows-sidebar-title,
+.data-shadows-sidebar-subtitle,
+.data-shadows-sidebar-step-title,
+.truth-reveal-arcade h1,
+.truth-reveal-arcade h2,
+.data-flow-title,
+.privacy-score-label,
+.privacy-score-value,
+.node-label-box,
+.flow-node-detail-title,
+.flow-node-module strong,
+.flow-node-consequence strong {
+  --data-shadows-digital-top: #f6fbff;
+  --data-shadows-digital-mid: #d8f4ff;
+  --data-shadows-digital-bottom: #79deff;
+  --data-shadows-digital-stripe-soft: rgba(5, 10, 20, 0.22);
+  --data-shadows-digital-stripe-dark: rgba(5, 10, 20, 0.62);
+  --data-shadows-digital-glow: rgba(103, 232, 249, 0.28);
+  color: transparent;
+  background-image:
+    linear-gradient(
+      180deg,
+      var(--data-shadows-digital-top) 0%,
+      var(--data-shadows-digital-mid) 44%,
+      var(--data-shadows-digital-bottom) 100%
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.98) 0 2px,
+      rgba(255, 255, 255, 0.9) 2px 4px,
+      var(--data-shadows-digital-stripe-soft) 4px 6px,
+      var(--data-shadows-digital-stripe-dark) 6px 7px
+    );
+  background-size: 100% 100%, 100% 7px;
+  background-repeat: no-repeat, repeat;
+  background-blend-mode: screen, multiply;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 12px var(--data-shadows-digital-glow);
+}
+
+.data-shadows-intro-kicker,
+.data-shadows-sidebar-subtitle,
+.privacy-score-label,
+.flow-node-module strong,
+.flow-node-consequence strong {
+  --data-shadows-digital-top: #ffd0f0;
+  --data-shadows-digital-mid: #cfeeff;
+  --data-shadows-digital-bottom: #7de8ff;
+  --data-shadows-digital-glow: rgba(244, 114, 182, 0.3);
+}
+
+.data-shadows-intro-line,
+.data-shadows-sidebar-step-title,
+.node-label-box {
+  --data-shadows-digital-top: #ffffff;
+  --data-shadows-digital-mid: #eefaff;
+  --data-shadows-digital-bottom: #9ce8ff;
+  --data-shadows-digital-glow: rgba(103, 232, 249, 0.2);
+}
+
+.data-shadows-sidebar-title,
+.flow-node-detail-title {
+  --data-shadows-digital-top: #ffc3de;
+  --data-shadows-digital-mid: #ffe8f5;
+  --data-shadows-digital-bottom: #88e6ff;
+  --data-shadows-digital-glow: rgba(244, 114, 182, 0.34);
 }
 
 .data-shadows-phone-only {
@@ -123,7 +198,7 @@
   flex-direction: column;
   gap: 20px;
   color: #f8fafc;
-  font-family: 'SFMono-Regular', 'Monaco', 'Consolas', monospace;
+  font-family: var(--data-shadows-display-font);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -145,7 +220,7 @@
   color: #67e8f9;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   text-shadow: 0 0 12px rgba(34, 211, 238, 0.45);
 }
@@ -170,6 +245,7 @@
   font-size: 30px;
   font-weight: 700;
   line-height: 1.12;
+  letter-spacing: 0.02em;
   color: #f9a8d4;
   text-shadow: 0 0 14px rgba(244, 114, 182, 0.38);
 }
@@ -188,7 +264,7 @@
   font-weight: 700;
   color: #67e8f9;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
 }
 
 .data-shadows-sidebar-copy {
@@ -250,14 +326,14 @@
   color: #f9a8d4;
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
 }
 
 .data-shadows-sidebar-step-title {
   color: #f8fafc;
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
 }
 
 .data-shadows-sidebar-watch {
@@ -284,11 +360,12 @@
   color: rgba(226, 232, 240, 0.96);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .data-shadows-intro-overlay {
+  --data-shadows-display-font: 'Electrolize', sans-serif;
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -356,6 +433,7 @@
   z-index: 1;
   padding: 42px 42px 32px;
   color: #f8fafc;
+  font-family: var(--data-shadows-display-font);
 }
 
 .data-shadows-intro-kicker {
@@ -363,9 +441,8 @@
   color: #f9a8d4;
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
-  font-family: 'SFMono-Regular', 'Monaco', 'Consolas', monospace;
   text-shadow: 0 0 14px rgba(244, 114, 182, 0.66);
 }
 
@@ -411,7 +488,7 @@
   color: #67e8f9;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   text-shadow: 0 0 12px rgba(34, 211, 238, 0.55);
 }
@@ -421,7 +498,7 @@
   font-size: clamp(22px, 2.7vw, 34px);
   line-height: 1.28;
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: 0.015em;
   max-width: 760px;
   text-shadow: 0 0 18px rgba(255, 255, 255, 0.08);
 }
@@ -435,9 +512,8 @@
   margin-top: 18px;
   font-size: 13px;
   color: rgba(103, 232, 249, 0.86);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-family: 'SFMono-Regular', 'Monaco', 'Consolas', monospace;
 }
 
 @keyframes data-shadows-panel-reveal {

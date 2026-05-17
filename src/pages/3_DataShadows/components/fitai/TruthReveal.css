@@ -1,6 +1,6 @@
 .truth-reveal-arcade {
   isolation: isolate;
-  font-family: 'SFMono-Regular', 'Monaco', 'Consolas', monospace;
+  font-family: var(--data-shadows-display-font, 'Electrolize', sans-serif);
   background:
     linear-gradient(rgba(34, 211, 238, 0.055) 1px, transparent 1px),
     linear-gradient(90deg, rgba(244, 114, 182, 0.045) 1px, transparent 1px),
@@ -38,7 +38,7 @@
 .truth-reveal-arcade h1,
 .truth-reveal-arcade h2 {
   color: #67e8f9;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.03em;
   text-shadow:
     2px 0 rgba(244, 114, 182, 0.45),
     0 0 18px rgba(34, 211, 238, 0.28);
@@ -46,8 +46,9 @@
 
 .truth-reveal-arcade button {
   border-radius: 4px !important;
+  font-family: inherit;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   box-shadow: 0 0 18px rgba(34, 211, 238, 0.12);
 }
 
@@ -79,7 +80,7 @@
   margin-top: 14px;
   color: rgba(249, 168, 212, 0.72);
   font-size: 10px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
 }
 
 @keyframes arcade-scan {

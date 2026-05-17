@@ -366,7 +366,7 @@ function getOverviewContent(
   return {
     title: titleMap[key],
     summary: `${readingLine} ${consentLine}`,
-    bullets: [exposureLine, 'Tap a node to focus the full inbound/outbound detail. The map itself keeps only short route keywords so the network stays readable.'],
+    bullets: [exposureLine],
   }
 }
 
@@ -477,6 +477,7 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   const navigate = useNavigate()
   const { setScreen } = useFitAI()
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [acknowledgedNodeIds, setAcknowledgedNodeIds] = useState<string[]>([])
   const [containerSize, setContainerSize] = useState({ width: 780, height: 520 })
   const [nodePositionOverrides, setNodePositionOverrides] = useState<Record<string, { x: number; y: number }>>({})
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
@@ -910,6 +911,7 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
               <g className="nodes">
                 {nodesWithPixels.map((node) => {
                   const isSelected = selectedNodeId === node.id
+                  const isAcknowledged = acknowledgedNodeIds.includes(node.id)
                   const nodeActive = isNodeActive(node.id)
                   const nodeRadius = node.category === 'user' || node.category === 'app' ? 22 : 18
                   const nodeLabelLayout = getNodeLabelLayout(node, nodeRadius)
@@ -928,10 +930,11 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
                         r={nodeRadius}
                         fill={node.color}
                         opacity={nodeActive ? emphasis.opacity : 0.28}
-                        className={`network-node network-node-draggable ${isSelected ? 'network-node-selected' : ''} ${nodeActive ? 'network-node-active' : 'network-node-inactive'} ${draggingNodeId === node.id ? 'network-node-dragging' : ''} ${emphasis.className}`}
+                        className={`network-node network-node-draggable ${isSelected ? 'network-node-selected' : ''} ${nodeActive ? 'network-node-active' : 'network-node-inactive'} ${draggingNodeId === node.id ? 'network-node-dragging' : ''} ${isAcknowledged ? 'network-node-acknowledged' : 'network-node-attention'}`}
                         onPointerDown={(event) => handleNodePointerDown(event, node.id)}
                         onClick={() => {
                           if (dragMovedRef.current) return
+                          setAcknowledgedNodeIds((prev) => (prev.includes(node.id) ? prev : [...prev, node.id]))
                           setSelectedNodeId(isSelected ? null : node.id)
                         }}
                         style={{ transition: 'opacity 0.2s' }}
