@@ -186,10 +186,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onAppTap }) => {
 
         <h1 className="app-name">FitAI</h1>
         <p className="app-tagline">Intelligent Fitness Training</p>
-        <div className="tap-hint" aria-hidden="true">
-          <span className="tap-hint-dot" />
-          Tap to open
-        </div>
       </div>
 
       {/* Description */}
