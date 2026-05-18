@@ -1,4 +1,5 @@
-import { Typography, Box, Button, Stack } from '@mui/material';
+import { Typography, Box, Stack } from '@mui/material';
+import { ArcadeButton } from '../../../../components/ui';
 import { type ResultPage } from './types';
 
 export function ResultsPanel({
@@ -35,7 +36,7 @@ export function ResultsPanel({
               variant="h4"
               sx={{
                 fontWeight: 900,
-                color: '#00ffd9',
+                color: '#ff00ff',
                 mb: 2.5,
                 display: 'block',
                 fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
@@ -44,7 +45,7 @@ export function ResultsPanel({
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
                 textShadow:
-                  '0 3px 0 rgba(0,0,0,0.55), 0 0 18px rgba(0,255,217,0.32), 0 0 34px rgba(255,46,147,0.18)',
+                  '0 3px 0 rgba(0,0,0,0.55), 0 0 18px rgba(255, 0, 255, 0.32), 0 0 34px rgba(255, 46, 147,0.18)',
               }}
             >
               Round complete
@@ -56,8 +57,8 @@ export function ResultsPanel({
                   px: { xs: 2, md: 3 },
                   py: 2,
                   borderRadius: 3,
-                  background: 'rgba(0, 255, 217, 0.07)',
-                  border: '1px solid rgba(0, 255, 217, 0.22)',
+                  background: 'rgba(255, 0, 255, 0.07)',
+                  border: '1px solid rgba(255, 0, 255, 0.22)',
                   backdropFilter: 'blur(8px)',
                   textAlign: 'center',
                 }}
@@ -65,7 +66,7 @@ export function ResultsPanel({
                 <Typography variant="caption" sx={{ color: '#c8f7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em' }}>
                   SCORE
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#00ffd9', lineHeight: 1.1 }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#ff00ff', lineHeight: 1.1 }}>
                   {score}
                 </Typography>
               </Box>
@@ -116,18 +117,17 @@ export function ResultsPanel({
       )}
 
       <Box sx={{ mt: 2.4, display: 'flex', justifyContent: 'center' }}>
-        <Button
-          variant="contained"
+        <ArcadeButton
+          color="magenta"
+          size="md"
           onClick={onNext}
           sx={{
-            fontWeight: 900,
             minWidth: 160,
             minHeight: 48,
-            borderRadius: 2.5,
           }}
         >
           Next
-        </Button>
+        </ArcadeButton>
       </Box>
     </Box>
   );

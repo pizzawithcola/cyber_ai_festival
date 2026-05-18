@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Typography, Box, Button, Chip, Collapse, LinearProgress, Slider, Stack, Avatar } from '@mui/material';
+import { Typography, Box, Collapse, Slider, Stack, Avatar } from '@mui/material';
 import { Flag as FlagIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 
 import { BOSS_TYPES, NORMALIZED_SENTENCE_POOL } from './training/data';
@@ -7,6 +7,7 @@ import { ChapterComplete } from './training/ChapterComplete';
 import { ResultsPanel } from './training/ResultsPanel';
 import { evidenceChecklistForSentence, shuffle } from './training/utils';
 import { type ResultPage, type ResultPitfalls, type SentenceItem } from './training/types';
+import { ArcadeButton } from '../../../components/ui';
 
 /** =========================================================
  *  TRAINING ARENA (A/B game)
@@ -50,9 +51,19 @@ const animationCss = `
   100% { box-shadow: 0 14px 30px rgba(120, 194, 255, 0.16); }
 }
 @keyframes cardBreath {
-  0% { transform: translateY(0); text-shadow: 0 0 10px rgba(0,255,217,0.08); }
-  50% { transform: translateY(-2px); text-shadow: 0 0 18px rgba(0,255,217,0.15); }
-  100% { transform: translateY(0); text-shadow: 0 0 10px rgba(0,255,217,0.08); }
+  0% { transform: translateY(0); text-shadow: 0 0 10px rgba(255, 0, 255, 0.08); }
+  50% { transform: translateY(-2px); text-shadow: 0 0 18px rgba(255, 0, 255, 0.15); }
+  100% { transform: translateY(0); text-shadow: 0 0 10px rgba(255, 0, 255, 0.08); }
+}
+@keyframes titleGlowSweep {
+  0% { transform: translateX(-120%); opacity: 0; }
+  30% { opacity: 0.9; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+@keyframes headerSignal {
+  0% { opacity: 0.45; transform: scaleX(0.72); }
+  50% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0.45; transform: scaleX(0.72); }
 }
 `;
 
@@ -85,7 +96,7 @@ const trainingIntroSlides = [
 
 const READABLE_FONT = "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important";
 const BASE_SCORE_POINTS = 20;
-const MIN_CONFIDENCE_SLIDER_VALUE = 0;
+const MIN_CONFIDENCE_SLIDER_VALUE = 0.1;
 const MIN_CONFIDENCE_MULTIPLIER = 0.1;
 const MAX_CONFIDENCE_MULTIPLIER = 1;
 const DEFAULT_CONFIDENCE_MULTIPLIER = 0.5;
@@ -246,7 +257,7 @@ export function TrainingArena({
       setSelected(nextSelected);
       setResolved((r) => ({ ...r, [card.id]: isCorrect ? 'correct' : 'wrong' }));
       setScoreDeltaById((current) => ({ ...current, [card.id]: scoreDelta }));
-      setScore((current) => current + scoreDelta);
+      setScore((current) => Math.max(0, current + scoreDelta));
       if (!card.isPitfall) nudgeShake();
     }
 
@@ -271,7 +282,7 @@ export function TrainingArena({
     setPassed((prev) => ({ ...prev, [card.id]: true }));
     setResolved((r) => ({ ...r, [card.id]: isCorrect ? 'correct' : 'wrong' }));
     setScoreDeltaById((current) => ({ ...current, [card.id]: scoreDelta }));
-    setScore((current) => current + scoreDelta);
+    setScore((current) => Math.max(0, current + scoreDelta));
     if (card.isPitfall) nudgeShake();
   };
 
@@ -322,11 +333,6 @@ export function TrainingArena({
     ? 'falsePos'
     : 'correctPass';
   const isCardAnswered = Boolean(activeFeedbackKind);
-  const totalJourneySteps = trainingIntroSlides.length + Math.max(sentences.length, 5);
-  const completedJourneySteps = isIntroMode
-    ? introStep + 1
-    : trainingIntroSlides.length + answeredCount;
-  const progressPct = Math.min(100, (completedJourneySteps / totalJourneySteps) * 100);
   const feedback = accuracy >= 80 ? 'Well done' : accuracy < 40 ? 'Almost there' : 'Keep going';
   const feedbackDetail =
     accuracy >= 80
@@ -362,7 +368,7 @@ export function TrainingArena({
     const isUser = role === 'user';
     const backgroundByTone = {
       assistant: 'linear-gradient(180deg, rgba(12, 20, 42, 0.92), rgba(7, 12, 28, 0.88))',
-      user: 'linear-gradient(135deg, rgba(0, 255, 217, 0.18), rgba(46, 227, 255, 0.1))',
+      user: 'linear-gradient(135deg, rgba(255, 0, 255, 0.18), rgba(191, 0, 255, 0.1))',
       success: 'linear-gradient(180deg, rgba(45, 176, 104, 0.16), rgba(12, 28, 26, 0.88))',
       warning: 'linear-gradient(180deg, rgba(255, 95, 122, 0.16), rgba(34, 16, 28, 0.88))',
     };
@@ -383,7 +389,7 @@ export function TrainingArena({
             height: { xs: 30, sm: 34 },
             fontSize: { xs: '0.875rem', sm: '0.9375rem' },
             fontWeight: 900,
-            bgcolor: isUser ? 'rgba(0, 255, 217, 0.9)' : 'rgba(255, 46, 147, 0.9)',
+            bgcolor: isUser ? 'rgba(255, 0, 255, 0.9)' : 'rgba(255, 46, 147, 0.9)',
             color: '#031017',
             flexShrink: 0,
           }}
@@ -466,23 +472,23 @@ export function TrainingArena({
 
           {/* Expand for the reason */}
           <Box>
-            <Button
-              size="small"
-              variant="text"
+            <ArcadeButton
+              size="sm"
+              variant="ghost"
+              color={isCorrectFeedback ? 'lime' : 'red'}
+              glowing={false}
               onClick={() => setExpandedDetailId((current) => (current === activeCard.id ? null : activeCard.id))}
               sx={{
-                color: `${statusColor} !important`,
-                fontWeight: 900,
-                fontSize: '0.875rem',
                 px: 0,
                 minWidth: 0,
                 textDecoration: 'underline',
                 textUnderlineOffset: 3,
                 animation: 'none !important',
+                fontSize: { xs: '0.58rem', sm: '0.625rem' },
               }}
             >
               {isDetailOpen ? 'Hide explanation' : 'Why?'}
-            </Button>
+            </ArcadeButton>
           </Box>
 
           <Collapse in={isDetailOpen}>
@@ -506,9 +512,15 @@ export function TrainingArena({
             </Stack>
           </Collapse>
           <Box sx={{ pt: 0.4 }}>
-            <Button variant="contained" onClick={handleAdvanceFromFeedback} sx={{ fontWeight: 900, minWidth: 160, minHeight: 46 }}>
+            <ArcadeButton
+              color={isCorrectFeedback ? 'lime' : 'orange'}
+              size="md"
+              animation="pulse"
+              onClick={handleAdvanceFromFeedback}
+              sx={{ minWidth: 170, minHeight: 46 }}
+            >
               {currentCardIndex >= sentences.length - 1 ? 'Finish round' : 'Next card'}
-            </Button>
+            </ArcadeButton>
           </Box>
         </Stack>
       ),
@@ -546,56 +558,128 @@ export function TrainingArena({
       <style>{animationCss}</style>
 
       <Stack spacing={2.2} sx={{ width: '100%', textAlign: 'center', alignItems: 'center' }}>
-        <Box sx={{ width: '100%', maxWidth: 520, mx: 'auto' }}>
+        <Box sx={{ width: '100%', maxWidth: 760, mx: 'auto' }}>
           {!showResults && (
-            <>
-              <Typography
-                variant="h5"
+            <Box
+              sx={{
+                position: 'relative',
+                overflow: 'hidden',
+                px: { xs: 1.5, sm: 2.2 },
+                py: { xs: 1.45, sm: 1.7 },
+                border: '1px solid rgba(255, 0, 255, 0.36)',
+                background:
+                  'linear-gradient(180deg, rgba(10, 4, 24, 0.92), rgba(18, 8, 38, 0.82))',
+                boxShadow:
+                  'inset 0 0 0 1px rgba(255,255,255,0.04), 0 18px 42px rgba(0,0,0,0.26), 0 0 26px rgba(255, 0, 255, 0.1)',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  background:
+                    'linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.1) 48%, transparent 70%)',
+                  animation: 'titleGlowSweep 3.8s ease-in-out infinite',
+                  pointerEvents: 'none',
+                },
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  left: 18,
+                  right: 18,
+                  bottom: 9,
+                  height: 2,
+                  background:
+                    'linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.7), rgba(255, 191, 77, 0.62), transparent)',
+                  transformOrigin: 'center',
+                  animation: 'headerSignal 1.8s ease-in-out infinite',
+                  pointerEvents: 'none',
+                },
+              }}
+            >
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="center"
                 sx={{
-                  color: '#ffffff',
-                  fontWeight: 900,
-                  display: 'block',
-                  mb: 0.75,
-                  fontFamily: "'Press Start 2P', 'VT323', monospace !important",
-                  fontSize: { xs: '1.1rem', sm: '1.35rem', md: '1.6rem' },
-                  lineHeight: 1.45,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  textShadow: '0 3px 0 rgba(0,0,0,0.45), 0 0 18px rgba(0,255,217,0.22)',
+                  position: 'relative',
+                  zIndex: 1,
+                  mb: 0.9,
+                  flexWrap: 'wrap',
                 }}
               >
-                Hallucination Training Game
-              </Typography>
+                {['#ff5f7a', '#ffbf4d', '#ff00ff'].map((color) => (
+                  <Box
+                    key={color}
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      boxShadow: `0 0 10px ${color}80`,
+                    }}
+                  />
+                ))}
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'rgba(248, 231, 255, 0.72)',
+                    fontFamily: READABLE_FONT,
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    fontSize: { xs: '0.68rem', sm: '0.74rem' },
+                    lineHeight: 1.2,
+                  }}
+                >
+                  AI Truth Check Mode
+                </Typography>
+              </Stack>
+              <Box sx={{ position: 'relative', zIndex: 1, px: { xs: 0, sm: 1 } }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: '#f8e7ff',
+                    fontWeight: 900,
+                    display: 'block',
+                    mb: 0.95,
+                    fontFamily: "'Press Start 2P', 'VT323', monospace !important",
+                    fontSize: { xs: '0.95rem', sm: '1.28rem', md: '1.55rem' },
+                    lineHeight: 1.55,
+                    letterSpacing: '0.055em',
+                    textTransform: 'uppercase',
+                    overflowWrap: 'break-word',
+                    textShadow:
+                      '0 3px 0 rgba(0,0,0,0.55), 0 0 12px rgba(255, 120, 255, 0.34), 0 0 28px rgba(191, 0, 255, 0.22)',
+                  }}
+                >
+                  Hallucination Training Game
+                </Typography>
+              </Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: 'rgba(228, 241, 255, 0.78)',
+                  position: 'relative',
+                  zIndex: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  px: 1.1,
+                  py: 0.45,
+                  border: '1px solid rgba(255, 191, 77, 0.34)',
+                  background: 'rgba(255, 191, 77, 0.08)',
+                  color: 'rgba(255, 230, 179, 0.9)',
                   fontWeight: 900,
-                  display: 'block',
-                  mb: 0.9,
                   fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                  fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-                  letterSpacing: '0.08em',
+                  fontFamily: READABLE_FONT,
+                  letterSpacing: '0.1em',
                   textTransform: 'uppercase',
+                  lineHeight: 1.3,
                 }}
               >
                 {isIntroMode ? `Training boot ${introStep + 1} / ${trainingIntroSlides.length}` : `Card ${currentCardIndex + 1} / ${sentences.length || 5}`}
               </Typography>
-            </>
+            </Box>
           )}
-          <LinearProgress
-            variant="determinate"
-            value={progressPct}
-            sx={{
-              height: 5,
-              borderRadius: 999,
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              '& .MuiLinearProgress-bar': {
-                borderRadius: 999,
-                background: 'linear-gradient(90deg, rgba(0,255,217,0.98), rgba(91,46,255,0.96))',
-              },
-            }}
-          />
         </Box>
 
         <Box
@@ -618,7 +702,7 @@ export function TrainingArena({
                           <Typography
                             variant="caption"
                             sx={{
-                              color: '#00ffd9',
+                              color: '#ff00ff',
                               fontWeight: 900,
                               textTransform: 'uppercase',
                               letterSpacing: '0.1em',
@@ -633,7 +717,7 @@ export function TrainingArena({
                               fontWeight: 900,
                               lineHeight: 1.55,
                               textTransform: 'uppercase',
-                              textShadow: '0 0 16px rgba(0,255,217,0.18)',
+                              textShadow: '0 0 16px rgba(255, 0, 255, 0.18)',
                             }}
                           >
                             {activeIntro.title}
@@ -671,26 +755,25 @@ export function TrainingArena({
                               width: index === introStep ? 24 : 8,
                               height: 8,
                               borderRadius: 999,
-                              backgroundColor: index === introStep ? '#00ffd9' : 'rgba(228, 241, 255, 0.24)',
+                              backgroundColor: index === introStep ? '#ff00ff' : 'rgba(228, 241, 255, 0.24)',
                               transition: 'width 220ms ease, background-color 220ms ease',
                             }}
                           />
                         ))}
                       </Stack>
-                      <Button
-                        size="large"
-                        variant="contained"
+                      <ArcadeButton
+                        size="md"
+                        color="magenta"
+                        animation="pulse"
                         onClick={advanceIntro}
                         sx={{
-                          fontWeight: 900,
                           minHeight: 44,
                           minWidth: { xs: 120, sm: 148 },
-                          borderRadius: 2.5,
-                          fontSize: '0.95rem',
+                          fontSize: { xs: '0.58rem', sm: '0.7rem' },
                         }}
                       >
                         {introStep < trainingIntroSlides.length - 1 ? 'Next' : 'Start cards'}
-                      </Button>
+                      </ArcadeButton>
                     </Stack>
                   </Stack>
                 )}
@@ -721,105 +804,288 @@ export function TrainingArena({
                         tone: 'user',
                         wide: true,
                         children: (
-                          <Stack spacing={1.1}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-                              <Typography variant="caption" sx={{ color: '#031017', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                                Confidence wager
-                              </Typography>
-                              <Chip label={formatConfidenceMultiplier(activeConfidenceValue)} size="small" sx={{ fontWeight: 900, color: '#07101d', backgroundColor: '#00ffd9' }} />
-                            </Stack>
-                            <Stack direction="row" spacing={0.8} sx={{ flexWrap: 'wrap' }}>
-                              <Chip label={`Right +${getScoreDelta(true, activeConfidenceValue)}`} size="small" sx={{ fontWeight: 900, color: '#d8ffea', backgroundColor: 'rgba(25, 80, 55, 0.45)' }} />
-                              <Chip label={`Wrong ${getScoreDelta(false, activeConfidenceValue)}`} size="small" sx={{ fontWeight: 900, color: '#ffd9df', backgroundColor: 'rgba(111, 29, 42, 0.45)' }} />
-                            </Stack>
-                            <Slider
-                              value={activeConfidenceValue}
-                              min={MIN_CONFIDENCE_SLIDER_VALUE}
-                              max={MAX_CONFIDENCE_MULTIPLIER}
-                              step={0.1}
-                              marks={CONFIDENCE_MARKS}
-                              valueLabelDisplay="auto"
-                              valueLabelFormat={(value) => formatConfidenceMultiplier(value)}
-                              onChange={(_, value) => {
-                                if (Array.isArray(value)) return;
-                                setConfidenceById((current) => ({
-                                  ...current,
-                                  [activeCard.id]: clampConfidenceMultiplier(value),
-                                }));
-                              }}
-                              disabled={isCardAnswered}
-                              sx={{
-                                color: '#00ffd9',
-                                width: { xs: '90%', sm: '86%' },
-                                alignSelf: 'center',
-                                px: 0,
-                                mt: 0.4,
-                                mb: { xs: 5, sm: 3.6 },
-                                '& .MuiSlider-markLabel': {
-                                  color: 'rgba(255, 255, 255, 0.96)',
-                                  fontSize: { xs: '0.62rem', sm: '0.72rem' },
-                                  fontFamily: READABLE_FONT,
-                                  fontWeight: 800,
-                                  whiteSpace: 'nowrap',
-                                  lineHeight: 1,
-                                  top: 22,
-                                  textShadow: '0 1px 4px rgba(0,0,0,0.45)',
-                                },
-                                '& .MuiSlider-thumb': {
-                                  width: 14,
-                                  height: 14,
-                                  boxShadow: '0 0 0 4px rgba(0, 255, 217, 0.12)',
-                                },
-                                '& .MuiSlider-track': {
-                                  height: 4,
-                                },
-                                '& .MuiSlider-rail': {
-                                  height: 4,
-                                  opacity: 0.3,
-                                },
-                              }}
-                            />
-                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2} sx={{ mt: { xs: 1.4, sm: 0.8 } }}>
-                              <Button
-                                size="large"
-                                variant="contained"
-                                startIcon={<FlagIcon />}
-                                onClick={handleFlashFlag}
+                          <Box
+                            sx={{
+                              position: 'relative',
+                              overflow: 'hidden',
+                              p: { xs: 1.35, sm: 1.65 },
+                              borderRadius: 1,
+                              border: '1px solid rgba(255, 0, 255, 0.34)',
+                              background:
+                                'linear-gradient(180deg, rgba(8, 5, 22, 0.96), rgba(21, 8, 38, 0.92))',
+                              boxShadow:
+                                'inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 14px 28px rgba(0, 0, 0, 0.22)',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: 3,
+                                background:
+                                  'linear-gradient(90deg, rgba(255, 0, 255, 0), rgba(255, 0, 255, 0.9), rgba(255, 191, 77, 0.82), rgba(255, 0, 255, 0))',
+                              },
+                            }}
+                          >
+                            <Stack spacing={{ xs: 1.45, sm: 1.65 }} sx={{ alignItems: 'stretch' }}>
+                              <Stack
+                                direction={{ xs: 'column', sm: 'row' }}
+                                justifyContent="space-between"
+                                alignItems="center"
+                                spacing={1}
+                              >
+                                <Stack direction="row" spacing={0.85} alignItems="center">
+                                  <Box
+                                    sx={{
+                                      width: 9,
+                                      height: 9,
+                                      borderRadius: '50%',
+                                      backgroundColor: '#ffbf4d',
+                                      boxShadow: '0 0 12px rgba(255, 191, 77, 0.7)',
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: '#f8e7ff',
+                                      fontWeight: 900,
+                                      letterSpacing: '0.11em',
+                                      textTransform: 'uppercase',
+                                      textAlign: 'center',
+                                      textShadow: '0 0 14px rgba(255, 0, 255, 0.26)',
+                                    }}
+                                  >
+                                    Confidence wager
+                                  </Typography>
+                                </Stack>
+                                <Box
+                                  sx={{
+                                    minWidth: 76,
+                                    px: 1.3,
+                                    py: 0.45,
+                                    border: '1px solid rgba(255, 0, 255, 0.62)',
+                                    background:
+                                      'linear-gradient(135deg, rgba(255, 0, 255, 0.98), rgba(255, 191, 77, 0.92))',
+                                    boxShadow: '0 0 16px rgba(255, 0, 255, 0.22)',
+                                    textAlign: 'center',
+                                  }}
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: '#07101d',
+                                      fontWeight: 900,
+                                      letterSpacing: '0.08em',
+                                      lineHeight: 1,
+                                    }}
+                                  >
+                                    {formatConfidenceMultiplier(activeConfidenceValue)}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+
+                              <Stack
+                                direction={{ xs: 'column', sm: 'row' }}
+                                spacing={1}
+                                sx={{ justifyContent: 'center' }}
+                              >
+                                <Box
+                                  sx={{
+                                    flex: 1,
+                                    minWidth: { xs: '100%', sm: 140 },
+                                    px: 1.25,
+                                    py: 0.9,
+                                    border: '1px solid rgba(73, 209, 125, 0.32)',
+                                    background: 'rgba(28, 78, 55, 0.28)',
+                                    textAlign: 'center',
+                                  }}
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      display: 'block',
+                                      color: 'rgba(216, 255, 234, 0.78)',
+                                      fontWeight: 900,
+                                      letterSpacing: '0.08em',
+                                      textTransform: 'uppercase',
+                                      lineHeight: 1.2,
+                                      mb: 0.25,
+                                    }}
+                                  >
+                                    Right
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: '#8dffbd', fontWeight: 900, lineHeight: 1.2 }}
+                                  >
+                                    +{getScoreDelta(true, activeConfidenceValue)}
+                                  </Typography>
+                                </Box>
+                                <Box
+                                  sx={{
+                                    flex: 1,
+                                    minWidth: { xs: '100%', sm: 140 },
+                                    px: 1.25,
+                                    py: 0.9,
+                                    border: '1px solid rgba(255, 95, 122, 0.34)',
+                                    background: 'rgba(111, 29, 42, 0.26)',
+                                    textAlign: 'center',
+                                  }}
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      display: 'block',
+                                      color: 'rgba(255, 217, 223, 0.78)',
+                                      fontWeight: 900,
+                                      letterSpacing: '0.08em',
+                                      textTransform: 'uppercase',
+                                      lineHeight: 1.2,
+                                      mb: 0.25,
+                                    }}
+                                  >
+                                    Wrong
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: '#ffb8c5', fontWeight: 900, lineHeight: 1.2 }}
+                                  >
+                                    {getScoreDelta(false, activeConfidenceValue)}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+
+                              <Box
                                 sx={{
-                                  fontWeight: 900,
-                                  minHeight: 46,
-                                  minWidth: { xs: '100%', sm: 150 },
-                                  borderRadius: 2.5,
-                                  fontSize: '0.95rem',
-                                  color: '#000000 !important',
-                                  '& .MuiButton-startIcon': { color: '#000000 !important' },
-                                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ff2e93 100%)',
-                                  boxShadow: '0 10px 22px rgba(255, 46, 147, 0.28)',
+                                  px: { xs: 1.2, sm: 1.8 },
+                                  pt: 1.2,
+                                  pb: 1,
+                                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                                  background: 'rgba(255, 255, 255, 0.04)',
                                 }}
                               >
-                                Flag
-                              </Button>
-                              <Button
-                                size="large"
-                                variant="contained"
-                                startIcon={<CheckCircleIcon />}
-                                onClick={handleFlashPass}
+                                <Slider
+                                  value={activeConfidenceValue}
+                                  min={MIN_CONFIDENCE_SLIDER_VALUE}
+                                  max={MAX_CONFIDENCE_MULTIPLIER}
+                                  step={0.1}
+                                  marks={CONFIDENCE_MARKS.map(({ value }) => ({ value }))}
+                                  valueLabelDisplay="auto"
+                                  valueLabelFormat={(value) => formatConfidenceMultiplier(value)}
+                                  onChange={(_, value) => {
+                                    if (Array.isArray(value)) return;
+                                    setConfidenceById((current) => ({
+                                      ...current,
+                                      [activeCard.id]: clampConfidenceMultiplier(value),
+                                    }));
+                                  }}
+                                  disabled={isCardAnswered}
+                                  sx={{
+                                    color: '#ff00ff',
+                                    width: '100%',
+                                    px: 0,
+                                    mt: 0.1,
+                                    mb: 0.1,
+                                    '& .MuiSlider-valueLabel': {
+                                      backgroundColor: '#ff00ff',
+                                      color: '#07101d',
+                                      fontWeight: 900,
+                                    },
+                                    '& .MuiSlider-mark': {
+                                      width: 3,
+                                      height: 3,
+                                      borderRadius: '50%',
+                                      backgroundColor: 'rgba(248, 231, 255, 0.68)',
+                                    },
+                                    '& .MuiSlider-thumb': {
+                                      width: 16,
+                                      height: 16,
+                                      border: '2px solid #f8e7ff',
+                                      boxShadow: '0 0 0 5px rgba(255, 0, 255, 0.12), 0 0 16px rgba(255, 0, 255, 0.48)',
+                                    },
+                                    '& .MuiSlider-track': {
+                                      height: 5,
+                                      background:
+                                        'linear-gradient(90deg, rgba(255, 191, 77, 0.96), rgba(255, 0, 255, 0.98))',
+                                      border: 0,
+                                    },
+                                    '& .MuiSlider-rail': {
+                                      height: 5,
+                                      opacity: 1,
+                                      backgroundColor: 'rgba(248, 231, 255, 0.18)',
+                                    },
+                                  }}
+                                />
+                                <Stack
+                                  direction="row"
+                                  sx={{
+                                    justifyContent: 'space-between',
+                                    mt: 0.45,
+                                    px: 0.1,
+                                  }}
+                                >
+                                  {CONFIDENCE_MARKS.map((mark) => (
+                                    <Typography
+                                      key={mark.value}
+                                      variant="caption"
+                                      sx={{
+                                        color: 'rgba(248, 231, 255, 0.74)',
+                                        fontFamily: READABLE_FONT,
+                                        fontSize: { xs: '0.66rem', sm: '0.72rem' },
+                                        fontWeight: 900,
+                                        letterSpacing: '0.04em',
+                                        lineHeight: 1,
+                                      }}
+                                    >
+                                      {mark.label}
+                                    </Typography>
+                                  ))}
+                                </Stack>
+                              </Box>
+
+                              <Stack
+                                direction={{ xs: 'column', sm: 'row' }}
+                                spacing={{ xs: 1.1, sm: 1.4 }}
                                 sx={{
-                                  fontWeight: 900,
-                                  minHeight: 46,
-                                  minWidth: { xs: '100%', sm: 150 },
-                                  borderRadius: 2.5,
-                                  fontSize: '0.95rem',
-                                  color: '#000000 !important',
-                                  '& .MuiButton-startIcon': { color: '#000000 !important' },
-                                  background: 'linear-gradient(135deg, #00ffd9 0%, #2ee3ff 100%)',
-                                  boxShadow: '0 10px 22px rgba(0, 255, 217, 0.24)',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  width: '100%',
+                                  maxWidth: { xs: 310, sm: 'none' },
+                                  mx: 'auto',
+                                  pt: 0.2,
                                 }}
                               >
-                                Pass
-                              </Button>
+                                <ArcadeButton
+                                  size="lg"
+                                  color="orange"
+                                  startIcon={<FlagIcon />}
+                                  onClick={handleFlashFlag}
+                                  sx={{
+                                    minHeight: 46,
+                                    minWidth: { xs: '100%', sm: 170 },
+                                    fontSize: { xs: '0.64rem', sm: '0.75rem' },
+                                    '& .MuiButton-startIcon': { color: 'inherit !important' },
+                                  }}
+                                >
+                                  Flag
+                                </ArcadeButton>
+                                <ArcadeButton
+                                  size="lg"
+                                  color="magenta"
+                                  startIcon={<CheckCircleIcon />}
+                                  onClick={handleFlashPass}
+                                  sx={{
+                                    minHeight: 46,
+                                    minWidth: { xs: '100%', sm: 170 },
+                                    fontSize: { xs: '0.64rem', sm: '0.75rem' },
+                                    '& .MuiButton-startIcon': { color: 'inherit !important' },
+                                  }}
+                                >
+                                  Pass
+                                </ArcadeButton>
+                              </Stack>
                             </Stack>
-                          </Stack>
+                          </Box>
                         ),
                       })
                     ) : (

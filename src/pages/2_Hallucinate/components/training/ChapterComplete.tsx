@@ -1,7 +1,8 @@
-import { Typography, Box, Button, Stack } from '@mui/material';
+import { Typography, Box, Stack } from '@mui/material';
 import { Celebration as CelebrationIcon } from '@mui/icons-material';
 
-import { NEON_CYAN, PRIMARY_HEADER_GRADIENT } from '../../hallucinateUi';
+import { ArcadeButton } from '../../../../components/ui';
+import { NEON_CYAN } from '../../hallucinateUi';
 
 export function ChapterComplete({
   onReviewResults,
@@ -16,9 +17,9 @@ export function ChapterComplete({
 }) {
   const animationCss = `
 @keyframes arcadeGlow {
-  0% { text-shadow: 0 0 6px rgba(0, 255, 217, 0.4), 0 0 12px rgba(0, 255, 217, 0.25); }
+  0% { text-shadow: 0 0 6px rgba(255, 0, 255, 0.4), 0 0 12px rgba(255, 0, 255, 0.25); }
   50% { text-shadow: 0 0 12px rgba(255, 46, 147, 0.55), 0 0 24px rgba(255, 46, 147, 0.3); }
-  100% { text-shadow: 0 0 6px rgba(0, 255, 217, 0.4), 0 0 12px rgba(0, 255, 217, 0.25); }
+  100% { text-shadow: 0 0 6px rgba(255, 0, 255, 0.4), 0 0 12px rgba(255, 0, 255, 0.25); }
 }
 @keyframes badgeFloat {
   0% { transform: translateY(0); }
@@ -78,7 +79,7 @@ export function ChapterComplete({
                 fontSize: { xs: '1.6rem', sm: '2.2rem', md: '2.8rem' },
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
-                textShadow: '0 0 24px rgba(0,255,217,0.22), 0 3px 0 rgba(0,0,0,0.45)',
+                textShadow: '0 0 24px rgba(255, 0, 255, 0.22), 0 3px 0 rgba(0,0,0,0.45)',
               }}
             >
               Congratulations!
@@ -98,30 +99,50 @@ export function ChapterComplete({
           </Box>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.3} sx={{ justifyContent: 'center', width: '100%', maxWidth: 740 }}>
-            <Button
-              variant="outlined"
+            <ArcadeButton
+              variant="outline"
+              color="magenta"
+              size="md"
               onClick={onReviewResults}
-              sx={{ fontWeight: 900, borderColor: NEON_CYAN, color: NEON_CYAN, minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
+              sx={{ minHeight: 50, minWidth: { sm: 180 }, width: { xs: '100%', sm: 'auto' } }}
               disabled={isNavigatingToRanking}
             >
               Review Results
-            </Button>
-            <Button
-              variant="outlined"
+            </ArcadeButton>
+            <ArcadeButton
+              variant="outline"
+              color="magenta"
+              size="md"
               onClick={onStartFromBeginning}
-              sx={{ fontWeight: 900, borderColor: 'rgba(255,255,255,0.28)', color: '#eaffff', minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
+              sx={{
+                minHeight: 50,
+                minWidth: { sm: 180 },
+                width: { xs: '100%', sm: 'auto' },
+                whiteSpace: 'normal',
+                lineHeight: 1.5,
+                fontSize: { xs: '0.56rem', sm: '0.75rem' },
+              }}
               disabled={!onStartFromBeginning || isNavigatingToRanking}
             >
               Start From Beginning
-            </Button>
-            <Button
-              variant="contained"
+            </ArcadeButton>
+            <ArcadeButton
+              color="magenta"
+              size="md"
+              animation={isNavigatingToRanking ? 'blinking' : 'pulse'}
               onClick={onViewRanking}
-              sx={{ fontWeight: 900, background: PRIMARY_HEADER_GRADIENT, minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
+              sx={{
+                minHeight: 50,
+                minWidth: { sm: 180 },
+                width: { xs: '100%', sm: 'auto' },
+                whiteSpace: 'normal',
+                lineHeight: 1.5,
+                fontSize: { xs: '0.56rem', sm: '0.75rem' },
+              }}
               disabled={!onViewRanking || isNavigatingToRanking}
             >
               {isNavigatingToRanking ? 'Loading Ranking...' : 'View Ranking'}
-            </Button>
+            </ArcadeButton>
           </Stack>
       </Stack>
     </Box>

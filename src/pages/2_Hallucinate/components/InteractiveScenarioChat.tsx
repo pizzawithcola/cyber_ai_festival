@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Typography,
   Box,
-  Button,
   Paper,
   Grid,
   Collapse,
@@ -12,7 +11,7 @@ import {
 
 import { SCENARIOS } from '../scenarios';
 import { SCENARIO_PROMPTS } from '../scenarioPrompts';
-import { PRIMARY_HEADER_GRADIENT } from '../hallucinateUi';
+import { ArcadeButton } from '../../../components/ui';
 
 type ChatMessage = {
   id: string;
@@ -176,7 +175,7 @@ export function InteractiveScenarioChat({
                       height: { xs: 30, sm: 34 },
                       fontSize: { xs: '1rem', sm: '1.08rem' },
                       fontWeight: 900,
-                      bgcolor: msg.role === 'user' ? 'rgba(0, 255, 217, 0.9)' : 'rgba(255, 46, 147, 0.9)',
+                      bgcolor: msg.role === 'user' ? 'rgba(255, 0, 255, 0.9)' : 'rgba(255, 46, 147, 0.9)',
                       color: '#031017',
                       flexShrink: 0,
                     }}
@@ -190,7 +189,7 @@ export function InteractiveScenarioChat({
                       width: msg.role === 'user' ? { xs: '72%', sm: '54%' } : { xs: '88%', sm: '76%' },
                       maxWidth: msg.role === 'user' ? 520 : 700,
                       background: msg.role === 'user'
-                        ? 'linear-gradient(135deg, rgba(0, 255, 217, 0.18), rgba(46, 227, 255, 0.1))'
+                        ? 'linear-gradient(135deg, rgba(255, 0, 255, 0.18), rgba(191, 0, 255, 0.1))'
                         : msg.hallucination
                         ? 'linear-gradient(180deg, rgba(255, 171, 64, 0.16), rgba(36, 22, 20, 0.88))'
                         : 'linear-gradient(180deg, rgba(12, 20, 42, 0.92), rgba(7, 12, 28, 0.88))',
@@ -214,24 +213,22 @@ export function InteractiveScenarioChat({
                     </Typography>
                     {msg.hallucination && msg.why && (
                       <Box sx={{ mt: 1.1, pt: 1, borderTop: '1px solid rgba(255, 171, 64, 0.4)' }}>
-                        <Button
-                          size="small"
-                          variant="outlined"
+                        <ArcadeButton
+                          size="sm"
+                          variant="outline"
+                          color="orange"
+                          animation={expandedAnalysisId === msg.id ? 'none' : 'pulse'}
                           onClick={() => {
                             setExpandedAnalysisId((current) => (current === msg.id ? null : msg.id));
                             setRevealedAnalysisIds((prev) => new Set([...prev, msg.id]));
                           }}
                           sx={{
                             mb: expandedAnalysisId === msg.id ? 0.8 : 0,
-                            color: '#ffb74d !important',
-                            borderColor: 'rgba(255, 171, 64, 0.6) !important',
-                            animation: 'none !important',
-                            fontWeight: 900,
-                            fontSize: '0.875rem',
+                            fontSize: { xs: '0.58rem', sm: '0.625rem' },
                           }}
                         >
                           {expandedAnalysisId === msg.id ? 'Hide analysis' : 'Reveal analysis'}
-                        </Button>
+                        </ArcadeButton>
                         <Collapse in={expandedAnalysisId === msg.id}>
                           <Typography variant="caption" sx={{ fontWeight: 900, color: '#b26a00', display: 'block', mb: 0.4 }}>
                             Why this is a hallucination risk
@@ -254,31 +251,28 @@ export function InteractiveScenarioChat({
                 justifyContent: 'center',
               }}
             >
-              <Button
-                variant="contained"
+              <ArcadeButton
+                color="magenta"
+                size="lg"
+                animation={isWaitingReply || needsReveal ? 'none' : 'pulse'}
                 onClick={handleNextStep}
                 disabled={isWaitingReply || needsReveal}
                 sx={{
-                  fontWeight: 900,
-                  background: PRIMARY_HEADER_GRADIENT,
-                  boxShadow: '0 0 0 1px rgba(0, 255, 217, 0.6), 0 12px 26px rgba(0, 255, 217, 0.32)',
                   width: { xs: '100%', sm: 360 },
                   minHeight: 48,
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #00ffd9 0%, #ff2e93 100%)',
-                    boxShadow: '0 0 0 1px rgba(255, 46, 147, 0.7), 0 14px 32px rgba(255, 46, 147, 0.35)',
-                  },
-                  whiteSpace: 'nowrap',
+                  whiteSpace: 'normal',
+                  lineHeight: 1.5,
+                  fontSize: { xs: '0.58rem', sm: '0.75rem' },
                 }}
               >
                 {scenarioCompleted && !isOverviewVisible
-                  ? 'Next → Scenario Overview'
+                  ? 'Next: Scenario Overview'
                   : isWaitingReply
                   ? '...'
                   : needsReveal
                   ? 'Reveal analysis to continue'
                   : 'Next'}
-              </Button>
+              </ArcadeButton>
             </Box>
           </Box>
         )}
@@ -316,16 +310,16 @@ export function InteractiveScenarioChat({
                     px: 1.25,
                     py: 0.55,
                     borderRadius: 999,
-                    border: '1px solid rgba(0,255,217,0.36)',
-                    background: 'rgba(0,255,217,0.08)',
-                    color: '#00ffd9',
+                    border: '1px solid rgba(255, 0, 255, 0.36)',
+                    background: 'rgba(255, 0, 255, 0.08)',
+                    color: '#ff00ff',
                     fontWeight: 900,
                     fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
                     fontSize: { xs: '0.8rem', sm: '0.875rem' },
                     lineHeight: 1.6,
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
-                    textShadow: '0 0 12px rgba(0,255,217,0.24)',
+                    textShadow: '0 0 12px rgba(255, 0, 255, 0.24)',
                   }}
                 >
                   {activeOverview.label}
@@ -343,7 +337,7 @@ export function InteractiveScenarioChat({
 	                      letterSpacing: '0.05em',
 	                      textTransform: 'uppercase',
 	                      textShadow:
-	                        '0 3px 0 rgba(0,0,0,0.48), 0 0 18px rgba(255,46,147,0.18), 0 0 28px rgba(0,255,217,0.16)',
+	                        '0 3px 0 rgba(0,0,0,0.48), 0 0 18px rgba(255, 46, 147,0.18), 0 0 28px rgba(255, 0, 255, 0.16)',
 	                    }}
 	                  >
                     {activeOverview.title}
@@ -370,15 +364,17 @@ export function InteractiveScenarioChat({
                         width: index === overviewStep ? 26 : 9,
                         height: 9,
                         borderRadius: 999,
-                        backgroundColor: index === overviewStep ? '#00ffd9' : 'rgba(228, 241, 255, 0.24)',
+                        backgroundColor: index === overviewStep ? '#ff00ff' : 'rgba(228, 241, 255, 0.24)',
                         transition: 'width 220ms ease, background-color 220ms ease',
                       }}
                     />
                   ))}
                 </Stack>
 
-                <Button
-                  variant="contained"
+                <ArcadeButton
+                  color="magenta"
+                  size="lg"
+                  animation="pulse"
                   onClick={() => {
                     if (!isLastOverviewStep) {
                       setOverviewStep((step) => step + 1);
@@ -387,17 +383,15 @@ export function InteractiveScenarioChat({
                     onStartGame?.();
                   }}
                   sx={{
-                    fontWeight: 900,
-                    background: PRIMARY_HEADER_GRADIENT,
                     width: { xs: '100%', sm: 360 },
                     minHeight: 48,
-                    borderRadius: 2.5,
-                    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-                    fontSize: { xs: '1rem', sm: '1.06rem' },
+                    whiteSpace: 'normal',
+                    lineHeight: 1.5,
+                    fontSize: { xs: '0.58rem', sm: '0.75rem' },
                   }}
                 >
                   {isLastOverviewStep ? 'Next: Training Game' : 'Next'}
-                </Button>
+                </ArcadeButton>
             </Box>
           </Box>
         )}
