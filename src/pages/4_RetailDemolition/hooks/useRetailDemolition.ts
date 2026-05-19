@@ -26,8 +26,6 @@ export interface Message {
   role: 'user' | 'bot';
   text: string;
   showRetailers?: boolean;
-  showQuestionnaire?: boolean;
-  productName?: string;
 }
 
 export const BROWSE_QUEST_TARGET = 2;
@@ -262,7 +260,6 @@ export const useRetailDemolition = () => {
     setMessages(prev => [...prev, {
       role: 'user',
       text: promptText || `Find me the best deal on ${productName}`,
-      productName,
     }]);
     setIsSearching(true);
     setStartTime(Date.now());
