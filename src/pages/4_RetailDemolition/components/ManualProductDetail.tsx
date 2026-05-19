@@ -10,6 +10,8 @@ interface ManualProductDetailProps {
   onAddToCart: (product: Product, retailer: Retailer) => void;
   onFoundInjection: () => void;
   injectionFound: boolean;
+  canCheckout?: boolean;
+  browseProgress?: { current: number; target: number };
 }
 
 const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
@@ -19,6 +21,8 @@ const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
   onAddToCart,
   onFoundInjection,
   injectionFound,
+  canCheckout = true,
+  browseProgress,
 }) => {
   const [showSource, setShowSource] = useState(false);
   const retailer = RETAILERS.find(r => r.name === retailerName)!;
@@ -145,11 +149,23 @@ const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
 
           {/* Add to cart */}
           <button
-            onClick={() => onAddToCart(product, retailer)}
-            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform mb-4"
+            onClick={() => canCheckout && onAddToCart(product, retailer)}
+            disabled={!canCheckout}
+            className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform mb-2 ${
+              canCheckout
+                ? 'bg-indigo-600 text-white active:scale-95'
+                : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+            }`}
           >
             <ShoppingCart size={16} /> Add to Cart
           </button>
+          {!canCheckout && browseProgress && (
+            <div className="mb-4 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
+              Quest: browse {browseProgress.target} different products before checkout
+              <span className="font-bold ml-1">({browseProgress.current}/{browseProgress.target})</span>
+            </div>
+          )}
+          {canCheckout && <div className="mb-2" />}
 
           {/* Reviews */}
           <div className="mb-4">

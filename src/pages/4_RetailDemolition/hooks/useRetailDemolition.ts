@@ -27,7 +27,10 @@ export interface Message {
   text: string;
   showRetailers?: boolean;
   showQuestionnaire?: boolean;
+  productName?: string;
 }
+
+export const BROWSE_QUEST_TARGET = 2;
 
 export interface ScoreEvent {
   change: number;
@@ -62,6 +65,9 @@ export const useRetailDemolition = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [manualCheckoutDone, setManualCheckoutDone] = useState(false);
   const [manualStepCount, setManualStepCount] = useState(0);
+  const [browsedProductNames, setBrowsedProductNames] = useState<string[]>([]);
+  const browsedCount = Math.min(browsedProductNames.length, BROWSE_QUEST_TARGET);
+  const browseQuestComplete = browsedProductNames.length >= BROWSE_QUEST_TARGET;
 
   // ── Prompt Injection Discovery ──
   const [injectionFound, setInjectionFound] = useState(false);
@@ -117,6 +123,15 @@ export const useRetailDemolition = () => {
   };
 
   // ── Hint Logic ──
+  const withQuestProgress = (hint: HintContent): HintContent => {
+    if (browseQuestComplete) return hint;
+    const tag = `[Quest ${browsedCount}/${BROWSE_QUEST_TARGET}] Browse at least ${BROWSE_QUEST_TARGET} different products before checking out.`;
+    return {
+      ...hint,
+      nextStep: hint.nextStep ? `${tag} ${hint.nextStep}` : tag,
+    };
+  };
+
   const getHint = (): HintContent | null => {
     switch (gameState) {
       case 'intro':
@@ -124,13 +139,16 @@ export const useRetailDemolition = () => {
       case 'billing':
         return HINT_CONTENT['billing'];
       case 'manual-storefront':
-        return HINT_CONTENT['manual-storefront'];
+        return withQuestProgress(HINT_CONTENT['manual-storefront']);
       case 'manual-product': {
-        if (injectionFound) return HINT_CONTENT['manual-found-injection'];
         const retailer = RETAILERS.find(r => r.name === manualRetailerName);
-        return retailer?.isMalicious
+        if (injectionFound && retailer?.isMalicious) {
+          return withQuestProgress(HINT_CONTENT['manual-found-injection']);
+        }
+        const base = retailer?.isMalicious
           ? HINT_CONTENT['manual-product-suspicious']
           : HINT_CONTENT['manual-product-safe'];
+        return withQuestProgress(base);
       }
       case 'manual-checkout': {
         const checkoutRetailer = cart.length > 0 ? cart[0].retailer : null;
@@ -195,10 +213,15 @@ export const useRetailDemolition = () => {
     setManualProduct(product);
     setManualRetailerName(retailerName);
     setManualStepCount(prev => prev + 1);
+    setBrowsedProductNames(prev => (prev.includes(product.name) ? prev : [...prev, product.name]));
     setGameState('manual-product');
   };
 
   const handleManualAddToCart = (product: Product, retailer: Retailer) => {
+    // Quest gate: must have browsed at least BROWSE_QUEST_TARGET distinct products
+    if (browsedProductNames.length < BROWSE_QUEST_TARGET) {
+      return;
+    }
     setCart([{ product, retailer }]); // single-item cart for simplicity
     setManualStepCount(prev => prev + 1);
     setGameState('manual-checkout');
@@ -234,9 +257,13 @@ export const useRetailDemolition = () => {
   };
 
   // ── Agent Mode Actions ──
-  const startSearch = (productName: string) => {
+  const startSearch = (productName: string, promptText?: string) => {
     setSelectedProduct(productName);
-    setMessages(prev => [...prev, { role: 'user', text: `Find me the best deal on ${productName}` }]);
+    setMessages(prev => [...prev, {
+      role: 'user',
+      text: promptText || `Find me the best deal on ${productName}`,
+      productName,
+    }]);
     setIsSearching(true);
     setStartTime(Date.now());
 
@@ -452,6 +479,9 @@ export const useRetailDemolition = () => {
     manualCheckoutDone,
     manualStepCount,
     injectionFound,
+    browsedCount,
+    browseQuestComplete,
+    browseQuestTarget: BROWSE_QUEST_TARGET,
 
     // Agent confirmation
     agentConfirmProduct,

@@ -1,16 +1,28 @@
 // ── Product Images ──
-// Place real product images in public/images/products/ or replace these with actual URLs.
-// Using descriptive placeholder paths for now.
+// Locally hosted in public/images/products/ for reliable rendering.
 const PRODUCT_IMAGES: Record<string, string> = {
-  'AirPods Pro': 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/airpods-pro-2-hero-select-202409?wid=400&hei=400&fmt=png-alpha',
-  'PS5 Slim': 'https://media.direct.playstation.com/is/image/sierequesthandler/ps5-slim-edition-front?$native$',
-  'RTX 4090': 'https://assets.nvidia.partners/images/png/nvidia-geforce-rtx-4090-front.png',
-  'Sony WH-1000XM5': 'https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg',
-  'iPad Air M2': 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/ipad-air-select-wifi-blue-202405?wid=400&hei=400&fmt=png-alpha',
-  'Nintendo Switch OLED': 'https://assets.nintendo.com/image/upload/ar_16:9,c_lpad,w_801/b_white/f_auto/q_auto/ncom/software/switch/70010000000141/nso-seo',
-  'Galaxy S24 Ultra': 'https://image-us.samsung.com/us/smartphones/galaxy-s24-ultra/all-galaxy-s24-ultra-702x702.jpg',
-  'Dyson V15 Detect': 'https://dyson-h.assetsadobe2.com/is/image/content/dam/dyson/images/products/primary/476780-01.png?$responsive$&cropPathE=desktop&fit=stretch,1&wid=400',
+  'AirPods Pro': '/images/products/airpods-pro.png',
+  'PS5 Slim': '/images/products/ps5-slim.png',
+  'RTX 4090': '/images/products/rtx-4090.png',
+  'Sony WH-1000XM5': '/images/products/sony-wh1000xm5.png',
+  'iPad Air M2': '/images/products/ipad-air-m2.jpg',
+  'Nintendo Switch OLED': '/images/products/nintendo-switch-oled.png',
+  'Galaxy S24 Ultra': '/images/products/galaxy-s24-ultra.jpg',
+  'Dyson V15 Detect': '/images/products/dyson-v15.jpg',
 };
+
+// Natural-language prompts used by the agent-mode chatbox dropup.
+// One phrasing per product; clicking a prompt triggers a product search.
+export const PRODUCT_PROMPTS: Array<{ productName: string; prompt: string }> = [
+  { productName: 'AirPods Pro', prompt: 'I want to buy AirPods Pro' },
+  { productName: 'PS5 Slim', prompt: 'Purchase a PS5 Slim for me' },
+  { productName: 'RTX 4090', prompt: 'Find me the best deal on an RTX 4090' },
+  { productName: 'Sony WH-1000XM5', prompt: 'Order Sony WH-1000XM5 headphones' },
+  { productName: 'iPad Air M2', prompt: 'I need an iPad Air M2' },
+  { productName: 'Nintendo Switch OLED', prompt: 'Get me a Nintendo Switch OLED' },
+  { productName: 'Galaxy S24 Ultra', prompt: 'Buy a Galaxy S24 Ultra for me' },
+  { productName: 'Dyson V15 Detect', prompt: 'I want a Dyson V15 Detect vacuum' },
+];
 
 export interface Product {
   name: string;

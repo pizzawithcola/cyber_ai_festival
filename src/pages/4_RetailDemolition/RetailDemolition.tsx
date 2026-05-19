@@ -7,6 +7,7 @@ import HintPanel from './components/HintPanel';
 import IntroScreen from './components/IntroScreen';
 import GameSummary from './components/GameSummary';
 import { useRetailDemolition } from './hooks/useRetailDemolition';
+import ArcadeBackground from './components/ui/ArcadeBackground';
 
 const RetailDemolition = () => {
   const navigate = useNavigate();
@@ -60,15 +61,19 @@ const RetailDemolition = () => {
   // ── Intro Screen (full-page, no phone) ──
   if (game.gameState === 'intro') {
     return (
-      <div className="flex h-screen w-full bg-[#0a0a0c] text-slate-300 font-sans overflow-hidden">
-        <IntroScreen onStart={() => game.setGameState('billing')} />
+      <div className="relative flex h-screen w-full text-slate-300 font-sans overflow-hidden">
+        <ArcadeBackground />
+        <div className="relative z-10 flex w-full">
+          <IntroScreen onStart={() => game.setGameState('billing')} />
+        </div>
       </div>
     );
   }
 
   // ── Main Layout: HintPanel + Phone ──
   return (
-    <div className="relative flex h-screen w-full bg-[#0a0a0c] text-slate-300 font-sans overflow-hidden items-center justify-center gap-8 px-8">
+    <div className="relative flex h-screen w-full text-slate-300 font-sans overflow-hidden items-center justify-center gap-8 px-8">
+      <ArcadeBackground />
       {/* Phone */}
       <PhoneSimulator
         gameState={game.gameState}
@@ -89,6 +94,9 @@ const RetailDemolition = () => {
         manualRetailerName={game.manualRetailerName}
         cart={game.cart}
         injectionFound={game.injectionFound}
+        browsedCount={game.browsedCount}
+        browseQuestComplete={game.browseQuestComplete}
+        browseQuestTarget={game.browseQuestTarget}
         agentConfirmProduct={game.agentConfirmProduct}
         agentConfirmRetailer={game.agentConfirmRetailer}
         agentSafePurchaseDone={game.agentSafePurchaseDone}

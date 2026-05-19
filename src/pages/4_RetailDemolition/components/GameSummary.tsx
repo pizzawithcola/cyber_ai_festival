@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
 import { Trophy, AlertTriangle, Shield, Target, Eye } from 'lucide-react';
 import DecisionCard from './DecisionCard';
+import { ArcadeTypography } from '../../../components/ui';
+import { ARCADE_COLORS } from '../../../theme/theme';
+import ArcadePanel from './ui/ArcadePanel';
 
 interface Decision {
   site: { isMalicious: boolean; isVerified: boolean; name: string };
@@ -17,6 +20,19 @@ interface GameSummaryProps {
   scoreEvents: Array<{ change: number; reason: string; meta: Record<string, unknown>; timestamp: number }>;
   manualStepCount: number;
 }
+
+const SectionHeader: React.FC<{ icon: React.ReactNode; title: string; accent?: keyof typeof ARCADE_COLORS }> = ({
+  icon,
+  title,
+  accent = 'yellow',
+}) => (
+  <div className="flex items-center gap-2 mb-4">
+    <span style={{ color: ARCADE_COLORS[accent], display: 'inline-flex' }}>{icon}</span>
+    <ArcadeTypography arcadeColor={accent} arcadeSize="xs" font="pressstart2p" sx={{ fontSize: '0.7rem' }}>
+      {title}
+    </ArcadeTypography>
+  </div>
+);
 
 const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents, manualStepCount }) => {
   const deductionEvents = useMemo(() => {
@@ -42,104 +58,132 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
     return map[reason] || reason;
   };
 
-  const getRank = () => {
-    if (score >= 90) return { name: 'Security Expert', color: 'text-green-400', bg: 'bg-green-900/20' };
-    if (score >= 70) return { name: 'Security Aware', color: 'text-blue-400', bg: 'bg-blue-900/20' };
-    if (score >= 50) return { name: 'Security Conscious', color: 'text-yellow-400', bg: 'bg-yellow-900/20' };
-    if (score >= 30) return { name: 'Security Risk', color: 'text-orange-400', bg: 'bg-orange-900/20' };
-    return { name: 'Security Vulnerable', color: 'text-red-400', bg: 'bg-red-900/20' };
+  const getRank = (): { name: string; color: keyof typeof ARCADE_COLORS } => {
+    if (score >= 90) return { name: 'SECURITY EXPERT', color: 'lime' };
+    if (score >= 70) return { name: 'SECURITY AWARE', color: 'cyan' };
+    if (score >= 50) return { name: 'SECURITY CONSCIOUS', color: 'yellow' };
+    if (score >= 30) return { name: 'SECURITY RISK', color: 'orange' };
+    return { name: 'SECURITY VULNERABLE', color: 'red' };
   };
 
   const rank = getRank();
 
-  // Analysis data available for future use
-  // const agentDecisions = decisions.filter(d => d.context === 'agentic_mode');
-
   return (
-    <div className="space-y-4 pb-4">
+    <div className="space-y-4 pb-4 relative z-[2]">
       {/* Score & Rank */}
-      <div className="bg-[#12121a] border-2 border-indigo-700/40 rounded-2xl p-6 text-center shadow-[0_0_30px_rgba(99,102,241,0.15)]">
-        <Trophy size={48} className="text-yellow-400 mx-auto mb-3" />
-        <div className={`font-arcade inline-block px-4 py-2 rounded-lg ${rank.bg} ${rank.color} text-[10px] mb-3 tracking-wider`}>
-          {rank.name.toUpperCase()}
+      <ArcadePanel accent={rank.color} sx={{ p: 3, textAlign: 'center' }}>
+        <Trophy size={44} style={{ color: ARCADE_COLORS.yellow, margin: '0 auto 12px' }} />
+        <div
+          className="inline-block mb-3 px-3 py-1"
+          style={{
+            border: `2px solid ${ARCADE_COLORS[rank.color]}`,
+            boxShadow: `0 0 12px ${ARCADE_COLORS[rank.color]}60`,
+          }}
+        >
+          <ArcadeTypography arcadeColor={rank.color} arcadeSize="xs" font="pressstart2p" sx={{ fontSize: '0.7rem' }}>
+            {rank.name}
+          </ArcadeTypography>
         </div>
-        <div className="font-arcade text-[32px] text-white">{score}<span className="text-slate-500 text-[20px]">/100</span></div>
-      </div>
+        <div>
+          <ArcadeTypography
+            arcadeColor={rank.color}
+            arcadeSize="xl"
+            font="pressstart2p"
+            sx={{ fontSize: '2.5rem', lineHeight: 1 }}
+          >
+            {score}
+          </ArcadeTypography>
+          <ArcadeTypography arcadeColor="white" arcadeSize="md" font="pressstart2p" glow={false} sx={{ fontSize: '1rem' }}>
+            /100
+          </ArcadeTypography>
+        </div>
+      </ArcadePanel>
 
-      {/* Manual vs Agent Comparison */}
-      <div className="bg-[#12121a] border border-slate-800 rounded-2xl p-5">
-        <h3 className="font-arcade text-[12px] text-white mb-4 flex items-center gap-2">
-          <Target size={16} className="text-indigo-400" /> MANUAL VS AGENT
-        </h3>
+      {/* Manual vs Agent */}
+      <ArcadePanel accent="yellow" sx={{ p: 3 }}>
+        <SectionHeader icon={<Target size={14} />} title="MANUAL VS AGENT" accent="yellow" />
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
-            <div className="font-arcade text-[8px] text-slate-400 mb-2">MANUAL</div>
-            <div className="font-terminal text-[28px] text-white leading-none">{manualStepCount}<span className="text-[16px] text-slate-500"> steps</span></div>
-            <div className="font-terminal text-[16px] text-slate-400 leading-tight mt-1">You controlled every decision</div>
+          <div style={{ border: `1px solid ${ARCADE_COLORS.yellow}40`, padding: 12 }}>
+            <ArcadeTypography arcadeColor="yellow" arcadeSize="xs" font="pressstart2p" sx={{ display: 'block', mb: 1, fontSize: '0.55rem' }}>
+              MANUAL
+            </ArcadeTypography>
+            <ArcadeTypography arcadeColor="white" arcadeSize="lg" font="vt323" glow={false} sx={{ display: 'block', fontSize: '2rem', lineHeight: 1 }}>
+              {manualStepCount}
+              <span style={{ fontSize: '1rem', color: `${ARCADE_COLORS.white}80`, marginLeft: 6 }}>steps</span>
+            </ArcadeTypography>
+            <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="vt323" glow={false} sx={{ display: 'block', fontSize: '1.05rem', lineHeight: 1.2, mt: 0.5, opacity: 0.75 }}>
+              You controlled every decision
+            </ArcadeTypography>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
-            <div className="font-arcade text-[8px] text-slate-400 mb-2">AGENT</div>
-            <div className="font-terminal text-[28px] text-white leading-none">1<span className="text-[16px] text-slate-500"> click</span></div>
-            <div className="font-terminal text-[16px] text-slate-400 leading-tight mt-1">Agent made all decisions</div>
+          <div style={{ border: `1px solid ${ARCADE_COLORS.yellow}40`, padding: 12 }}>
+            <ArcadeTypography arcadeColor="yellow" arcadeSize="xs" font="pressstart2p" sx={{ display: 'block', mb: 1, fontSize: '0.55rem' }}>
+              AGENT
+            </ArcadeTypography>
+            <ArcadeTypography arcadeColor="white" arcadeSize="lg" font="vt323" glow={false} sx={{ display: 'block', fontSize: '2rem', lineHeight: 1 }}>
+              1
+              <span style={{ fontSize: '1rem', color: `${ARCADE_COLORS.white}80`, marginLeft: 6 }}>click</span>
+            </ArcadeTypography>
+            <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="vt323" glow={false} sx={{ display: 'block', fontSize: '1.05rem', lineHeight: 1.2, mt: 0.5, opacity: 0.75 }}>
+              Agent made all decisions
+            </ArcadeTypography>
           </div>
         </div>
-      </div>
+      </ArcadePanel>
 
       {/* Score Breakdown */}
       {deductionEvents.length > 0 && (
-        <div className="bg-[#12121a] border border-slate-800 rounded-2xl p-5">
-          <h3 className="font-arcade text-[12px] text-white mb-4 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-400" /> DEDUCTIONS
-          </h3>
+        <ArcadePanel accent="red" sx={{ p: 3 }}>
+          <SectionHeader icon={<AlertTriangle size={14} />} title="DEDUCTIONS" accent="red" />
           <div className="space-y-2">
             {deductionEvents.map((e) => (
-              <div key={e.timestamp} className="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                <div className="font-terminal text-[18px] leading-snug text-slate-200">{formatScoreReason(e.reason, e.meta as { siteName?: string })}</div>
-                <div className="font-arcade text-[12px] text-red-400 shrink-0">{e.change}</div>
+              <div
+                key={e.timestamp}
+                className="flex items-start justify-between gap-3 p-3"
+                style={{ border: `1px solid ${ARCADE_COLORS.red}30`, background: `${ARCADE_COLORS.red}08` }}
+              >
+                <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="vt323" glow={false} sx={{ fontSize: '1.1rem', lineHeight: 1.25 }}>
+                  {formatScoreReason(e.reason, e.meta as { siteName?: string })}
+                </ArcadeTypography>
+                <ArcadeTypography arcadeColor="red" arcadeSize="sm" font="pressstart2p" sx={{ fontSize: '0.75rem', flexShrink: 0 }}>
+                  {e.change}
+                </ArcadeTypography>
               </div>
             ))}
           </div>
-        </div>
+        </ArcadePanel>
       )}
 
       {/* Decisions */}
       {decisions.length > 0 && (
-        <div className="bg-[#12121a] border border-slate-800 rounded-2xl p-5">
-          <h3 className="font-arcade text-[12px] text-white mb-4 flex items-center gap-2">
-            <Eye size={16} className="text-indigo-400" /> DECISION LOG
-          </h3>
+        <ArcadePanel accent="yellow" sx={{ p: 3 }}>
+          <SectionHeader icon={<Eye size={14} />} title="DECISION LOG" accent="yellow" />
           <div className="space-y-2">
             {decisions.map((decision, index) => (
               <DecisionCard key={decision.timestamp} decision={decision} index={index} />
             ))}
           </div>
-        </div>
+        </ArcadePanel>
       )}
 
       {/* Key Takeaways */}
-      <div className="bg-[#12121a] border border-slate-800 rounded-2xl p-5">
-        <h3 className="font-arcade text-[12px] text-white mb-4 flex items-center gap-2">
-          <Shield size={16} className="text-indigo-400" /> KEY TAKEAWAYS
-        </h3>
-        <div className="space-y-3 font-terminal text-[18px] leading-snug text-slate-200">
-          <div className="flex items-start gap-3">
-            <div className="text-indigo-400 mt-1 shrink-0">▸</div>
-            AI agents can be hijacked through invisible prompt injection in websites
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="text-indigo-400 mt-1 shrink-0">▸</div>
-            Always verify retailer authenticity before letting agents make purchases
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="text-indigo-400 mt-1 shrink-0">▸</div>
-            Human-in-the-loop confirmation is a critical safety checkpoint
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="text-indigo-400 mt-1 shrink-0">▸</div>
-            Security is a shared responsibility: users, developers, platforms, and attackers all play a role
-          </div>
+      <ArcadePanel accent="yellow" sx={{ p: 3 }}>
+        <SectionHeader icon={<Shield size={14} />} title="KEY TAKEAWAYS" accent="yellow" />
+        <div className="space-y-3">
+          {[
+            'AI agents can be hijacked through invisible prompt injection in websites',
+            'Always verify retailer authenticity before letting agents make purchases',
+            'Human-in-the-loop confirmation is a critical safety checkpoint',
+            'Security is a shared responsibility: users, developers, platforms, and attackers all play a role',
+          ].map((text, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <span style={{ color: ARCADE_COLORS.yellow, marginTop: 4, flexShrink: 0 }}>▸</span>
+              <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="vt323" glow={false} sx={{ fontSize: '1.1rem', lineHeight: 1.3 }}>
+                {text}
+              </ArcadeTypography>
+            </div>
+          ))}
         </div>
-      </div>
+      </ArcadePanel>
     </div>
   );
 };

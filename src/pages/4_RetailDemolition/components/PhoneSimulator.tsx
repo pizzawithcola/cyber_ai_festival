@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
-import { ChevronRight, Globe, Loader2, Bot, Smartphone, X, Star, ShieldCheck, CheckCircle, RefreshCw } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronRight, ChevronUp, Globe, Loader2, Bot, Smartphone, X, Star, ShieldCheck, CheckCircle, RefreshCw, Send } from 'lucide-react';
 import QuizComponent from './QuizComponent';
 import BillingInfo from './BillingInfo';
 import ManualStorefront from './ManualStorefront';
 import ManualProductDetail from './ManualProductDetail';
 import CheckoutConfirmation from './CheckoutConfirmation';
-import { PREDEFINED_PRODUCTS, RETAILERS } from '../constants/gameData';
+import { PREDEFINED_PRODUCTS, RETAILERS, PRODUCT_PROMPTS } from '../constants/gameData';
 import type { GameState, Message, CartItem } from '../hooks/useRetailDemolition';
 import type { Product, Retailer, SavedCard, SavedAddress } from '../constants/gameData';
 
@@ -32,6 +32,9 @@ interface PhoneSimulatorProps {
   manualRetailerName: string;
   cart: CartItem[];
   injectionFound: boolean;
+  browsedCount: number;
+  browseQuestComplete: boolean;
+  browseQuestTarget: number;
 
   // Agent confirmation
   agentConfirmProduct: Product | null;
@@ -70,6 +73,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
     selectedProduct, setNotifications,
     billingCard, billingAddress, billingFirstName, billingLastName,
     manualProduct, manualRetailerName, cart, injectionFound,
+    browsedCount, browseQuestComplete, browseQuestTarget,
     agentConfirmProduct, agentConfirmRetailer, agentMaliciousDone,
     onManualProductSelect, onManualAddToCart,
     onManualConfirmPurchase, onFoundInjection, onTransitionToAgent,
@@ -84,6 +88,28 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
       chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, chatBottomRef]);
+
+  // Dropup state for the agent-chat product prompt selector
+  const [dropupOpen, setDropupOpen] = useState(false);
+  const dropupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!dropupOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (dropupRef.current && !dropupRef.current.contains(e.target as Node)) {
+        setDropupOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDropupOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [dropupOpen]);
 
   const renderContent = () => {
     // ── Billing ──
@@ -119,6 +145,8 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
           onAddToCart={onManualAddToCart}
           onFoundInjection={onFoundInjection}
           injectionFound={injectionFound}
+          canCheckout={browseQuestComplete}
+          browseProgress={{ current: browsedCount, target: browseQuestTarget }}
         />
       );
     }
@@ -200,7 +228,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-4 rounded-2xl text-[13px] leading-relaxed ${
+                <div className={`max-w-[92%] p-4 rounded-2xl text-[13px] leading-relaxed ${
                   m.role === 'user'
                     ? 'bg-indigo-600 text-white shadow-md rounded-tr-none'
                     : 'bg-white border border-slate-200 text-slate-800 shadow-sm rounded-tl-none'
@@ -233,19 +261,51 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
             <div ref={chatBottomRef} />
           </div>
 
-          {/* Product selector dropdown */}
-          <div className="p-4 bg-white border-t shrink-0">
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {PREDEFINED_PRODUCTS.map(p => (
-                <button
-                  key={p.name}
-                  onClick={() => onProductSearch(p.name)}
-                  className="flex-shrink-0 px-3 py-2 bg-slate-100 rounded-full text-[11px] font-bold text-slate-600 hover:bg-indigo-600 hover:text-white transition-all active:scale-90"
-                >
-                  {p.name}
-                </button>
-              ))}
-            </div>
+          {/* Chatbox with dropup prompt picker */}
+          <div className="p-3 bg-white border-t shrink-0 relative" ref={dropupRef}>
+            {dropupOpen && (
+              <div className="absolute bottom-full left-3 right-3 mb-2 bg-white border border-slate-200 rounded-xl shadow-xl max-h-[280px] overflow-y-auto z-20">
+                <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                  Suggested prompts
+                </div>
+                {PRODUCT_PROMPTS.map((p) => {
+                  const productObj = PREDEFINED_PRODUCTS.find(pp => pp.name === p.productName);
+                  return (
+                    <button
+                      key={p.productName}
+                      onClick={() => {
+                        setDropupOpen(false);
+                        onProductSearch(p.productName);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-indigo-50 transition-colors text-left"
+                    >
+                      {productObj && (
+                        <div className="w-9 h-9 shrink-0 bg-slate-100 rounded-md flex items-center justify-center overflow-hidden">
+                          <img src={productObj.image} alt="" className="w-full h-full object-contain p-1" />
+                        </div>
+                      )}
+                      <span className="text-[12px] text-slate-700 leading-tight">{p.prompt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setDropupOpen(o => !o)}
+              className="w-full flex items-center gap-2 bg-slate-100 hover:bg-slate-200 transition-colors rounded-full px-4 py-3 text-left"
+            >
+              <span className="flex-1 text-[12px] text-slate-500">
+                {dropupOpen ? 'Pick a prompt...' : 'Ask the agent...'}
+              </span>
+              <ChevronUp
+                size={16}
+                className={`text-slate-400 transition-transform ${dropupOpen ? 'rotate-180' : ''}`}
+              />
+              <span className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center text-white">
+                <Send size={13} />
+              </span>
+            </button>
           </div>
         </div>
       );
@@ -347,6 +407,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
 
   const renderRetailerCards = () => {
     const { agentSafePurchaseDone } = props;
+    const productObj = PREDEFINED_PRODUCTS.find(p => p.name === selectedProduct);
     // After a safe purchase, only malicious retailers are clickable (educational nudge)
     const forceMaliciousOnly = agentSafePurchaseDone && !agentMaliciousDone;
     // After the breach, only the malicious retailer is clickable for inspection
@@ -438,7 +499,23 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
               className={`${baseClass} ${styleClass}`}
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: site.theme }}>{site.logo}</div>
+                <div
+                  className="relative w-14 h-14 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0"
+                >
+                  {productObj && (
+                    <img
+                      src={productObj.image}
+                      alt={productObj.name}
+                      className="w-full h-full object-contain p-1.5"
+                    />
+                  )}
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-md flex items-center justify-center text-white font-bold text-[9px] border-2 border-white shadow"
+                    style={{ backgroundColor: site.theme }}
+                  >
+                    {site.logo}
+                  </span>
+                </div>
                 <div>
                   <div className="font-bold text-slate-900 flex items-center gap-1.5">
                     {site.name}

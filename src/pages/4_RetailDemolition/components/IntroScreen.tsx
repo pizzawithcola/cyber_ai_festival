@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Bot, ShieldAlert, Zap, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ArcadeButton, ArcadeTypography } from '../../../components/ui';
+import { ARCADE_COLORS } from '../../../theme/theme';
+import ArcadePanel from './ui/ArcadePanel';
 
 interface IntroScreenProps {
   onStart: () => void;
@@ -8,22 +11,19 @@ interface IntroScreenProps {
 const SLIDES = [
   {
     icon: Bot,
-    iconColor: 'text-indigo-400',
-    iconBg: 'bg-indigo-900/40',
+    iconColor: ARCADE_COLORS.cyan,
     title: 'What is an AI Shopping Agent?',
     body: 'An AI shopping agent is software that acts on your behalf — it browses websites, compares prices, fills in your payment details, and completes purchases automatically. Think of it as a personal shopper that lives inside your browser.',
   },
   {
     icon: Zap,
-    iconColor: 'text-amber-400',
-    iconBg: 'bg-amber-900/40',
+    iconColor: ARCADE_COLORS.yellow,
     title: 'Why Should You Care?',
     body: 'These agents have access to your credit card numbers, home address, and personal data. They make decisions for you in milliseconds — visiting websites, reading content, and executing transactions without asking. That speed comes with risk.',
   },
   {
     icon: ShieldAlert,
-    iconColor: 'text-red-400',
-    iconBg: 'bg-red-900/40',
+    iconColor: ARCADE_COLORS.red,
     title: 'The Hidden Danger: Prompt Injection',
     body: 'Attackers can hide invisible instructions inside websites. When an AI agent reads a malicious page, these hidden commands can hijack the agent — making it transfer money, leak data, or perform actions you never authorized. This is called prompt injection.',
   },
@@ -36,53 +36,95 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onStart }) => {
   const isLast = slide === SLIDES.length - 1;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto">
-      {/* Title banner */}
-      <div className="font-arcade text-[18px] text-indigo-400 mb-3 tracking-widest">CYBER AI FESTIVAL</div>
-      <div className="font-arcade text-[26px] text-white mb-10 tracking-widest" style={{ textShadow: '0 0 20px rgba(99,102,241,0.5)' }}>RETAIL DEMOLITION</div>
+    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-3xl mx-auto relative z-10">
+      {/* Title */}
+      <ArcadeTypography arcadeColor="yellow" arcadeSize="sm" font="pressstart2p" sx={{ mb: 1.5 }}>
+        CYBER AI FESTIVAL
+      </ArcadeTypography>
+      <ArcadeTypography
+        arcadeColor="yellow"
+        arcadeSize="xl"
+        font="monoton"
+        sx={{ mb: 6, fontSize: { xs: '2.2rem', md: '3.5rem' } }}
+      >
+        RETAIL DEMOLITION
+      </ArcadeTypography>
 
       {/* Slide indicator */}
-      <div className="flex gap-2 mb-10">
+      <div className="flex gap-2 mb-8">
         {SLIDES.map((_, i) => (
           <div
             key={i}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              i === slide ? 'w-10 bg-indigo-500' : 'w-4 bg-slate-700'
-            }`}
+            className="h-2 transition-all duration-300"
+            style={{
+              width: i === slide ? 40 : 16,
+              backgroundColor: i === slide ? ARCADE_COLORS.yellow : `${ARCADE_COLORS.white}30`,
+              boxShadow: i === slide ? `0 0 10px ${ARCADE_COLORS.yellow}` : 'none',
+            }}
           />
         ))}
       </div>
 
-      {/* Icon */}
-      <div className={`w-24 h-24 rounded-2xl ${current.iconBg} flex items-center justify-center mb-8 border-2 border-slate-700`}>
-        <Icon size={48} className={current.iconColor} />
-      </div>
-
-      {/* Content */}
-      <h1 className="font-arcade text-[20px] leading-relaxed text-white mb-8 px-4">{current.title}</h1>
-      <p className="font-terminal text-[26px] leading-snug text-slate-200 mb-14 px-4">{current.body}</p>
+      {/* Panel */}
+      <ArcadePanel
+        accent="yellow"
+        sx={{ width: '100%', mb: 5, p: { xs: 3, md: 4 } }}
+      >
+        <div className="flex flex-col items-center gap-5">
+          <div
+            className="w-20 h-20 flex items-center justify-center"
+            style={{
+              border: `2px solid ${current.iconColor}`,
+              boxShadow: `0 0 20px ${current.iconColor}60, inset 0 0 20px ${current.iconColor}20`,
+            }}
+          >
+            <Icon size={42} style={{ color: current.iconColor }} />
+          </div>
+          <ArcadeTypography
+            arcadeColor="yellow"
+            arcadeSize="md"
+            font="pressstart2p"
+            glow
+            sx={{ lineHeight: 1.5, fontSize: { xs: '0.9rem', md: '1.05rem' } }}
+          >
+            {current.title}
+          </ArcadeTypography>
+          <ArcadeTypography
+            arcadeColor="white"
+            arcadeSize="sm"
+            font="vt323"
+            glow={false}
+            sx={{ fontSize: { xs: '1.3rem', md: '1.5rem' }, lineHeight: 1.35, letterSpacing: '1px' }}
+          >
+            {current.body}
+          </ArcadeTypography>
+        </div>
+      </ArcadePanel>
 
       {/* Navigation */}
-      <div className="flex items-center gap-4 w-full">
-        {slide > 0 ? (
-          <button
+      <div className="flex items-center gap-4 w-full justify-center">
+        {slide > 0 && (
+          <ArcadeButton
+            color="yellow"
+            variant="outline"
+            size="md"
             onClick={() => setSlide(s => s - 1)}
-            className="font-arcade px-6 py-4 rounded-xl text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-[12px]"
+            startIcon={<ChevronLeft size={16} />}
           >
-            <ChevronLeft size={18} /> BACK
-          </button>
-        ) : (
-          <div className="px-6 py-4" />
+            BACK
+          </ArcadeButton>
         )}
 
-        <button
+        <ArcadeButton
+          color="yellow"
+          variant="filled"
+          size="lg"
           onClick={isLast ? onStart : () => setSlide(s => s + 1)}
-          className="font-arcade flex-1 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-colors flex items-center justify-center gap-3 text-[14px] tracking-wider"
-          style={{ boxShadow: '0 0 30px rgba(99,102,241,0.4)' }}
+          endIcon={<ChevronRight size={18} />}
+          animation={isLast ? 'pulse' : 'none'}
         >
           {isLast ? 'ENTER SIMULATION' : 'NEXT'}
-          <ChevronRight size={18} />
-        </button>
+        </ArcadeButton>
       </div>
     </div>
   );
