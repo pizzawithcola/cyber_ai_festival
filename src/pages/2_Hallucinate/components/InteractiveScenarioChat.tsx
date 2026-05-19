@@ -11,7 +11,7 @@ import {
 
 import { SCENARIOS } from '../scenarios';
 import { SCENARIO_PROMPTS } from '../scenarioPrompts';
-import { ARCADE_FONT, READABLE_FONT, arcadeKickerSx, arcadeScreenSx, readableBodySx } from '../hallucinateUi';
+import { ARCADE_FONT, READABLE_FONT, TITLE_FONT, arcadeKickerSx, arcadeScreenSx, readableBodySx } from '../hallucinateUi';
 import { ArcadeButton } from '../../../components/ui';
 
 type ChatMessage = {
@@ -45,23 +45,38 @@ export function InteractiveScenarioChat({
   const [isOverviewVisible, setIsOverviewVisible] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isWaitingReply, setIsWaitingReply] = useState(false);
+  const [thinkingPhaseIndex, setThinkingPhaseIndex] = useState(0);
   const [expandedAnalysisId, setExpandedAnalysisId] = useState<string | null>(null);
   const [revealedAnalysisIds, setRevealedAnalysisIds] = useState<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [completeAcknowledged, setCompleteAcknowledged] = useState(false);
   const [overviewStep, setOverviewStep] = useState(0);
 
-  useEffect(() => {
+  const scrollChatToBottom = () => {
     const container = chatContainerRef.current;
     if (!container) return;
 
-    window.requestAnimationFrame(() => {
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior: 'smooth',
-      });
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: 'smooth',
     });
-  }, [messages, expandedAnalysisId]);
+  };
+
+  useEffect(() => {
+    window.requestAnimationFrame(() => {
+      scrollChatToBottom();
+    });
+  }, [messages, expandedAnalysisId, isWaitingReply]);
+
+  useEffect(() => {
+    if (!isWaitingReply) return;
+
+    const interval = window.setInterval(() => {
+      setThinkingPhaseIndex((current) => (current + 1) % 3);
+    }, 1050);
+
+    return () => window.clearInterval(interval);
+  }, [isWaitingReply]);
 
   if (!scenario) return null;
   const scenarioCompleted = prompts.length > 0 && currentStepIndex >= prompts.length;
@@ -70,6 +85,7 @@ export function InteractiveScenarioChat({
 
   const lastMsg = messages[messages.length - 1];
   const needsReveal = !isWaitingReply && lastMsg?.role === 'assistant' && lastMsg?.hallucination && !revealedAnalysisIds.has(lastMsg.id);
+  const thinkingPhases = ['Reading prompt', 'Checking intent', 'Generating reply'];
 
   const handleScenarioComplete = () => {
     if (completeAcknowledged) return;
@@ -94,6 +110,7 @@ export function InteractiveScenarioChat({
 
     const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: prompt.text };
     setMessages((prev) => [...prev, userMsg]);
+    setThinkingPhaseIndex(0);
     setIsWaitingReply(true);
 
     setTimeout(() => {
@@ -109,7 +126,7 @@ export function InteractiveScenarioChat({
       setExpandedAnalysisId(null);
       setIsWaitingReply(false);
       setRevealedAnalysisIds(new Set());
-    }, 550);
+    }, 1450);
   };
 
   const overviewSlides = [
@@ -146,21 +163,30 @@ export function InteractiveScenarioChat({
           <Box
             sx={{
               width: '100%',
-              maxWidth: 920,
+              maxWidth: 1080,
               mx: 'auto',
               minHeight: 'calc(100vh - 180px)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
-              px: { xs: 1, md: 2 },
+              px: { xs: 1, md: 2.4 },
             }}
           >
             <Box
               sx={{
                 ...arcadeScreenSx,
                 width: '100%',
-                px: { xs: 1.35, sm: 2.1, md: 2.5 },
-                py: { xs: 1.4, sm: 1.9, md: 2.2 },
+                px: { xs: 1.55, sm: 2.4, md: 3.2 },
+                py: { xs: 1.65, sm: 2.2, md: 2.7 },
+                '@keyframes replayDotPulse': {
+                  '0%, 80%, 100%': { opacity: 0.28, transform: 'translateY(0)' },
+                  '40%': { opacity: 1, transform: 'translateY(-3px)' },
+                },
+                '@keyframes replaySignalSweep': {
+                  '0%': { transform: 'translateX(-120%)', opacity: 0 },
+                  '20%': { opacity: 0.9 },
+                  '100%': { transform: 'translateX(120%)', opacity: 0 },
+                },
               }}
             >
               <Stack
@@ -203,19 +229,6 @@ export function InteractiveScenarioChat({
                     Conversation Replay
                   </Typography>
                 </Stack>
-                {isWaitingReply && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      ...arcadeKickerSx,
-                      alignSelf: { xs: 'center', sm: 'auto' },
-                      color: '#ffbf4d',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    AI thinking
-                  </Typography>
-                )}
               </Stack>
               <Box
                 sx={{
@@ -247,8 +260,8 @@ export function InteractiveScenarioChat({
                     flexDirection: 'column',
                     justifyContent: 'flex-start',
                     gap: 1.65,
-                    height: { xs: 360, sm: 410, md: 470 },
-                    maxHeight: { xs: '58vh', md: '60vh' },
+                    height: { xs: 390, sm: 450, md: 520 },
+                    maxHeight: { xs: '62vh', md: '66vh' },
                     overflowY: 'auto',
                     overscrollBehavior: 'contain',
                     scrollBehavior: 'smooth',
@@ -280,9 +293,9 @@ export function InteractiveScenarioChat({
                 >
                   <Avatar
                     sx={{
-                      width: { xs: 34, sm: 38 },
-                      height: { xs: 34, sm: 38 },
-                      fontSize: { xs: '0.58rem', sm: '0.66rem' },
+                      width: { xs: 38, sm: 42 },
+                      height: { xs: 38, sm: 42 },
+                      fontSize: { xs: '0.62rem', sm: '0.72rem' },
                       fontWeight: 900,
                       fontFamily: ARCADE_FONT,
                       bgcolor: msg.role === 'user' ? 'rgba(255, 0, 255, 0.88)' : 'rgba(255, 191, 77, 0.9)',
@@ -300,10 +313,10 @@ export function InteractiveScenarioChat({
                     sx={{
                       position: 'relative',
                       overflow: 'hidden',
-                      px: { xs: 1.8, sm: 2.2 },
-                      py: { xs: 1.55, sm: 1.85 },
+                      px: { xs: 2.1, sm: 2.6 },
+                      py: { xs: 1.8, sm: 2.15 },
                       width: msg.role === 'user' ? { xs: '72%', sm: '54%' } : { xs: '88%', sm: '76%' },
-                      maxWidth: msg.role === 'user' ? 520 : 700,
+                      maxWidth: msg.role === 'user' ? 600 : 800,
                       background: msg.role === 'user'
                         ? 'linear-gradient(135deg, rgba(255, 0, 255, 0.18), rgba(191, 0, 255, 0.1))'
                         : msg.hallucination
@@ -364,7 +377,7 @@ export function InteractiveScenarioChat({
                         position: 'relative',
                         zIndex: 1,
                         whiteSpace: 'pre-wrap',
-                        fontSize: { xs: '0.98rem', sm: '1.04rem' },
+                        fontSize: { xs: '1.05rem', sm: '1.14rem' },
                       }}
                     >
                       {msg.content}
@@ -387,7 +400,18 @@ export function InteractiveScenarioChat({
                         >
                           {expandedAnalysisId === msg.id ? 'Hide analysis' : 'Reveal analysis'}
                         </ArcadeButton>
-                        <Collapse in={expandedAnalysisId === msg.id}>
+                        <Collapse
+                          in={expandedAnalysisId === msg.id}
+                          timeout={280}
+                          onEntering={() => {
+                            window.requestAnimationFrame(() => {
+                              scrollChatToBottom();
+                            });
+                          }}
+                          onEntered={() => {
+                            scrollChatToBottom();
+                          }}
+                        >
                           <Typography variant="caption" sx={{ fontWeight: 900, color: '#b26a00', display: 'block', mb: 0.4 }}>
                             Why this is a hallucination risk
                           </Typography>
@@ -400,6 +424,107 @@ export function InteractiveScenarioChat({
                   </Paper>
                 </Box>
               ))}
+              {isWaitingReply && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'flex-end',
+                    gap: 1,
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: { xs: 38, sm: 42 },
+                      height: { xs: 38, sm: 42 },
+                      fontSize: { xs: '0.62rem', sm: '0.72rem' },
+                      fontWeight: 900,
+                      fontFamily: ARCADE_FONT,
+                      bgcolor: 'rgba(255, 191, 77, 0.9)',
+                      color: '#070713',
+                      border: '2px solid rgba(255, 240, 194, 0.9)',
+                      boxShadow: '0 0 14px rgba(255, 191, 77, 0.3)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    AI
+                  </Avatar>
+                  <Paper
+                    sx={{
+                      position: 'relative',
+                      overflow: 'hidden',
+                      px: { xs: 2.1, sm: 2.6 },
+                      py: { xs: 1.55, sm: 1.8 },
+                      width: { xs: '88%', sm: '76%' },
+                      maxWidth: 800,
+                      background: 'linear-gradient(180deg, rgba(12, 20, 42, 0.92), rgba(7, 12, 28, 0.88))',
+                      color: '#f2fbff',
+                      borderRadius: 0,
+                      border: '1px solid rgba(255, 191, 77, 0.36)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.24), inset 0 0 16px rgba(255, 191, 77, 0.05)',
+                      backdropFilter: 'blur(10px)',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 3,
+                        background: 'linear-gradient(90deg, rgba(255, 191, 77, 0.95), transparent)',
+                      },
+                      '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        width: '32%',
+                        background: 'linear-gradient(90deg, transparent, rgba(255, 191, 77, 0.08), transparent)',
+                        animation: 'replaySignalSweep 2.5s linear infinite',
+                        pointerEvents: 'none',
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        ...arcadeKickerSx,
+                        color: '#ffbf4d',
+                        display: 'inline-flex',
+                        mb: 0.65,
+                      }}
+                    >
+                      AI thinking
+                    </Typography>
+                    <Stack direction="row" spacing={1.1} alignItems="center" sx={{ position: 'relative', zIndex: 1 }}>
+                      <Stack direction="row" spacing={0.55} alignItems="center">
+                        {[0, 1, 2].map((dot) => (
+                          <Box
+                            key={dot}
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              backgroundColor: dot === 1 ? '#ffbf4d' : '#ff7bd5',
+                              boxShadow: dot === 1 ? '0 0 14px rgba(255, 191, 77, 0.65)' : '0 0 10px rgba(255, 123, 213, 0.4)',
+                              animation: `replayDotPulse 1.45s ease-in-out ${dot * 0.22}s infinite`,
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          ...readableBodySx,
+                          fontSize: { xs: '1rem', sm: '1.08rem' },
+                          color: 'rgba(242, 251, 255, 0.88)',
+                        }}
+                      >
+                        {thinkingPhases[thinkingPhaseIndex]}
+                      </Typography>
+                    </Stack>
+                  </Paper>
+                </Box>
+              )}
                 </Box>
             </Box>
             <Box
@@ -419,11 +544,11 @@ export function InteractiveScenarioChat({
                 onClick={handleNextStep}
                 disabled={isWaitingReply || needsReveal}
                 sx={{
-                  width: { xs: '100%', sm: 360 },
-                  minHeight: 48,
+                  width: { xs: '100%', sm: 400 },
+                  minHeight: 54,
                   whiteSpace: 'normal',
                   lineHeight: 1.5,
-                  fontSize: { xs: '0.58rem', sm: '0.75rem' },
+                  fontSize: { xs: '0.64rem', sm: '0.82rem' },
                 }}
               >
                 {scenarioCompleted && !isOverviewVisible
@@ -443,14 +568,14 @@ export function InteractiveScenarioChat({
           <Box
             sx={{
               width: '100%',
-              maxWidth: 920,
+              maxWidth: 1080,
               mx: 'auto',
               minHeight: 'calc(100vh - 180px)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
               textAlign: 'center',
-              px: { xs: 1, md: 2 },
+              px: { xs: 1, md: 2.4 },
               py: { xs: 4, md: 6 },
             }}
           >
@@ -458,8 +583,8 @@ export function InteractiveScenarioChat({
               sx={{
                 ...arcadeScreenSx,
                 width: '100%',
-                px: { xs: 1.6, sm: 2.8, md: 3.4 },
-                py: { xs: 2.2, sm: 3, md: 3.5 },
+                px: { xs: 1.9, sm: 3.2, md: 4 },
+                py: { xs: 2.6, sm: 3.5, md: 4.2 },
               }}
             >
               <Box
@@ -482,31 +607,31 @@ export function InteractiveScenarioChat({
                 >
                   {activeOverview.label}
                 </Typography>
-                <Box key={activeOverview.title} sx={{ maxWidth: 720, animation: 'softFadeUp 420ms ease-out both' }}>
+                <Box key={activeOverview.title} sx={{ maxWidth: 840, animation: 'softFadeUp 420ms ease-out both' }}>
                   <Typography
                     variant="h4"
                     sx={{
-	                      fontWeight: 900,
-	                      mb: 1.6,
-	                      color: '#ffffff',
-	                      lineHeight: 1.35,
-	                      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-	                      fontSize: { xs: '1.5rem', sm: '2rem', md: '2.4rem' },
-	                      letterSpacing: '0.05em',
-	                      textTransform: 'uppercase',
-	                      textShadow:
-	                        '0 3px 0 rgba(0,0,0,0.48), 0 0 18px rgba(255, 46, 147,0.18), 0 0 28px rgba(255, 0, 255, 0.16)',
-	                    }}
-	                  >
+                      fontWeight: 900,
+                      mb: 1.6,
+                      color: '#ffffff',
+                      lineHeight: 1.35,
+                      fontFamily: TITLE_FONT,
+                      fontSize: { xs: '1.66rem', sm: '2.2rem', md: '2.65rem' },
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      textShadow:
+                        '0 3px 0 rgba(0,0,0,0.48), 0 0 18px rgba(255, 46, 147,0.18), 0 0 28px rgba(255, 0, 255, 0.16)',
+                    }}
+                  >
                     {activeOverview.title}
                   </Typography>
                   <Typography
                     variant="body1"
                     sx={{
                       ...readableBodySx,
-                      maxWidth: 680,
+                      maxWidth: 780,
                       mx: 'auto',
-                      fontSize: { xs: '1rem', sm: '1.1rem' },
+                      fontSize: { xs: '1.08rem', sm: '1.18rem' },
                     }}
                   >
                     {activeOverview.body}
@@ -540,11 +665,11 @@ export function InteractiveScenarioChat({
                     onStartGame?.();
                   }}
                   sx={{
-                    width: { xs: '100%', sm: 360 },
-                    minHeight: 48,
+                    width: { xs: '100%', sm: 400 },
+                    minHeight: 54,
                     whiteSpace: 'normal',
                     lineHeight: 1.5,
-                    fontSize: { xs: '0.58rem', sm: '0.75rem' },
+                    fontSize: { xs: '0.64rem', sm: '0.82rem' },
                   }}
                 >
                   {isLastOverviewStep ? 'Next: Training Game' : 'Next'}

@@ -7,6 +7,7 @@ import { ChapterComplete } from './training/ChapterComplete';
 import { ResultsPanel } from './training/ResultsPanel';
 import { evidenceChecklistForSentence, shuffle } from './training/utils';
 import { type ResultPage, type ResultPitfalls, type SentenceItem } from './training/types';
+import { ARCADE_FONT, TITLE_FONT } from '../hallucinateUi';
 import { ArcadeButton } from '../../../components/ui';
 
 /** =========================================================
@@ -65,6 +66,19 @@ const animationCss = `
   50% { opacity: 1; transform: scaleX(1); }
   100% { opacity: 0.45; transform: scaleX(0.72); }
 }
+@keyframes wagerFramePulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 191, 77, 0), inset 0 0 0 0 rgba(255, 191, 77, 0); }
+  35% { box-shadow: 0 0 0 1px rgba(255, 191, 77, 0.24), 0 0 24px rgba(255, 191, 77, 0.16), inset 0 0 22px rgba(255, 191, 77, 0.08); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 191, 77, 0), inset 0 0 0 0 rgba(255, 191, 77, 0); }
+}
+@keyframes wagerThumbPrompt {
+  0% { transform: translateX(0); }
+  18% { transform: translateX(6px); }
+  36% { transform: translateX(-3px); }
+  54% { transform: translateX(6px); }
+  72% { transform: translateX(0); }
+  100% { transform: translateX(0); }
+}
 `;
 
 const trainingIntroSlides = [
@@ -94,23 +108,24 @@ const trainingIntroSlides = [
   },
 ];
 
-const READABLE_FONT = "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important";
-const BASE_SCORE_POINTS = 20;
-const MIN_CONFIDENCE_SLIDER_VALUE = 0.1;
-const MIN_CONFIDENCE_MULTIPLIER = 0.1;
+const READABLE_FONT = "'Electrolize', 'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important";
+const CORRECT_SCORE_POINTS = 20;
+const INCORRECT_SCORE_POINTS = -10;
+const MIN_CONFIDENCE_MULTIPLIER = 0.5;
 const MAX_CONFIDENCE_MULTIPLIER = 1;
 const DEFAULT_CONFIDENCE_MULTIPLIER = 0.5;
 const CONFIDENCE_MARKS = [
-  { value: 0.1, label: 'x0.1' },
   { value: 0.5, label: 'x0.5' },
   { value: 1, label: 'x1.0' },
 ];
+const getConfidenceMarkOffset = (value: number) =>
+  `${((value - MIN_CONFIDENCE_MULTIPLIER) / (MAX_CONFIDENCE_MULTIPLIER - MIN_CONFIDENCE_MULTIPLIER)) * 100}%`;
 const clampConfidenceMultiplier = (value = DEFAULT_CONFIDENCE_MULTIPLIER) =>
   Math.min(MAX_CONFIDENCE_MULTIPLIER, Math.max(MIN_CONFIDENCE_MULTIPLIER, Number(value.toFixed(1))));
 const formatConfidenceMultiplier = (value: number) => `x${value.toFixed(1)}`;
 const getScoreDelta = (isCorrect: boolean, confidenceValue: number) => {
   const multiplier = clampConfidenceMultiplier(confidenceValue);
-  const basePoints = isCorrect ? BASE_SCORE_POINTS : -BASE_SCORE_POINTS;
+  const basePoints = isCorrect ? CORRECT_SCORE_POINTS : INCORRECT_SCORE_POINTS;
   return Math.round(basePoints * multiplier);
 };
 
@@ -132,6 +147,7 @@ export function TrainingArena({
   const [passed, setPassed] = useState<Record<string, boolean>>({});
   const [resolved, setResolved] = useState<Record<string, 'correct' | 'wrong' | undefined>>({});
   const [confidenceById, setConfidenceById] = useState<Record<string, number>>({});
+  const [confidenceTouchedById, setConfidenceTouchedById] = useState<Record<string, boolean>>({});
   const [scoreDeltaById, setScoreDeltaById] = useState<Record<string, number>>({});
   const [score, setScore] = useState(0);
 
@@ -177,6 +193,7 @@ export function TrainingArena({
     setPassed({});
     setResolved({});
     setConfidenceById(Object.fromEntries(pick.map((card) => [card.id, DEFAULT_CONFIDENCE_MULTIPLIER])));
+    setConfidenceTouchedById({});
     setScoreDeltaById({});
     setScore(0);
     setResultPage('summary');
@@ -315,6 +332,7 @@ export function TrainingArena({
   const accuracy = sentences.length === 0 ? 0 : Math.round(((resultPitfalls.correct.length + resultPitfalls.correctPass.length) / sentences.length) * 100);
   const activeCard = sentences[currentCardIndex];
   const activeConfidenceValue = activeCard ? confidenceById[activeCard.id] ?? DEFAULT_CONFIDENCE_MULTIPLIER : DEFAULT_CONFIDENCE_MULTIPLIER;
+  const hasTouchedActiveConfidence = activeCard ? Boolean(confidenceTouchedById[activeCard.id]) : false;
   const activeDecision = activeCard
     ? selected[activeCard.id]
       ? 'flag'
@@ -401,7 +419,7 @@ export function TrainingArena({
             height: { xs: 34, sm: 38 },
             fontSize: { xs: '0.56rem', sm: '0.64rem' },
             fontWeight: 900,
-            fontFamily: "'Press Start 2P', 'VT323', monospace !important",
+            fontFamily: `${ARCADE_FONT} !important`,
             bgcolor: isUser ? 'rgba(255, 0, 255, 0.9)' : 'rgba(255, 191, 77, 0.9)',
             color: '#031017',
             border: isUser ? '2px solid rgba(255, 190, 255, 0.9)' : '2px solid rgba(255, 240, 194, 0.92)',
@@ -418,9 +436,9 @@ export function TrainingArena({
             position: 'relative',
             overflow: 'hidden',
             width: isUser ? (wide ? { xs: '92%', sm: '82%' } : { xs: '72%', sm: '54%' }) : { xs: '88%', sm: '76%' },
-            maxWidth: isUser ? (wide ? 760 : 520) : 700,
-            px: { xs: 1.8, sm: 2.2 },
-            py: { xs: 1.55, sm: 1.85 },
+            maxWidth: isUser ? (wide ? 880 : 600) : 820,
+            px: { xs: 2.1, sm: 2.6 },
+            py: { xs: 1.8, sm: 2.15 },
             borderRadius: 0,
             border: borderByTone[tone],
             background: backgroundByTone[tone],
@@ -490,16 +508,16 @@ export function TrainingArena({
       children: (
         <Stack spacing={1.3}>
           {/* Conversational opening */}
-          <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#ddffea' : '#ffd9df', lineHeight: 1.75, fontWeight: 700, fontSize: { xs: '0.97rem', sm: '1.02rem' } }}>
+          <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#ddffea' : '#ffd9df', lineHeight: 1.75, fontWeight: 700, fontSize: { xs: '1.04rem', sm: '1.12rem' } }}>
             {openingLine}
           </Typography>
 
           {/* Score line — subtle, inline */}
           <Stack direction="row" spacing={0.8} alignItems="center">
-            <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, fontSize: '0.82rem' }}>
+            <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, fontSize: '0.9rem' }}>
               {scoreDelta >= 0 ? `+${scoreDelta}` : `${scoreDelta}`} pts
             </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(228,241,255,0.4)', fontSize: '0.78rem' }}>
+            <Typography variant="caption" sx={{ color: 'rgba(228,241,255,0.4)', fontSize: '0.86rem' }}>
               · confidence {formatConfidenceMultiplier(confidenceValue)}
             </Typography>
           </Stack>
@@ -518,7 +536,7 @@ export function TrainingArena({
                 textDecoration: 'underline',
                 textUnderlineOffset: 3,
                 animation: 'none !important',
-                fontSize: { xs: '0.58rem', sm: '0.625rem' },
+                fontSize: { xs: '0.64rem', sm: '0.7rem' },
               }}
             >
               {isDetailOpen ? 'Hide explanation' : 'Why?'}
@@ -527,7 +545,7 @@ export function TrainingArena({
 
           <Collapse in={isDetailOpen}>
             <Stack spacing={0.9}>
-              <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#c8ffe0' : '#ffd9df', lineHeight: 1.75, fontSize: { xs: '0.92rem', sm: '0.96rem' } }}>
+              <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#c8ffe0' : '#ffd9df', lineHeight: 1.75, fontSize: { xs: '1rem', sm: '1.06rem' } }}>
                 {bodyText}
               </Typography>
               {showChecklist && (
@@ -551,7 +569,7 @@ export function TrainingArena({
               size="md"
               animation="pulse"
               onClick={handleAdvanceFromFeedback}
-              sx={{ minWidth: 170, minHeight: 46 }}
+              sx={{ minWidth: 196, minHeight: 52 }}
             >
               {currentCardIndex >= sentences.length - 1 ? 'Finish round' : 'Next card'}
             </ArcadeButton>
@@ -577,14 +595,14 @@ export function TrainingArena({
     <Box
       sx={{
         width: '100%',
-        maxWidth: 920,
+        maxWidth: 1080,
         mx: 'auto',
         minHeight: 'calc(100vh - 150px)',
         display: 'flex',
         alignItems: (isIntroMode || showResults) ? 'center' : 'flex-start',
         justifyContent: 'center',
-        px: { xs: 1.2, md: 2 },
-        py: { xs: 3.5, md: 5 },
+        px: { xs: 1.2, md: 2.4 },
+        py: { xs: 3.8, md: 5.6 },
         animation: shake ? 'shake 280ms ease-out' : 'fadeRise 420ms ease-out',
         ...(flash ? { animation: 'flashRed 520ms ease-out' } : null),
       }}
@@ -592,14 +610,14 @@ export function TrainingArena({
       <style>{animationCss}</style>
 
       <Stack spacing={2.2} sx={{ width: '100%', textAlign: 'center', alignItems: 'center' }}>
-        <Box sx={{ width: '100%', maxWidth: 760, mx: 'auto' }}>
+        <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto' }}>
           {!showResults && (
             <Box
               sx={{
                 position: 'relative',
                 overflow: 'hidden',
-                px: { xs: 1.5, sm: 2.2 },
-                py: { xs: 1.45, sm: 1.7 },
+                px: { xs: 1.8, sm: 2.7 },
+                py: { xs: 1.7, sm: 2.05 },
                 border: '1px solid rgba(255, 0, 255, 0.36)',
                 background:
                   'linear-gradient(180deg, rgba(10, 4, 24, 0.92), rgba(18, 8, 38, 0.82))',
@@ -661,11 +679,11 @@ export function TrainingArena({
                     fontWeight: 900,
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
-                    fontSize: { xs: '0.68rem', sm: '0.74rem' },
+                    fontSize: { xs: '0.74rem', sm: '0.84rem' },
                     lineHeight: 1.2,
                   }}
                 >
-                  AI Truth Check Mode
+                  AI Truth Check
                 </Typography>
               </Stack>
               <Box sx={{ position: 'relative', zIndex: 1, px: { xs: 0, sm: 1 } }}>
@@ -676,8 +694,8 @@ export function TrainingArena({
                     fontWeight: 900,
                     display: 'block',
                     mb: 0.95,
-                    fontFamily: "'Press Start 2P', 'VT323', monospace !important",
-                    fontSize: { xs: '0.95rem', sm: '1.28rem', md: '1.55rem' },
+                    fontFamily: `${TITLE_FONT} !important`,
+                    fontSize: { xs: '1.06rem', sm: '1.45rem', md: '1.78rem' },
                     lineHeight: 1.55,
                     letterSpacing: '0.055em',
                     textTransform: 'uppercase',
@@ -719,7 +737,7 @@ export function TrainingArena({
         <Box
           sx={{
             width: '100%',
-            maxWidth: 920,
+            maxWidth: 1080,
             mx: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -749,6 +767,7 @@ export function TrainingArena({
                             sx={{
                               color: '#ffffff',
                               fontWeight: 900,
+                              fontFamily: TITLE_FONT,
                               lineHeight: 1.55,
                               textTransform: 'uppercase',
                               textShadow: '0 0 16px rgba(255, 0, 255, 0.18)',
@@ -761,7 +780,7 @@ export function TrainingArena({
                             sx={{
                               color: 'rgba(228, 241, 255, 0.88)',
                               lineHeight: 1.8,
-                              fontSize: { xs: '1rem', sm: '1.06rem' },
+                              fontSize: { xs: '1.08rem', sm: '1.16rem' },
                             }}
                           >
                             {activeIntro.body}
@@ -801,9 +820,9 @@ export function TrainingArena({
                         animation="pulse"
                         onClick={advanceIntro}
                         sx={{
-                          minHeight: 44,
-                          minWidth: { xs: 120, sm: 148 },
-                          fontSize: { xs: '0.58rem', sm: '0.7rem' },
+                          minHeight: 50,
+                          minWidth: { xs: 136, sm: 168 },
+                          fontSize: { xs: '0.64rem', sm: '0.78rem' },
                         }}
                       >
                         {introStep < trainingIntroSlides.length - 1 ? 'Next' : 'Start cards'}
@@ -814,6 +833,35 @@ export function TrainingArena({
 
                 {isRunning && activeCard && (
                   <Stack spacing={1.8} sx={{ width: '100%', alignItems: 'stretch', animation: 'fadeRise 360ms ease-out' }}>
+                    {currentCardIndex === 0 && renderBubble({
+                      role: 'assistant',
+                      children: (
+                        <Stack spacing={0.8}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: '#ffbf4d',
+                              fontWeight: 900,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.1em',
+                            }}
+                          >
+                            System cue
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              lineHeight: 1.78,
+                              color: 'rgba(228, 241, 255, 0.88)',
+                              fontSize: { xs: '1.02rem', sm: '1.1rem' },
+                            }}
+                          >
+                            The round is now live. Read the AI reply below, then decide whether it should be trusted before someone acts on it.
+                          </Typography>
+                        </Stack>
+                      ),
+                    })}
+
                     {renderBubble({
                       role: 'assistant',
                       children: (
@@ -824,7 +872,7 @@ export function TrainingArena({
                             fontWeight: 800,
                             color: '#f2fbff',
                             textShadow: '0 1px 0 rgba(0,0,0,0.28)',
-                            fontSize: { xs: '1rem', sm: '1.06rem', md: '1.1rem' },
+                            fontSize: { xs: '1.08rem', sm: '1.16rem', md: '1.22rem' },
                           }}
                         >
                           {activeCard.text}
@@ -991,16 +1039,72 @@ export function TrainingArena({
 
                               <Box
                                 sx={{
+                                  position: 'relative',
                                   px: { xs: 1.2, sm: 1.8 },
                                   pt: 1.2,
                                   pb: 1,
                                   border: '1px solid rgba(255, 255, 255, 0.08)',
                                   background: 'rgba(255, 255, 255, 0.04)',
+                                  ...(currentCardIndex === 0 && !hasTouchedActiveConfidence
+                                    ? {
+                                        animation: 'wagerFramePulse 1.15s ease-in-out 0.2s 3',
+                                      }
+                                    : null),
                                 }}
                               >
+                                {currentCardIndex === 0 && !hasTouchedActiveConfidence && (
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      top: { xs: -12, sm: -14 },
+                                      left: '50%',
+                                      transform: 'translateX(-50%)',
+                                      zIndex: 2,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 0.8,
+                                      maxWidth: 'calc(100% - 24px)',
+                                      px: 0.95,
+                                      py: 0.42,
+                                      border: '1px solid rgba(255, 191, 77, 0.42)',
+                                      background:
+                                        'linear-gradient(135deg, rgba(16, 11, 28, 0.96), rgba(48, 19, 58, 0.92))',
+                                      boxShadow:
+                                        '0 0 0 1px rgba(255, 191, 77, 0.08), 0 8px 18px rgba(0, 0, 0, 0.28), 0 0 14px rgba(255, 191, 77, 0.08)',
+                                      pointerEvents: 'none',
+                                      animation: 'fadeRise 240ms ease-out',
+                                      borderRadius: 999,
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        width: 7,
+                                        height: 7,
+                                        flexShrink: 0,
+                                        backgroundColor: '#ffbf4d',
+                                        boxShadow: '0 0 10px rgba(255, 191, 77, 0.72)',
+                                      }}
+                                    />
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: '#ffe6b3',
+                                        fontWeight: 900,
+                                        letterSpacing: '0.08em',
+                                        textTransform: 'uppercase',
+                                        lineHeight: 1.2,
+                                        fontSize: { xs: '0.62rem', sm: '0.68rem' },
+                                        whiteSpace: 'normal',
+                                        textAlign: 'center',
+                                      }}
+                                    >
+                                      Drag wager first
+                                    </Typography>
+                                  </Box>
+                                )}
                                 <Slider
                                   value={activeConfidenceValue}
-                                  min={MIN_CONFIDENCE_SLIDER_VALUE}
+                                  min={MIN_CONFIDENCE_MULTIPLIER}
                                   max={MAX_CONFIDENCE_MULTIPLIER}
                                   step={0.1}
                                   marks={CONFIDENCE_MARKS.map(({ value }) => ({ value }))}
@@ -1011,6 +1115,10 @@ export function TrainingArena({
                                     setConfidenceById((current) => ({
                                       ...current,
                                       [activeCard.id]: clampConfidenceMultiplier(value),
+                                    }));
+                                    setConfidenceTouchedById((current) => ({
+                                      ...current,
+                                      [activeCard.id]: true,
                                     }));
                                   }}
                                   disabled={isCardAnswered}
@@ -1030,12 +1138,19 @@ export function TrainingArena({
                                       height: 3,
                                       borderRadius: '50%',
                                       backgroundColor: 'rgba(248, 231, 255, 0.68)',
+                                      marginLeft: 0,
+                                      transform: 'translateX(-50%)',
                                     },
                                     '& .MuiSlider-thumb': {
                                       width: 16,
                                       height: 16,
                                       border: '2px solid #f8e7ff',
                                       boxShadow: '0 0 0 5px rgba(255, 0, 255, 0.12), 0 0 16px rgba(255, 0, 255, 0.48)',
+                                      ...(currentCardIndex === 0 && !hasTouchedActiveConfidence
+                                        ? {
+                                            animation: 'wagerThumbPrompt 1.1s ease-in-out 0.3s 3',
+                                          }
+                                        : null),
                                     },
                                     '& .MuiSlider-track': {
                                       height: 5,
@@ -1051,28 +1166,40 @@ export function TrainingArena({
                                   }}
                                 />
                                 <Stack
-                                  direction="row"
                                   sx={{
-                                    justifyContent: 'space-between',
                                     mt: 0.45,
                                     px: 0.1,
+                                    position: 'relative',
+                                    height: 14,
                                   }}
                                 >
                                   {CONFIDENCE_MARKS.map((mark) => (
-                                    <Typography
+                                    <Box
                                       key={mark.value}
-                                      variant="caption"
                                       sx={{
-                                        color: 'rgba(248, 231, 255, 0.74)',
-                                        fontFamily: READABLE_FONT,
-                                        fontSize: { xs: '0.66rem', sm: '0.72rem' },
-                                        fontWeight: 900,
-                                        letterSpacing: '0.04em',
-                                        lineHeight: 1,
+                                        position: 'absolute',
+                                        left: getConfidenceMarkOffset(mark.value),
+                                        transform: 'translateX(-50%)',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        minWidth: 36,
                                       }}
                                     >
-                                      {mark.label}
-                                    </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          color: 'rgba(248, 231, 255, 0.74)',
+                                          fontFamily: READABLE_FONT,
+                                          fontSize: { xs: '0.66rem', sm: '0.72rem' },
+                                          fontWeight: 900,
+                                          letterSpacing: '0.04em',
+                                          lineHeight: 1,
+                                          textAlign: 'center',
+                                        }}
+                                      >
+                                        {mark.label}
+                                      </Typography>
+                                    </Box>
                                   ))}
                                 </Stack>
                               </Box>
@@ -1095,9 +1222,9 @@ export function TrainingArena({
                                   startIcon={<FlagIcon />}
                                   onClick={handleFlashFlag}
                                   sx={{
-                                    minHeight: 46,
-                                    minWidth: { xs: '100%', sm: 170 },
-                                    fontSize: { xs: '0.64rem', sm: '0.75rem' },
+                                    minHeight: 52,
+                                    minWidth: { xs: '100%', sm: 196 },
+                                    fontSize: { xs: '0.7rem', sm: '0.82rem' },
                                     '& .MuiButton-startIcon': { color: 'inherit !important' },
                                   }}
                                 >
@@ -1109,9 +1236,9 @@ export function TrainingArena({
                                   startIcon={<CheckCircleIcon />}
                                   onClick={handleFlashPass}
                                   sx={{
-                                    minHeight: 46,
-                                    minWidth: { xs: '100%', sm: 170 },
-                                    fontSize: { xs: '0.64rem', sm: '0.75rem' },
+                                    minHeight: 52,
+                                    minWidth: { xs: '100%', sm: 196 },
+                                    fontSize: { xs: '0.7rem', sm: '0.82rem' },
                                     '& .MuiButton-startIcon': { color: 'inherit !important' },
                                   }}
                                 >

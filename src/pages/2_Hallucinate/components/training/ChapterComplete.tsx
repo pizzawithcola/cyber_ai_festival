@@ -2,7 +2,7 @@ import { Typography, Box, Stack } from '@mui/material';
 import { Celebration as CelebrationIcon } from '@mui/icons-material';
 
 import { ArcadeButton } from '../../../../components/ui';
-import { NEON_CYAN, READABLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
+import { NEON_CYAN, READABLE_FONT, TITLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
 
 export function ChapterComplete({
   onReviewResults,
@@ -38,15 +38,15 @@ export function ChapterComplete({
     <Box
       sx={{
         width: '100%',
-        maxWidth: 920,
+        maxWidth: 1080,
         mx: 'auto',
         minHeight: 'calc(100vh - 150px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        px: { xs: 1, md: 2 },
-        py: { xs: 4, md: 6 },
+        px: { xs: 1.2, md: 2.4 },
+        py: { xs: 4.4, md: 6.6 },
       }}
     >
       <style>{animationCss}</style>
@@ -57,8 +57,8 @@ export function ChapterComplete({
           width: '100%',
           alignItems: 'center',
           textAlign: 'center',
-          px: { xs: 1.6, sm: 2.6, md: 3.4 },
-          py: { xs: 2.8, sm: 3.4, md: 4 },
+          px: { xs: 1.9, sm: 3.1, md: 4.2 },
+          py: { xs: 3.2, sm: 4, md: 4.8 },
         }}
       >
         <Box sx={{ position: 'relative', zIndex: 1, width: '100%' }}>
@@ -75,7 +75,7 @@ export function ChapterComplete({
               Chapter Complete
             </Typography>
           </Box>
-          <Box sx={{ width: '100%', maxWidth: 760, mx: 'auto' }}>
+          <Box sx={{ width: '100%', maxWidth: 860, mx: 'auto', mb: { xs: 3.4, sm: 4.2, md: 4.8 } }}>
             <Typography
               variant="h3"
               sx={{
@@ -83,8 +83,8 @@ export function ChapterComplete({
                 color: '#eaffff',
                 mb: 1.4,
                 lineHeight: 1.3,
-                fontFamily: READABLE_FONT,
-                fontSize: { xs: '1.6rem', sm: '2.2rem', md: '2.8rem' },
+                fontFamily: TITLE_FONT,
+                fontSize: { xs: '1.8rem', sm: '2.45rem', md: '3.1rem' },
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
                 textShadow: '0 0 24px rgba(255, 0, 255, 0.22), 0 3px 0 rgba(0,0,0,0.45)',
@@ -96,10 +96,10 @@ export function ChapterComplete({
               variant="body1"
               sx={{
                 color: 'rgba(228, 241, 255, 0.86)',
-                maxWidth: 620,
+                maxWidth: 740,
                 mx: 'auto',
                 lineHeight: 1.82,
-                fontSize: { xs: '1rem', sm: '1.08rem' },
+                fontSize: { xs: '1.08rem', sm: '1.18rem' },
                 fontFamily: READABLE_FONT,
               }}
             >
@@ -107,13 +107,23 @@ export function ChapterComplete({
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.3} sx={{ justifyContent: 'center', width: '100%', maxWidth: 740 }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.3}
+            sx={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              maxWidth: 820,
+              mx: 'auto',
+            }}
+          >
             <ArcadeButton
               variant="outline"
               color="magenta"
               size="md"
               onClick={onReviewResults}
-              sx={{ minHeight: 50, minWidth: { sm: 180 }, width: { xs: '100%', sm: 'auto' } }}
+              sx={{ minHeight: 56, width: { xs: '100%', sm: 230 } }}
               disabled={isNavigatingToRanking}
             >
               Review Results
@@ -124,12 +134,11 @@ export function ChapterComplete({
               size="md"
               onClick={onStartFromBeginning}
               sx={{
-                minHeight: 50,
-                minWidth: { sm: 180 },
-                width: { xs: '100%', sm: 'auto' },
+                minHeight: 56,
+                width: { xs: '100%', sm: 230 },
                 whiteSpace: 'normal',
                 lineHeight: 1.5,
-                fontSize: { xs: '0.56rem', sm: '0.75rem' },
+                fontSize: { xs: '0.62rem', sm: '0.82rem' },
               }}
               disabled={!onStartFromBeginning || isNavigatingToRanking}
             >
@@ -141,12 +150,11 @@ export function ChapterComplete({
               animation={isNavigatingToRanking ? 'blinking' : 'pulse'}
               onClick={onViewRanking}
               sx={{
-                minHeight: 50,
-                minWidth: { sm: 180 },
-                width: { xs: '100%', sm: 'auto' },
+                minHeight: 56,
+                width: { xs: '100%', sm: 230 },
                 whiteSpace: 'normal',
                 lineHeight: 1.5,
-                fontSize: { xs: '0.56rem', sm: '0.75rem' },
+                fontSize: { xs: '0.62rem', sm: '0.82rem' },
               }}
               disabled={!onViewRanking || isNavigatingToRanking}
             >

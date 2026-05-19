@@ -10,8 +10,9 @@ export const PANEL_SHADOW =
 export const PANEL_BORDER = '1px solid rgba(255, 0, 255, 0.42)';
 export const PANEL_BODY_BACKGROUND =
   'linear-gradient(180deg, rgba(8, 12, 26, 0.97) 0%, rgba(5, 8, 18, 0.98) 100%)';
-export const READABLE_FONT = "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif";
-export const ARCADE_FONT = "'Press Start 2P', 'VT323', monospace";
+export const TITLE_FONT = "'Audiowide', 'Orbitron', 'Electrolize', sans-serif";
+export const READABLE_FONT = "'Electrolize', 'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif";
+export const ARCADE_FONT = "'Press Start 2P', 'Silkscreen', 'VT323', monospace";
 
 export const panelCardSx = {
   width: '100%',
@@ -70,9 +71,9 @@ export const arcadeKickerSx = {
   border: '1px solid rgba(255, 0, 255, 0.38)',
   background: 'rgba(255, 0, 255, 0.08)',
   color: '#ff70bf',
-  fontFamily: READABLE_FONT,
+  fontFamily: ARCADE_FONT,
   fontWeight: 900,
-  fontSize: { xs: '0.74rem', sm: '0.82rem' },
+  fontSize: { xs: '0.56rem', sm: '0.62rem' },
   lineHeight: 1.35,
   letterSpacing: '0.11em',
   textTransform: 'uppercase',

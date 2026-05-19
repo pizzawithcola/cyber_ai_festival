@@ -1,6 +1,6 @@
 import { Typography, Box, Stack } from '@mui/material';
 import { ArcadeButton } from '../../../../components/ui';
-import { ARCADE_FONT, READABLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
+import { ARCADE_FONT, READABLE_FONT, TITLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
 import { type ResultPage } from './types';
 
 export function ResultsPanel({
@@ -23,7 +23,7 @@ export function ResultsPanel({
   onNext: () => void;
 }) {
   return (
-    <Box sx={{ width: '100%', maxWidth: 920, mx: 'auto', mt: 2, textAlign: 'center' }}>
+    <Box sx={{ width: '100%', maxWidth: 1080, mx: 'auto', mt: 2, textAlign: 'center' }}>
       {resultPage === 'summary' && (
         <Stack
           spacing={2.4}
@@ -31,8 +31,8 @@ export function ResultsPanel({
             ...arcadeScreenSx,
             width: '100%',
             alignItems: 'center',
-            px: { xs: 1.6, sm: 2.4, md: 3 },
-            py: { xs: 2.2, sm: 2.8, md: 3.2 },
+            px: { xs: 1.9, sm: 3, md: 4 },
+            py: { xs: 2.6, sm: 3.4, md: 4 },
           }}
         >
           <Box
@@ -40,7 +40,7 @@ export function ResultsPanel({
               position: 'relative',
               zIndex: 1,
               width: '100%',
-              maxWidth: 720,
+              maxWidth: 840,
               mx: 'auto',
             }}
           >
@@ -54,8 +54,8 @@ export function ResultsPanel({
                 color: '#ff00ff',
                 mb: 2.5,
                 display: 'block',
-                fontFamily: READABLE_FONT,
-                fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' },
+                fontFamily: TITLE_FONT,
+                fontSize: { xs: '1.78rem', sm: '2.24rem', md: '2.68rem' },
                 lineHeight: 1.3,
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
@@ -69,8 +69,8 @@ export function ResultsPanel({
               <Box
                 sx={{
                   flex: 1,
-                  px: { xs: 2, md: 3 },
-                  py: 2,
+                  px: { xs: 2.3, md: 3.6 },
+                  py: 2.4,
                   borderRadius: 0,
                   background: 'linear-gradient(180deg, rgba(255, 0, 255, 0.13), rgba(18, 8, 38, 0.88))',
                   border: '1px solid rgba(255, 0, 255, 0.36)',
@@ -79,18 +79,18 @@ export function ResultsPanel({
                   boxShadow: 'inset 0 0 18px rgba(255, 0, 255, 0.06)',
                 }}
               >
-                <Typography variant="caption" sx={{ color: '#ffc7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em', fontFamily: ARCADE_FONT, fontSize: '0.6rem' }}>
+                <Typography variant="caption" sx={{ color: '#ffc7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em', fontFamily: ARCADE_FONT, fontSize: '0.68rem' }}>
                   SCORE
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#ff70bf', lineHeight: 1.1, textShadow: '0 0 18px rgba(255, 0, 255, 0.28)' }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#ff70bf', fontFamily: TITLE_FONT, lineHeight: 1.1, textShadow: '0 0 18px rgba(255, 0, 255, 0.28)' }}>
                   {score}
                 </Typography>
               </Box>
               <Box
                 sx={{
                   flex: 1,
-                  px: { xs: 2, md: 3 },
-                  py: 2,
+                  px: { xs: 2.3, md: 3.6 },
+                  py: 2.4,
                   borderRadius: 0,
                   background: 'linear-gradient(180deg, rgba(143, 196, 255, 0.1), rgba(8, 12, 30, 0.88))',
                   border: '1px solid rgba(143, 196, 255, 0.24)',
@@ -99,10 +99,10 @@ export function ResultsPanel({
                   boxShadow: 'inset 0 0 18px rgba(143, 196, 255, 0.04)',
                 }}
               >
-                <Typography variant="caption" sx={{ color: '#dfe7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em', fontFamily: ARCADE_FONT, fontSize: '0.6rem' }}>
+                <Typography variant="caption" sx={{ color: '#dfe7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em', fontFamily: ARCADE_FONT, fontSize: '0.68rem' }}>
                   ACCURACY
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#d6ecff', lineHeight: 1.1, textShadow: '0 0 18px rgba(143, 196, 255, 0.22)' }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#d6ecff', fontFamily: TITLE_FONT, lineHeight: 1.1, textShadow: '0 0 18px rgba(143, 196, 255, 0.22)' }}>
                   {accuracy}%
                 </Typography>
               </Box>
@@ -115,13 +115,13 @@ export function ResultsPanel({
             </Typography>
             <Box
               sx={{
-                maxWidth: 620,
+                maxWidth: 740,
                 mx: 'auto',
                 px: 1.2,
                 py: 1,
               }}
             >
-              <Typography variant="body1" sx={{ color: '#d7f2ff', lineHeight: 1.75, fontFamily: READABLE_FONT }}>
+              <Typography variant="body1" sx={{ color: '#d7f2ff', lineHeight: 1.75, fontFamily: READABLE_FONT, fontSize: { xs: '1.05rem', sm: '1.14rem' } }}>
                 <Box component="span" sx={{ color: feedbackColor, fontWeight: 900 }}>
                   {feedback}
                 </Box>
@@ -139,8 +139,8 @@ export function ResultsPanel({
           size="md"
           onClick={onNext}
           sx={{
-            minWidth: 160,
-            minHeight: 48,
+            minWidth: 188,
+            minHeight: 54,
           }}
         >
           Next
