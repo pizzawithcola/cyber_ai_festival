@@ -148,19 +148,11 @@ const DecisionCard: React.FC<DecisionCardProps> = ({ decision, index }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="text-slate-400">Context:</span>
-              <span className="ml-2 text-slate-300 capitalize">
-                {decision.context.replace('_', ' ')}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-400">Type:</span>
-              <span className="ml-2 text-slate-300 capitalize">
-                {decision.decisionType.replace('_', ' ')}
-              </span>
-            </div>
+          <div className="text-xs">
+            <span className="text-slate-400">Context:</span>
+            <span className="ml-2 text-slate-300 capitalize">
+              {decision.context.replace('_', ' ')}
+            </span>
           </div>
 
           <div className="text-xs text-slate-500">
