@@ -372,6 +372,18 @@ export function TrainingArena({
       success: 'linear-gradient(180deg, rgba(45, 176, 104, 0.16), rgba(12, 28, 26, 0.88))',
       warning: 'linear-gradient(180deg, rgba(255, 95, 122, 0.16), rgba(34, 16, 28, 0.88))',
     };
+    const borderByTone = {
+      assistant: '1px solid rgba(143, 196, 255, 0.22)',
+      user: '1px solid rgba(255, 0, 255, 0.42)',
+      success: '1px solid rgba(73, 209, 125, 0.36)',
+      warning: '1px solid rgba(255, 95, 122, 0.42)',
+    };
+    const accentByTone = {
+      assistant: 'rgba(143, 196, 255, 0.58)',
+      user: 'rgba(255, 0, 255, 0.86)',
+      success: 'rgba(73, 209, 125, 0.74)',
+      warning: 'rgba(255, 95, 122, 0.82)',
+    };
 
     return (
       <Box
@@ -385,12 +397,17 @@ export function TrainingArena({
       >
         <Avatar
           sx={{
-            width: { xs: 30, sm: 34 },
-            height: { xs: 30, sm: 34 },
-            fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+            width: { xs: 34, sm: 38 },
+            height: { xs: 34, sm: 38 },
+            fontSize: { xs: '0.56rem', sm: '0.64rem' },
             fontWeight: 900,
-            bgcolor: isUser ? 'rgba(255, 0, 255, 0.9)' : 'rgba(255, 46, 147, 0.9)',
+            fontFamily: "'Press Start 2P', 'VT323', monospace !important",
+            bgcolor: isUser ? 'rgba(255, 0, 255, 0.9)' : 'rgba(255, 191, 77, 0.9)',
             color: '#031017',
+            border: isUser ? '2px solid rgba(255, 190, 255, 0.9)' : '2px solid rgba(255, 240, 194, 0.92)',
+            boxShadow: isUser
+              ? '0 0 14px rgba(255, 0, 255, 0.32)'
+              : '0 0 14px rgba(255, 191, 77, 0.28)',
             flexShrink: 0,
           }}
         >
@@ -398,15 +415,32 @@ export function TrainingArena({
         </Avatar>
         <Box
           sx={{
+            position: 'relative',
+            overflow: 'hidden',
             width: isUser ? (wide ? { xs: '92%', sm: '82%' } : { xs: '72%', sm: '54%' }) : { xs: '88%', sm: '76%' },
             maxWidth: isUser ? (wide ? 760 : 520) : 700,
             px: { xs: 1.8, sm: 2.2 },
             py: { xs: 1.55, sm: 1.85 },
-            borderRadius: isUser ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
+            borderRadius: 0,
+            border: borderByTone[tone],
             background: backgroundByTone[tone],
-            boxShadow: '0 16px 34px rgba(0,0,0,0.2)',
+            boxShadow:
+              '0 14px 32px rgba(0,0,0,0.24), inset 0 0 18px rgba(255,255,255,0.025)',
             textAlign: 'left',
             backdropFilter: 'blur(10px)',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 3,
+              background: `linear-gradient(90deg, ${accentByTone[tone]}, transparent)`,
+            },
+            '& > *': {
+              position: 'relative',
+              zIndex: 1,
+            },
           }}
         >
           {children}

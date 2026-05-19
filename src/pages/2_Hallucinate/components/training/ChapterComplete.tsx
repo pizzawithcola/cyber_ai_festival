@@ -2,7 +2,7 @@ import { Typography, Box, Stack } from '@mui/material';
 import { Celebration as CelebrationIcon } from '@mui/icons-material';
 
 import { ArcadeButton } from '../../../../components/ui';
-import { NEON_CYAN } from '../../hallucinateUi';
+import { NEON_CYAN, READABLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
 
 export function ChapterComplete({
   onReviewResults,
@@ -50,18 +50,26 @@ export function ChapterComplete({
       }}
     >
       <style>{animationCss}</style>
-      <Stack spacing={2.6} sx={{ width: '100%', alignItems: 'center', textAlign: 'center' }}>
+      <Stack
+        spacing={2.6}
+        sx={{
+          ...arcadeScreenSx,
+          width: '100%',
+          alignItems: 'center',
+          textAlign: 'center',
+          px: { xs: 1.6, sm: 2.6, md: 3.4 },
+          py: { xs: 2.8, sm: 3.4, md: 4 },
+        }}
+      >
+        <Box sx={{ position: 'relative', zIndex: 1, width: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25 }}>
             <CelebrationIcon sx={{ color: NEON_CYAN, fontSize: 28, animation: 'badgeFloat 3s ease-in-out infinite' }} />
             <Typography
               variant="caption"
               sx={{
+                ...arcadeKickerSx,
                 fontWeight: 900,
                 color: NEON_CYAN,
-                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-                fontSize: { xs: '0.875rem', sm: '0.9375rem' },
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
               }}
             >
               Chapter Complete
@@ -75,7 +83,7 @@ export function ChapterComplete({
                 color: '#eaffff',
                 mb: 1.4,
                 lineHeight: 1.3,
-                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                fontFamily: READABLE_FONT,
                 fontSize: { xs: '1.6rem', sm: '2.2rem', md: '2.8rem' },
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
@@ -92,6 +100,7 @@ export function ChapterComplete({
                 mx: 'auto',
                 lineHeight: 1.82,
                 fontSize: { xs: '1rem', sm: '1.08rem' },
+                fontFamily: READABLE_FONT,
               }}
             >
               You&apos;ve completed all content in this chapter.
@@ -144,6 +153,7 @@ export function ChapterComplete({
               {isNavigatingToRanking ? 'Loading Ranking...' : 'View Ranking'}
             </ArcadeButton>
           </Stack>
+        </Box>
       </Stack>
     </Box>
   );

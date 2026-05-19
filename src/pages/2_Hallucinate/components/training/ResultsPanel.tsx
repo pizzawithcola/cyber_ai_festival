@@ -1,5 +1,6 @@
 import { Typography, Box, Stack } from '@mui/material';
 import { ArcadeButton } from '../../../../components/ui';
+import { ARCADE_FONT, READABLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
 import { type ResultPage } from './types';
 
 export function ResultsPanel({
@@ -24,14 +25,28 @@ export function ResultsPanel({
   return (
     <Box sx={{ width: '100%', maxWidth: 920, mx: 'auto', mt: 2, textAlign: 'center' }}>
       {resultPage === 'summary' && (
-        <Stack spacing={2.4} sx={{ width: '100%', alignItems: 'center' }}>
+        <Stack
+          spacing={2.4}
+          sx={{
+            ...arcadeScreenSx,
+            width: '100%',
+            alignItems: 'center',
+            px: { xs: 1.6, sm: 2.4, md: 3 },
+            py: { xs: 2.2, sm: 2.8, md: 3.2 },
+          }}
+        >
           <Box
             sx={{
+              position: 'relative',
+              zIndex: 1,
               width: '100%',
               maxWidth: 720,
               mx: 'auto',
             }}
           >
+            <Typography variant="caption" sx={{ ...arcadeKickerSx, mb: 1.5 }}>
+              Results screen
+            </Typography>
             <Typography
               variant="h4"
               sx={{
@@ -39,7 +54,7 @@ export function ResultsPanel({
                 color: '#ff00ff',
                 mb: 2.5,
                 display: 'block',
-                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+                fontFamily: READABLE_FONT,
                 fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' },
                 lineHeight: 1.3,
                 letterSpacing: '0.06em',
@@ -56,17 +71,18 @@ export function ResultsPanel({
                   flex: 1,
                   px: { xs: 2, md: 3 },
                   py: 2,
-                  borderRadius: 3,
-                  background: 'rgba(255, 0, 255, 0.07)',
-                  border: '1px solid rgba(255, 0, 255, 0.22)',
+                  borderRadius: 0,
+                  background: 'linear-gradient(180deg, rgba(255, 0, 255, 0.13), rgba(18, 8, 38, 0.88))',
+                  border: '1px solid rgba(255, 0, 255, 0.36)',
                   backdropFilter: 'blur(8px)',
                   textAlign: 'center',
+                  boxShadow: 'inset 0 0 18px rgba(255, 0, 255, 0.06)',
                 }}
               >
-                <Typography variant="caption" sx={{ color: '#c8f7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em' }}>
+                <Typography variant="caption" sx={{ color: '#ffc7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em', fontFamily: ARCADE_FONT, fontSize: '0.6rem' }}>
                   SCORE
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#ff00ff', lineHeight: 1.1 }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#ff70bf', lineHeight: 1.1, textShadow: '0 0 18px rgba(255, 0, 255, 0.28)' }}>
                   {score}
                 </Typography>
               </Box>
@@ -75,22 +91,23 @@ export function ResultsPanel({
                   flex: 1,
                   px: { xs: 2, md: 3 },
                   py: 2,
-                  borderRadius: 3,
-                  background: 'rgba(214, 236, 255, 0.06)',
-                  border: '1px solid rgba(214, 236, 255, 0.16)',
+                  borderRadius: 0,
+                  background: 'linear-gradient(180deg, rgba(143, 196, 255, 0.1), rgba(8, 12, 30, 0.88))',
+                  border: '1px solid rgba(143, 196, 255, 0.24)',
                   backdropFilter: 'blur(8px)',
                   textAlign: 'center',
+                  boxShadow: 'inset 0 0 18px rgba(143, 196, 255, 0.04)',
                 }}
               >
-                <Typography variant="caption" sx={{ color: '#dfe7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em' }}>
+                <Typography variant="caption" sx={{ color: '#dfe7ff', display: 'block', mb: 0.6, letterSpacing: '0.12em', fontFamily: ARCADE_FONT, fontSize: '0.6rem' }}>
                   ACCURACY
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#d6ecff', lineHeight: 1.1 }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#d6ecff', lineHeight: 1.1, textShadow: '0 0 18px rgba(143, 196, 255, 0.22)' }}>
                   {accuracy}%
                 </Typography>
               </Box>
             </Stack>
-            <Typography variant="caption" sx={{ color: '#d7f2ff', display: 'block', mb: 1.2 }}>
+            <Typography variant="caption" sx={{ color: '#d7f2ff', display: 'block', mb: 1.2, fontFamily: READABLE_FONT, letterSpacing: '0.08em' }}>
               Total Questions Answered{' '}
               <Box component="span" sx={{ fontWeight: 900, color: '#c7d3ff' }}>
                 {totalQuestionsAnswered}
@@ -104,7 +121,7 @@ export function ResultsPanel({
                 py: 1,
               }}
             >
-              <Typography variant="body1" sx={{ color: '#d7f2ff', lineHeight: 1.75 }}>
+              <Typography variant="body1" sx={{ color: '#d7f2ff', lineHeight: 1.75, fontFamily: READABLE_FONT }}>
                 <Box component="span" sx={{ color: feedbackColor, fontWeight: 900 }}>
                   {feedback}
                 </Box>

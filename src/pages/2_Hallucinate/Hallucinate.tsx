@@ -53,6 +53,7 @@ const Hallucinate: React.FC = () => {
   const [showScenarioChat, setShowScenarioChat] = useState(false);
   const [showTrainingGame, setShowTrainingGame] = useState(false);
   const [hasVerifiedSession] = useState(() => Boolean(getStoredUser()));
+  const [showTerminalPanel, setShowTerminalPanel] = useState(false);
   const [caseFileOpen, setCaseFileOpen] = useState(false);
   const [caseFileUnlocking, setCaseFileUnlocking] = useState(false);
   const scenarioId = SCENARIOS[0].id;
@@ -76,6 +77,11 @@ const Hallucinate: React.FC = () => {
   const terminalLineOne = '> locate hallucination_case_02.pkg';
   const terminalLineTwo = '> verify user clearance: passed';
   const terminalLineThree = '> run decrypt --case hallucination';
+  const receivedFileIntroLines = [
+    'A locked file just arrived in the arcade inbox: hallucination_case_02.pkg.',
+    'The sender left one warning: do not trust an answer just because it sounds certain.',
+    'Open the terminal to inspect the file and recover the briefing inside.',
+  ];
   // removed terminal command display; keep timings minimal for label reveal
   const briefingHeadline = selectedScenario?.background.headline ?? '';
   const briefingBody = selectedScenario?.background.dek ?? '';
@@ -321,6 +327,31 @@ const Hallucinate: React.FC = () => {
     minWidth: { xs: '100%', sm: 260 },
     justifyContent: 'center',
     whiteSpace: 'nowrap',
+  } as const;
+  const receivedFileIntroSx = {
+    width: '100%',
+    maxWidth: 760,
+    mx: 'auto',
+    mb: 0,
+    px: { xs: 2, sm: 3 },
+    py: { xs: 2.2, sm: 2.8 },
+    border: '1px solid rgba(255, 0, 255, 0.3)',
+    background:
+      'linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(91, 46, 255, 0.12) 48%, rgba(5, 7, 16, 0.68))',
+    boxShadow: '0 18px 40px rgba(3, 0, 12, 0.34), inset 0 0 22px rgba(255, 0, 255, 0.05)',
+    textAlign: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    ...terminalRevealSx(0.04, 0.42),
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      height: '1px',
+      background: 'linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.62), transparent)',
+    },
   } as const;
   const terminalPanelSx = {
     width: '100%',
@@ -678,6 +709,7 @@ const Hallucinate: React.FC = () => {
                   onExitToScenarios={() => {
                     setShowTrainingGame(false);
                     setShowScenarioChat(false);
+                    setShowTerminalPanel(false);
                     setCaseFileOpen(false);
                     setCaseFileUnlocking(false);
                     setCurrentIntroTextIndex(0);
@@ -690,121 +722,178 @@ const Hallucinate: React.FC = () => {
                   sx={journeyShellSx}
                 >
                   <Box sx={{ width: '100%', maxWidth: 880 }}>
-                    {!caseFileOpen && (
-                      <Box
-                        sx={terminalPanelSx}
-                        onClick={handleOpenCaseFile}
-                      >
-                        <Box sx={terminalChromeSx}>
-                          <Stack direction="row" spacing={0.7} alignItems="center">
-                            {['#ff5f7a', '#ffbf4d', '#ff00ff'].map((color) => (
-                              <Box
-                                key={color}
-                                sx={{
-                                  width: 9,
-                                  height: 9,
-                                  borderRadius: '50%',
-                                  backgroundColor: color,
-                                  boxShadow: `0 0 10px ${color}80`,
-                                }}
-                              />
-                            ))}
-                          </Stack>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: 'rgba(248, 231, 255, 0.78)',
-                              fontFamily: "'VT323', 'Courier New', monospace",
-                              fontSize: { xs: '0.85rem', sm: '0.98rem' },
-                              letterSpacing: '0.08em',
-                              textTransform: 'uppercase',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            root@arcade:/casefiles/hallucination
-                          </Typography>
-                        </Box>
-
-                        <Box sx={{ position: 'relative', zIndex: 1, px: { xs: 1.7, sm: 2.4 }, py: { xs: 1.6, sm: 2.1 } }}>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: 'inline-flex',
-                              mb: 1.1,
-                              px: 1,
-                              py: 0.35,
-                              border: '1px solid rgba(255, 0, 255, 0.36)',
-                              color: '#ff00ff',
-                              background: 'rgba(255, 0, 255, 0.08)',
-                              letterSpacing: '0.14em',
-                              textTransform: 'uppercase',
-                              fontFamily: "'Press Start 2P', 'VT323', monospace",
-                              fontSize: { xs: '0.48rem', sm: '0.54rem' },
-                            }}
-                          >
-                            Terminal Link: Standby
-                          </Typography>
-                          {[terminalLineOne, terminalLineTwo, terminalLineThree].map((line, index) => (
+                    {!showTerminalPanel && !caseFileOpen && (
+                      <Box sx={receivedFileIntroSx}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            ...arcadeLabelSx,
+                            mb: 1.35,
+                            color: '#ff70bf',
+                          }}
+                        >
+                          Incoming file
+                        </Typography>
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            ...journeyTitleSx,
+                            mt: 0,
+                            mb: 1.4,
+                            mx: 'auto',
+                            maxWidth: 680,
+                            fontSize: { xs: '1rem', sm: '1.22rem', md: '1.44rem' },
+                            lineHeight: 1.42,
+                          }}
+                        >
+                          Case file received
+                        </Typography>
+                        <Stack spacing={0.7} sx={{ maxWidth: 680, mx: 'auto' }}>
+                          {receivedFileIntroLines.map((line) => (
                             <Typography
                               key={line}
                               variant="body2"
                               sx={{
-                                ...terminalTextSx,
-                                color: index === 1 ? 'rgba(255, 191, 77, 0.92)' : terminalTextSx.color,
-                                mb: index === 2 ? 1.2 : 0.3,
+                                ...journeyPromptSx,
+                                mb: 0,
+                                maxWidth: 'none',
+                                color: 'rgba(228, 241, 255, 0.82)',
+                                fontSize: { xs: '0.72rem', sm: '0.78rem' },
                               }}
                             >
-                              <Box
-                                component="span"
-                                sx={{
-                                  '--target-width': `${line.length}ch`,
-                                  display: 'inline-block',
-                                  overflow: 'hidden',
-                                  whiteSpace: 'nowrap',
-                                  maxWidth: '100%',
-                                  width: '0ch',
-                                  animation: `typeLine ${Math.max(1.2, line.length * 0.045)}s steps(${line.length}, end) ${0.18 + index * 0.62}s forwards`,
-                                }}
-                              >
-                                {line}
-                              </Box>
+                              {line}
                             </Typography>
                           ))}
-                          <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
-                            spacing={1.2}
-                            alignItems={{ xs: 'stretch', sm: 'center' }}
-                            justifyContent="space-between"
-                            sx={{ pt: 0.5 }}
-                          >
-                            <Box>
-                              {['case_id: HALLUCINATION-02', 'threat_model: confidence_trap', 'access: locked'].map((line) => (
-                                <Typography key={line} variant="body2" sx={{ ...terminalTextSx, color: 'rgba(248, 231, 255, 0.68)', fontSize: { xs: '0.9rem', sm: '1rem' } }}>
-                                  <Box component="span" sx={{ color: '#ff00ff' }}>$</Box> {line}
-                                </Typography>
+                        </Stack>
+                        <ArcadeButton
+                          color="magenta"
+                          size="lg"
+                          animation="pulse"
+                          onClick={() => setShowTerminalPanel(true)}
+                          sx={{
+                            ...actionButtonSx,
+                            mt: 2.4,
+                          }}
+                        >
+                          Open Terminal
+                        </ArcadeButton>
+                      </Box>
+                    )}
+                    {showTerminalPanel && !caseFileOpen && (
+                      <Box
+                        sx={terminalPanelSx}
+                        onClick={handleOpenCaseFile}
+                      >
+                          <Box sx={terminalChromeSx}>
+                            <Stack direction="row" spacing={0.7} alignItems="center">
+                              {['#ff5f7a', '#ffbf4d', '#ff00ff'].map((color) => (
+                                <Box
+                                  key={color}
+                                  sx={{
+                                    width: 9,
+                                    height: 9,
+                                    borderRadius: '50%',
+                                    backgroundColor: color,
+                                    boxShadow: `0 0 10px ${color}80`,
+                                  }}
+                                />
                               ))}
-                            </Box>
-                            <ArcadeButton
-                              color="magenta"
-                              variant="outline"
-                              size="sm"
-                              animation="pulse"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleOpenCaseFile();
-                              }}
+                            </Stack>
+                            <Typography
+                              variant="caption"
                               sx={{
-                                fontSize: { xs: '0.52rem', sm: '0.625rem' },
-                                alignSelf: { xs: 'stretch', sm: 'center' },
+                                color: 'rgba(248, 231, 255, 0.78)',
+                                fontFamily: "'VT323', 'Courier New', monospace",
+                                fontSize: { xs: '0.85rem', sm: '0.98rem' },
+                                letterSpacing: '0.08em',
+                                textTransform: 'uppercase',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
                               }}
                             >
-                              {caseFileUnlocking ? 'Decrypting...' : 'Open Case File'}
-                            </ArcadeButton>
-                          </Stack>
+                              root@arcade:/casefiles/hallucination
+                            </Typography>
+                          </Box>
+
+                          <Box sx={{ position: 'relative', zIndex: 1, px: { xs: 1.7, sm: 2.4 }, py: { xs: 1.6, sm: 2.1 } }}>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                display: 'inline-flex',
+                                mb: 1.1,
+                                px: 1,
+                                py: 0.35,
+                                border: '1px solid rgba(255, 0, 255, 0.36)',
+                                color: '#ff00ff',
+                                background: 'rgba(255, 0, 255, 0.08)',
+                                letterSpacing: '0.14em',
+                                textTransform: 'uppercase',
+                                fontFamily: "'Press Start 2P', 'VT323', monospace",
+                                fontSize: { xs: '0.48rem', sm: '0.54rem' },
+                              }}
+                            >
+                              Terminal Link: Standby
+                            </Typography>
+                            {[terminalLineOne, terminalLineTwo, terminalLineThree].map((line, index) => (
+                              <Typography
+                                key={line}
+                                variant="body2"
+                                sx={{
+                                  ...terminalTextSx,
+                                  color: index === 1 ? 'rgba(255, 191, 77, 0.92)' : terminalTextSx.color,
+                                  mb: index === 2 ? 1.2 : 0.3,
+                                }}
+                              >
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    '--target-width': `${line.length}ch`,
+                                    display: 'inline-block',
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap',
+                                    maxWidth: '100%',
+                                    width: '0ch',
+                                    animation: `typeLine ${Math.max(1.2, line.length * 0.045)}s steps(${line.length}, end) ${0.18 + index * 0.62}s forwards`,
+                                  }}
+                                >
+                                  {line}
+                                </Box>
+                              </Typography>
+                            ))}
+                            <Stack
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1.2}
+                              alignItems={{ xs: 'stretch', sm: 'center' }}
+                              justifyContent="space-between"
+                              sx={{ pt: 0.5 }}
+                            >
+                              <Box>
+                                {['case_id: HALLUCINATION-02', 'threat_model: confidence_trap', 'access: locked'].map((line) => (
+                                  <Typography key={line} variant="body2" sx={{ ...terminalTextSx, color: 'rgba(248, 231, 255, 0.68)', fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                                    <Box component="span" sx={{ color: '#ff00ff' }}>$</Box> {line}
+                                  </Typography>
+                                ))}
+                              </Box>
+                              <ArcadeButton
+                                color="magenta"
+                                variant="outline"
+                                size="sm"
+                                animation="pulse"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleOpenCaseFile();
+                                }}
+                                sx={{
+                                  fontSize: { xs: '0.52rem', sm: '0.625rem' },
+                                  alignSelf: { xs: 'stretch', sm: 'center' },
+                                }}
+                              >
+                                {caseFileUnlocking ? 'Decrypting...' : 'Open Case File'}
+                              </ArcadeButton>
+                            </Stack>
+                          </Box>
                         </Box>
-                      </Box>
                     )}
 
                     <Collapse in={caseFileOpen} timeout={600}>
