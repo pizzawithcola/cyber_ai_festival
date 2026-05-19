@@ -41,7 +41,7 @@ const MatrixRainBackground: React.FC<MatrixRainBackgroundProps> = ({ children })
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Set text color and font
-      ctx.fillStyle = '#0F0'; // Green text
+      ctx.fillStyle = 'rgba(0, 180, 0, 0.6)'; // Dimmed green text
       ctx.font = `${fontSize}px monospace`;
 
       // Draw characters

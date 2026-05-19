@@ -9,8 +9,10 @@ import PhishingPanel from '../pages/5_Phishing/PhishingPanel';
 import PhishingScorePage from '../pages/5_Phishing/PhishingScorePage';
 import PhishingEducationPage from '../pages/5_Phishing/PhishingEducationPage';
 import RankingPage from '../components/sharedPages/RankingPage';
+import LeaderboardPage from '../components/functional/LeaderboardPage';
 import AdminPage from '../components/functional/AdminPage';
 import LoginPage from '../components/sharedPages/LoginPage';
+import DesignPage from '../components/sharedPages/DesignPage';
 
 
 interface AppRoutesProps {
@@ -31,6 +33,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/phishing/score" element={<PhishingScorePage />} />
       <Route path="/ranking" element={<RankingPage />} />
       <Route path="/ranking/game/:game" element={<RankingPage />} />
+      <Route path="/leaderboard" element={<LeaderboardPage />} />
+      <Route path="/design" element={<DesignPage />} />
       <Route path="/admin" element={<AdminPage />} />
     </Routes>
   );

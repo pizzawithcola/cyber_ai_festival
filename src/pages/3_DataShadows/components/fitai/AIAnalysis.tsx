@@ -19,7 +19,7 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ isActive, answer }) => {
     }
 
     // Simulate AI analysis typing effect
-    let text = 'AI analyzing your response...'
+    const text = 'AI analyzing your response...'
     let index = 0
     const interval = setInterval(() => {
       if (index <= text.length) {
@@ -72,14 +72,16 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ isActive, answer }) => {
 
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       inset: 0,
       background: 'rgba(0,0,0,0.5)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 100,
-      backdropFilter: 'blur(4px)'
+      backdropFilter: 'blur(4px)',
+      boxSizing: 'border-box',
+      padding: '20px'
     }}>
       <div style={{
         background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(59,130,246,0.1))',

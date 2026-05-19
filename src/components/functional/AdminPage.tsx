@@ -30,10 +30,33 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { Close, ArrowUpward, Search } from '@mui/icons-material';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import Header from '../common/Header';
 import { getStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
+import { API_URL } from '../../services/api';
+
+// API endpoints to test
+const API_ENDPOINTS = [
+  { name: 'Health Check', method: 'GET', path: '/health', needsAuth: false },
+  { name: 'Users List', method: 'GET', path: '/users/?skip=0&limit=1', needsAuth: true },
+  { name: 'User Scores', method: 'GET', path: '/users/userscores', needsAuth: true },
+  { name: 'Rankings (Total)', method: 'GET', path: '/rankings/total?limit=1', needsAuth: true },
+  { name: 'Rankings (Game1)', method: 'GET', path: '/rankings/game1?limit=1', needsAuth: true },
+  { name: 'Rankings (Game2)', method: 'GET', path: '/rankings/game2?limit=1', needsAuth: true },
+  { name: 'Rankings (Game3)', method: 'GET', path: '/rankings/game3?limit=1', needsAuth: true },
+  { name: 'Rankings (Game4)', method: 'GET', path: '/rankings/game4?limit=1', needsAuth: true },
+  { name: 'Rankings (Game5)', method: 'GET', path: '/rankings/game5?limit=1', needsAuth: true },
+  { name: 'LLM Chat', method: 'POST', path: '/llm/chat', needsAuth: true },
+];
+
+interface ApiStatus {
+  name: string;
+  status: 'idle' | 'loading' | 'normal' | 'error';
+  latency?: number;
+  error?: string;
+}
 
 // User score interface
 interface UserScore {
@@ -114,6 +137,12 @@ const AdminPage: React.FC = () => {
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // API Health Check state
+  const [apiStatuses, setApiStatuses] = useState<ApiStatus[]>(
+    API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'idle' as const }))
+  );
+  const [isTestingApis, setIsTestingApis] = useState(false);
   
   const user = getStoredUser();
 
@@ -509,6 +538,46 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  // API Health Check
+  const runApiHealthCheck = async () => {
+    setIsTestingApis(true);
+    setApiStatuses(API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'loading' as const })));
+
+    const results = await Promise.all(
+      API_ENDPOINTS.map(async (ep) => {
+        const start = performance.now();
+        try {
+          let response: Response;
+          if (ep.needsAuth) {
+            if (ep.method === 'POST') {
+              response = await apiFetch(ep.path, {
+                method: 'POST',
+                body: JSON.stringify({ prompt: 'ping', model: 'deepseek-chat' }),
+              });
+            } else {
+              response = await apiFetch(ep.path);
+            }
+          } else {
+            response = await fetch(`${API_URL}${ep.path}`);
+          }
+          const latency = Math.round(performance.now() - start);
+
+          if (response.ok) {
+            return { name: ep.name, status: 'normal' as const, latency };
+          } else {
+            return { name: ep.name, status: 'error' as const, latency, error: `HTTP ${response.status}` };
+          }
+        } catch (err) {
+          const latency = Math.round(performance.now() - start);
+          return { name: ep.name, status: 'error' as const, latency, error: err instanceof Error ? err.message : 'Unknown error' };
+        }
+      })
+    );
+
+    setApiStatuses(results);
+    setIsTestingApis(false);
+  };
+
   // Filter users based on search term
   const filteredUsers = users.filter((user) => {
     const searchLower = searchTerm.toLowerCase();
@@ -536,7 +605,7 @@ const AdminPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header
         title='Admin Dashboard - User Scores'
         firstname={user?.firstname}
@@ -544,7 +613,7 @@ const AdminPage: React.FC = () => {
         countryCode={user?.countryCode}
       />
       
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
+      <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
         <Box sx={{ maxWidth: 1200, width: '100%' }}>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -709,6 +778,7 @@ const AdminPage: React.FC = () => {
                   <TableRow
                     key={user.id}
                     sx={{ 
+                      height: 52,
                       '&:last-child td, &:last-child th': { border: 0 },
                       '&:hover': {
                         backgroundColor: theme.palette.action.hover,
@@ -763,7 +833,7 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game1_score >= 80 ? '#4caf50' : user.game1_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game1_score}
+                      {user.game1_score.toFixed(1)}
                     </EditableCell>
                     <EditableCell 
                       onDoubleClick={(e) => {
@@ -772,7 +842,7 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game2_score >= 80 ? '#4caf50' : user.game2_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game2_score}
+                      {user.game2_score.toFixed(1)}
                     </EditableCell>
                     <EditableCell 
                       onDoubleClick={(e) => {
@@ -781,7 +851,7 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game3_score >= 80 ? '#4caf50' : user.game3_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game3_score}
+                      {user.game3_score.toFixed(1)}
                     </EditableCell>
                     <EditableCell 
                       onDoubleClick={(e) => {
@@ -790,7 +860,7 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game4_score >= 80 ? '#4caf50' : user.game4_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game4_score}
+                      {user.game4_score.toFixed(1)}
                     </EditableCell>
                     <EditableCell 
                       onDoubleClick={(e) => {
@@ -799,10 +869,10 @@ const AdminPage: React.FC = () => {
                       }}
                       sx={{ color: user.game5_score >= 80 ? '#4caf50' : user.game5_score >= 60 ? '#ff9800' : '#f44336' }}
                     >
-                      {user.game5_score}
+                      {user.game5_score.toFixed(1)}
                     </EditableCell>
                     <TableCell sx={{ fontWeight: 'bold', color: user.total_score >= 400 ? '#4caf50' : user.total_score >= 300 ? '#ff9800' : '#f44336' }}>
-                      {user.total_score}
+                      {user.total_score.toFixed(1)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -818,6 +888,101 @@ const AdminPage: React.FC = () => {
               onRowsPerPageChange={handleChangeRowsPerPage}
             />
           </StyledTableContainer>
+
+          {/* API Health Check Section */}
+          <Box sx={{ mt: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                API Health Check
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<RefreshIcon />}
+                onClick={runApiHealthCheck}
+                disabled={isTestingApis}
+                size="small"
+              >
+                {isTestingApis ? 'Testing...' : 'Run Test'}
+              </Button>
+            </Box>
+            <StyledTableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold', width: 60 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Endpoint</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Method</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Path</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: 100, textAlign: 'right' }}>Latency</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Message</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {API_ENDPOINTS.map((ep, index) => {
+                    const apiStatus = apiStatuses[index];
+                    return (
+                      <TableRow key={ep.name} sx={{ height: 52 }}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                backgroundColor:
+                                  apiStatus.status === 'normal' ? '#4caf50' :
+                                  apiStatus.status === 'error' ? '#f44336' :
+                                  apiStatus.status === 'loading' ? '#ff9800' :
+                                  theme.palette.grey[400],
+                                boxShadow:
+                                  apiStatus.status === 'normal' ? '0 0 6px rgba(76,175,80,0.6)' :
+                                  apiStatus.status === 'error' ? '0 0 6px rgba(244,67,54,0.6)' :
+                                  'none',
+                              }}
+                            />
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 500 }}>{ep.name}</TableCell>
+                        <TableCell>
+                          <Typography
+                            component="span"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              backgroundColor: ep.method === 'GET' 
+                                ? 'rgba(33,150,243,0.1)' 
+                                : 'rgba(76,175,80,0.1)',
+                              color: ep.method === 'GET' ? '#1976d2' : '#388e3c',
+                            }}
+                          >
+                            {ep.method}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{ep.path}</TableCell>
+                        <TableCell sx={{ textAlign: 'right', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                          {apiStatus.latency !== undefined ? `${apiStatus.latency}ms` : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {apiStatus.status === 'loading' ? (
+                            <CircularProgress size={14} />
+                          ) : apiStatus.status === 'normal' ? (
+                            <Typography sx={{ color: '#4caf50', fontWeight: 500, fontSize: '0.875rem' }}>Normal</Typography>
+                          ) : apiStatus.status === 'error' ? (
+                            <Typography sx={{ color: '#f44336', fontWeight: 500, fontSize: '0.875rem' }}>Error: {apiStatus.error}</Typography>
+                          ) : (
+                            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>Not tested</Typography>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </StyledTableContainer>
+          </Box>
           
           {/* Delete Confirmation Dialog */}
           <Dialog 

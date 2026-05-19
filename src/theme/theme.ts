@@ -1,7 +1,7 @@
 import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 import { type PaletteMode } from '@mui/material';
 
-// Arcade Design System Tokens (additive; do not alter MUI getTheme below)
+// Arcade Design System Tokens
 export const ARCADE_COLORS = {
   magenta: '#ff00ff',
   cyan: '#00ffff',

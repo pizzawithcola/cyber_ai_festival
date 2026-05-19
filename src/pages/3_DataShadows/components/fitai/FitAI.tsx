@@ -1,6 +1,5 @@
 import React from 'react'
 import { FitAIProvider, useFitAI } from './fitaiContext'
-import { SimulationNoticeModal } from './SimulationNoticeModal'
 import AppLayout from './AppLayout'
 import HomePage from './HomePage'
 import TermsAndConditions from './TermsAndConditions'
@@ -17,16 +16,7 @@ interface FitAIInnerProps {
 }
 
 const FitAIInner: React.FC<FitAIInnerProps> = ({ onBack }) => {
-  const { screen, isRegistered, hasSeenSimulationNotice, dismissSimulationNotice } = useFitAI()
-
-  // Show simulation notice modal on first visit to home screen
-  if (screen === 'home' && !hasSeenSimulationNotice) {
-    return (
-      <div onClick={dismissSimulationNotice}>
-        <SimulationNoticeModal />
-      </div>
-    )
-  }
+  const { screen, isRegistered } = useFitAI()
 
   // Show terms only after user initiates registration
   if (screen === 'terms') {

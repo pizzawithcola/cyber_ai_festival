@@ -224,14 +224,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   animation: fadeInUp 0.6s ease-out;
 }
 
 /* FitAI App Icon */
 .fitai-icon {
-  width: 100px;
-  height: 100px;
+  width: 108px;
+  height: 108px;
   border-radius: 23px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -239,28 +239,33 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.22), transparent 26%),
+    linear-gradient(145deg, #08131f 0%, #0f1b30 38%, #152544 100%);
   box-shadow: 
-    0 20px 40px rgba(102, 126, 234, 0.4),
+    0 20px 44px rgba(34, 211, 238, 0.18),
+    0 0 28px rgba(139, 92, 246, 0.2),
     0 10px 20px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(103, 232, 249, 0.22);
   outline: none;
   user-select: none;
+  overflow: visible;
 }
 
 .fitai-icon:hover {
   transform: scale(1.05);
   box-shadow: 
-    0 25px 50px rgba(102, 126, 234, 0.5),
+    0 24px 52px rgba(34, 211, 238, 0.22),
+    0 0 34px rgba(139, 92, 246, 0.28),
     0 15px 30px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 .fitai-icon:active {
   transform: scale(0.98);
   box-shadow: 
-    0 15px 30px rgba(102, 126, 234, 0.3),
+    0 15px 30px rgba(34, 211, 238, 0.16),
     0 8px 16px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -268,28 +273,54 @@
 .fitai-icon::after {
   content: '';
   position: absolute;
-  inset: -8px;
+  inset: -10px;
   border-radius: 31px;
-  background: radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+  border: 1px solid rgba(103, 232, 249, 0.3);
   pointer-events: none;
-  z-index: -1;
-  animation: pulse 2s ease-in-out infinite;
+  z-index: 0;
+  animation: pulseRing 1.9s ease-out infinite;
+}
+
+.fitai-icon::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0)),
+    radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.08), transparent 62%);
+  pointer-events: none;
+}
+
+.fitai-icon-beacon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #67e8f9;
+  box-shadow: 0 0 0 0 rgba(103, 232, 249, 0.7);
+  animation: beaconBlink 1.4s ease-out infinite;
+  z-index: 2;
 }
 
 /* Icon Content */
 .icon-content {
-  width: 60px;
-  height: 60px;
+  width: 76px;
+  height: 76px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 /* FitAI Logo SVG */
 .fitai-logo {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 8px 14px rgba(8, 15, 30, 0.28));
 }
 
 .app-name {
@@ -303,13 +334,12 @@
 }
 
 .app-tagline {
-  font-size: 14px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.7);
-  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.76);
   text-align: center;
   max-width: 200px;
-  line-height: 1.4;
+  line-height: 1.2;
 }
 
 /* Description Text */
@@ -336,15 +366,16 @@
   font-weight: 400;
   color: rgba(255, 255, 255, 0.6);
   line-height: 1.5;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .instruction-text {
-  font-size: 12px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.5);
-  font-style: italic;
-  animation: subtleFade 3s ease-in-out infinite;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(103, 232, 249, 0.82);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  animation: subtleFade 1.8s ease-in-out infinite;
 }
 
 /* Home Indicator */
@@ -395,14 +426,33 @@
   }
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
+@keyframes pulseRing {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.96);
   }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.1);
+  70% {
+    opacity: 0.18;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes beaconBlink {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(103, 232, 249, 0.7);
+  }
+  75% {
+    opacity: 0.85;
+    box-shadow: 0 0 0 12px rgba(103, 232, 249, 0);
+  }
+  100% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 0 rgba(103, 232, 249, 0);
   }
 }
 

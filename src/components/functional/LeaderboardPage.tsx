@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, keyframes } from '@mui/material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
@@ -23,31 +23,23 @@ interface RankingData {
   rankings: RankingEntry[];
 }
 
-const GAME_TO_SCORE_TYPE: Record<string, string> = {
-  deepfake: 'game1',
-  hallucinate: 'game2',
-  datashadows: 'game3',
-  retaildemolition: 'game4',
-  phishing: 'game5',
-};
+const SCORE_TYPES = [
+  { key: 'total', label: 'TOTAL' },
+  { key: 'game1', label: 'DEEPFAKE' },
+  { key: 'game2', label: 'HALLUCINATE' },
+  { key: 'game3', label: 'DATA SHADOWS' },
+  { key: 'game4', label: 'RETAIL' },
+  { key: 'game5', label: 'PHISHING' },
+];
 
-const SCORE_TYPE_LABELS: Record<string, string> = {
-  game1: 'DEEPFAKE',
-  game2: 'AI HALLUCINATION',
-  game3: 'DATA SHADOWS',
-  game4: 'RETAIL DEMOLITION',
-  game5: 'PHISHING ATTACK',
-  total: 'TOTAL SCORE',
-};
-
-// Game-specific theme colors
-const GAME_THEME_COLORS: Record<string, string> = {
+// Each game has its own theme color
+const SCORE_TYPE_COLORS: Record<string, string> = {
+  total: ARCADE_COLORS.cyan,
   game1: ARCADE_COLORS.magenta,
   game2: ARCADE_COLORS.magenta,
   game3: ARCADE_COLORS.cyan,
   game4: ARCADE_COLORS.yellow,
   game5: ARCADE_COLORS.lime,
-  total: ARCADE_COLORS.cyan,
 };
 
 const scanlineAnim = keyframes`
@@ -69,24 +61,29 @@ const getRankDisplay = (rank: number) => {
   if (rank === 1) return { text: '1ST', color: '#FFD700' };
   if (rank === 2) return { text: '2ND', color: '#C0C0C0' };
   if (rank === 3) return { text: '3RD', color: '#CD7F32' };
-  return { text: `${rank}TH`, color: '' }; // color set dynamically
+  return { text: `${rank}TH`, color: `${ARCADE_COLORS.white}80` };
 };
 
-const RankingPage: React.FC = () => {
+const LeaderboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { game } = useParams<{ game: string }>();
   const [rankingData, setRankingData] = useState<RankingData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scoreType, setScoreType] = useState('total');
   const user = getStoredUser();
 
-  const scoreType = (game && GAME_TO_SCORE_TYPE[game]) || 'total';
-  const rankingTitle = SCORE_TYPE_LABELS[scoreType] || 'RANKINGS';
-  const themeColor = GAME_THEME_COLORS[scoreType] || ARCADE_COLORS.cyan;
+  // Dynamic theme color based on selected game
+  const themeColor = SCORE_TYPE_COLORS[scoreType] || ARCADE_COLORS.cyan;
+
+  const pulseGlow = keyframes`
+    0%, 100% { box-shadow: 0 0 8px ${themeColor}30; }
+    50% { box-shadow: 0 0 16px ${themeColor}60; }
+  `;
 
   useEffect(() => {
     const fetchRankings = async () => {
       try {
         setLoading(true);
+        // Fetch more than 10 to find current user's rank
         const response = await apiFetch(`/rankings/${scoreType}?limit=50`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data: RankingData = await response.json();
@@ -100,42 +97,11 @@ const RankingPage: React.FC = () => {
     fetchRankings();
   }, [scoreType]);
 
+  // Determine what to display
   const top10 = rankingData?.rankings.slice(0, 10) || [];
   const currentUserId = user?.id;
+  const userInTop10 = top10.some((e) => e.user_id === currentUserId);
   const userEntry = rankingData?.rankings.find((e) => e.user_id === currentUserId);
-  const userRank = userEntry?.rank || 0;
-  const totalEntries = rankingData?.total_entries || 0;
-
-  // Display logic:
-  // - User in top 10: show top 10 with highlight
-  // - User rank 11-12: extend list to include them
-  // - User rank 13+: show top 10, then "...", then neighbors + user + percentile
-  const userInTop10 = userRank >= 1 && userRank <= 10;
-  const userInExtended = userRank >= 11 && userRank <= 12;
-  const userFarOut = userRank >= 13;
-
-  // For extended display (rank 11-12), show up to their rank
-  const displayList = userInExtended
-    ? rankingData?.rankings.slice(0, userRank) || top10
-    : top10;
-
-  // For far-out users, find neighbors
-  const allRankings = rankingData?.rankings || [];
-  const userIndex = allRankings.findIndex((e) => e.user_id === currentUserId);
-  const prevNeighbor = userFarOut && userIndex > 0 ? allRankings[userIndex - 1] : null;
-  const nextNeighbor = userFarOut && userIndex >= 0 && userIndex < allRankings.length - 1 ? allRankings[userIndex + 1] : null;
-
-  // Percentile calculation
-  const percentile = userRank > 0 && totalEntries > 0
-    ? ((userRank / totalEntries) * 100)
-    : null;
-  const isTop20 = percentile !== null && percentile <= 20;
-  const rankBadge = isTop20 ? `TOP ${percentile.toFixed(1)}%` : (totalEntries > 0 ? `${userRank}/${totalEntries}` : '');
-
-  const pulseGlow = keyframes`
-    0%, 100% { box-shadow: 0 0 8px ${themeColor}30; }
-    50% { box-shadow: 0 0 16px ${themeColor}60; }
-  `;
 
   return (
     <Box
@@ -153,6 +119,7 @@ const RankingPage: React.FC = () => {
         backgroundSize: '40px 40px',
         overflow: 'auto',
         position: 'relative',
+        /* Scanline */
         '&::before': {
           content: '""',
           position: 'fixed',
@@ -167,17 +134,51 @@ const RankingPage: React.FC = () => {
       }}
     >
       {/* Title */}
-      <Box sx={{ textAlign: 'center', mt: 4, mb: 4 }}>
+      <Box sx={{ textAlign: 'center', mt: 4, mb: 3 }}>
         <ArcadeTypography font="pressstart2p" sx={{ color: themeColor, fontSize: '1.1rem' }}>
-          {rankingTitle}
+          HIGH SCORES
         </ArcadeTypography>
-        <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color: `${themeColor}60`, mt: 1 }}>
-          LEADERBOARD
-        </Typography>
+      </Box>
+
+      {/* Game Selector */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 1, mb: 4, px: 2 }}>
+        {SCORE_TYPES.map((type) => (
+          <Box
+            key={type.key}
+            onClick={() => setScoreType(type.key)}
+            sx={{
+              px: 2,
+              py: 0.75,
+              cursor: 'pointer',
+              fontFamily: '"Electrolize", sans-serif',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              letterSpacing: '1px',
+              border: `1px solid ${scoreType === type.key ? themeColor : `${ARCADE_COLORS.white}30`}`,
+              color: scoreType === type.key ? themeColor : `${ARCADE_COLORS.white}80`,
+              backgroundColor: scoreType === type.key ? `${themeColor}15` : 'transparent',
+              borderRadius: 0,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                borderColor: themeColor,
+                color: themeColor,
+              },
+            }}
+          >
+            {type.label}
+          </Box>
+        ))}
       </Box>
 
       {/* Leaderboard Container */}
-      <Box sx={{ width: '100%', maxWidth: 700, px: 2, pb: 4 }}>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: 700,
+          px: 2,
+          pb: 4,
+        }}
+      >
         <Box
           sx={{
             border: `2px solid ${themeColor}40`,
@@ -185,6 +186,7 @@ const RankingPage: React.FC = () => {
             animation: `${pulseGlow} 3s ease-in-out infinite`,
             position: 'relative',
             overflow: 'hidden',
+            /* Inner scanlines */
             '&::after': {
               content: '""',
               position: 'absolute',
@@ -205,10 +207,18 @@ const RankingPage: React.FC = () => {
               backgroundColor: `${themeColor}08`,
             }}
           >
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>RANK</Typography>
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>NAME</Typography>
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'center' }}>REG</Typography>
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'right' }}>SCORE</Typography>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>
+              RANK
+            </Typography>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>
+              NAME
+            </Typography>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'center' }}>
+              REG
+            </Typography>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'right' }}>
+              SCORE
+            </Typography>
           </Box>
 
           {/* Rows */}
@@ -218,11 +228,10 @@ const RankingPage: React.FC = () => {
                 {'> LOADING...'}
               </ArcadeTypography>
             </Box>
-          ) : displayList.length > 0 ? (
+          ) : top10.length > 0 ? (
             <>
-              {displayList.map((entry) => {
+              {top10.map((entry) => {
                 const rankInfo = getRankDisplay(entry.rank);
-                const rankColor = rankInfo.color || `${themeColor}80`;
                 const isCurrentUser = entry.user_id === currentUserId;
                 return (
                   <Box
@@ -236,10 +245,12 @@ const RankingPage: React.FC = () => {
                       backgroundColor: isCurrentUser ? `${themeColor}12` : 'transparent',
                       position: 'relative',
                       zIndex: 1,
-                      '&:hover': { backgroundColor: `${themeColor}08` },
+                      '&:hover': {
+                        backgroundColor: `${themeColor}08`,
+                      },
                     }}
                   >
-                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: rankColor, alignSelf: 'center' }}>
+                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: rankInfo.color, alignSelf: 'center' }}>
                       {rankInfo.text}
                     </Typography>
                     <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: isCurrentUser ? themeColor : ARCADE_COLORS.white, fontWeight: isCurrentUser ? 700 : 400, alignSelf: 'center' }}>
@@ -248,51 +259,21 @@ const RankingPage: React.FC = () => {
                     <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
                       {countryCodeToFlag(entry.region)}
                     </Typography>
-                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: rankColor, textAlign: 'right', alignSelf: 'center' }}>
+                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: rankInfo.color, textAlign: 'right', alignSelf: 'center' }}>
                       {entry.score.toFixed(1)}
                     </Typography>
                   </Box>
                 );
               })}
 
-              {/* Far-out user (rank 13+): show separator + neighbors + user + percentile */}
-              {userFarOut && userEntry && (
+              {/* If user is NOT in top 10, show separator and user's rank */}
+              {!userInTop10 && userEntry && (
                 <>
                   <Box sx={{ py: 1, textAlign: 'center', borderBottom: `1px solid ${GRID_COLOR}` }}>
                     <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '4px' }}>
                       {'· · ·'}
                     </Typography>
                   </Box>
-
-                  {/* Previous neighbor */}
-                  {prevNeighbor && (
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: '70px 1fr 60px 90px',
-                        px: 2,
-                        py: 1.25,
-                        borderBottom: `1px solid ${GRID_COLOR}`,
-                        position: 'relative',
-                        zIndex: 1,
-                      }}
-                    >
-                      <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: `${themeColor}80`, alignSelf: 'center' }}>
-                        {getRankDisplay(prevNeighbor.rank).text}
-                      </Typography>
-                      <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: ARCADE_COLORS.white, alignSelf: 'center' }}>
-                        {prevNeighbor.firstname} {prevNeighbor.lastname}
-                      </Typography>
-                      <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
-                        {countryCodeToFlag(prevNeighbor.region)}
-                      </Typography>
-                      <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: `${themeColor}80`, textAlign: 'right', alignSelf: 'center' }}>
-                        {prevNeighbor.score.toFixed(1)}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {/* Current user row */}
                   <Box
                     sx={{
                       display: 'grid',
@@ -300,7 +281,6 @@ const RankingPage: React.FC = () => {
                       px: 2,
                       py: 1.25,
                       backgroundColor: `${themeColor}12`,
-                      borderBottom: `1px solid ${GRID_COLOR}`,
                       position: 'relative',
                       zIndex: 1,
                     }}
@@ -308,13 +288,8 @@ const RankingPage: React.FC = () => {
                     <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: themeColor, alignSelf: 'center' }}>
                       {getRankDisplay(userEntry.rank).text}
                     </Typography>
-                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: themeColor, fontWeight: 700, alignSelf: 'center', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: themeColor, fontWeight: 700, alignSelf: 'center' }}>
                       {userEntry.firstname} {userEntry.lastname} ◄
-                      {rankBadge && (
-                        <Box component="span" sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.45rem', color: themeColor, border: `1px solid ${themeColor}60`, borderRadius: '3px', px: 0.75, py: 0.25 }}>
-                          {rankBadge}
-                        </Box>
-                      )}
                     </Typography>
                     <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
                       {countryCodeToFlag(userEntry.region)}
@@ -323,34 +298,6 @@ const RankingPage: React.FC = () => {
                       {userEntry.score.toFixed(1)}
                     </Typography>
                   </Box>
-
-                  {/* Next neighbor */}
-                  {nextNeighbor && (
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: '70px 1fr 60px 90px',
-                        px: 2,
-                        py: 1.25,
-                        borderBottom: `1px solid ${GRID_COLOR}`,
-                        position: 'relative',
-                        zIndex: 1,
-                      }}
-                    >
-                      <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: `${themeColor}80`, alignSelf: 'center' }}>
-                        {getRankDisplay(nextNeighbor.rank).text}
-                      </Typography>
-                      <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: ARCADE_COLORS.white, alignSelf: 'center' }}>
-                        {nextNeighbor.firstname} {nextNeighbor.lastname}
-                      </Typography>
-                      <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
-                        {countryCodeToFlag(nextNeighbor.region)}
-                      </Typography>
-                      <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: `${themeColor}80`, textAlign: 'right', alignSelf: 'center' }}>
-                        {nextNeighbor.score.toFixed(1)}
-                      </Typography>
-                    </Box>
-                  )}
                 </>
               )}
             </>
@@ -392,4 +339,4 @@ const RankingPage: React.FC = () => {
   );
 };
 
-export default RankingPage;
+export default LeaderboardPage;

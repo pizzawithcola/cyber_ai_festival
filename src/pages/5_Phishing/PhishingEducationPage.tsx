@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Container, useTheme, Button } from '@mui/material';
+import { Box, Container, keyframes } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
+import { ArcadeButton, ArcadeTypography } from '../../components/ui';
+import { ARCADE_COLORS } from '../../theme/theme';
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 const PhishingEducationPage: React.FC = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   
   const texts = [
-    "Phishing nowadays, is still a big problem for Cybersecurity.",
-    "In HSBC, we have blocked more than 23,000,000 phishing emails last year (I just made it up)",
-    "Now, we want to invite you to be the one who write the phishing email..."
+    "Phishing is the art of using fake emails to impersonate trusted brands, colleagues, or friends.",
+    "Today, nearly half of UK businesses are still falling victim to these digital traps.",
+    "And in many cases, the attacker's big breakthrough is an employee clicking like 'sure, why not' on a fake login page.",
+    "Today, you aren't the target, you are the attacker.",
+    "Craft the ultimate lure and see if our employees bite the bait."
   ];
   
-  const [currentTextIndex, setCurrentTextIndex] = useState(-1); // Start with no text
+  const [currentTextIndex, setCurrentTextIndex] = useState(-1);
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
-    // Initial delay before first text appears
     if (currentTextIndex === -1) {
       const initialTimer = setTimeout(() => {
         setCurrentTextIndex(0);
@@ -25,25 +32,20 @@ const PhishingEducationPage: React.FC = () => {
       return () => clearTimeout(initialTimer);
     }
 
-    // Fade in happens immediately when currentTextIndex changes
-    
-    // After 3 seconds, start fade out
     const fadeOutTimer = setTimeout(() => {
       setIsFadingOut(true);
-    }, 3000);
+    }, 5000);
 
-    // After fade out completes (400ms), move to next text or navigate
     const nextTextTimer = setTimeout(() => {
       if (currentTextIndex < texts.length - 1) {
         setIsFadingOut(false);
         setCurrentTextIndex(prev => prev + 1);
       } else {
-        // Last text finished, add delay before navigation for smooth transition
         setTimeout(() => {
           navigate('/phishing');
         }, 400);
       }
-    }, 3400);
+    }, 5400);
 
     return () => {
       clearTimeout(fadeOutTimer);
@@ -51,23 +53,23 @@ const PhishingEducationPage: React.FC = () => {
     };
   }, [currentTextIndex, navigate, texts.length]);
 
-  // Highlight numbers with color
+  // Highlight numbers with arcade color
   const highlightNumbers = (text: string) => {
     const parts = text.split(/(\d+(?:,\d{3})*(?:\.\d+)?)/g);
     return parts.map((part, index) => {
       if (/^\d+(?:,\d{3})*(?:\.\d+)?$/.test(part)) {
         return (
-          <Typography
+          <Box
             key={index}
             component="span"
             sx={{
-              color: theme.palette.primary.main,
+              color: ARCADE_COLORS.yellow,
+              textShadow: `0 0 8px ${ARCADE_COLORS.yellow}80`,
               fontWeight: 700,
-              fontSize: 'inherit', // Inherit font size from parent h3
             }}
           >
             {part}
-          </Typography>
+          </Box>
         );
       }
       return part;
@@ -82,32 +84,53 @@ const PhishingEducationPage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: 'transparent', // Make background transparent to show matrix rain
+          bgcolor: 'transparent',
+          position: 'relative',
         }}
       >
-        {/* Skip button in top-right corner */}
+        {/* Skip button */}
         <Box
           sx={{
-          position: 'absolute',
-            top: 20,
-            right: 20,
+            position: 'absolute',
+            top: 24,
+            right: 24,
             zIndex: 10,
           }}
         >
-          <Button
-          variant="outlined"
-          onClick={() => navigate('/phishing')}
-            sx={{
-            color: theme.palette.primary.main,
-              borderColor: theme.palette.primary.main,
-              '&:hover': {
-                backgroundColor: theme.palette.primary.main,
-              color: '#fff',
-              },
-            }}
+          <ArcadeButton
+            color="lime"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/phishing')}
           >
-            Skip
-          </Button>
+            SKIP
+          </ArcadeButton>
+        </Box>
+
+        {/* Progress indicator */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 32,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: 1,
+          }}
+        >
+          {texts.map((_, index) => (
+            <Box
+              key={index}
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                backgroundColor: index <= currentTextIndex ? ARCADE_COLORS.lime : `${ARCADE_COLORS.lime}30`,
+                boxShadow: index <= currentTextIndex ? `0 0 6px ${ARCADE_COLORS.lime}` : 'none',
+                transition: 'all 0.3s ease',
+              }}
+            />
+          ))}
         </Box>
         
         <Container maxWidth="lg">
@@ -119,28 +142,49 @@ const PhishingEducationPage: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              position: 'relative',
             }}
           >
-          {texts.map((text, index) => (
-            <Typography
-              key={index}
-              variant="h3"
-              sx={{
-                fontWeight: 600,
-                color: theme.palette.text.primary,
-                opacity: index === currentTextIndex ? (isFadingOut ? 0 : 1) : 0,
-                transition: 'opacity 0.4s ease-in-out',
-                position: index === currentTextIndex ? 'relative' : 'absolute',
-                pointerEvents: 'none',
-                maxWidth: '100%',
-                wordWrap: 'break-word',
-              }}
-            >
-              {highlightNumbers(text)}
-            </Typography>
-          ))}
-        </Box>
-      </Container>
+            {texts.map((text, index) => (
+              <Box
+                key={index}
+                sx={{
+                  opacity: index === currentTextIndex ? (isFadingOut ? 0 : 1) : 0,
+                  transition: 'opacity 0.4s ease-in-out',
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  pointerEvents: 'none',
+                  animation: index === currentTextIndex && !isFadingOut ? `${fadeIn} 0.4s ease-out` : 'none',
+                }}
+              >
+                <ArcadeTypography
+                  font="electrolize"
+                  arcadeSize="lg"
+                  component="p"
+                  sx={{
+                    color: 'transparent',
+                    lineHeight: 1.8,
+                    background: `repeating-linear-gradient(
+                      0deg,
+                      ${ARCADE_COLORS.white} 0px,
+                      ${ARCADE_COLORS.white} 3px,
+                      ${ARCADE_COLORS.white}B0 3px,
+                      ${ARCADE_COLORS.white}B0 6px
+                    )`,
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: `0 0 12px ${ARCADE_COLORS.lime}50, 0 0 24px ${ARCADE_COLORS.lime}20`,
+                    filter: 'drop-shadow(0 0 4px rgba(57, 100, 57, 0.3))',
+                  }}
+                >
+                  {highlightNumbers(text)}
+                </ArcadeTypography>
+              </Box>
+            ))}
+          </Box>
+        </Container>
       </Box>
     </MatrixRainBackground>
   );
