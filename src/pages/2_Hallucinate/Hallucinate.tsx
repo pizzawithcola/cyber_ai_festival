@@ -749,21 +749,32 @@ const Hallucinate: React.FC = () => {
                           Case file received
                         </Typography>
                         <Stack spacing={0.7} sx={{ maxWidth: 680, mx: 'auto' }}>
-                          {receivedFileIntroLines.map((line) => (
-                            <Typography
-                              key={line}
-                              variant="body2"
-                              sx={{
-                                ...journeyPromptSx,
-                                mb: 0,
-                                maxWidth: 'none',
-                                color: 'rgba(228, 241, 255, 0.82)',
-                                fontSize: { xs: '0.72rem', sm: '0.78rem' },
-                              }}
-                            >
-                              {line}
-                            </Typography>
-                          ))}
+                          {receivedFileIntroLines.map((line, idx) => {
+                            const warningPhrase = 'do not trust an answer just because it sounds certain.';
+                            const isWarningLine = line.includes(warningPhrase);
+                            return (
+                              <Typography
+                                key={isWarningLine ? `warning-${idx}` : line}
+                                variant="body2"
+                                sx={{
+                                  ...journeyPromptSx,
+                                  mb: 0,
+                                  maxWidth: 'none',
+                                  color: 'rgba(228, 241, 255, 0.82)',
+                                  fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                                }}
+                              >
+                                {isWarningLine ? (
+                                  <>
+                                    {line.replace(warningPhrase, '')}
+                                    <em>{warningPhrase}</em>
+                                  </>
+                                ) : (
+                                  line
+                                )}
+                              </Typography>
+                            );
+                          })}
                         </Stack>
                         <ArcadeButton
                           color="magenta"
