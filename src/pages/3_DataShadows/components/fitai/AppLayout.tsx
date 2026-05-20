@@ -17,12 +17,13 @@ interface AppLayoutProps {
  * - Menu overlay (absolutely positioned, contained within screen bounds)
  */
 const AppLayout: React.FC<AppLayoutProps> = ({ children, onBack }) => {
-  const { isMenuOpen, toggleMenu, setScreen } = useFitAI()
+  const { isMenuOpen, toggleMenu, setScreen, screen } = useFitAI()
+  const showBottomTabBar = screen !== 'home'
 
   return (
     <div style={{
       width: '100%',
-      height: '100vh',
+      height: '100%',
       display: 'flex',
       flexDirection: 'column',
       background: '#fff',
@@ -242,101 +243,103 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, onBack }) => {
         {children}
       </div>
 
-      {/* Bottom Tab Bar - Fixed at bottom */}
-      <div style={{
-        height: '80px',
-        background: '#ffffff',
-        borderTop: '1px solid #e5e7eb',
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)', // For iPhone home indicator
-        position: 'relative',
-        zIndex: 50
-      }}>
-        <button 
-          onClick={() => setScreen('home')}
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            padding: '12px 0'
-          }}
-        >
-          <div style={{ fontSize: '24px', marginBottom: '4px' }}>🏠</div>
-          <div style={{ fontSize: '11px', fontWeight: 500, color: '#3b82f6' }}>Home</div>
-        </button>
-        
-        <button 
-          onClick={() => setScreen('workout')}
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            padding: '12px 0'
-          }}
-        >
-          <div style={{ fontSize: '24px', marginBottom: '4px' }}>💪</div>
-          <div style={{ fontSize: '11px', fontWeight: 500, color: '#6b7280' }}>Workout</div>
-        </button>
-        
-        <button 
-          onClick={() => setScreen('profile')}
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            padding: '12px 0'
-          }}
-        >
-          <div style={{ fontSize: '24px', marginBottom: '4px' }}>👤</div>
-          <div style={{ fontSize: '11px', fontWeight: 500, color: '#6b7280' }}>Profile</div>
-        </button>
-        
-        <button 
-          onClick={() => setScreen('settings')}
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            padding: '12px 0'
-          }}
-        >
-          <div style={{ fontSize: '24px', marginBottom: '4px' }}>⚙️</div>
-          <div style={{ fontSize: '11px', fontWeight: 500, color: '#6b7280' }}>Settings</div>
-        </button>
-      </div>
+      {showBottomTabBar ? (
+        <div style={{
+          height: '80px',
+          background: '#ffffff',
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          position: 'relative',
+          zIndex: 50,
+          flexShrink: 0,
+        }}>
+          <button 
+            onClick={() => setScreen('home')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: '12px 0'
+            }}
+          >
+            <div style={{ fontSize: '24px', marginBottom: '4px' }}>🏠</div>
+            <div style={{ fontSize: '11px', fontWeight: 500, color: '#3b82f6' }}>Home</div>
+          </button>
+          
+          <button 
+            onClick={() => setScreen('workout')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: '12px 0'
+            }}
+          >
+            <div style={{ fontSize: '24px', marginBottom: '4px' }}>💪</div>
+            <div style={{ fontSize: '11px', fontWeight: 500, color: '#6b7280' }}>Workout</div>
+          </button>
+          
+          <button 
+            onClick={() => setScreen('profile')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: '12px 0'
+            }}
+          >
+            <div style={{ fontSize: '24px', marginBottom: '4px' }}>👤</div>
+            <div style={{ fontSize: '11px', fontWeight: 500, color: '#6b7280' }}>Profile</div>
+          </button>
+          
+          <button 
+            onClick={() => setScreen('settings')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: '12px 0'
+            }}
+          >
+            <div style={{ fontSize: '24px', marginBottom: '4px' }}>⚙️</div>
+            <div style={{ fontSize: '11px', fontWeight: 500, color: '#6b7280' }}>Settings</div>
+          </button>
+        </div>
+      ) : null}
 
       {/* Overlay for menu - Click outside to close */}
       {isMenuOpen && (
         <div 
           onClick={toggleMenu}
           style={{
-            position: 'fixed',
+            position: 'absolute',
             top: '60px',
             left: 0,
             right: 0,
-            bottom: '80px',
+            bottom: showBottomTabBar ? '80px' : '0',
             background: 'transparent',
             zIndex: 98
           }}
