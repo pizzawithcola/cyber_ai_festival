@@ -24,5 +24,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/_bk_*", "src/**/*_bk_*", "src/pages/4_RetailDemolition/components/AnalyticsPanel.tsx"]
 }

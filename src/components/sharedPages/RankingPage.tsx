@@ -109,8 +109,7 @@ const RankingPage: React.FC = () => {
   // Display logic:
   // - User in top 10: show top 10 with highlight
   // - User rank 11-12: extend list to include them
-  // - User rank 13+: show top 10, then "...", then neighbors + user + percentile
-  const userInTop10 = userRank >= 1 && userRank <= 10;
+  // - User rank 13+: show top 10, then "...", then neighbors + user + rank badge
   const userInExtended = userRank >= 11 && userRank <= 12;
   const userFarOut = userRank >= 13;
 
