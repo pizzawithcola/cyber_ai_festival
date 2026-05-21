@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Star, Globe, Lock, AlertTriangle, ShieldCheck, Code, ShoppingCart, Phone, MapPin, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Star, Globe, Lock, AlertTriangle, ShieldCheck, Code, CreditCard, Phone, MapPin, RotateCcw } from 'lucide-react';
 import { RETAILERS, PROMPT_INJECTION_TEXT } from '../constants/gameData';
 import type { Product, Retailer } from '../constants/gameData';
 
@@ -41,14 +41,16 @@ const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
       {/* URL bar */}
       <div className="p-3 bg-white flex items-center justify-between border-b shadow-sm shrink-0">
         <button onClick={onBack} className="text-indigo-600"><ArrowLeft size={20} /></button>
-        <div className="bg-slate-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border flex-1 mx-3">
+        <div className="bg-slate-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border flex-1 mx-3 min-w-0 overflow-hidden">
           {retailer.protocol === 'https' ? (
-            <Lock size={10} className="text-green-600" />
+            <Lock size={10} className="text-green-600 shrink-0" />
           ) : (
-            <AlertTriangle size={10} className="text-red-500" />
+            <AlertTriangle size={10} className="text-red-500 shrink-0" />
           )}
-          <span className="text-[10px] font-mono text-slate-500 truncate">
-            {retailer.protocol === 'http' && <span className="text-red-500 font-bold">Not Secure | </span>}
+          {retailer.protocol === 'http' && (
+            <span className="text-[10px] font-mono text-red-500 font-bold shrink-0">Not Secure |</span>
+          )}
+          <span className="text-[10px] font-mono text-slate-500 truncate flex-1 min-w-0">
             {retailer.protocol}://{retailer.url}/{product.name.toLowerCase().replace(/\s+/g, '-')}
           </span>
         </div>
@@ -133,17 +135,15 @@ const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
           <div className="bg-white border rounded-xl p-3 mb-4 space-y-2">
             <div className="text-[10px] font-bold text-slate-500 uppercase">Seller Information</div>
             {retailer.hasContactInfo ? (
-              <>
-                <div className="flex items-center gap-2 text-xs text-slate-600"><Phone size={10} /> Customer service available</div>
-                <div className="flex items-center gap-2 text-xs text-slate-600"><MapPin size={10} /> Verified business address</div>
-                <div className="flex items-center gap-2 text-xs text-slate-600"><RotateCcw size={10} /> 30-day return policy</div>
-              </>
+              <div className="flex items-center gap-2 text-xs text-slate-600"><Phone size={10} /> Customer service available</div>
             ) : (
-              <div className="text-xs text-red-400 space-y-1">
-                <div>No phone number listed</div>
-                <div>No business address provided</div>
-                {!retailer.hasReturnPolicy && <div>No return policy</div>}
-              </div>
+              <div className="flex items-center gap-2 text-xs text-red-500"><Phone size={10} /> No phone number listed</div>
+            )}
+            <div className="flex items-center gap-2 text-xs text-slate-600"><MapPin size={10} /> Business address listed</div>
+            {retailer.hasReturnPolicy ? (
+              <div className="flex items-center gap-2 text-xs text-slate-600"><RotateCcw size={10} /> 30-day return policy</div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-red-500"><RotateCcw size={10} /> No return policy</div>
             )}
           </div>
 
@@ -157,7 +157,7 @@ const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
                 : 'bg-slate-200 text-slate-500 cursor-not-allowed'
             }`}
           >
-            <ShoppingCart size={16} /> Add to Cart
+            <CreditCard size={16} /> Checkout Now
           </button>
           {!canCheckout && browseProgress && (
             <div className="mb-4 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">

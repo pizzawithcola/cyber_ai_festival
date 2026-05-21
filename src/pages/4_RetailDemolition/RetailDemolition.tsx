@@ -101,6 +101,7 @@ const RetailDemolition = () => {
         agentConfirmRetailer={game.agentConfirmRetailer}
         agentSafePurchaseDone={game.agentSafePurchaseDone}
         agentMaliciousDone={game.agentMaliciousDone}
+        agentIncidentNotificationsDone={game.agentIncidentNotificationsDone}
         onBillingComplete={game.handleBillingComplete}
         onManualProductSelect={game.handleManualProductSelect}
         onManualAddToCart={game.handleManualAddToCart}
