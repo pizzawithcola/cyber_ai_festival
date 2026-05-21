@@ -107,11 +107,11 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
             <ArcadeTypography arcadeColor="yellow" arcadeSize="xs" font="pressstart2p" sx={{ display: 'block', mb: 1, fontSize: '0.55rem' }}>
               MANUAL
             </ArcadeTypography>
-            <ArcadeTypography arcadeColor="white" arcadeSize="lg" font="vt323" glow={false} sx={{ display: 'block', fontSize: '2rem', lineHeight: 1 }}>
+            <ArcadeTypography arcadeColor="white" arcadeSize="lg" font="electrolize" glow={false} sx={{ display: 'block', fontSize: '2rem', lineHeight: 1 }}>
               {manualStepCount}
               <span style={{ fontSize: '1rem', color: `${ARCADE_COLORS.white}80`, marginLeft: 6 }}>steps</span>
             </ArcadeTypography>
-            <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="vt323" glow={false} sx={{ display: 'block', fontSize: '1.05rem', lineHeight: 1.2, mt: 0.5, opacity: 0.75 }}>
+            <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="electrolize" glow={false} sx={{ display: 'block', fontSize: '0.8rem', lineHeight: 1.4, mt: 0.5, opacity: 0.75 }}>
               You controlled every decision
             </ArcadeTypography>
           </div>
@@ -119,11 +119,11 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
             <ArcadeTypography arcadeColor="yellow" arcadeSize="xs" font="pressstart2p" sx={{ display: 'block', mb: 1, fontSize: '0.55rem' }}>
               AGENT
             </ArcadeTypography>
-            <ArcadeTypography arcadeColor="white" arcadeSize="lg" font="vt323" glow={false} sx={{ display: 'block', fontSize: '2rem', lineHeight: 1 }}>
+            <ArcadeTypography arcadeColor="white" arcadeSize="lg" font="electrolize" glow={false} sx={{ display: 'block', fontSize: '2rem', lineHeight: 1 }}>
               1
               <span style={{ fontSize: '1rem', color: `${ARCADE_COLORS.white}80`, marginLeft: 6 }}>click</span>
             </ArcadeTypography>
-            <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="vt323" glow={false} sx={{ display: 'block', fontSize: '1.05rem', lineHeight: 1.2, mt: 0.5, opacity: 0.75 }}>
+            <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="electrolize" glow={false} sx={{ display: 'block', fontSize: '0.8rem', lineHeight: 1.4, mt: 0.5, opacity: 0.75 }}>
               Agent made all decisions
             </ArcadeTypography>
           </div>
@@ -141,7 +141,7 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
                 className="flex items-start justify-between gap-3 p-3"
                 style={{ border: `1px solid ${ARCADE_COLORS.red}30`, background: `${ARCADE_COLORS.red}08` }}
               >
-                <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="vt323" glow={false} sx={{ fontSize: '1.1rem', lineHeight: 1.25 }}>
+                <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="electrolize" glow={false} sx={{ fontSize: '0.85rem', lineHeight: 1.45 }}>
                   {formatScoreReason(e.reason, e.meta as { siteName?: string })}
                 </ArcadeTypography>
                 <ArcadeTypography arcadeColor="red" arcadeSize="sm" font="pressstart2p" sx={{ fontSize: '0.75rem', flexShrink: 0 }}>
@@ -177,7 +177,7 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
           ].map((text, i) => (
             <div key={i} className="flex items-start gap-3">
               <span style={{ color: ARCADE_COLORS.yellow, marginTop: 4, flexShrink: 0 }}>▸</span>
-              <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="vt323" glow={false} sx={{ fontSize: '1.1rem', lineHeight: 1.3 }}>
+              <ArcadeTypography arcadeColor="white" arcadeSize="sm" font="electrolize" glow={false} sx={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
                 {text}
               </ArcadeTypography>
             </div>

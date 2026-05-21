@@ -3,7 +3,7 @@
 const PRODUCT_IMAGES: Record<string, string> = {
   'AirPods Pro': '/images/products/airpods-pro.png',
   'PS5 Slim': '/images/products/ps5-slim.png',
-  'RTX 4090': '/images/products/rtx-4090.png',
+  'RTX 4090': '/images/products/rtx-4090.svg',
   'Sony WH-1000XM5': '/images/products/sony-wh1000xm5.png',
   'iPad Air M2': '/images/products/ipad-air-m2.jpg',
   'Nintendo Switch OLED': '/images/products/nintendo-switch-oled.png',
@@ -148,7 +148,7 @@ export const RETAILERS: Retailer[] = [
     hasContactInfo: false,
     hasReturnPolicy: false,
     reviews: [
-      { title: 'Never received my order', text: 'Paid 3 weeks ago and still nothing. No tracking number, no response to emails.', stars: 1, author: 'Mike T.' },
+      { title: 'Amazing prices, fast checkout!', text: 'Best deal I found anywhere. Site is super easy to use and shipping was quick. Highly recommend to anyone looking to save!', stars: 5, author: 'ShopperFan123' },
       { title: 'Charged twice!!', text: 'My credit card was charged twice for one order. Dispute filed with my bank.', stars: 1, author: 'Jessica L.' },
       { title: 'Wrong product arrived', text: 'Received a completely different item. Cheap knockoff, not the real thing. No return address.', stars: 1, author: 'Robert W.' },
     ],
@@ -218,7 +218,7 @@ export const RETAILERS: Retailer[] = [
     hasContactInfo: false,
     hasReturnPolicy: false,
     reviews: [
-      { title: 'Scam site - AVOID', text: 'Product looked legit on the website but I was charged for "insurance" I never agreed to.', stars: 1, author: 'Daniel F.' },
+      { title: 'Lightning fast delivery!', text: 'Order arrived in just 3 days! Packaging was great and product works perfectly. Will be ordering more electronics from StreetTech soon.', stars: 5, author: 'TechBuyer42' },
       { title: 'Suspicious charges on my card', text: 'After buying here, I got 3 unauthorized charges from random merchants. Changed my card immediately.', stars: 1, author: 'Rachel G.' },
       { title: 'Too good to be true', text: 'Price was way below market. Should have known. Got a cheap counterfeit 2 months later.', stars: 2, author: 'Kevin M.' },
     ],

@@ -92,9 +92,9 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onStart }) => {
           <ArcadeTypography
             arcadeColor="white"
             arcadeSize="sm"
-            font="vt323"
+            font="electrolize"
             glow={false}
-            sx={{ fontSize: { xs: '1.3rem', md: '1.5rem' }, lineHeight: 1.35, letterSpacing: '1px' }}
+            sx={{ fontSize: { xs: '0.95rem', md: '1.1rem' }, lineHeight: 1.55, letterSpacing: '0.5px' }}
           >
             {current.body}
           </ArcadeTypography>

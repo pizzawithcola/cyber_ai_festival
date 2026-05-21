@@ -80,9 +80,9 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children }) => {
           <ArcadeTypography
             arcadeColor="white"
             arcadeSize="sm"
-            font="vt323"
+            font="electrolize"
             glow={false}
-            sx={{ display: 'block', fontSize: '1.35rem', lineHeight: 1.3, letterSpacing: '0.5px', mb: 2.5 }}
+            sx={{ display: 'block', fontSize: '0.95rem', lineHeight: 1.55, letterSpacing: '0.3px', mb: 2.5 }}
           >
             {currentHint.body}
           </ArcadeTypography>
@@ -105,9 +105,9 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children }) => {
               <ArcadeTypography
                 arcadeColor="white"
                 arcadeSize="sm"
-                font="vt323"
+                font="electrolize"
                 glow={false}
-                sx={{ display: 'block', fontSize: '1.25rem', lineHeight: 1.3 }}
+                sx={{ display: 'block', fontSize: '0.9rem', lineHeight: 1.5 }}
               >
                 {currentHint.nextStep}
               </ArcadeTypography>
