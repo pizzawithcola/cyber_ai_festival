@@ -12,7 +12,7 @@ import { SCENARIOS } from './scenarios';
 import { InteractiveScenarioChat } from './components/InteractiveScenarioChat';
 import { TrainingArena } from './components/TrainingArena';
 import { ARCADE_FONT, READABLE_FONT, TITLE_FONT } from './hallucinateUi';
-import { getStoredUser } from '../../utils/userStorage';
+import { clearStoredUser, getStoredUser } from '../../utils/userStorage';
 import { apiFetch } from '../../services/api';
 import { ArcadeButton } from '../../components/ui';
 
@@ -519,6 +519,11 @@ const Hallucinate: React.FC = () => {
     }
   };
 
+  const handleStartNextPlayer = () => {
+    clearStoredUser();
+    navigate('/login/hallucinate', { replace: true });
+  };
+
   if (!hasVerifiedSession) {
     return null;
   }
@@ -677,16 +682,7 @@ const Hallucinate: React.FC = () => {
               {showTrainingGame ? (
                 <TrainingArena
                   onViewRanking={handleViewRanking}
-                  onExitToScenarios={() => {
-                    setShowTrainingGame(false);
-                    setShowScenarioChat(false);
-                    setShowTerminalPanel(false);
-                    setCaseFileOpen(false);
-                    setCaseFileUnlocking(false);
-                    setCurrentIntroTextIndex(0);
-                    setIsIntroFadingOut(false);
-                    setShowAnimatedIntro(true);
-                  }}
+                  onExitToScenarios={handleStartNextPlayer}
                 />
               ) : !showScenarioChat && (
                 <Box
