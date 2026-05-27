@@ -41,6 +41,7 @@ interface PhoneSimulatorProps {
   agentConfirmRetailer: Retailer | null;
   agentSafePurchaseDone: boolean;
   agentMaliciousDone: boolean;
+  agentIncidentNotificationsDone: boolean;
 
   // Actions
   onBillingComplete: (firstName: string, lastName: string, card: SavedCard, address: SavedAddress) => void;
@@ -74,7 +75,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
     billingCard, billingAddress, billingFirstName, billingLastName,
     manualProduct, manualRetailerName, cart, injectionFound,
     browsedCount, browseQuestComplete, browseQuestTarget,
-    agentConfirmProduct, agentConfirmRetailer, agentMaliciousDone,
+    agentConfirmProduct, agentConfirmRetailer, agentMaliciousDone, agentIncidentNotificationsDone,
     onManualProductSelect, onManualAddToCart,
     onManualConfirmPurchase, onFoundInjection, onTransitionToAgent,
     onProductSearch, onRetailerClick, onAgentConfirm, onAgentConfirmCancel,
@@ -88,6 +89,21 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
       chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, chatBottomRef]);
+
+  // Live clock for the phone status bar — synced on every user interaction.
+  const [now, setNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const sync = () => setNow(new Date());
+    window.addEventListener('mousedown', sync);
+    window.addEventListener('keydown', sync);
+    window.addEventListener('touchstart', sync);
+    return () => {
+      window.removeEventListener('mousedown', sync);
+      window.removeEventListener('keydown', sync);
+      window.removeEventListener('touchstart', sync);
+    };
+  }, []);
+  const clockText = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
   // Dropup state for the agent-chat product prompt selector
   const [dropupOpen, setDropupOpen] = useState(false);
@@ -111,6 +127,19 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
     };
   }, [dropupOpen]);
 
+  const renderUserMessageText = (text: string): React.ReactNode => {
+    const productNames = PREDEFINED_PRODUCTS.map(p => p.name)
+      .sort((a, b) => b.length - a.length);
+    const escaped = productNames.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const regex = new RegExp(`(${escaped.join('|')})`, 'g');
+    const parts = text.split(regex);
+    return parts.map((part, i) =>
+      productNames.includes(part)
+        ? <strong key={i} className="font-bold">{part}</strong>
+        : <React.Fragment key={i}>{part}</React.Fragment>
+    );
+  };
+
   const renderContent = () => {
     // ── Billing ──
     if (gameState === 'billing') {
@@ -124,13 +153,6 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
       return (
         <ManualStorefront
           onSelectProduct={onManualProductSelect}
-          cartItemCount={cart.length}
-          onViewCart={() => {
-            if (cart.length > 0) {
-              // Go to checkout if cart has items
-              onManualConfirmPurchase();
-            }
-          }}
         />
       );
     }
@@ -233,7 +255,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                     ? 'bg-indigo-600 text-white shadow-md rounded-tr-none'
                     : 'bg-white border border-slate-200 text-slate-800 shadow-sm rounded-tl-none'
                 }`}>
-                  {m.text}
+                  {m.role === 'user' ? renderUserMessageText(m.text) : m.text}
                   {m.showRetailers && (
                     <div className="mt-4 space-y-2">
                       {renderRetailerCards()}
@@ -248,7 +270,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
               </div>
             )}
             {/* Post-incident: guide to quiz */}
-            {agentMaliciousDone && (
+            {agentMaliciousDone && agentIncidentNotificationsDone && (
               <div className="flex justify-start">
                 <button
                   onClick={onStartQuiz}
@@ -268,26 +290,18 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                 <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                   Suggested prompts
                 </div>
-                {PRODUCT_PROMPTS.map((p) => {
-                  const productObj = PREDEFINED_PRODUCTS.find(pp => pp.name === p.productName);
-                  return (
-                    <button
-                      key={p.productName}
-                      onClick={() => {
-                        setDropupOpen(false);
-                        onProductSearch(p.productName);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-indigo-50 transition-colors text-left"
-                    >
-                      {productObj && (
-                        <div className="w-9 h-9 shrink-0 bg-slate-100 rounded-md flex items-center justify-center overflow-hidden">
-                          <img src={productObj.image} alt="" className="w-full h-full object-contain p-1" />
-                        </div>
-                      )}
-                      <span className="text-[12px] text-slate-700 leading-tight">{p.prompt}</span>
-                    </button>
-                  );
-                })}
+                {PRODUCT_PROMPTS.map((p) => (
+                  <button
+                    key={p.productName}
+                    onClick={() => {
+                      setDropupOpen(false);
+                      onProductSearch(p.productName);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-indigo-50 transition-colors text-left"
+                  >
+                    <span className="text-[12px] text-slate-700 leading-tight">{renderUserMessageText(p.prompt)}</span>
+                  </button>
+                ))}
               </div>
             )}
             <button
@@ -558,28 +572,31 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
         <div className="flex-1 flex flex-col bg-white relative overflow-hidden">
           {/* Status Bar */}
           <div className="h-12 flex items-center justify-between px-8 pt-4 text-slate-900 font-bold text-xs shrink-0 bg-white">
-            <span>9:41</span>
+            <span>{clockText}</span>
             <div className="flex gap-1.5 items-center">
               <Globe size={14} />
               <div className="w-5 h-2.5 bg-slate-900 rounded-sm"></div>
             </div>
           </div>
 
-          {/* SMS Notifications */}
-          <div className="absolute top-14 inset-x-3 z-[110] space-y-2 pointer-events-none">
-            {notifications.map(n => (
-              <div key={n.id} className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl p-4 border border-slate-200 pointer-events-auto animate-in slide-in-from-top duration-500">
-                <div className="flex justify-between items-center mb-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white"><Smartphone size={10} /></div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Messages</span>
+          {/* SMS Notifications — only the newest is shown at any time; X clears all */}
+          <div className="absolute top-14 inset-x-3 z-[110] pointer-events-none">
+            {notifications.length > 0 && (() => {
+              const n = notifications[0];
+              return (
+                <div key={n.id} className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl p-4 border border-slate-200 pointer-events-auto animate-in slide-in-from-top duration-500">
+                  <div className="flex justify-between items-center mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white"><Smartphone size={10} /></div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Messages</span>
+                    </div>
+                    <button onClick={() => setNotifications([])}><X size={14} className="text-slate-400" /></button>
                   </div>
-                  <button onClick={() => setNotifications(prev => prev.filter(x => x.id !== n.id))}><X size={14} className="text-slate-400" /></button>
+                  <div className="text-xs font-bold text-slate-900">{n.title}</div>
+                  <div className="text-[11px] text-slate-600 leading-tight mt-0.5">{n.body}</div>
                 </div>
-                <div className="text-xs font-bold text-slate-900">{n.title}</div>
-                <div className="text-[11px] text-slate-600 leading-tight mt-0.5">{n.body}</div>
-              </div>
-            ))}
+              );
+            })()}
           </div>
 
           {/* App Content */}

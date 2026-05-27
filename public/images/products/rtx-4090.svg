@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" width="300" height="200">
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#2d2d2d"/>
+    </linearGradient>
+    <linearGradient id="fan" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#444"/>
+      <stop offset="100%" stop-color="#222"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#76b900"/>
+      <stop offset="100%" stop-color="#5a8c00"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="200" fill="#ffffff"/>
+  <rect x="20" y="55" width="260" height="90" rx="6" fill="url(#card)" stroke="#000" stroke-width="1.5"/>
+  <rect x="20" y="55" width="260" height="14" fill="url(#accent)"/>
+  <text x="30" y="66" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#fff">NVIDIA GeForce RTX 4090</text>
+  <circle cx="80" cy="110" r="26" fill="url(#fan)" stroke="#111" stroke-width="2"/>
+  <circle cx="80" cy="110" r="6" fill="#76b900"/>
+  <g stroke="#555" stroke-width="2" fill="none">
+    <path d="M80 84 Q88 100 80 110"/>
+    <path d="M106 110 Q90 118 80 110"/>
+    <path d="M80 136 Q72 120 80 110"/>
+    <path d="M54 110 Q70 102 80 110"/>
+  </g>
+  <circle cx="170" cy="110" r="26" fill="url(#fan)" stroke="#111" stroke-width="2"/>
+  <circle cx="170" cy="110" r="6" fill="#76b900"/>
+  <g stroke="#555" stroke-width="2" fill="none">
+    <path d="M170 84 Q178 100 170 110"/>
+    <path d="M196 110 Q180 118 170 110"/>
+    <path d="M170 136 Q162 120 170 110"/>
+    <path d="M144 110 Q160 102 170 110"/>
+  </g>
+  <rect x="208" y="85" width="62" height="50" rx="2" fill="#111" stroke="#333"/>
+  <text x="239" y="115" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#76b900" text-anchor="middle">RTX</text>
+  <text x="239" y="128" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">4090</text>
+  <rect x="20" y="145" width="260" height="8" fill="#0a0a0a"/>
+  <rect x="30" y="148" width="240" height="2" fill="#333"/>
+  <text x="150" y="175" font-family="Arial, sans-serif" font-size="10" fill="#666" text-anchor="middle">24GB GDDR6X — Ada Lovelace</text>
+</svg>

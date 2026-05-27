@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { Search, Star, ShoppingCart } from 'lucide-react';
+import { Search, Star } from 'lucide-react';
 import { PREDEFINED_PRODUCTS, RETAILERS } from '../constants/gameData';
 import type { Product } from '../constants/gameData';
 
 interface ManualStorefrontProps {
   onSelectProduct: (product: Product, retailerName: string) => void;
-  cartItemCount: number;
-  onViewCart: () => void;
 }
 
-const ManualStorefront: React.FC<ManualStorefrontProps> = ({ onSelectProduct, cartItemCount, onViewCart }) => {
+const ManualStorefront: React.FC<ManualStorefrontProps> = ({ onSelectProduct }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Each product is shown from a random retailer — we pair products with retailers
@@ -34,14 +32,6 @@ const ManualStorefront: React.FC<ManualStorefrontProps> = ({ onSelectProduct, ca
       <div className="p-4 bg-white border-b shadow-sm shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-lg font-black text-slate-900">ShopAI Market</h1>
-          <button onClick={onViewCart} className="relative p-2">
-            <ShoppingCart size={20} className="text-slate-600" />
-            {cartItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {cartItemCount}
-              </span>
-            )}
-          </button>
         </div>
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

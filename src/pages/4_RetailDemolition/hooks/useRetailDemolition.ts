@@ -101,6 +101,7 @@ export const useRetailDemolition = () => {
   const [hasBeenPromptedForManual, setHasBeenPromptedForManual] = useState(false);
   const [agentSafePurchaseDone, setAgentSafePurchaseDone] = useState(false);
   const [agentMaliciousDone, setAgentMaliciousDone] = useState(false);
+  const [agentIncidentNotificationsDone, setAgentIncidentNotificationsDone] = useState(false);
   const [agentConfirmStartTime, setAgentConfirmStartTime] = useState(0);
   const [explorationMaliciousFree, setExplorationMaliciousFree] = useState(false);
 
@@ -368,6 +369,7 @@ export const useRetailDemolition = () => {
           role: 'bot',
           text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to a prompt injection attack hidden in the website. Check the hint panel for next steps.",
         }]);
+        setAgentIncidentNotificationsDone(true);
       }, 7000);
     } else {
       const actualPrice = site.prices[selectedProduct] || '$0';
@@ -485,6 +487,7 @@ export const useRetailDemolition = () => {
     agentConfirmRetailer,
     agentSafePurchaseDone,
     agentMaliciousDone,
+    agentIncidentNotificationsDone,
 
     // Refs
     chatBottomRef,

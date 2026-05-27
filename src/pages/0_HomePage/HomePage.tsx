@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArcadeTypography, LightSign } from '../../components/ui';
 import { BrainCircuit, ScanEye, Store, Fish } from 'lucide-react';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
+import pkg from '../../../package.json';
 
 interface HomePageProps {
   toggleColorMode: () => void;
@@ -435,7 +436,7 @@ const HomePage: React.FC<HomePageProps> = () => {
             letterSpacing: '2px',
           }}
         >
-          © 2025 MENAT AI • ALL RIGHTS RESERVED
+          © 2025 MENAT AI • ALL RIGHTS RESERVED • v{pkg.version}
         </ArcadeTypography>
       </Box>
     </Box>

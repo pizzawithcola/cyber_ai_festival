@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 
-const QuizComponent = ({ onAnswer, quizAnswers, onFinished }) => {
+interface QuizComponentProps {
+  onAnswer: (id: string) => void;
+  quizAnswers: string[];
+  onFinished: () => void;
+}
+
+const QuizComponent = ({ onAnswer, quizAnswers, onFinished }: QuizComponentProps) => {
   const options = [
     { id: 'user', text: "The Consumer (You)", desc: "Users should be cautious about where they send agents" },
     { id: 'attacker', text: "The Malicious Site", desc: "The site owner committed fraud with injected commands" },
@@ -10,9 +16,9 @@ const QuizComponent = ({ onAnswer, quizAnswers, onFinished }) => {
     { id: 'all', text: "All of the Above", desc: "Security is a shared responsibility across all parties" }
   ];
 
-  const [selectedOptionId, setSelectedOptionId] = useState(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
 
-  const feedback = {
+  const feedback: Record<string, string> = {
     user: "End users should be careful, but they cannot fully defend against complex supply-chain and prompt injection attacks on their own. Focusing only on the consumer misses the shared responsibility between attackers, developers, and platforms.",
     attacker: "The malicious site is directly responsible for carrying out the fraud, but strong system and platform defenses are also needed to prevent these attacks from succeeding.",
     developer: "Developers do share responsibility for building safer agents and guardrails, but they are not the only party involved. Attackers and platforms also play key roles.",
