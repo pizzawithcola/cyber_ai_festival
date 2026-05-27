@@ -142,7 +142,7 @@ export function ChapterComplete({
               }}
               disabled={!onStartFromBeginning || isNavigatingToRanking}
             >
-              Start From Beginning
+              Next Player Login
             </ArcadeButton>
             <ArcadeButton
               color="magenta"

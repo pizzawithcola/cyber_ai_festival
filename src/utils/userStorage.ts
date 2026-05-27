@@ -26,6 +26,14 @@ export function getStoredUser(): StoredUser | null {
   }
 }
 
+export function clearStoredUser(): void {
+  try {
+    sessionStorage.removeItem(USER_STORAGE_KEY);
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export function countryCodeToFlag(code: string): string {
   return code
     .toUpperCase()
