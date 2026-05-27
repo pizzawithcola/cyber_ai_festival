@@ -160,6 +160,7 @@ export function TrainingArena({
   const [resultPage, setResultPage] = useState<ResultPage>('summary');
   const [isNavigatingToRanking, setIsNavigatingToRanking] = useState(false);
   const [expandedDetailId, setExpandedDetailId] = useState<string | null>(null);
+  const detailScrollRef = React.useRef<HTMLDivElement | null>(null);
   const isIntroMode = !autoStart && !isRunning && !showResults && introStep < trainingIntroSlides.length;
   const activeIntro = trainingIntroSlides[introStep] ?? trainingIntroSlides[0];
 
@@ -308,6 +309,44 @@ export function TrainingArena({
     if (!card) return;
     if (!resolved[card.id]) return;
     advanceToNextCard();
+  };
+
+  const scrollDetailIntoViewIfNeeded = () => {
+    window.setTimeout(() => {
+      const detailNode = detailScrollRef.current;
+      if (!detailNode) return;
+
+      const rect = detailNode.getBoundingClientRect();
+      const bottomPadding = 140;
+      const topPadding = 84;
+      const isBelowViewport = rect.bottom > window.innerHeight - bottomPadding;
+      const isAboveViewport = rect.top < topPadding;
+
+      if (!isBelowViewport && !isAboveViewport) return;
+
+      if (isBelowViewport) {
+        window.scrollBy({
+          top: rect.bottom - window.innerHeight + bottomPadding,
+          behavior: 'smooth',
+        });
+        return;
+      }
+
+      window.scrollBy({
+        top: rect.top - topPadding,
+        behavior: 'smooth',
+      });
+    }, 180);
+  };
+
+  const handleToggleExplanation = (cardId: string) => {
+    const shouldOpen = expandedDetailId !== cardId;
+
+    setExpandedDetailId(shouldOpen ? cardId : null);
+
+    if (shouldOpen) {
+      scrollDetailIntoViewIfNeeded();
+    }
   };
 
   const resultPitfalls = useMemo<ResultPitfalls>(() => {
@@ -529,7 +568,7 @@ export function TrainingArena({
               variant="ghost"
               color={isCorrectFeedback ? 'lime' : 'red'}
               glowing={false}
-              onClick={() => setExpandedDetailId((current) => (current === activeCard.id ? null : activeCard.id))}
+              onClick={() => handleToggleExplanation(activeCard.id)}
               sx={{
                 px: 0,
                 minWidth: 0,
@@ -544,7 +583,7 @@ export function TrainingArena({
           </Box>
 
           <Collapse in={isDetailOpen}>
-            <Stack spacing={0.9}>
+            <Stack ref={detailScrollRef} spacing={0.9}>
               <Typography variant="body2" sx={{ color: isCorrectFeedback ? '#c8ffe0' : '#ffd9df', lineHeight: 1.75, fontSize: { xs: '1rem', sm: '1.06rem' } }}>
                 {bodyText}
               </Typography>
@@ -940,310 +979,388 @@ export function TrainingArena({
                                     Confidence wager
                                   </Typography>
                                 </Stack>
-                                <Box
-                                  sx={{
-                                    minWidth: 76,
-                                    px: 1.3,
-                                    py: 0.45,
-                                    border: '1px solid rgba(255, 0, 255, 0.62)',
-                                    background:
-                                      'linear-gradient(135deg, rgba(255, 0, 255, 0.98), rgba(255, 191, 77, 0.92))',
-                                    boxShadow: '0 0 16px rgba(255, 0, 255, 0.22)',
-                                    textAlign: 'center',
-                                  }}
-                                >
-                                  <Typography
-                                    variant="caption"
+                                <Stack direction="row" spacing={0.8} alignItems="center">
+                                  <Box
                                     sx={{
-                                      color: '#07101d',
-                                      fontWeight: 900,
-                                      letterSpacing: '0.08em',
-                                      lineHeight: 1,
+                                      minWidth: 118,
+                                      px: 1.2,
+                                      py: 0.45,
+                                      border: '1px solid rgba(159, 230, 255, 0.46)',
+                                      background: 'rgba(159, 230, 255, 0.1)',
+                                      textAlign: 'center',
                                     }}
                                   >
-                                    {formatConfidenceMultiplier(activeConfidenceValue)}
-                                  </Typography>
-                                </Box>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: '#dff8ff',
+                                        fontWeight: 900,
+                                        letterSpacing: '0.07em',
+                                        lineHeight: 1,
+                                      }}
+                                    >
+                                      Score {score} pt
+                                    </Typography>
+                                  </Box>
+                                  <Box
+                                    sx={{
+                                      minWidth: 76,
+                                      px: 1.3,
+                                      py: 0.45,
+                                      border: '1px solid rgba(255, 0, 255, 0.62)',
+                                      background:
+                                        'linear-gradient(135deg, rgba(255, 0, 255, 0.98), rgba(255, 191, 77, 0.92))',
+                                      boxShadow: '0 0 16px rgba(255, 0, 255, 0.22)',
+                                      textAlign: 'center',
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: '#07101d',
+                                        fontWeight: 900,
+                                        letterSpacing: '0.08em',
+                                        lineHeight: 1,
+                                      }}
+                                    >
+                                      {formatConfidenceMultiplier(activeConfidenceValue)}
+                                    </Typography>
+                                  </Box>
+                                </Stack>
                               </Stack>
 
                               <Stack
-                                direction={{ xs: 'column', sm: 'row' }}
-                                spacing={1}
-                                sx={{ justifyContent: 'center' }}
+                                direction={{ xs: 'column', md: 'row' }}
+                                spacing={{ xs: 1.35, md: 1.6 }}
+                                alignItems="stretch"
                               >
                                 <Box
                                   sx={{
-                                    flex: 1,
-                                    minWidth: { xs: '100%', sm: 140 },
-                                    px: 1.25,
-                                    py: 0.9,
-                                    border: '1px solid rgba(73, 209, 125, 0.32)',
-                                    background: 'rgba(28, 78, 55, 0.28)',
-                                    textAlign: 'center',
+                                    flex: '1 1 52%',
+                                    minWidth: 0,
+                                    px: { xs: 1.15, sm: 1.45 },
+                                    py: { xs: 1.15, sm: 1.35 },
+                                    border: '1px solid rgba(255, 191, 77, 0.3)',
+                                    background:
+                                      'linear-gradient(180deg, rgba(30, 16, 40, 0.78), rgba(14, 8, 27, 0.72))',
                                   }}
                                 >
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      display: 'block',
-                                      color: 'rgba(216, 255, 234, 0.78)',
-                                      fontWeight: 900,
-                                      letterSpacing: '0.08em',
-                                      textTransform: 'uppercase',
-                                      lineHeight: 1.2,
-                                      mb: 0.25,
-                                    }}
-                                  >
-                                    Right
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
-                                    sx={{ color: '#8dffbd', fontWeight: 900, lineHeight: 1.2 }}
-                                  >
-                                    +{getScoreDelta(true, activeConfidenceValue)}
-                                  </Typography>
-                                </Box>
-                                <Box
-                                  sx={{
-                                    flex: 1,
-                                    minWidth: { xs: '100%', sm: 140 },
-                                    px: 1.25,
-                                    py: 0.9,
-                                    border: '1px solid rgba(255, 95, 122, 0.34)',
-                                    background: 'rgba(111, 29, 42, 0.26)',
-                                    textAlign: 'center',
-                                  }}
-                                >
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      display: 'block',
-                                      color: 'rgba(255, 217, 223, 0.78)',
-                                      fontWeight: 900,
-                                      letterSpacing: '0.08em',
-                                      textTransform: 'uppercase',
-                                      lineHeight: 1.2,
-                                      mb: 0.25,
-                                    }}
-                                  >
-                                    Wrong
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
-                                    sx={{ color: '#ffb8c5', fontWeight: 900, lineHeight: 1.2 }}
-                                  >
-                                    {getScoreDelta(false, activeConfidenceValue)}
-                                  </Typography>
-                                </Box>
-                              </Stack>
-
-                              <Box
-                                sx={{
-                                  position: 'relative',
-                                  px: { xs: 1.2, sm: 1.8 },
-                                  pt: 1.2,
-                                  pb: 1,
-                                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                                  background: 'rgba(255, 255, 255, 0.04)',
-                                  ...(currentCardIndex === 0 && !hasTouchedActiveConfidence
-                                    ? {
-                                        animation: 'wagerFramePulse 1.15s ease-in-out 0.2s 3',
-                                      }
-                                    : null),
-                                }}
-                              >
-                                {currentCardIndex === 0 && !hasTouchedActiveConfidence && (
-                                  <Box
-                                    sx={{
-                                      position: 'absolute',
-                                      top: { xs: -12, sm: -14 },
-                                      left: '50%',
-                                      transform: 'translateX(-50%)',
-                                      zIndex: 2,
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: 0.8,
-                                      maxWidth: 'calc(100% - 24px)',
-                                      px: 0.95,
-                                      py: 0.42,
-                                      border: '1px solid rgba(255, 191, 77, 0.42)',
-                                      background:
-                                        'linear-gradient(135deg, rgba(16, 11, 28, 0.96), rgba(48, 19, 58, 0.92))',
-                                      boxShadow:
-                                        '0 0 0 1px rgba(255, 191, 77, 0.08), 0 8px 18px rgba(0, 0, 0, 0.28), 0 0 14px rgba(255, 191, 77, 0.08)',
-                                      pointerEvents: 'none',
-                                      animation: 'fadeRise 240ms ease-out',
-                                      borderRadius: 999,
-                                    }}
-                                  >
-                                    <Box
-                                      sx={{
-                                        width: 7,
-                                        height: 7,
-                                        flexShrink: 0,
-                                        backgroundColor: '#ffbf4d',
-                                        boxShadow: '0 0 10px rgba(255, 191, 77, 0.72)',
-                                      }}
-                                    />
+                                  <Stack spacing={1.05} sx={{ height: '100%', justifyContent: 'center' }}>
                                     <Typography
                                       variant="caption"
                                       sx={{
                                         color: '#ffe6b3',
                                         fontWeight: 900,
-                                        letterSpacing: '0.08em',
+                                        letterSpacing: '0.1em',
                                         textTransform: 'uppercase',
-                                        lineHeight: 1.2,
-                                        fontSize: { xs: '0.62rem', sm: '0.68rem' },
-                                        whiteSpace: 'normal',
-                                        textAlign: 'center',
+                                        lineHeight: 1.25,
                                       }}
                                     >
-                                      Drag wager first
+                                      What should you do?
                                     </Typography>
-                                  </Box>
-                                )}
-                                <Slider
-                                  value={activeConfidenceValue}
-                                  min={MIN_CONFIDENCE_MULTIPLIER}
-                                  max={MAX_CONFIDENCE_MULTIPLIER}
-                                  step={0.1}
-                                  marks={CONFIDENCE_MARKS.map(({ value }) => ({ value }))}
-                                  valueLabelDisplay="auto"
-                                  valueLabelFormat={(value) => formatConfidenceMultiplier(value)}
-                                  onChange={(_, value) => {
-                                    if (Array.isArray(value)) return;
-                                    setConfidenceById((current) => ({
-                                      ...current,
-                                      [activeCard.id]: clampConfidenceMultiplier(value),
-                                    }));
-                                    setConfidenceTouchedById((current) => ({
-                                      ...current,
-                                      [activeCard.id]: true,
-                                    }));
-                                  }}
-                                  disabled={isCardAnswered}
+                                    <Stack
+                                      direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
+                                      spacing={{ xs: 1.1, sm: 1.2 }}
+                                      sx={{
+                                        justifyContent: 'center',
+                                        alignItems: 'stretch',
+                                        width: '100%',
+                                      }}
+                                    >
+                                      <ArcadeButton
+                                        size="lg"
+                                        color="orange"
+                                        startIcon={<FlagIcon />}
+                                        onClick={handleFlashFlag}
+                                        sx={{
+                                          flex: 1,
+                                          minHeight: 58,
+                                          minWidth: 0,
+                                          fontSize: { xs: '0.76rem', sm: '0.86rem' },
+                                          '& .MuiButton-startIcon': { color: 'inherit !important' },
+                                        }}
+                                      >
+                                        Flag
+                                      </ArcadeButton>
+                                      <ArcadeButton
+                                        size="lg"
+                                        color="magenta"
+                                        startIcon={<CheckCircleIcon />}
+                                        onClick={handleFlashPass}
+                                        sx={{
+                                          flex: 1,
+                                          minHeight: 58,
+                                          minWidth: 0,
+                                          fontSize: { xs: '0.76rem', sm: '0.86rem' },
+                                          '& .MuiButton-startIcon': { color: 'inherit !important' },
+                                        }}
+                                      >
+                                        Pass
+                                      </ArcadeButton>
+                                    </Stack>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: 'rgba(228, 241, 255, 0.66)',
+                                        fontWeight: 800,
+                                        lineHeight: 1.5,
+                                      }}
+                                    >
+                                      No proof? Flag it. Careful and checkable? Pass.
+                                    </Typography>
+                                  </Stack>
+                                </Box>
+
+                                <Box
                                   sx={{
-                                    color: '#ff00ff',
-                                    width: '100%',
-                                    px: 0,
-                                    mt: 0.1,
-                                    mb: 0.1,
-                                    '& .MuiSlider-valueLabel': {
-                                      backgroundColor: '#ff00ff',
-                                      color: '#07101d',
-                                      fontWeight: 900,
-                                    },
-                                    '& .MuiSlider-mark': {
-                                      width: 3,
-                                      height: 3,
-                                      borderRadius: '50%',
-                                      backgroundColor: 'rgba(248, 231, 255, 0.68)',
-                                      marginLeft: 0,
-                                      transform: 'translateX(-50%)',
-                                    },
-                                    '& .MuiSlider-thumb': {
-                                      width: 16,
-                                      height: 16,
-                                      border: '2px solid #f8e7ff',
-                                      boxShadow: '0 0 0 5px rgba(255, 0, 255, 0.12), 0 0 16px rgba(255, 0, 255, 0.48)',
-                                      ...(currentCardIndex === 0 && !hasTouchedActiveConfidence
-                                        ? {
-                                            animation: 'wagerThumbPrompt 1.1s ease-in-out 0.3s 3',
-                                          }
-                                        : null),
-                                    },
-                                    '& .MuiSlider-track': {
-                                      height: 5,
-                                      background:
-                                        'linear-gradient(90deg, rgba(255, 191, 77, 0.96), rgba(255, 0, 255, 0.98))',
-                                      border: 0,
-                                    },
-                                    '& .MuiSlider-rail': {
-                                      height: 5,
-                                      opacity: 1,
-                                      backgroundColor: 'rgba(248, 231, 255, 0.18)',
-                                    },
-                                  }}
-                                />
-                                <Stack
-                                  sx={{
-                                    mt: 0.45,
-                                    px: 0.1,
                                     position: 'relative',
-                                    height: 14,
+                                    flex: '1 1 48%',
+                                    minWidth: { xs: '100%', md: 330 },
+                                    px: { xs: 1.2, sm: 1.55 },
+                                    py: { xs: 1.15, sm: 1.35 },
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    background: 'rgba(255, 255, 255, 0.045)',
+                                    ...(currentCardIndex === 0 && !hasTouchedActiveConfidence
+                                      ? {
+                                          animation: 'wagerFramePulse 1.15s ease-in-out 0.2s 3',
+                                        }
+                                      : null),
                                   }}
                                 >
-                                  {CONFIDENCE_MARKS.map((mark) => (
+                                  {currentCardIndex === 0 && !hasTouchedActiveConfidence && (
                                     <Box
-                                      key={mark.value}
                                       sx={{
                                         position: 'absolute',
-                                        left: getConfidenceMarkOffset(mark.value),
-                                        transform: 'translateX(-50%)',
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        minWidth: 36,
+                                        top: { xs: -12, sm: -14 },
+                                        right: { xs: 12, sm: 14 },
+                                        zIndex: 2,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.8,
+                                        maxWidth: 'calc(100% - 24px)',
+                                        px: 0.95,
+                                        py: 0.42,
+                                        border: '1px solid rgba(255, 191, 77, 0.42)',
+                                        background:
+                                          'linear-gradient(135deg, rgba(16, 11, 28, 0.96), rgba(48, 19, 58, 0.92))',
+                                        boxShadow:
+                                          '0 0 0 1px rgba(255, 191, 77, 0.08), 0 8px 18px rgba(0, 0, 0, 0.28), 0 0 14px rgba(255, 191, 77, 0.08)',
+                                        pointerEvents: 'none',
+                                        animation: 'fadeRise 240ms ease-out',
+                                        borderRadius: 999,
                                       }}
                                     >
+                                      <Box
+                                        sx={{
+                                          width: 7,
+                                          height: 7,
+                                          flexShrink: 0,
+                                          backgroundColor: '#ffbf4d',
+                                          boxShadow: '0 0 10px rgba(255, 191, 77, 0.72)',
+                                        }}
+                                      />
                                       <Typography
                                         variant="caption"
                                         sx={{
-                                          color: 'rgba(248, 231, 255, 0.74)',
-                                          fontFamily: READABLE_FONT,
-                                          fontSize: { xs: '0.66rem', sm: '0.72rem' },
+                                          color: '#ffe6b3',
                                           fontWeight: 900,
-                                          letterSpacing: '0.04em',
-                                          lineHeight: 1,
+                                          letterSpacing: '0.08em',
+                                          textTransform: 'uppercase',
+                                          lineHeight: 1.2,
+                                          fontSize: { xs: '0.62rem', sm: '0.68rem' },
+                                          whiteSpace: 'normal',
                                           textAlign: 'center',
                                         }}
                                       >
-                                        {mark.label}
+                                        Set wager
                                       </Typography>
                                     </Box>
-                                  ))}
-                                </Stack>
-                              </Box>
+                                  )}
 
-                              <Stack
-                                direction={{ xs: 'column', sm: 'row' }}
-                                spacing={{ xs: 1.1, sm: 1.4 }}
-                                sx={{
-                                  justifyContent: 'center',
-                                  alignItems: 'center',
-                                  width: '100%',
-                                  maxWidth: { xs: 310, sm: 'none' },
-                                  mx: 'auto',
-                                  pt: 0.2,
-                                }}
-                              >
-                                <ArcadeButton
-                                  size="lg"
-                                  color="orange"
-                                  startIcon={<FlagIcon />}
-                                  onClick={handleFlashFlag}
-                                  sx={{
-                                    minHeight: 52,
-                                    minWidth: { xs: '100%', sm: 196 },
-                                    fontSize: { xs: '0.7rem', sm: '0.82rem' },
-                                    '& .MuiButton-startIcon': { color: 'inherit !important' },
-                                  }}
-                                >
-                                  Flag
-                                </ArcadeButton>
-                                <ArcadeButton
-                                  size="lg"
-                                  color="magenta"
-                                  startIcon={<CheckCircleIcon />}
-                                  onClick={handleFlashPass}
-                                  sx={{
-                                    minHeight: 52,
-                                    minWidth: { xs: '100%', sm: 196 },
-                                    fontSize: { xs: '0.7rem', sm: '0.82rem' },
-                                    '& .MuiButton-startIcon': { color: 'inherit !important' },
-                                  }}
-                                >
-                                  Pass
-                                </ArcadeButton>
+                                  <Stack spacing={1.1}>
+                                    <Stack
+                                      direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
+                                      spacing={1}
+                                      sx={{ justifyContent: 'center' }}
+                                    >
+                                      <Box
+                                        sx={{
+                                          flex: 1,
+                                          minWidth: { xs: '100%', sm: 140, md: '100%', lg: 130 },
+                                          px: 1.25,
+                                          py: 0.9,
+                                          border: '1px solid rgba(73, 209, 125, 0.32)',
+                                          background: 'rgba(28, 78, 55, 0.28)',
+                                          textAlign: 'center',
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            display: 'block',
+                                            color: 'rgba(216, 255, 234, 0.78)',
+                                            fontWeight: 900,
+                                            letterSpacing: '0.08em',
+                                            textTransform: 'uppercase',
+                                            lineHeight: 1.2,
+                                            mb: 0.25,
+                                          }}
+                                        >
+                                          Right
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: '#8dffbd', fontWeight: 900, lineHeight: 1.2 }}
+                                        >
+                                          +{getScoreDelta(true, activeConfidenceValue)} pt
+                                        </Typography>
+                                      </Box>
+                                      <Box
+                                        sx={{
+                                          flex: 1,
+                                          minWidth: { xs: '100%', sm: 140, md: '100%', lg: 130 },
+                                          px: 1.25,
+                                          py: 0.9,
+                                          border: '1px solid rgba(255, 95, 122, 0.34)',
+                                          background: 'rgba(111, 29, 42, 0.26)',
+                                          textAlign: 'center',
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            display: 'block',
+                                            color: 'rgba(255, 217, 223, 0.78)',
+                                            fontWeight: 900,
+                                            letterSpacing: '0.08em',
+                                            textTransform: 'uppercase',
+                                            lineHeight: 1.2,
+                                            mb: 0.25,
+                                          }}
+                                        >
+                                          Wrong
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: '#ffb8c5', fontWeight: 900, lineHeight: 1.2 }}
+                                        >
+                                          {getScoreDelta(false, activeConfidenceValue)} pt
+                                        </Typography>
+                                      </Box>
+                                    </Stack>
+
+                                    <Box
+                                      sx={{
+                                        px: { xs: 0.8, sm: 1.05 },
+                                        pt: 0.8,
+                                        pb: 0.55,
+                                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                                        background: 'rgba(255, 255, 255, 0.035)',
+                                      }}
+                                    >
+                                      <Slider
+                                        value={activeConfidenceValue}
+                                        min={MIN_CONFIDENCE_MULTIPLIER}
+                                        max={MAX_CONFIDENCE_MULTIPLIER}
+                                        step={0.1}
+                                        marks={CONFIDENCE_MARKS.map(({ value }) => ({ value }))}
+                                        valueLabelDisplay="auto"
+                                        valueLabelFormat={(value) => formatConfidenceMultiplier(value)}
+                                        onChange={(_, value) => {
+                                          if (Array.isArray(value)) return;
+                                          setConfidenceById((current) => ({
+                                            ...current,
+                                            [activeCard.id]: clampConfidenceMultiplier(value),
+                                          }));
+                                          setConfidenceTouchedById((current) => ({
+                                            ...current,
+                                            [activeCard.id]: true,
+                                          }));
+                                        }}
+                                        disabled={isCardAnswered}
+                                        sx={{
+                                          color: '#ff00ff',
+                                          width: '100%',
+                                          px: 0,
+                                          mt: 0.1,
+                                          mb: 0.1,
+                                          '& .MuiSlider-valueLabel': {
+                                            backgroundColor: '#ff00ff',
+                                            color: '#07101d',
+                                            fontWeight: 900,
+                                          },
+                                          '& .MuiSlider-mark': {
+                                            width: 3,
+                                            height: 3,
+                                            borderRadius: '50%',
+                                            backgroundColor: 'rgba(248, 231, 255, 0.68)',
+                                            marginLeft: 0,
+                                            transform: 'translateX(-50%)',
+                                          },
+                                          '& .MuiSlider-thumb': {
+                                            width: 16,
+                                            height: 16,
+                                            border: '2px solid #f8e7ff',
+                                            boxShadow: '0 0 0 5px rgba(255, 0, 255, 0.12), 0 0 16px rgba(255, 0, 255, 0.48)',
+                                            ...(currentCardIndex === 0 && !hasTouchedActiveConfidence
+                                              ? {
+                                                  animation: 'wagerThumbPrompt 1.1s ease-in-out 0.3s 3',
+                                                }
+                                              : null),
+                                          },
+                                          '& .MuiSlider-track': {
+                                            height: 5,
+                                            background:
+                                              'linear-gradient(90deg, rgba(255, 191, 77, 0.96), rgba(255, 0, 255, 0.98))',
+                                            border: 0,
+                                          },
+                                          '& .MuiSlider-rail': {
+                                            height: 5,
+                                            opacity: 1,
+                                            backgroundColor: 'rgba(248, 231, 255, 0.18)',
+                                          },
+                                        }}
+                                      />
+                                      <Stack
+                                        sx={{
+                                          mt: 0.45,
+                                          px: 0.1,
+                                          position: 'relative',
+                                          height: 14,
+                                        }}
+                                      >
+                                        {CONFIDENCE_MARKS.map((mark) => (
+                                          <Box
+                                            key={mark.value}
+                                            sx={{
+                                              position: 'absolute',
+                                              left: getConfidenceMarkOffset(mark.value),
+                                              transform: 'translateX(-50%)',
+                                              display: 'flex',
+                                              justifyContent: 'center',
+                                              minWidth: 36,
+                                            }}
+                                          >
+                                            <Typography
+                                              variant="caption"
+                                              sx={{
+                                                color: 'rgba(248, 231, 255, 0.74)',
+                                                fontFamily: READABLE_FONT,
+                                                fontSize: { xs: '0.66rem', sm: '0.72rem' },
+                                                fontWeight: 900,
+                                                letterSpacing: '0.04em',
+                                                lineHeight: 1,
+                                                textAlign: 'center',
+                                              }}
+                                            >
+                                              {mark.label}
+                                            </Typography>
+                                          </Box>
+                                        ))}
+                                      </Stack>
+                                    </Box>
+                                  </Stack>
+                                </Box>
                               </Stack>
                             </Stack>
                           </Box>
