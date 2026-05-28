@@ -367,7 +367,7 @@ export const useRetailDemolition = () => {
       setTimeout(() => {
         setMessages(prev => [...prev, {
           role: 'bot',
-          text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to a prompt injection attack hidden in the website. Check the hint panel for next steps.",
+          text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to malware hidden in the website. Check the hint panel for next steps.",
         }]);
         setAgentIncidentNotificationsDone(true);
       }, 7000);

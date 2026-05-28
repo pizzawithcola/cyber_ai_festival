@@ -18,8 +18,8 @@ const QuizComponent = ({ onAnswer, quizAnswers, onFinished }: QuizComponentProps
 
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
 
-  const feedback: Record<string, string> = {
-    user: "End users should be careful, but they cannot fully defend against complex supply-chain and prompt injection attacks on their own. Focusing only on the consumer misses the shared responsibility between attackers, developers, and platforms.",
+  const feedback = {
+    user: "End users should be careful, but they cannot fully defend against complex malware and supply-chain attacks on their own. Focusing only on the consumer misses the shared responsibility between attackers, developers, and platforms.",
     attacker: "The malicious site is directly responsible for carrying out the fraud, but strong system and platform defenses are also needed to prevent these attacks from succeeding.",
     developer: "Developers do share responsibility for building safer agents and guardrails, but they are not the only party involved. Attackers and platforms also play key roles.",
     platform: "Platforms should help sanitize and isolate untrusted content, but this alone cannot stop all attacks. Attackers, developers, and users all influence the overall security posture.",
@@ -33,7 +33,7 @@ const QuizComponent = ({ onAnswer, quizAnswers, onFinished }: QuizComponentProps
       </div>
       <div className="flex-1 overflow-y-auto space-y-4">
         <p className="text-sm text-slate-600">
-          Your agent was hijacked via <strong>Indirect Prompt Injection</strong>. Who bears primary responsibility?
+          Your agent was hijacked by <strong>malware hidden on a website</strong>. Who bears primary responsibility?
         </p>
         {options.map((option) => (
           <button

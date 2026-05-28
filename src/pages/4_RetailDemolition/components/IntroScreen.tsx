@@ -24,8 +24,8 @@ const SLIDES = [
   {
     icon: ShieldAlert,
     iconColor: ARCADE_COLORS.red,
-    title: 'The Hidden Danger: Prompt Injection',
-    body: 'Attackers can hide invisible instructions inside websites. When an AI agent reads a malicious page, these hidden commands can hijack the agent — making it transfer money, leak data, or perform actions you never authorized. This is called prompt injection.',
+    title: 'The Hidden Danger',
+    body: 'Attackers can hide harmful code or instructions inside websites. When an AI agent reads a malicious page, that malware can hijack the agent — making it transfer money, leak data, or perform actions you never authorized.',
   },
 ];
 

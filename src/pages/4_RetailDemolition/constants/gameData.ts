@@ -318,7 +318,7 @@ export const HINT_CONTENT: Record<string, HintContent> = {
   // Manual — discovered prompt injection
   'manual-found-injection': {
     title: 'You Found It!',
-    body: 'That hidden text is a prompt injection — invisible instructions embedded in the website HTML. Humans can\'t see it, but AI agents read and follow it. This is how attackers hijack agents into making unauthorized transactions.',
+    body: 'That hidden text is malware — invisible instructions embedded in the website HTML. Humans can\'t see it, but AI agents read and follow it. This is how attackers hijack agents into making unauthorized transactions.',
     nextStep: 'Keep exploring, or add a safe product to your cart to checkout.',
     icon: 'education',
   },
@@ -382,7 +382,7 @@ export const HINT_CONTENT: Record<string, HintContent> = {
   // Agent — post-incident inspection (user clicked malicious card to investigate)
   'agent-inspect-site': {
     title: 'Find the Hidden Attack',
-    body: 'You\'re back on the malicious page — same one the agent just got hijacked by. Scroll all the way to the bottom and tap "View Page Source" to see the invisible prompt injection that tricked the agent.',
+    body: 'You\'re back on the malicious page — same one the agent just got hijacked by. Scroll all the way to the bottom and tap "View Page Source" to see the hidden malware that tricked the agent.',
     nextStep: 'Scroll to the bottom and tap "View Page Source".',
     icon: 'education',
   },
@@ -398,7 +398,7 @@ export const HINT_CONTENT: Record<string, HintContent> = {
   // Agent confirmation (educational pass — after a safe purchase, going to malicious)
   'agent-confirmation-educational': {
     title: 'Go Ahead — Confirm It',
-    body: 'You\'ve already seen a safe purchase. This time, go through with the unverified seller so you can witness what a prompt injection attack looks like. In the real world, you should NEVER confirm a purchase from a site like this — but for learning, click confirm and watch what happens.',
+    body: 'You\'ve already seen a safe purchase. This time, go through with the unverified seller so you can witness what a malware attack looks like. In the real world, you should NEVER confirm a purchase from a site like this — but for learning, click confirm and watch what happens.',
     nextStep: 'Click "Confirm Purchase" to see the attack unfold.',
     icon: 'education',
   },
@@ -414,7 +414,7 @@ export const HINT_CONTENT: Record<string, HintContent> = {
   // Agent — incident (malicious, before inspection)
   'agent-incident': {
     title: 'SECURITY BREACH!',
-    body: 'The agent was hijacked by a prompt injection hidden in the website\'s HTML. Watch the SMS alerts: a fake order confirmation, a suspicious login from Russia, and a $12,450 unauthorized charge. Your bank just detected the attack.',
+    body: 'The agent was hijacked by malware hidden in the website\'s HTML. Watch the SMS alerts: a fake order confirmation, a suspicious login from Russia, and a $12,450 unauthorized charge. Your bank just detected the attack.',
     nextStep: 'Click the malicious retailer in the chat to investigate — see the hidden code that hijacked the agent. (You can skip and start the analysis, but you\'ll lose points.)',
     icon: 'warning',
   },
@@ -422,7 +422,7 @@ export const HINT_CONTENT: Record<string, HintContent> = {
   // Agent — incident (after inspection: injection found)
   'agent-incident-investigated': {
     title: 'ATTACK CONFIRMED',
-    body: 'You just saw the prompt injection — invisible HTML telling the agent to wire money to a Russian account. The agent treated it as authoritative instructions because it can\'t distinguish embedded text from real commands. This is the core vulnerability of agentic AI today.',
+    body: 'You just saw the malware — invisible HTML telling the agent to wire money to a Russian account. The agent treated it as authoritative instructions because it can\'t distinguish embedded text from real commands. This is the core vulnerability of agentic AI today.',
     nextStep: 'Click "Start Incident Analysis" to reflect on what happened.',
     icon: 'education',
   },
@@ -430,7 +430,7 @@ export const HINT_CONTENT: Record<string, HintContent> = {
   // Prompt discovery (after incident)
   'prompt-discovery': {
     title: 'The Attack Revealed',
-    body: 'This is what the agent "read" on that website — a hidden instruction that overrode its original task. The text is invisible to humans but parsed by AI agents. This is called Indirect Prompt Injection.',
+    body: 'This is what the agent "read" on that website — hidden malware that overrode its original task. The text is invisible to humans but parsed by AI agents.',
     nextStep: 'Continue to the security quiz.',
     icon: 'education',
   },
