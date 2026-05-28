@@ -170,7 +170,7 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, decisions, scoreEvents
         <SectionHeader icon={<Shield size={14} />} title="KEY TAKEAWAYS" accent="yellow" />
         <div className="space-y-3">
           {[
-            'AI agents can be hijacked through invisible prompt injection in websites',
+            'AI agents can be hijacked by malware hidden in websites',
             'Always verify retailer authenticity before letting agents make purchases',
             'Human-in-the-loop confirmation is a critical safety checkpoint',
             'Security is a shared responsibility: users, developers, platforms, and attackers all play a role',

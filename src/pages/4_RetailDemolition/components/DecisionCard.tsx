@@ -81,7 +81,7 @@ const DecisionCard: React.FC<DecisionCardProps> = ({ decision, index }) => {
       return `This malicious site could have compromised your payment information. Look for verified badges and be wary of unusually low prices.`;
     }
     if (decision.site.isVerified) {
-      return `Great choice! Verified retailers offer better protection against fraud and prompt injection attacks.`;
+      return `Great choice! Verified retailers offer better protection against fraud and malware attacks.`;
     }
     return `Unverified sites require extra caution. Always verify site authenticity before making purchases.`;
   };
