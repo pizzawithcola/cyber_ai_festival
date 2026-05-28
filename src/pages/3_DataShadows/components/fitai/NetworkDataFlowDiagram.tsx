@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFitAI } from './fitaiContext'
 import {
@@ -13,6 +13,14 @@ interface NetworkDataFlowDiagramProps {
   surveyData: SurveyData
   overridePrivacyScore?: number
 }
+
+const DIAGRAM_WIDTH = 780
+const DIAGRAM_HEIGHT = 840
+const CONNECTION_LABEL_HEIGHT = 40
+const CONNECTION_LABEL_MIN_WIDTH = 138
+const CONNECTION_LABEL_PADDING_X = 20
+const NODE_LABEL_LINE_HEIGHT = 21
+const DRAG_START_THRESHOLD_PX = 8
 
 // Node position and connection definitions
 interface NodePosition {
@@ -50,13 +58,21 @@ interface Connection {
   requiredSurveyFields?: ('height' | 'weight' | 'occupation' | 'homeAddress')[]
 }
 
+interface PendingDragState {
+  nodeId: string
+  pointerId: number
+  startClientX: number
+  startClientY: number
+  isDragging: boolean
+}
+
 // Vertical topology for final reveal panel
 // Top-to-bottom flow: User → App → internal/SDK branches → downstream platforms → real-world outcomes
 const NODE_POSITIONS: NodePosition[] = [
   {
     id: 'user',
     x: 50,
-    y: 8,
+    y: 1.8,
     label: 'You (the user)',
     shortLabel: 'You',
     labelLines: ['You'],
@@ -69,7 +85,7 @@ const NODE_POSITIONS: NodePosition[] = [
   {
     id: 'app',
     x: 50,
-    y: 22,
+    y: 18.5,
     label: 'FitAI App',
     shortLabel: 'FitAI',
     labelLines: ['FitAI'],
@@ -82,7 +98,7 @@ const NODE_POSITIONS: NodePosition[] = [
   {
     id: 'cloud',
     x: 27,
-    y: 43,
+    y: 41,
     label: 'Cloud Services / Logs / Analytics',
     shortLabel: 'Cloud',
     labelLines: ['Cloud', 'Services'],
@@ -95,7 +111,7 @@ const NODE_POSITIONS: NodePosition[] = [
   {
     id: 'ai',
     x: 50,
-    y: 44,
+    y: 42.5,
     label: 'AI Profiling & Recommendations',
     shortLabel: 'AI',
     labelLines: ['AI', 'Profiling'],
@@ -110,7 +126,7 @@ const NODE_POSITIONS: NodePosition[] = [
   {
     id: 'sdk',
     x: 70,
-    y: 43,
+    y: 41,
     label: 'Third-Party SDKs (Analytics / Ads)',
     shortLabel: 'SDKs',
     labelLines: ['Third-Party', 'SDKs'],
@@ -125,7 +141,7 @@ const NODE_POSITIONS: NodePosition[] = [
   {
     id: 'broker',
     x: 34,
-    y: 68,
+    y: 70.5,
     label: 'Data Brokers & Aggregators',
     shortLabel: 'Brokers',
     labelLines: ['Data', 'Brokers'],
@@ -140,7 +156,7 @@ const NODE_POSITIONS: NodePosition[] = [
   {
     id: 'ads',
     x: 66,
-    y: 68,
+    y: 70.5,
     label: 'Ad Platforms / Audience Targeting',
     shortLabel: 'Ads',
     labelLines: ['Ad', 'Platforms'],
@@ -155,7 +171,7 @@ const NODE_POSITIONS: NodePosition[] = [
   {
     id: 'ins',
     x: 50,
-    y: 86,
+    y: 88.5,
     label: 'Insurance / Credit / Hiring Profiles',
     shortLabel: 'Downstream',
     labelLines: ['Downstream', 'Impact'],
@@ -477,35 +493,11 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   const navigate = useNavigate()
   const { setScreen } = useFitAI()
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [acknowledgedNodeIds, setAcknowledgedNodeIds] = useState<string[]>([])
-  const [containerSize, setContainerSize] = useState({ width: 780, height: 520 })
   const [nodePositionOverrides, setNodePositionOverrides] = useState<Record<string, { x: number; y: number }>>({})
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const dragMovedRef = useRef(false)
-
-  // Update container size when it changes
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const updateSize = () => {
-      const rect = container.getBoundingClientRect()
-      if (rect.width > 0 && rect.height > 0) {
-        setContainerSize({
-          width: rect.width,
-          height: Math.max(420, rect.height),
-        })
-      }
-    }
-
-    updateSize()
-    const resizeObserver = new ResizeObserver(updateSize)
-    resizeObserver.observe(container)
-
-    return () => resizeObserver.disconnect()
-  }, [])
+  const pendingDragRef = useRef<PendingDragState | null>(null)
 
   // Compute flow result
   const flowResult = determineDataFlow(termsConsent, surveyData)
@@ -537,10 +529,13 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
       ...node,
       x: nodePositionOverrides[node.id]?.x ?? node.x,
       y: nodePositionOverrides[node.id]?.y ?? node.y,
-      px: ((nodePositionOverrides[node.id]?.x ?? node.x) / 100) * containerSize.width,
-      py: ((nodePositionOverrides[node.id]?.y ?? node.y) / 100) * containerSize.height,
+      px: ((nodePositionOverrides[node.id]?.x ?? node.x) / 100) * DIAGRAM_WIDTH,
+      py: ((nodePositionOverrides[node.id]?.y ?? node.y) / 100) * DIAGRAM_HEIGHT,
     }))
-  }, [containerSize, nodePositionOverrides])
+  }, [nodePositionOverrides])
+
+  const hasMovedNodes = Object.keys(nodePositionOverrides).length > 0
+  const showAttentionState = selectedNodeId === null
 
   const getPointerPercent = (event: React.PointerEvent<SVGElement>) => {
     const svg = svgRef.current
@@ -551,59 +546,71 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
     const y = ((event.clientY - rect.top) / rect.height) * 100
 
     return {
-      x: Number(Math.min(94, Math.max(6, x)).toFixed(1)),
-      y: Number(Math.min(94, Math.max(4, y)).toFixed(1)),
+      x: Number(Math.min(92, Math.max(8, x)).toFixed(1)),
+      y: Number(Math.min(90, Math.max(8, y)).toFixed(1)),
     }
-  }
-
-  const logNodePositionsForHardcoding = (nextOverrides: Record<string, { x: number; y: number }>) => {
-    const positions = NODE_POSITIONS.map((node) => ({
-      id: node.id,
-      x: nextOverrides[node.id]?.x ?? node.x,
-      y: nextOverrides[node.id]?.y ?? node.y,
-    }))
-
-    console.table(positions)
-    console.log(
-      '[DataShadows] Dragged node positions for NODE_POSITIONS:',
-      positions.map((node) => `{ id: '${node.id}', x: ${node.x}, y: ${node.y} }`).join(',\n')
-    )
   }
 
   const handleNodePointerDown = (event: React.PointerEvent<SVGCircleElement>, nodeId: string) => {
     event.preventDefault()
     event.stopPropagation()
     dragMovedRef.current = false
-    setDraggingNodeId(nodeId)
+    pendingDragRef.current = {
+      nodeId,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      isDragging: false,
+    }
+    setDraggingNodeId(null)
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
   const handleNodePointerMove = (event: React.PointerEvent<SVGElement>) => {
-    if (!draggingNodeId) return
+    const pendingDrag = pendingDragRef.current
+    if (!pendingDrag || pendingDrag.pointerId !== event.pointerId) return
+
+    if (!pendingDrag.isDragging) {
+      const movedDistance = Math.hypot(
+        event.clientX - pendingDrag.startClientX,
+        event.clientY - pendingDrag.startClientY
+      )
+
+      if (movedDistance < DRAG_START_THRESHOLD_PX) return
+
+      pendingDrag.isDragging = true
+      dragMovedRef.current = true
+      setDraggingNodeId(pendingDrag.nodeId)
+    }
 
     const nextPosition = getPointerPercent(event)
     if (!nextPosition) return
 
-    dragMovedRef.current = true
     setNodePositionOverrides((prev) => ({
       ...prev,
-      [draggingNodeId]: nextPosition,
+      [pendingDrag.nodeId]: nextPosition,
     }))
   }
 
   const handleNodePointerUp = (event: React.PointerEvent<SVGElement>) => {
-    if (!draggingNodeId) return
+    const pendingDrag = pendingDragRef.current
+    if (!pendingDrag || pendingDrag.pointerId !== event.pointerId) return
 
-    const finalPosition = getPointerPercent(event)
-    const nextOverrides = finalPosition
-      ? {
-          ...nodePositionOverrides,
-          [draggingNodeId]: finalPosition,
-        }
-      : nodePositionOverrides
+    if (pendingDrag.isDragging) {
+      const finalPosition = getPointerPercent(event)
+      if (finalPosition) {
+        setNodePositionOverrides((prev) => ({
+          ...prev,
+          [pendingDrag.nodeId]: finalPosition,
+        }))
+      }
+    }
 
-    setNodePositionOverrides(nextOverrides)
-    logNodePositionsForHardcoding(nextOverrides)
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
+    pendingDragRef.current = null
     setDraggingNodeId(null)
     window.setTimeout(() => {
       dragMovedRef.current = false
@@ -614,17 +621,26 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
     from: NodePosition & { px: number; py: number },
     to: NodePosition & { px: number; py: number },
     t = 0.5
-  ): { pathD: string; labelPoint: { x: number; y: number } } => {
+  ): { pathD: string; labelPoint: { x: number; y: number }; tangent: { x: number; y: number } } => {
     const dx = to.px - from.px
     const dy = to.py - from.py
-    const curvature = Math.max(24, Math.abs(dx) * 0.24)
-    const control1X = from.px + dx * 0.12
-    const control1Y = from.py + Math.max(36, dy * 0.34) + (dx < 0 ? -curvature * 0.2 : curvature * 0.2)
-    const control2X = to.px - dx * 0.12
-    const control2Y = to.py - Math.max(36, dy * 0.34) - (dx < 0 ? -curvature * 0.2 : curvature * 0.2)
+    const verticalCurve = Math.max(18, Math.abs(dy) * 0.22)
+    const horizontalCurve = dx * 0.18
+    const control1X = from.px + horizontalCurve
+    const control1Y = from.py + verticalCurve
+    const control2X = to.px - horizontalCurve
+    const control2Y = to.py - verticalCurve
     const cubic = (start: number, c1: number, c2: number, end: number) => {
       const invT = 1 - t
       return invT ** 3 * start + 3 * invT ** 2 * t * c1 + 3 * invT * t ** 2 * c2 + t ** 3 * end
+    }
+    const cubicDerivative = (start: number, c1: number, c2: number, end: number) => {
+      const invT = 1 - t
+      return (
+        3 * invT ** 2 * (c1 - start) +
+        6 * invT * t * (c2 - c1) +
+        3 * t ** 2 * (end - c2)
+      )
     }
 
     return {
@@ -632,6 +648,10 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
       labelPoint: {
         x: cubic(from.px, control1X, control2X, to.px),
         y: cubic(from.py, control1Y, control2Y, to.py),
+      },
+      tangent: {
+        x: cubicDerivative(from.px, control1X, control2X, to.px),
+        y: cubicDerivative(from.py, control1Y, control2Y, to.py),
       },
     }
   }
@@ -649,10 +669,9 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   // Determine connection style based on privacy settings
   const getConnectionStyle = (conn: Connection): { isActive: boolean; strokeDasharray?: string } => {
     const isActive = isConnectionActive(conn)
-    const isDashed = conn.style === 'dashed'
     return {
       isActive,
-      strokeDasharray: (isDashed || !isActive) ? '5,5' : undefined,
+      strokeDasharray: isActive ? undefined : '7,7',
     }
   }
 
@@ -668,74 +687,90 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   const selectedNode = selectedNodeId ? NODE_POSITIONS.find((n) => n.id === selectedNodeId) : null
   const overview = getOverviewContent(termsReadingProgress, termsConsent.privacySettings, optionalFieldsCount)
 
-  const getConnectionLabelPosition = (
+  const getConnectionLabelWidth = (label: string) => {
+    return Math.max(
+      CONNECTION_LABEL_MIN_WIDTH,
+      Math.round(label.length * 6.4 + CONNECTION_LABEL_PADDING_X * 2)
+    )
+  }
+
+  const getConnectionLabelTransform = (
     conn: Connection,
     from: NodePosition & { px: number; py: number },
     to: NodePosition & { px: number; py: number }
   ) => {
-    const width = Math.min(108, Math.max(78, containerSize.width * 0.14))
-    const height = 24
-    const gutter = 8
     const key = `${conn.from}-${conn.to}`
-    const offsetMap: Record<string, { x: number; y: number; t?: number }> = {
-      'user-app': { x: 30, y: -4, t: 0.5 },
-      'app-cloud': { x: -12, y: -18, t: 0.48 },
-      'app-ai': { x: -20, y: 4, t: 0.58 },
-      'app-sdk': { x: 5, y: -12, t: 0.5 },
-      'app-ads': { x: 0, y: 50, t: 0.56 },
-      'sdk-broker': { x: -50, y: 10, t: 0.55 },
-      'sdk-ads': { x: -10, y: -30, t: 0.45 },
-      'broker-ins': { x: -30, y: -20, t: 0.54 },
-      'ads-ins': { x: 15, y: -30, t: 0.56 },
+    const offsetMap: Record<string, { normal?: number; along?: number; t?: number }> = {
+      'user-app': { normal: -22, along: 12, t: 0.49 },
+      'app-cloud': { normal: -16, along: -12, t: 0.44 },
+      'app-ai': { normal: -24, along: 0, t: 0.5 },
+      'app-sdk': { normal: -16, along: 10, t: 0.46 },
+      'app-ads': { normal: 18, along: 6, t: 0.58 },
+      'sdk-broker': { normal: 18, along: -10, t: 0.5 },
+      'sdk-ads': { normal: -18, along: 8, t: 0.48 },
+      'broker-ins': { normal: 18, along: 6, t: 0.52 },
+      'ads-ins': { normal: -18, along: 6, t: 0.5 },
     }
-    const offset = offsetMap[key] ?? { x: 0, y: 0, t: 0.5 }
-    const { labelPoint } = getConnectionGeometry(from, to, offset.t ?? 0.5)
-    const x = labelPoint.x + offset.x - width / 2
-    const y = labelPoint.y + offset.y - height / 2
+    const offset = offsetMap[key] ?? { normal: 0, along: 0, t: 0.5 }
+    const { labelPoint, tangent } = getConnectionGeometry(from, to, offset.t ?? 0.5)
+    const tangentLength = Math.hypot(tangent.x, tangent.y) || 1
+    const tangentUnitX = tangent.x / tangentLength
+    const tangentUnitY = tangent.y / tangentLength
+    const normalUnitX = -tangentUnitY
+    const normalUnitY = tangentUnitX
+    const angle = Math.atan2(tangentUnitY, tangentUnitX) * (180 / Math.PI)
+    const uprightAngle = angle > 90 || angle < -90 ? angle + 180 : angle
 
     return {
-      width,
-      height,
-      x: Math.min(Math.max(gutter, x), containerSize.width - width - gutter),
-      y: Math.min(Math.max(gutter, y), containerSize.height - height - gutter),
+      x: labelPoint.x + normalUnitX * (offset.normal ?? 0) + tangentUnitX * (offset.along ?? 0),
+      y: labelPoint.y + normalUnitY * (offset.normal ?? 0) + tangentUnitY * (offset.along ?? 0),
+      angle: uprightAngle,
     }
   }
 
   const getNodeLabelLayout = (
     node: NodePosition & { px: number; py: number },
     radius: number
-  ): { x: number; y: number; width: number; height: number; className: string } => {
+  ): {
+    x: number
+    y: number
+    lineOffsets: number[]
+    textAnchor: 'start' | 'middle' | 'end'
+  } => {
     const lineCount = node.labelLines?.length ?? 1
-    const width = node.category === 'downstream' ? 142 : 128
-    const height = lineCount > 1 ? 42 : 24
-    const gutter = 6
-    const clampX = (x: number) => Math.min(Math.max(gutter, x), containerSize.width - width - gutter)
-    const clampY = (y: number) => Math.min(Math.max(gutter, y), containerSize.height - height - gutter)
-    const nodeSpecificLayout: Record<string, { x: number; y: number; className: string }> = {
+    const blockHalfHeight = ((lineCount - 1) * NODE_LABEL_LINE_HEIGHT) / 2
+    const lineOffsets = Array.from(
+      { length: lineCount },
+      (_, lineIndex) => (lineIndex - (lineCount - 1) / 2) * NODE_LABEL_LINE_HEIGHT
+    )
+    const gutter = 10
+    const clampX = (x: number) => Math.min(Math.max(gutter, x), DIAGRAM_WIDTH - gutter)
+    const clampY = (y: number) => Math.min(Math.max(gutter + 12, y), DIAGRAM_HEIGHT - gutter - 12)
+    const nodeSpecificLayout: Record<string, { x: number; y: number; textAnchor: 'start' | 'middle' | 'end' }> = {
       ai: {
-        x: node.px + radius - 70,
-        y: node.py - height / 2 + 24,
-        className: 'node-label-box node-label-box-right',
+        x: node.px,
+        y: node.py + radius + 22 + blockHalfHeight,
+        textAnchor: 'middle',
       },
       sdk: {
-        x: node.px + radius + 2,
-        y: node.py - height / 2 ,
-        className: 'node-label-box node-label-box-right',
+        x: node.px + radius + 18,
+        y: node.py,
+        textAnchor: 'start',
       },
       ads: {
-        x: node.px + radius + 2,
-        y: node.py - height / 2 ,
-        className: 'node-label-box node-label-box-right',
+        x: node.px + radius + 18,
+        y: node.py,
+        textAnchor: 'start',
       },
       broker: {
-        x: node.px - radius - width - 2,
-        y: node.py - height / 2 ,
-        className: 'node-label-box node-label-box-left',
+        x: node.px - radius - 18,
+        y: node.py,
+        textAnchor: 'end',
       },
       ins: {
-        x: node.px - width / 2,
-        y: node.py + radius + 18,
-        className: 'node-label-box node-label-box-center',
+        x: node.px,
+        y: node.py + radius + 8 + blockHalfHeight,
+        textAnchor: 'middle',
       },
     }
     const override = nodeSpecificLayout[node.id]
@@ -743,45 +778,40 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
       return {
         x: clampX(override.x),
         y: clampY(override.y),
-        width,
-        height,
-        className: override.className,
+        lineOffsets,
+        textAnchor: override.textAnchor,
       }
     }
 
     switch (node.labelPosition) {
       case 'left':
         return {
-          x: clampX(node.px - radius - width - 2),
-          y: clampY(node.py - height / 2),
-          width,
-          height,
-          className: 'node-label-box node-label-box-left',
+          x: clampX(node.px - radius - 18),
+          y: clampY(node.py),
+          lineOffsets,
+          textAnchor: 'end',
         }
       case 'right':
         return {
-          x: clampX(node.px + radius + 2),
-          y: clampY(node.py - height / 2),
-          width,
-          height,
-          className: 'node-label-box node-label-box-right',
+          x: clampX(node.px + radius + 18),
+          y: clampY(node.py),
+          lineOffsets,
+          textAnchor: 'start',
         }
       case 'above':
         return {
-          x: clampX(node.px - width / 2),
-          y: clampY(node.py - radius - height - 2),
-          width,
-          height,
-          className: 'node-label-box node-label-box-center',
+          x: clampX(node.px),
+          y: clampY(node.py - radius - 10 - blockHalfHeight),
+          lineOffsets,
+          textAnchor: 'middle',
         }
       case 'below':
       default:
         return {
-          x: clampX(node.px - width / 2),
-          y: clampY(node.py + radius + 2),
-          width,
-          height,
-          className: 'node-label-box node-label-box-center',
+          x: clampX(node.px),
+          y: clampY(node.py + radius + 8 + blockHalfHeight),
+          lineOffsets,
+          textAnchor: 'middle',
         }
     }
   }
@@ -815,7 +845,7 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
       <div className="data-flow-header">
         <div className="data-flow-header-copy">
           <h2 className="data-flow-title">Your Data Flow Network</h2>
-          <p className="data-flow-subtitle">Tap a node to inspect what data it receives and passes onward.</p>
+          <p className="data-flow-subtitle">Solid routes are currently active. Dashed routes stay blocked or unrealized with your current choices.</p>
         </div>
         <div className="privacy-score-block">
           <span className="privacy-score-label">Privacy Score</span>
@@ -827,15 +857,29 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
 
       <div className="network-data-flow-body">
         <section className="network-visual-panel">
-          <div className="network-diagram-container" ref={containerRef}>
+          <div className="network-diagram-toolbar">
+            <button
+              type="button"
+              className="network-diagram-reset"
+              onClick={() => {
+                setNodePositionOverrides({})
+                setDraggingNodeId(null)
+              }}
+              disabled={!hasMovedNodes}
+            >
+              Restore Default Layout
+            </button>
+          </div>
+          <div className="network-diagram-container">
             <div className="network-diagram-stage">
               <svg
                 ref={svgRef}
                 className="network-svg"
                 width="100%"
                 height="100%"
-                viewBox={`0 0 ${containerSize.width} ${containerSize.height}`}
+                viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
                 preserveAspectRatio="xMidYMid meet"
+                shapeRendering="geometricPrecision"
                 onPointerMove={handleNodePointerMove}
                 onPointerUp={handleNodePointerUp}
                 onPointerCancel={handleNodePointerUp}
@@ -874,35 +918,49 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
                   const style = getConnectionStyle(conn)
                   const { pathD } = getConnectionGeometry(fromNode, toNode)
                   const label = getConnectionTriggerLabel(conn)
-                  const labelPosition = getConnectionLabelPosition(conn, fromNode, toNode)
+                  const labelWidth = getConnectionLabelWidth(label)
+                  const labelTransform = getConnectionLabelTransform(conn, fromNode, toNode)
                   return (
                     <g key={`conn-${idx}`}>
                       <path
                         d={pathD}
-                        className={style.isActive ? 'connection-line-active' : 'connection-line-inactive'}
+                        className={[
+                          style.isActive ? 'connection-line-active' : 'connection-line-inactive',
+                          showAttentionState ? 'connection-line-attention' : '',
+                        ].filter(Boolean).join(' ')}
                         strokeDasharray={style.strokeDasharray}
                         strokeWidth={3}
                         fill="none"
                         markerEnd={style.isActive ? 'url(#arrowhead-active)' : 'url(#arrowhead-inactive)'}
                       />
-                      <foreignObject
-                        x={labelPosition.x}
-                        y={labelPosition.y}
-                        width={labelPosition.width}
-                        height={labelPosition.height}
-                        className="connection-flow-label-object"
+                      <g
+                        transform={`translate(${labelTransform.x}, ${labelTransform.y}) rotate(${labelTransform.angle})`}
                         pointerEvents="none"
+                        className={showAttentionState ? 'connection-label-attention' : ''}
                       >
-                        <div
+                        <rect
+                          x={-labelWidth / 2}
+                          y={-CONNECTION_LABEL_HEIGHT / 2}
+                          rx={CONNECTION_LABEL_HEIGHT / 2}
+                          ry={CONNECTION_LABEL_HEIGHT / 2}
+                          width={labelWidth}
+                          height={CONNECTION_LABEL_HEIGHT}
                           className={[
-                            'connection-flow-label',
+                            'connection-flow-pill',
                             style.isActive ? 'connection-flow-label-active' : 'connection-flow-label-inactive',
                           ].join(' ')}
-                          title={conn.label}
+                        />
+                        <text
+                          className={[
+                            'connection-flow-label-text',
+                            style.isActive ? 'connection-flow-label-active' : 'connection-flow-label-inactive',
+                          ].join(' ')}
+                          textAnchor="middle"
+                          dominantBaseline="central"
                         >
                           {label}
-                        </div>
-                      </foreignObject>
+                        </text>
+                      </g>
                     </g>
                   )
                 })}
@@ -911,7 +969,6 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
               <g className="nodes">
                 {nodesWithPixels.map((node) => {
                   const isSelected = selectedNodeId === node.id
-                  const isAcknowledged = acknowledgedNodeIds.includes(node.id)
                   const nodeActive = isNodeActive(node.id)
                   const nodeRadius = node.category === 'user' || node.category === 'app' ? 22 : 18
                   const nodeLabelLayout = getNodeLabelLayout(node, nodeRadius)
@@ -929,34 +986,38 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
                         cy={node.py}
                         r={nodeRadius}
                         fill={node.color}
-                        opacity={nodeActive ? emphasis.opacity : 0.28}
-                        className={`network-node network-node-draggable ${isSelected ? 'network-node-selected' : ''} ${nodeActive ? 'network-node-active' : 'network-node-inactive'} ${draggingNodeId === node.id ? 'network-node-dragging' : ''} ${isAcknowledged ? 'network-node-acknowledged' : 'network-node-attention'}`}
+                        opacity={nodeActive ? 0.98 : 0.3}
+                        className={`network-node network-node-draggable ${isSelected ? 'network-node-selected' : ''} ${nodeActive ? 'network-node-active' : 'network-node-inactive'} ${draggingNodeId === node.id ? 'network-node-dragging' : ''} ${showAttentionState ? 'network-node-attention' : ''}`}
                         onPointerDown={(event) => handleNodePointerDown(event, node.id)}
                         onClick={() => {
+                          if (draggingNodeId === node.id) return
                           if (dragMovedRef.current) return
-                          setAcknowledgedNodeIds((prev) => (prev.includes(node.id) ? prev : [...prev, node.id]))
                           setSelectedNodeId(isSelected ? null : node.id)
                         }}
                         style={{ transition: 'opacity 0.2s' }}
                       />
-                      <foreignObject
+                      <text
                         x={nodeLabelLayout.x}
                         y={nodeLabelLayout.y}
-                        width={nodeLabelLayout.width}
-                        height={nodeLabelLayout.height}
+                        textAnchor={nodeLabelLayout.textAnchor}
+                        dominantBaseline="central"
+                        className={[
+                          'node-label-svg',
+                          nodeActive ? 'node-label-active' : 'node-label-inactive',
+                          showAttentionState ? 'node-label-attention' : '',
+                        ].join(' ')}
                         pointerEvents="none"
                       >
-                        <div
-                          className={[
-                            nodeLabelLayout.className,
-                            nodeActive ? 'node-label-active' : 'node-label-inactive',
-                          ].join(' ')}
-                        >
-                          {(node.labelLines ?? [node.shortLabel]).map((line) => (
-                            <span key={`${node.id}-${line}`}>{line}</span>
-                          ))}
-                        </div>
-                      </foreignObject>
+                        {(node.labelLines ?? [node.shortLabel]).map((line, lineIndex) => (
+                          <tspan
+                            key={`${node.id}-${line}`}
+                            x={nodeLabelLayout.x}
+                            y={nodeLabelLayout.y + nodeLabelLayout.lineOffsets[lineIndex]}
+                          >
+                            {line}
+                          </tspan>
+                        ))}
+                      </text>
 
                       {emphasis.indicator && nodeActive && (
                         <title>{emphasis.indicator}</title>

@@ -1,7 +1,8 @@
-import { Typography, Box, Button, Stack } from '@mui/material';
+import { Typography, Box, Stack } from '@mui/material';
 import { Celebration as CelebrationIcon } from '@mui/icons-material';
 
-import { NEON_CYAN, PRIMARY_HEADER_GRADIENT } from '../../hallucinateUi';
+import { ArcadeButton } from '../../../../components/ui';
+import { NEON_CYAN, READABLE_FONT, TITLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
 
 export function ChapterComplete({
   onReviewResults,
@@ -16,9 +17,9 @@ export function ChapterComplete({
 }) {
   const animationCss = `
 @keyframes arcadeGlow {
-  0% { text-shadow: 0 0 6px rgba(0, 255, 217, 0.4), 0 0 12px rgba(0, 255, 217, 0.25); }
+  0% { text-shadow: 0 0 6px rgba(255, 0, 255, 0.4), 0 0 12px rgba(255, 0, 255, 0.25); }
   50% { text-shadow: 0 0 12px rgba(255, 46, 147, 0.55), 0 0 24px rgba(255, 46, 147, 0.3); }
-  100% { text-shadow: 0 0 6px rgba(0, 255, 217, 0.4), 0 0 12px rgba(0, 255, 217, 0.25); }
+  100% { text-shadow: 0 0 6px rgba(255, 0, 255, 0.4), 0 0 12px rgba(255, 0, 255, 0.25); }
 }
 @keyframes badgeFloat {
   0% { transform: translateY(0); }
@@ -37,36 +38,44 @@ export function ChapterComplete({
     <Box
       sx={{
         width: '100%',
-        maxWidth: 920,
+        maxWidth: 1080,
         mx: 'auto',
         minHeight: 'calc(100vh - 150px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        px: { xs: 1, md: 2 },
-        py: { xs: 4, md: 6 },
+        px: { xs: 1.2, md: 2.4 },
+        py: { xs: 4.4, md: 6.6 },
       }}
     >
       <style>{animationCss}</style>
-      <Stack spacing={2.6} sx={{ width: '100%', alignItems: 'center', textAlign: 'center' }}>
+      <Stack
+        spacing={2.6}
+        sx={{
+          ...arcadeScreenSx,
+          width: '100%',
+          alignItems: 'center',
+          textAlign: 'center',
+          px: { xs: 1.9, sm: 3.1, md: 4.2 },
+          py: { xs: 3.2, sm: 4, md: 4.8 },
+        }}
+      >
+        <Box sx={{ position: 'relative', zIndex: 1, width: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25 }}>
             <CelebrationIcon sx={{ color: NEON_CYAN, fontSize: 28, animation: 'badgeFloat 3s ease-in-out infinite' }} />
             <Typography
               variant="caption"
               sx={{
+                ...arcadeKickerSx,
                 fontWeight: 900,
                 color: NEON_CYAN,
-                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-                fontSize: { xs: '0.875rem', sm: '0.9375rem' },
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
               }}
             >
               Chapter Complete
             </Typography>
           </Box>
-          <Box sx={{ width: '100%', maxWidth: 760, mx: 'auto' }}>
+          <Box sx={{ width: '100%', maxWidth: 860, mx: 'auto', mb: { xs: 3.4, sm: 4.2, md: 4.8 } }}>
             <Typography
               variant="h3"
               sx={{
@@ -74,11 +83,11 @@ export function ChapterComplete({
                 color: '#eaffff',
                 mb: 1.4,
                 lineHeight: 1.3,
-                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-                fontSize: { xs: '1.6rem', sm: '2.2rem', md: '2.8rem' },
+                fontFamily: TITLE_FONT,
+                fontSize: { xs: '1.8rem', sm: '2.45rem', md: '3.1rem' },
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
-                textShadow: '0 0 24px rgba(0,255,217,0.22), 0 3px 0 rgba(0,0,0,0.45)',
+                textShadow: '0 0 24px rgba(255, 0, 255, 0.22), 0 3px 0 rgba(0,0,0,0.45)',
               }}
             >
               Congratulations!
@@ -87,42 +96,72 @@ export function ChapterComplete({
               variant="body1"
               sx={{
                 color: 'rgba(228, 241, 255, 0.86)',
-                maxWidth: 620,
+                maxWidth: 740,
                 mx: 'auto',
                 lineHeight: 1.82,
-                fontSize: { xs: '1rem', sm: '1.08rem' },
+                fontSize: { xs: '1.08rem', sm: '1.18rem' },
+                fontFamily: READABLE_FONT,
               }}
             >
               You&apos;ve completed all content in this chapter.
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.3} sx={{ justifyContent: 'center', width: '100%', maxWidth: 740 }}>
-            <Button
-              variant="outlined"
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.3}
+            sx={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              maxWidth: 820,
+              mx: 'auto',
+            }}
+          >
+            <ArcadeButton
+              variant="outline"
+              color="magenta"
+              size="md"
               onClick={onReviewResults}
-              sx={{ fontWeight: 900, borderColor: NEON_CYAN, color: NEON_CYAN, minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
+              sx={{ minHeight: 56, width: { xs: '100%', sm: 230 } }}
               disabled={isNavigatingToRanking}
             >
               Review Results
-            </Button>
-            <Button
-              variant="outlined"
+            </ArcadeButton>
+            <ArcadeButton
+              variant="outline"
+              color="magenta"
+              size="md"
               onClick={onStartFromBeginning}
-              sx={{ fontWeight: 900, borderColor: 'rgba(255,255,255,0.28)', color: '#eaffff', minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
+              sx={{
+                minHeight: 56,
+                width: { xs: '100%', sm: 230 },
+                whiteSpace: 'normal',
+                lineHeight: 1.5,
+                fontSize: { xs: '0.62rem', sm: '0.82rem' },
+              }}
               disabled={!onStartFromBeginning || isNavigatingToRanking}
             >
-              Start From Beginning
-            </Button>
-            <Button
-              variant="contained"
+              Next Player Login
+            </ArcadeButton>
+            <ArcadeButton
+              color="magenta"
+              size="md"
+              animation={isNavigatingToRanking ? 'blinking' : 'pulse'}
               onClick={onViewRanking}
-              sx={{ fontWeight: 900, background: PRIMARY_HEADER_GRADIENT, minHeight: 50, minWidth: { sm: 180 }, borderRadius: 2.5 }}
+              sx={{
+                minHeight: 56,
+                width: { xs: '100%', sm: 230 },
+                whiteSpace: 'normal',
+                lineHeight: 1.5,
+                fontSize: { xs: '0.62rem', sm: '0.82rem' },
+              }}
               disabled={!onViewRanking || isNavigatingToRanking}
             >
               {isNavigatingToRanking ? 'Loading Ranking...' : 'View Ranking'}
-            </Button>
+            </ArcadeButton>
           </Stack>
+        </Box>
       </Stack>
     </Box>
   );

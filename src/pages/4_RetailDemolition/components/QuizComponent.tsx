@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 
-const QuizComponent = ({ onAnswer, quizAnswers, onFinished }) => {
+interface QuizComponentProps {
+  onAnswer: (id: string) => void;
+  quizAnswers: string[];
+  onFinished: () => void;
+}
+
+const QuizComponent = ({ onAnswer, quizAnswers, onFinished }: QuizComponentProps) => {
   const options = [
     { id: 'user', text: "The Consumer (You)", desc: "Users should be cautious about where they send agents" },
     { id: 'attacker', text: "The Malicious Site", desc: "The site owner committed fraud with injected commands" },
@@ -10,7 +16,7 @@ const QuizComponent = ({ onAnswer, quizAnswers, onFinished }) => {
     { id: 'all', text: "All of the Above", desc: "Security is a shared responsibility across all parties" }
   ];
 
-  const [selectedOptionId, setSelectedOptionId] = useState(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
 
   const feedback = {
     user: "End users should be careful, but they cannot fully defend against complex malware and supply-chain attacks on their own. Focusing only on the consumer misses the shared responsibility between attackers, developers, and platforms.",

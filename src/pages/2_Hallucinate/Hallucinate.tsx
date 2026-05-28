@@ -3,42 +3,64 @@ import { useNavigate } from 'react-router-dom';
 import {
   Typography,
   Box,
-  Button,
   Stack,
   Container,
-  Chip,
   Collapse,
 } from '@mui/material';
-import {
-  FiberManualRecord as FiberManualRecordIcon,
-} from '@mui/icons-material';
 
 import { SCENARIOS } from './scenarios';
 import { InteractiveScenarioChat } from './components/InteractiveScenarioChat';
 import { TrainingArena } from './components/TrainingArena';
-import { getStoredUser } from '../../utils/userStorage';
+import { ARCADE_FONT, READABLE_FONT, TITLE_FONT } from './hallucinateUi';
+import { clearStoredUser, getStoredUser } from '../../utils/userStorage';
 import { apiFetch } from '../../services/api';
+import { ArcadeButton } from '../../components/ui';
 
 /** =========================================================
  *  MAIN PAGE
  *  ========================================================= */
+
+const wrapTerminalText = (text = '', maxChars = 44) => {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  words.forEach((word) => {
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+
+    if (nextLine.length > maxChars && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+      return;
+    }
+
+    currentLine = nextLine;
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+};
+
+// typing helpers removed — intro now shows immediately without typewriter timings
 
 const Hallucinate: React.FC = () => {
   const navigate = useNavigate();
   const [showAnimatedIntro, setShowAnimatedIntro] = useState(true);
   const [currentIntroTextIndex, setCurrentIntroTextIndex] = useState(0);
   const [isIntroFadingOut, setIsIntroFadingOut] = useState(false);
-  const [showLanding, setShowLanding] = useState(true);
   const [showScenarioChat, setShowScenarioChat] = useState(false);
   const [showTrainingGame, setShowTrainingGame] = useState(false);
   const [hasVerifiedSession] = useState(() => Boolean(getStoredUser()));
+  const [showTerminalPanel, setShowTerminalPanel] = useState(false);
   const [caseFileOpen, setCaseFileOpen] = useState(false);
   const [caseFileUnlocking, setCaseFileUnlocking] = useState(false);
   const scenarioId = SCENARIOS[0].id;
   const selectedScenario = SCENARIOS.find((s) => s.id === scenarioId);
   const chatAnchorRef = useRef<HTMLDivElement>(null);
   const unlockTimerRef = useRef<number | null>(null);
-  const statusText = caseFileUnlocking ? 'DECRYPTING FILE' : 'CASE FILE READY';
   const tickerItems = [
     'VERIFY BEFORE TRUST',
     'CONFIDENCE IS NOT EVIDENCE',
@@ -53,25 +75,51 @@ const Hallucinate: React.FC = () => {
     'AI hallucinations have already triggered court sanctions, product rollbacks, and billion-dollar market losses.',
     'But one habit can protect you: slow down, spot the confidence trap, and verify before you trust.',
   ];
-  const terminalLineOne = '> briefing packet detected';
-  const terminalLineTwo = '> authentication passed';
+  const terminalLineOne = '> locate hallucination_case_02.pkg';
+  const terminalLineTwo = '> verify user clearance: passed';
+  const terminalLineThree = '> run decrypt --case hallucination';
+  const receivedFileName = 'hallucination_case_02.pkg';
+  const warningPhrase = 'do not trust an answer just because it sounds certain.';
+  const receivedFileIntroLines = [
+    `A locked file just arrived in the arcade inbox: ${receivedFileName}.`,
+    `The sender left one warning: ${warningPhrase}`,
+    'Open the terminal to inspect the file and recover the briefing inside.',
+  ];
+  // removed terminal command display; keep timings minimal for label reveal
+  const briefingHeadline = selectedScenario?.background.headline ?? '';
+  const briefingBody = selectedScenario?.background.dek ?? '';
+  const briefingObjective = selectedScenario?.background.question ?? '';
+  const briefingObjectivePrefix = 'objective:';
+  const briefingHeadlineLines = wrapTerminalText(briefingHeadline, 52);
+  const briefingBodyLines = wrapTerminalText(briefingBody, 78);
+  const briefingLabelDelay = 0.22;
   const arcadeFontCss = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Press+Start+2P&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Electrolize&family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Silkscreen&family=VT323&display=swap');
   `;
+
+  // terminalTypeSx removed — headline/body/objective show immediately now
+
+  const terminalRevealSx = (delay = 0, duration = 0.28) => ({
+    opacity: 0,
+    animation: `softFadeUp ${duration}s ease-out ${delay}s forwards`,
+  } as const);
 
   const arcadeSx = {
     position: 'relative',
     color: '#f2fbff',
-    backgroundColor: '#050710',
+    backgroundColor: '#0a0a1a',
     backgroundImage:
-      'radial-gradient(circle at 12% 10%, rgba(255, 46, 147, 0.28), transparent 36%), radial-gradient(circle at 84% 14%, rgba(0, 255, 217, 0.2), transparent 34%), radial-gradient(circle at 48% 78%, rgba(91, 46, 255, 0.24), transparent 42%), linear-gradient(180deg, #050710 0%, #070b18 52%, #090f1f 100%)',
+      'linear-gradient(180deg, rgba(10, 10, 26, 0.98) 0%, rgba(4, 5, 16, 1) 54%, rgba(10, 10, 26, 1) 100%)',
+    boxShadow: 'inset 0 0 130px rgba(0, 0, 0, 0.88)',
     '&::before': {
       content: '""',
       position: 'absolute',
       inset: 0,
-      backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
-      backgroundSize: '100% 4px',
-      opacity: 0.22,
+      backgroundImage:
+        'linear-gradient(90deg, rgba(26, 26, 58, 0.9) 1px, transparent 1px), linear-gradient(180deg, rgba(26, 26, 58, 0.9) 1px, transparent 1px)',
+      backgroundSize: '40px 40px',
+      backgroundPosition: '0 0',
+      opacity: 0.78,
       pointerEvents: 'none',
     },
     '&::after': {
@@ -79,15 +127,9 @@ const Hallucinate: React.FC = () => {
       position: 'absolute',
       inset: 0,
       backgroundImage:
-        'linear-gradient(90deg, rgba(0,255,217,0.06) 1px, transparent 1px), linear-gradient(0deg, rgba(0,255,217,0.04) 1px, transparent 1px)',
-      backgroundSize: '24px 24px',
-      opacity: 0.18,
+        'repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0, 0, 0, 0.24) 2px, rgba(0, 0, 0, 0.24) 4px), radial-gradient(ellipse at center, transparent 42%, rgba(0, 0, 0, 0.5) 100%)',
+      opacity: 0.86,
       pointerEvents: 'none',
-    },
-    '@keyframes ambientFloat': {
-      '0%': { transform: 'translate3d(0, 0, 0) scale(1)' },
-      '50%': { transform: 'translate3d(0, -10px, 0) scale(1.02)' },
-      '100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
     },
     '@keyframes softFadeUp': {
       '0%': { opacity: 0, transform: 'translateY(16px)' },
@@ -97,17 +139,8 @@ const Hallucinate: React.FC = () => {
       '0%': { transform: 'translateX(0)' },
       '100%': { transform: 'translateX(-50%)' },
     },
-    '@keyframes buttonGlow': {
-      '0%': { boxShadow: '0 0 0 1px rgba(0,255,217,0.4), 0 12px 26px rgba(0,255,217,0.24)' },
-      '50%': { boxShadow: '0 0 0 1px rgba(255,46,147,0.48), 0 16px 34px rgba(91,46,255,0.34)' },
-      '100%': { boxShadow: '0 0 0 1px rgba(0,255,217,0.4), 0 12px 26px rgba(0,255,217,0.24)' },
-    },
     '@keyframes statusBlink': {
       '0%': { opacity: 0.55 },
-      '100%': { opacity: 1 },
-    },
-    '@keyframes startBlink': {
-      '0%': { opacity: 0.45 },
       '100%': { opacity: 1 },
     },
     '@keyframes scanLine': {
@@ -115,8 +148,8 @@ const Hallucinate: React.FC = () => {
       '100%': { transform: 'translateY(100%)' },
     },
     '@keyframes decryptPulse': {
-      '0%': { boxShadow: '0 0 0 0 rgba(0,255,217,0.32)' },
-      '100%': { boxShadow: '0 0 0 12px rgba(0,255,217,0)' },
+      '0%': { boxShadow: '0 0 0 0 rgba(255, 0, 255, 0.32)' },
+      '100%': { boxShadow: '0 0 0 12px rgba(255, 0, 255, 0)' },
     },
     '@keyframes decryptSweep': {
       '0%': { transform: 'translateX(-115%)' },
@@ -142,23 +175,23 @@ const Hallucinate: React.FC = () => {
       '100%': { width: 'var(--target-width)' },
     },
     '& .MuiTypography-root': {
-      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+      fontFamily: READABLE_FONT,
       color: '#f2fbff',
       letterSpacing: '0.06em',
       lineHeight: 1.75,
       textShadow: '0 1px 0 rgba(0,0,0,0.18)',
     },
     '& .MuiTypography-h4': {
-      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+      fontFamily: TITLE_FONT,
       textTransform: 'uppercase',
       textShadow: '0 10px 34px rgba(117, 123, 255, 0.35)',
       animation: 'softFadeUp 700ms ease-out',
-      fontSize: { xs: '1.5rem', sm: '1.82rem' },
+      fontSize: { xs: '1.62rem', sm: '2rem' },
       lineHeight: 1.3,
       letterSpacing: '0.08em',
     },
     '& .MuiTypography-h5, & .MuiTypography-h6': {
-      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+      fontFamily: TITLE_FONT,
       fontWeight: 700,
       letterSpacing: '0.06em',
     },
@@ -171,15 +204,15 @@ const Hallucinate: React.FC = () => {
       lineHeight: 1.65,
     },
     '& .MuiTypography-body1': {
-      fontSize: { xs: '1rem', sm: '1rem' },
+      fontSize: { xs: '1.05rem', sm: '1.08rem' },
       lineHeight: 1.75,
     },
     '& .MuiTypography-body2': {
-      fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+      fontSize: { xs: '0.94rem', sm: '1rem' },
       lineHeight: 1.7,
     },
     '& .MuiTypography-caption': {
-      fontSize: '0.875rem',
+      fontSize: '0.93rem',
       opacity: 0.92,
     },
     '& .MuiTypography-colorTextSecondary': {
@@ -187,63 +220,32 @@ const Hallucinate: React.FC = () => {
     },
     '& .MuiCard-root': {
       backgroundColor: 'rgba(8, 12, 26, 0.92) !important',
-      border: '1px solid rgba(0, 255, 217, 0.34) !important',
+      border: '1px solid rgba(255, 0, 255, 0.34) !important',
       boxShadow:
-        '0 0 0 1px rgba(0, 255, 217, 0.18), 0 18px 42px rgba(5, 10, 22, 0.46), 0 0 22px rgba(91, 46, 255, 0.14) !important',
+        '0 0 0 1px rgba(255, 0, 255, 0.18), 0 18px 42px rgba(5, 10, 22, 0.46), 0 0 22px rgba(91, 46, 255, 0.14) !important',
       backdropFilter: 'blur(10px)',
       borderRadius: '18px !important',
       transition: 'transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease, background-color 260ms ease',
       animation: 'softFadeUp 520ms ease-out',
       '&:hover': {
         transform: 'translateY(-3px)',
-        boxShadow: '0 0 0 1px rgba(0, 255, 217, 0.28), 0 26px 56px rgba(5, 10, 22, 0.54), 0 0 30px rgba(255, 46, 147, 0.14) !important',
-        borderColor: 'rgba(0, 255, 217, 0.54) !important',
+        boxShadow: '0 0 0 1px rgba(255, 0, 255, 0.28), 0 26px 56px rgba(5, 10, 22, 0.54), 0 0 30px rgba(255, 46, 147, 0.14) !important',
+        borderColor: 'rgba(255, 0, 255, 0.54) !important',
       },
     },
     '& .MuiCardHeader-root': {
-      background: 'linear-gradient(135deg, rgba(255, 46, 147, 0.92) 0%, rgba(91, 46, 255, 0.9) 56%, rgba(46, 227, 255, 0.84) 100%) !important',
+      background: 'linear-gradient(135deg, rgba(255, 46, 147, 0.92) 0%, rgba(91, 46, 255, 0.9) 56%, rgba(191, 0, 255, 0.84) 100%) !important',
       color: '#fff',
       borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
     },
     '& .MuiCardContent-root': {
       background: 'linear-gradient(180deg, rgba(7, 11, 24, 0.94), rgba(8, 12, 26, 0.88)) !important',
     },
-    '& .MuiButton-contained': {
-      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important",
-      background: 'linear-gradient(135deg, rgba(0, 255, 217, 1) 0%, rgba(91, 46, 255, 1) 100%) !important',
-      color: '#07101d !important',
-      fontWeight: '900 !important',
-      boxShadow: '0 0 0 1px rgba(0,255,217,0.45), 0 12px 28px rgba(0,255,217,0.24)',
-      border: '1px solid rgba(0, 255, 217, 0.7)',
-      transition: 'background 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, filter 180ms ease',
-      animation: 'buttonGlow 5s ease-in-out infinite',
-      '&:hover': {
-        boxShadow: '0 0 0 1px rgba(255,46,147,0.58), 0 16px 34px rgba(91,46,255,0.34)',
-        filter: 'saturate(1.1)',
-      },
-    },
-    '& .MuiButton-outlined': {
-      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important",
-      color: '#00ffd9 !important',
-      borderColor: 'rgba(0, 255, 217, 0.62) !important',
-      fontWeight: '900',
-      backgroundColor: 'rgba(0, 255, 217, 0.06)',
-      transition: 'all 220ms ease',
-      '&:hover': {
-        backgroundColor: 'rgba(0, 255, 217, 0.14)',
-        borderColor: 'rgba(0, 255, 217, 0.84) !important',
-      },
-    },
-    '& .arcade-start-button': {
-      fontFamily: "'Press Start 2P', 'VT323', monospace !important",
-      letterSpacing: '0.08em !important',
-      textTransform: 'uppercase',
-    },
     '& .MuiChip-root': {
-      fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important",
-      backgroundColor: 'rgba(0, 255, 217, 0.1) !important',
-      color: '#00ffd9 !important',
-      border: '1px solid rgba(0, 255, 217, 0.42)',
+      fontFamily: `${READABLE_FONT} !important`,
+      backgroundColor: 'rgba(255, 0, 255, 0.1) !important',
+      color: '#ff00ff !important',
+      border: '1px solid rgba(255, 0, 255, 0.42)',
       fontWeight: 900,
       borderRadius: '999px !important',
     },
@@ -277,10 +279,10 @@ const Hallucinate: React.FC = () => {
     px: 1.2,
     py: 0.55,
     borderRadius: '999px',
-    border: '1px solid rgba(0,255,217,0.35)',
-    background: 'linear-gradient(135deg, rgba(0,255,217,0.12), rgba(91,46,255,0.18))',
-    boxShadow: '0 0 14px rgba(0,255,217,0.12)',
-    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+    border: '1px solid rgba(255, 0, 255, 0.35)',
+    background: 'linear-gradient(135deg, rgba(255, 0, 255, 0.12), rgba(91, 46, 255,0.18))',
+    boxShadow: '0 0 14px rgba(255, 0, 255, 0.12)',
+    fontFamily: ARCADE_FONT,
     fontSize: '0.72rem',
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
@@ -288,7 +290,7 @@ const Hallucinate: React.FC = () => {
   const journeyShellSx = {
     ...fadeUpSx,
     width: '100%',
-    maxWidth: 920,
+    maxWidth: 1040,
     mx: 'auto',
     minHeight: 'calc(100vh - 150px)',
     display: 'flex',
@@ -302,39 +304,114 @@ const Hallucinate: React.FC = () => {
     mt: 2,
     mb: 1.5,
     fontWeight: 900,
-    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
+    fontFamily: TITLE_FONT,
     lineHeight: 1.58,
     color: '#ffffff',
-    textShadow: '0 0 10px rgba(0,0,0,0.24), 0 0 24px rgba(0,255,217,0.18)',
-    fontSize: { xs: '1.14rem', sm: '1.42rem', md: '1.76rem' },
+    textShadow: '0 0 10px rgba(0,0,0,0.24), 0 0 24px rgba(255, 0, 255, 0.18)',
+    fontSize: { xs: '1.26rem', sm: '1.58rem', md: '1.95rem' },
     letterSpacing: '0.06em',
     textTransform: 'uppercase',
   } as const;
-  const journeyBodySx = {
-    maxWidth: 680,
-    mx: 'auto',
-    mb: 3,
-    lineHeight: 1.82,
-    color: 'rgba(228, 241, 255, 0.9)',
-    fontSize: { xs: '1rem', sm: '1.08rem' },
-  } as const;
   const journeyPromptSx = {
-    maxWidth: 640,
+    maxWidth: 740,
     mx: 'auto',
     mb: 3,
     color: 'rgba(228, 241, 255, 0.76)',
-    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-    fontSize: { xs: '0.66rem', sm: '0.72rem' },
+    fontFamily: READABLE_FONT,
+    fontSize: { xs: '0.74rem', sm: '0.82rem' },
     lineHeight: 1.9,
   } as const;
   const actionButtonSx = {
-    fontWeight: 900,
-    fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-    fontSize: { xs: '0.7rem', sm: '0.78rem' },
-    minHeight: 48,
-    px: 4,
-    py: 1.3,
-    borderRadius: 2.5,
+    minHeight: 54,
+    minWidth: { xs: '100%', sm: 300 },
+    justifyContent: 'center',
+    whiteSpace: 'nowrap',
+  } as const;
+  const receivedFileIntroSx = {
+    width: '100%',
+    maxWidth: 880,
+    mx: 'auto',
+    mb: 0,
+    px: { xs: 2.4, sm: 3.6 },
+    py: { xs: 2.6, sm: 3.4 },
+    border: '1px solid rgba(255, 0, 255, 0.3)',
+    background:
+      'linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(91, 46, 255, 0.12) 48%, rgba(5, 7, 16, 0.68))',
+    boxShadow: '0 18px 40px rgba(3, 0, 12, 0.34), inset 0 0 22px rgba(255, 0, 255, 0.05)',
+    textAlign: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    ...terminalRevealSx(0.04, 0.42),
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      height: '1px',
+      background: 'linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.62), transparent)',
+    },
+  } as const;
+  const terminalPanelSx = {
+    width: '100%',
+    maxWidth: 840,
+    mx: 'auto',
+    mb: 2.4,
+    borderRadius: 0,
+    border: '2px solid rgba(255, 0, 255, 0.48)',
+    background:
+      'linear-gradient(180deg, rgba(5,2,12,0.98), rgba(8,3,20,0.98) 48%, rgba(3,2,9,0.98))',
+    boxShadow:
+      '0 0 0 1px rgba(255, 0, 255, 0.16), inset 0 0 28px rgba(255, 0, 255, 0.08), 0 24px 58px rgba(3, 0, 12, 0.62)',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'all 220ms ease',
+    overflow: 'hidden',
+    position: 'relative',
+    animation: 'terminalFlicker 2.3s linear infinite',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      background:
+        'repeating-linear-gradient(0deg, rgba(255,255,255,0.035), rgba(255,255,255,0.035) 1px, transparent 1px, transparent 4px)',
+      opacity: 0.42,
+      pointerEvents: 'none',
+    },
+    '&::after': caseFileUnlocking ? {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      background: 'linear-gradient(100deg, transparent 35%, rgba(255, 0, 255, 0.18) 50%, transparent 65%)',
+      animation: 'decryptSweep 520ms linear 1',
+      pointerEvents: 'none',
+    } : {},
+    '&:hover': {
+      borderColor: 'rgba(255, 0, 255, 0.72)',
+      boxShadow:
+        '0 0 0 1px rgba(255, 0, 255, 0.22), inset 0 0 32px rgba(255, 0, 255, 0.1), 0 18px 42px rgba(0,0,0,0.32)',
+      transform: 'translateY(-1px)',
+    },
+  } as const;
+  const terminalChromeSx = {
+    position: 'relative',
+    zIndex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 1.5,
+    px: { xs: 1.3, sm: 1.8 },
+    py: 0.9,
+    borderBottom: '1px solid rgba(255, 0, 255, 0.28)',
+    background:
+      'linear-gradient(90deg, rgba(255, 0, 255, 0.16), rgba(91, 46, 255, 0.1), rgba(255, 0, 255, 0.08))',
+  } as const;
+  const terminalTextSx = {
+    color: 'rgba(248, 231, 255, 0.9)',
+    lineHeight: 1.64,
+    fontSize: { xs: '1.1rem', sm: '1.22rem' },
+    fontFamily: "'VT323', 'Courier New', monospace",
+    letterSpacing: '0.04em',
   } as const;
   const arcadeTickerSx = {
     position: 'sticky',
@@ -342,11 +419,11 @@ const Hallucinate: React.FC = () => {
     zIndex: 4,
     width: '100%',
     overflow: 'hidden',
-    borderTop: '1px solid rgba(0,255,217,0.18)',
-    borderBottom: '1px solid rgba(0,255,217,0.28)',
+    borderTop: '1px solid rgba(255, 0, 255, 0.18)',
+    borderBottom: '1px solid rgba(255, 0, 255, 0.28)',
     background:
       'linear-gradient(90deg, rgba(5,7,16,0.92), rgba(11,16,34,0.96), rgba(5,7,16,0.92))',
-    boxShadow: '0 10px 28px rgba(0,0,0,0.22), 0 0 18px rgba(0,255,217,0.1)',
+    boxShadow: '0 10px 28px rgba(0,0,0,0.22), 0 0 18px rgba(255, 0, 255, 0.1)',
     backdropFilter: 'blur(10px)',
   } as const;
   useEffect(() => {
@@ -442,6 +519,11 @@ const Hallucinate: React.FC = () => {
     }
   };
 
+  const handleStartNextPlayer = () => {
+    clearStoredUser();
+    navigate('/login/hallucinate', { replace: true });
+  };
+
   if (!hasVerifiedSession) {
     return null;
   }
@@ -452,37 +534,10 @@ const Hallucinate: React.FC = () => {
         minHeight: '100vh',
         bgcolor: '#050710',
         ...arcadeSx,
+        fontFamily: READABLE_FONT,
       }}
     >
       <style>{arcadeFontCss}</style>
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 72,
-          left: { xs: -80, md: 40 },
-          width: 240,
-          height: 240,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255, 46, 147, 0.22) 0%, rgba(255, 46, 147, 0) 70%)',
-          filter: 'blur(8px)',
-          animation: 'ambientFloat 9s ease-in-out infinite',
-          pointerEvents: 'none',
-        }}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          right: { xs: -90, md: 20 },
-          top: 180,
-          width: 280,
-          height: 280,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0, 255, 217, 0.18) 0%, rgba(0, 255, 217, 0) 70%)',
-          filter: 'blur(10px)',
-          animation: 'ambientFloat 12s ease-in-out infinite',
-          pointerEvents: 'none',
-        }}
-      />
       {showAnimatedIntro ? (
         <Container
           maxWidth="lg"
@@ -495,27 +550,21 @@ const Hallucinate: React.FC = () => {
             position: 'relative',
           }}
         >
-          <Button
-            variant="outlined"
+          <ArcadeButton
+            variant="outline"
+            color="magenta"
+            size="sm"
             onClick={() => setShowAnimatedIntro(false)}
             sx={{
               position: 'absolute',
               top: 24,
               right: 24,
               zIndex: 2,
-              fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-              fontSize: '0.68rem',
-              color: '#00ffd9 !important',
-              borderColor: 'rgba(0, 255, 217, 0.62) !important',
-              backgroundColor: 'rgba(0, 255, 217, 0.06)',
-              '&:hover': {
-                backgroundColor: 'rgba(0, 255, 217, 0.14)',
-                borderColor: 'rgba(0, 255, 217, 0.84) !important',
-              },
+              fontSize: '0.58rem',
             }}
           >
             Skip
-          </Button>
+          </ArcadeButton>
           <Box
             sx={{
               textAlign: 'center',
@@ -544,143 +593,45 @@ const Hallucinate: React.FC = () => {
                   wordWrap: 'break-word',
                   lineHeight: { xs: 1.75, md: 1.65 },
                   textAlign: 'center',
-                  fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-                  fontWeight: 900,
-                  fontSize: { xs: '1.04rem', sm: '1.36rem', md: '1.78rem', lg: '2rem' },
-                  letterSpacing: '0.08em',
+                  fontFamily: TITLE_FONT,
+                  fontWeight: 700,
+                  fontSize: { xs: '1.16rem', sm: '1.52rem', md: '1.95rem', lg: '2.18rem' },
+                  letterSpacing: '0.04em',
                   textTransform: 'uppercase',
                   color: '#ffffff',
                   textShadow:
-                    '0 3px 0 rgba(0,0,0,0.55), 0 0 18px rgba(0,255,217,0.28), 0 0 34px rgba(255,46,147,0.18)',
+                    '0 3px 0 rgba(0,0,0,0.55), 0 0 18px rgba(255, 0, 255, 0.28), 0 0 34px rgba(255, 46, 147,0.18)',
                 }}
               >
                 {line}
               </Typography>
             ))}
+            {/* dots moved to bottom-center of the container */}
           </Box>
-        </Container>
-      ) : showLanding ? (
-        <Container
-          maxWidth="lg"
-          sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            py: 6,
-          }}
-        >
           <Box
+            aria-hidden
             sx={{
-              ...fadeUpSx,
-              width: '100%',
-              maxWidth: 920,
-              px: { xs: 3, md: 5 },
-              py: { xs: 4, md: 5 },
-              borderRadius: 4,
-              border: '1px solid rgba(0,255,217,0.28)',
-              background: 'linear-gradient(135deg, rgba(13, 18, 36, 0.94), rgba(7, 10, 24, 0.94))',
-              boxShadow:
-                '0 0 0 1px rgba(0,255,217,0.12), 0 28px 70px rgba(5, 12, 28, 0.52), 0 0 42px rgba(91,46,255,0.16)',
-              textAlign: 'center',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                inset: 14,
-                border: '1px solid rgba(0,255,217,0.16)',
-                borderRadius: 3,
-                pointerEvents: 'none',
-              },
+              position: 'absolute',
+              left: '50%',
+              bottom: 24,
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 1,
+              zIndex: 2,
             }}
           >
-            <Chip
-              label="AI Safety Studio"
-              size="small"
-              sx={{
-                mb: 1.8,
-                color: '#00ffd9',
-                background: 'rgba(0,255,217,0.08)',
-                borderColor: 'rgba(0,255,217,0.34)',
-                fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-              }}
-            />
-            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1.2, fontFamily: "'Press Start 2P', 'VT323', monospace !important", fontSize: { xs: '1.1rem', sm: '1.4rem', md: '1.7rem' }, lineHeight: 1.5, letterSpacing: '0.06em', textShadow: '0 0 24px rgba(0,255,217,0.4), 0 0 48px rgba(255,46,147,0.24), 0 3px 0 rgba(0,0,0,0.5)' }}>
-              AI HALLUCINATION ARCADE
-            </Typography>
-            <Box sx={{ mb: 3 }} />
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-              }}
-            >
+            {introLines.map((_, i) => (
               <Box
+                key={`dot-${i}`}
                 sx={{
-                  width: { xs: '100%', sm: 420 },
-                  maxWidth: '100%',
-                  p: 1.25,
-                  borderRadius: 3.5,
-                  background:
-                    'linear-gradient(180deg, rgba(210,218,228,0.95) 0%, rgba(118,130,148,0.98) 42%, rgba(62,72,90,1) 100%)',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                  boxShadow:
-                    'inset 0 2px 0 rgba(255,255,255,0.32), inset 0 -3px 8px rgba(0,0,0,0.34), 0 20px 40px rgba(0,0,0,0.28)',
+                  width: i === currentIntroTextIndex ? 12 : 8,
+                  height: i === currentIntroTextIndex ? 12 : 8,
+                  borderRadius: '50%',
+                  backgroundColor: i === currentIntroTextIndex ? '#ff00ff' : 'rgba(255,255,255,0.12)',
+                  transition: 'width 200ms ease, height 200ms ease, background-color 200ms ease',
                 }}
-              >
-                <Box
-                  sx={{
-                    p: 1.2,
-                    borderRadius: 2.75,
-                    background:
-                      'linear-gradient(180deg, rgba(44,52,66,0.98) 0%, rgba(22,28,40,1) 100%)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
-                  }}
-                >
-                  <Button
-                    className="arcade-start-button"
-                    variant="contained"
-                    onClick={() => setShowLanding(false)}
-                    sx={{
-                      '&&': {
-                        backgroundColor: '#cf1717 !important',
-                        backgroundImage:
-                          'linear-gradient(180deg, rgba(255, 118, 118, 1) 0%, rgba(245, 32, 32, 1) 30%, rgba(196, 10, 10, 1) 68%, rgba(110, 0, 0, 1) 100%) !important',
-                        color: '#fff7f7 !important',
-                        fontFamily: "'Press Start 2P', 'VT323', monospace !important",
-                        border: '2px solid rgba(255, 214, 214, 0.26) !important',
-                        boxShadow:
-                          'inset 0 8px 16px rgba(255,255,255,0.18), inset 0 -12px 18px rgba(72,0,0,0.46), 0 8px 0 rgba(74, 10, 10, 0.95), 0 18px 28px rgba(0,0,0,0.32), 0 0 24px rgba(255,40,40,0.24) !important',
-                      },
-                      width: '100%',
-                      maxWidth: '100%',
-                      minHeight: 102,
-                      borderRadius: 2,
-                      fontWeight: 900,
-                      fontSize: '0.92rem',
-                      lineHeight: 1.5,
-                      letterSpacing: '0.08em',
-                      textAlign: 'center',
-                      animation: 'startBlink 1000ms ease-in-out infinite alternate',
-                      '&:hover': {
-                        transform: 'translateY(3px)',
-                        boxShadow:
-                          'inset 0 6px 14px rgba(255,255,255,0.16), inset 0 -10px 16px rgba(72,0,0,0.52), 0 5px 0 rgba(74, 10, 10, 0.95), 0 12px 22px rgba(0,0,0,0.28), 0 0 22px rgba(255,40,40,0.28) !important',
-                      },
-                      '&&:hover': {
-                        backgroundColor: '#cf1717 !important',
-                        backgroundImage:
-                          'linear-gradient(180deg, rgba(255, 118, 118, 1) 0%, rgba(245, 32, 32, 1) 30%, rgba(196, 10, 10, 1) 68%, rgba(110, 0, 0, 1) 100%) !important',
-                        color: '#fff7f7 !important',
-                      },
-                    }}
-                  >
-                    Press Start
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
+              />
+            ))}
           </Box>
         </Container>
       ) : (
@@ -701,12 +652,12 @@ const Hallucinate: React.FC = () => {
               sx={{
                 flex: '0 0 auto',
                 px: { xs: 2, sm: 3 },
-                color: index % 2 === 0 ? '#00ffd9' : '#ff70bf',
+                color: index % 2 === 0 ? '#ff00ff' : '#ff70bf',
                 fontSize: { xs: '0.5rem', sm: '0.6rem' },
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                fontFamily: "'Press Start 2P', 'VT323', monospace !important",
-                textShadow: '0 0 12px rgba(0,255,217,0.22)',
+                fontFamily: `${ARCADE_FONT} !important`,
+                textShadow: '0 0 12px rgba(255, 0, 255, 0.22)',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -726,246 +677,409 @@ const Hallucinate: React.FC = () => {
           pt: 0.5,
         }}
       >
-          <Container maxWidth="lg" sx={{ pt: 2, pb: 3 }}>
+          <Container maxWidth="xl" sx={{ pt: 2, pb: 3 }}>
             <Stack spacing={2} sx={{ width: '100%', alignItems: 'center' }}>
               {showTrainingGame ? (
                 <TrainingArena
                   onViewRanking={handleViewRanking}
-                  onExitToScenarios={() => {
-                    setShowTrainingGame(false);
-                    setShowScenarioChat(false);
-                    setShowLanding(true);
-                    setCaseFileOpen(false);
-                    setCaseFileUnlocking(false);
-                    setCurrentIntroTextIndex(0);
-                    setIsIntroFadingOut(false);
-                    setShowAnimatedIntro(true);
-                  }}
+                  onExitToScenarios={handleStartNextPlayer}
                 />
               ) : !showScenarioChat && (
                 <Box
                   sx={journeyShellSx}
                 >
-                  <Box sx={{ width: '100%', maxWidth: 880 }}>
-                    <Stack direction="row" spacing={1} sx={{ justifyContent: 'center', mb: 2 }}>
-                      <Chip
-                        icon={<FiberManualRecordIcon sx={{ fontSize: 12, animation: 'statusBlink 900ms ease-in-out infinite alternate' }} />}
-                        label={statusText}
-                        onClick={handleOpenCaseFile}
-                        sx={{
-                          fontFamily: "'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif",
-                          px: 0.7,
-                          py: 0.15,
-                          cursor: caseFileOpen ? 'default' : 'pointer',
-                          transition: 'all 220ms ease',
-                          ...(caseFileUnlocking && {
-                            borderColor: 'rgba(0,255,217,0.85) !important',
-                            boxShadow: '0 0 0 1px rgba(0,255,217,0.3), 0 0 16px rgba(0,255,217,0.34)',
-                            animation: 'decryptPulse 520ms ease-out 1',
-                          }),
-                          ...(!caseFileOpen && {
-                            boxShadow: '0 0 0 1px rgba(0,255,217,0.26), 0 0 14px rgba(0,255,217,0.24)',
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 255, 217, 0.18) !important',
-                              borderColor: 'rgba(0, 255, 217, 0.7) !important',
-                            },
-                          }),
-                        }}
-                      />
-                    </Stack>
-
-                    {!caseFileOpen && (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          maxWidth: 660,
-                          mx: 'auto',
-                          mb: 2.4,
-                          px: { xs: 2, sm: 2.6 },
-                          py: { xs: 1.8, sm: 2.2 },
-                          borderRadius: 2.6,
-                          border: '1px solid rgba(0,255,217,0.24)',
-                          background: 'linear-gradient(155deg, rgba(4,9,20,0.96), rgba(8,14,30,0.98) 52%, rgba(7,12,27,0.95))',
-                          boxShadow: '0 0 0 1px rgba(0,255,217,0.08), inset 0 1px 0 rgba(255,255,255,0.04), 0 20px 46px rgba(3,8,18,0.52)',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          transition: 'all 220ms ease',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          animation: 'terminalFlicker 2.3s linear infinite',
-                          '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            left: 0,
-                            right: 0,
-                            height: '34%',
-                            background: 'linear-gradient(180deg, transparent, rgba(0,255,217,0.08), transparent)',
-                            animation: 'idleScan 3.8s linear infinite',
-                            pointerEvents: 'none',
-                            opacity: 0.6,
-                          },
-                          '&::after': caseFileUnlocking ? {
-                            content: '""',
-                            position: 'absolute',
-                            inset: 0,
-                            background: 'linear-gradient(100deg, transparent 35%, rgba(0,255,217,0.18) 50%, transparent 65%)',
-                            animation: 'decryptSweep 520ms linear 1',
-                            pointerEvents: 'none',
-                          } : {},
-                          '&:hover': {
-                            borderColor: 'rgba(0,255,217,0.44)',
-                            boxShadow: '0 0 0 1px rgba(0,255,217,0.16), 0 14px 28px rgba(0,0,0,0.24)',
-                            transform: 'translateY(-1px)',
-                          },
-                        }}
-                        onClick={handleOpenCaseFile}
-                      >
-                        <Box sx={{ position: 'relative', zIndex: 1 }}>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: 'block',
-                              mb: 0.9,
-                              color: 'rgba(0,255,217,0.72)',
-                              letterSpacing: '0.14em',
-                              textTransform: 'uppercase',
-                              fontFamily: "'Press Start 2P', 'VT323', monospace",
-                              fontSize: { xs: '0.52rem', sm: '0.58rem' },
-                            }}
-                          >
-                            Terminal Link: Standby
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: 'rgba(228,241,255,0.88)',
-                              lineHeight: 1.72,
-                              fontSize: { xs: '0.8rem', sm: '0.86rem' },
-                              mb: 0.55,
-                              fontFamily: "'VT323', 'Inter', monospace",
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            <Box
-                              component="span"
-                              sx={{
-                                '--target-width': `${terminalLineOne.length}ch`,
-                                display: 'inline-block',
-                                overflow: 'hidden',
-                                whiteSpace: 'nowrap',
-                                width: '0ch',
-                                animation: `typeLine ${Math.max(1.2, terminalLineOne.length * 0.06)}s steps(${terminalLineOne.length}, end) 0.2s forwards`,
-                              }}
-                            >
-                              {terminalLineOne}
-                            </Box>
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: 'rgba(182,228,255,0.8)',
-                              lineHeight: 1.72,
-                              fontSize: { xs: '0.8rem', sm: '0.86rem' },
-                              mb: 1.25,
-                              fontFamily: "'VT323', 'Inter', monospace",
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            <Box
-                              component="span"
-                              sx={{
-                                '--target-width': `${terminalLineTwo.length}ch`,
-                                display: 'inline-block',
-                                overflow: 'hidden',
-                                whiteSpace: 'nowrap',
-                                width: '0ch',
-                                animation: `typeLine ${Math.max(1.2, terminalLineTwo.length * 0.06)}s steps(${terminalLineTwo.length}, end) ${Math.max(1.2, terminalLineOne.length * 0.06) + 0.35}s forwards`,
-                              }}
-                            >
-                              {terminalLineTwo}
-                            </Box>
-                            <Box
-                              component="span"
-                              sx={{
-                                ml: 0.35,
-                                display: 'inline-block',
-                                width: 8,
-                                height: 14,
-                                backgroundColor: 'rgba(0,255,217,0.75)',
-                                animation: 'cursorBlink 900ms steps(1, end) infinite',
-                                verticalAlign: 'text-bottom',
-                              }}
-                            />
-                          </Typography>
-                        </Box>
-                        <Box
+                  <Box sx={{ width: '100%', maxWidth: 980 }}>
+                    {!showTerminalPanel && !caseFileOpen && (
+                      <Box sx={receivedFileIntroSx}>
+                        <Typography
+                          variant="caption"
                           sx={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            px: 1.1,
-                            py: 0.5,
-                            borderRadius: 999,
-                            border: '1px solid rgba(0,255,217,0.34)',
-                            color: 'rgba(0,255,217,0.9)',
-                            letterSpacing: '0.1em',
+                            justifyContent: 'center',
+                            mb: 1.35,
+                            px: 1.18,
+                            py: 0.38,
+                            border: '1px solid rgba(255, 191, 77, 0.4)',
+                            background: 'rgba(255, 191, 77, 0.1)',
+                            color: '#ffcf7a',
+                            fontFamily: ARCADE_FONT,
+                            fontSize: { xs: '0.5rem', sm: '0.56rem' },
+                            letterSpacing: '0.11em',
                             textTransform: 'uppercase',
-                            fontSize: { xs: '0.58rem', sm: '0.64rem' },
-                            fontFamily: "'Press Start 2P', 'Inter', sans-serif",
-                            animation: 'statusBlink 1100ms ease-in-out infinite alternate',
-                            position: 'relative',
-                            zIndex: 1,
+                            boxShadow: '0 0 14px rgba(255, 191, 77, 0.08)',
                           }}
                         >
-                          {caseFileUnlocking ? 'Decrypting...' : 'Open Case File'}
-                        </Box>
+                          Mission I  AI Hallucination
+                        </Typography>
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            ...journeyTitleSx,
+                            mt: 0,
+                            mb: 1.2,
+                            mx: 'auto',
+                            maxWidth: 800,
+                            fontSize: { xs: '1.14rem', sm: '1.4rem', md: '1.66rem' },
+                            lineHeight: 1.42,
+                          }}
+                        >
+                          Case file received
+                        </Typography>
+                        <Stack spacing={0.85} sx={{ maxWidth: 800, mx: 'auto' }}>
+                          {receivedFileIntroLines.map((line, idx) => {
+                            const isWarningLine = line.includes(warningPhrase);
+                            const isFileLine = line.includes(receivedFileName);
+                            const [fileLinePrefix, fileLineSuffix = ''] = isFileLine
+                              ? line.split(receivedFileName)
+                              : [line, ''];
+                            return (
+                              <Typography
+                                key={isWarningLine ? `warning-${idx}` : isFileLine ? `file-${idx}` : line}
+                                variant="body2"
+                                sx={{
+                                  ...journeyPromptSx,
+                                  mb: 0,
+                                  maxWidth: 'none',
+                                  color: 'rgba(228, 241, 255, 0.82)',
+                                  fontSize: { xs: '0.8rem', sm: '0.88rem' },
+                                }}
+                              >
+                                {isFileLine ? (
+                                  <>
+                                    {fileLinePrefix}
+                                    <Box
+                                      component="span"
+                                      sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        px: 0.7,
+                                        py: 0.16,
+                                        border: '1px solid rgba(255, 0, 255, 0.38)',
+                                        background: 'rgba(255, 0, 255, 0.12)',
+                                        color: '#ff9ae8',
+                                        fontFamily: "'VT323', 'Courier New', monospace",
+                                        fontSize: '1.02em',
+                                        lineHeight: 1,
+                                        letterSpacing: '0.05em',
+                                        boxShadow: '0 0 14px rgba(255, 0, 255, 0.08)',
+                                      }}
+                                    >
+                                      {receivedFileName}
+                                    </Box>
+                                    {fileLineSuffix}
+                                  </>
+                                ) : isWarningLine ? (
+                                  <>
+                                    {line.replace(warningPhrase, '')}
+                                    <Box
+                                      component="span"
+                                      sx={{
+                                        display: 'inline',
+                                        color: '#ffd27a',
+                                        fontWeight: 900,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.04em',
+                                        textShadow: '0 0 12px rgba(255, 191, 77, 0.22)',
+                                      }}
+                                    >
+                                      {warningPhrase}
+                                    </Box>
+                                  </>
+                                ) : (
+                                  line
+                                )}
+                              </Typography>
+                            );
+                          })}
+                        </Stack>
+                        <ArcadeButton
+                          color="magenta"
+                          size="lg"
+                          animation="pulse"
+                          onClick={() => setShowTerminalPanel(true)}
+                          sx={{
+                            ...actionButtonSx,
+                            mt: 2.4,
+                          }}
+                        >
+                          Open Terminal
+                        </ArcadeButton>
                       </Box>
+                    )}
+                    {showTerminalPanel && !caseFileOpen && (
+                      <Box
+                        sx={terminalPanelSx}
+                        onClick={handleOpenCaseFile}
+                      >
+                          <Box sx={terminalChromeSx}>
+                            <Stack direction="row" spacing={0.7} alignItems="center">
+                              {['#ff5f7a', '#ffbf4d', '#ff00ff'].map((color) => (
+                                <Box
+                                  key={color}
+                                  sx={{
+                                    width: 9,
+                                    height: 9,
+                                    borderRadius: '50%',
+                                    backgroundColor: color,
+                                    boxShadow: `0 0 10px ${color}80`,
+                                  }}
+                                />
+                              ))}
+                            </Stack>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'rgba(248, 231, 255, 0.78)',
+                                fontFamily: "'VT323', 'Courier New', monospace",
+                                fontSize: { xs: '0.85rem', sm: '0.98rem' },
+                                letterSpacing: '0.08em',
+                                textTransform: 'uppercase',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              root@arcade:/casefiles/hallucination
+                            </Typography>
+                          </Box>
+
+                          <Box sx={{ position: 'relative', zIndex: 1, px: { xs: 1.7, sm: 2.4 }, py: { xs: 1.6, sm: 2.1 } }}>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                display: 'inline-flex',
+                                mb: 1.1,
+                                px: 1,
+                                py: 0.35,
+                                border: '1px solid rgba(255, 0, 255, 0.36)',
+                                color: '#ff00ff',
+                                background: 'rgba(255, 0, 255, 0.08)',
+                                letterSpacing: '0.14em',
+                                textTransform: 'uppercase',
+                                fontFamily: ARCADE_FONT,
+                                fontSize: { xs: '0.48rem', sm: '0.54rem' },
+                              }}
+                            >
+                              Terminal Link: Standby
+                            </Typography>
+                            {[terminalLineOne, terminalLineTwo, terminalLineThree].map((line, index) => (
+                              <Typography
+                                key={line}
+                                variant="body2"
+                                sx={{
+                                  ...terminalTextSx,
+                                  color: index === 1 ? 'rgba(255, 191, 77, 0.92)' : terminalTextSx.color,
+                                  mb: index === 2 ? 1.2 : 0.3,
+                                }}
+                              >
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    '--target-width': `${line.length}ch`,
+                                    display: 'inline-block',
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap',
+                                    maxWidth: '100%',
+                                    width: '0ch',
+                                    animation: `typeLine ${Math.max(1.2, line.length * 0.045)}s steps(${line.length}, end) ${0.18 + index * 0.62}s forwards`,
+                                  }}
+                                >
+                                  {line}
+                                </Box>
+                              </Typography>
+                            ))}
+                            <Stack
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1.2}
+                              alignItems={{ xs: 'stretch', sm: 'center' }}
+                              justifyContent="space-between"
+                              sx={{ pt: 0.5 }}
+                            >
+                              <Box>
+                                {['case_id: HALLUCINATION-02', 'threat_model: confidence_trap', 'access: locked'].map((line) => (
+                                  <Typography key={line} variant="body2" sx={{ ...terminalTextSx, color: 'rgba(248, 231, 255, 0.68)', fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                                    <Box component="span" sx={{ color: '#ff00ff' }}>$</Box> {line}
+                                  </Typography>
+                                ))}
+                              </Box>
+                              <ArcadeButton
+                                color="magenta"
+                                variant="outline"
+                                size="sm"
+                                animation="pulse"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleOpenCaseFile();
+                                }}
+                                sx={{
+                                  fontSize: { xs: '0.52rem', sm: '0.625rem' },
+                                  alignSelf: { xs: 'stretch', sm: 'center' },
+                                }}
+                              >
+                                {caseFileUnlocking ? 'Decrypting...' : 'Open Case File'}
+                              </ArcadeButton>
+                            </Stack>
+                          </Box>
+                        </Box>
                     )}
 
                     <Collapse in={caseFileOpen} timeout={600}>
                       <Box
                         sx={{
-                          overflow: 'hidden',
-                          position: 'relative',
-                          '&::after': caseFileOpen ? {
+                          ...terminalPanelSx,
+                          maxWidth: 980,
+                          mb: 0,
+                          cursor: 'default',
+                          animation: 'softFadeUp 520ms ease-out both',
+                          '&::after': {
                             content: '""',
                             position: 'absolute',
                             left: 0,
                             right: 0,
                             height: '2px',
-                            background: 'linear-gradient(90deg, transparent, rgba(0,255,217,0.6), transparent)',
+                            background: 'linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.6), transparent)',
                             animation: 'scanLine 0.6s ease-out forwards',
                             top: 0,
-                          } : {},
+                          },
+                          '&:hover': {
+                            transform: 'none',
+                            borderColor: 'rgba(255, 0, 255, 0.58)',
+                            boxShadow:
+                              '0 0 0 1px rgba(255, 0, 255, 0.18), inset 0 0 28px rgba(255, 0, 255, 0.08), 0 24px 58px rgba(3, 0, 12, 0.62)',
+                          },
                         }}
                       >
-                        <Typography variant="caption" sx={{ ...arcadeLabelSx, display: 'inline-flex', mt: 1.1, mb: 1 }}>
-                          Briefing
-                        </Typography>
-                        <Typography
-                          variant="h3"
-                          sx={journeyTitleSx}
-                        >
-                          {selectedScenario?.background.headline}
-                        </Typography>
-                        <Typography
-                          variant="body1"
-                          sx={journeyBodySx}
-                        >
-                          {selectedScenario?.background.dek}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={journeyPromptSx}
-                        >
-                          {selectedScenario?.background.question}
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          onClick={() => setShowScenarioChat(true)}
-                          sx={actionButtonSx}
-                        >
-                          Enter the chat
-                        </Button>
+                        <Box sx={terminalChromeSx}>
+                          <Stack direction="row" spacing={0.7} alignItems="center">
+                            {['#ff5f7a', '#ffbf4d', '#ff00ff'].map((color) => (
+                              <Box
+                                key={color}
+                                sx={{
+                                  width: 9,
+                                  height: 9,
+                                  borderRadius: '50%',
+                                  backgroundColor: color,
+                                  boxShadow: `0 0 10px ${color}80`,
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'rgba(248, 231, 255, 0.78)',
+                              fontFamily: "'VT323', 'Courier New', monospace",
+                              fontSize: { xs: '0.85rem', sm: '0.98rem' },
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            root@arcade:/casefiles/briefing.md
+                          </Typography>
+                        </Box>
+                        <Box sx={{ position: 'relative', zIndex: 1, px: { xs: 1.7, sm: 2.8, md: 3.1 }, py: { xs: 2, sm: 2.6 } }}>
+                          {/* removed terminal command line ($ cat briefing.md) per request */}
+                          <Box
+                            sx={{
+                              display: 'inline-flex',
+                              mb: 1.4,
+                              maxWidth: '100%',
+                              ...terminalRevealSx(briefingLabelDelay),
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ ...arcadeLabelSx, display: 'inline-flex', borderRadius: 0 }}>
+                              DECRYPTED BRIEFING
+                            </Typography>
+                          </Box>
+                          <Stack spacing={0.2} sx={{ mb: 1.6 }}>
+                            {briefingHeadlineLines.map((line, index) => (
+                              <Typography
+                                key={`${line}-${index}`}
+                                variant="h3"
+                                sx={{
+                                  ...journeyTitleSx,
+                                  mx: 0,
+                                  mt: 0,
+                                  mb: 0,
+                                  textAlign: 'left',
+                                  fontFamily: TITLE_FONT,
+                                  color: '#f8e7ff',
+                                  textShadow: '0 0 18px rgba(255, 0, 255, 0.22)',
+                                  fontSize: { xs: '1.48rem', sm: '1.85rem', md: '2.15rem' },
+                                  letterSpacing: '0.035em',
+                                  lineHeight: 1.12,
+                                }}
+                              >
+                                <Box component="span">{line}</Box>
+                              </Typography>
+                            ))}
+                          </Stack>
+                          <Box sx={{ mb: 2 }}>
+                            {briefingBodyLines.map((line, index) => (
+                              <Typography
+                                key={`${line}-${index}`}
+                                component="div"
+                                variant="body1"
+                                sx={{
+                                  ...terminalTextSx,
+                                  color: 'rgba(248, 231, 255, 0.84)',
+                                  fontSize: { xs: '1.06rem', sm: '1.18rem' },
+                                  letterSpacing: '0.025em',
+                                  mb: 0.12,
+                                }}
+                              >
+                                <Box component="span">{line}</Box>
+                              </Typography>
+                            ))}
+                          </Box>
+                          <Box
+                            sx={{
+                              mb: 2.5,
+                              px: { xs: 1.2, sm: 1.5 },
+                              py: 1.2,
+                              borderLeft: '3px solid rgba(255, 0, 255, 0.68)',
+                              background: 'rgba(255, 0, 255, 0.07)',
+                            }}
+                          >
+                            <Typography
+                              component="p"
+                              variant="body2"
+                              sx={{
+                                ...journeyPromptSx,
+                                maxWidth: 'none',
+                                mx: 0,
+                                mb: 0,
+                                textAlign: 'left',
+                                color: 'rgba(248, 231, 255, 0.78)',
+                                fontFamily: "'VT323', 'Courier New', monospace",
+                                fontSize: { xs: '1.06rem', sm: '1.18rem' },
+                                letterSpacing: '0.025em',
+                                lineHeight: 1.55,
+                                whiteSpace: 'normal',
+                              }}
+                            >
+                              <Box component="span" sx={{ color: '#ff00ff' }}>
+                                {briefingObjectivePrefix}
+                              </Box>{' '}
+                              {briefingObjective}
+                            </Typography>
+                          </Box>
+                          <ArcadeButton
+                            color="magenta"
+                            size="lg"
+                            animation="pulse"
+                            onClick={() => setShowScenarioChat(true)}
+                            sx={{
+                              ...actionButtonSx,
+                            }}
+                          >
+                            Enter the chat
+                          </ArcadeButton>
+                        </Box>
                       </Box>
                     </Collapse>
                   </Box>
