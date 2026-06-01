@@ -6,8 +6,6 @@ const steps = [
   { step: '03', title: 'Review default permissions' },
 ]
 
-const watchItems = ['Pre-selected consent', 'Friction imbalance', 'Data sharing']
-
 const DataShadowsSidebar: React.FC = () => {
   return (
     <aside className="data-shadows-sidebar-card">
@@ -37,15 +35,6 @@ const DataShadowsSidebar: React.FC = () => {
               <div className="data-shadows-sidebar-step-number">{item.step}</div>
               <div className="data-shadows-sidebar-step-title">{item.title}</div>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="data-shadows-sidebar-watch">
-        <h3 className="data-shadows-sidebar-subtitle">Key Focus</h3>
-        <div className="data-shadows-sidebar-watch-list">
-          {watchItems.map((item) => (
-            <span key={item} className="data-shadows-sidebar-watch-chip">{item}</span>
           ))}
         </div>
       </section>
