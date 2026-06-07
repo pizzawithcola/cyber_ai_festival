@@ -18,7 +18,7 @@ const QuizComponent = ({ onAnswer, quizAnswers, onFinished }: QuizComponentProps
 
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
 
-  const feedback = {
+  const feedback: Record<string, string> = {
     user: "End users should be careful, but they cannot fully defend against complex malware and supply-chain attacks on their own. Focusing only on the consumer misses the shared responsibility between attackers, developers, and platforms.",
     attacker: "The malicious site is directly responsible for carrying out the fraud, but strong system and platform defenses are also needed to prevent these attacks from succeeding.",
     developer: "Developers do share responsibility for building safer agents and guardrails, but they are not the only party involved. Attackers and platforms also play key roles.",
