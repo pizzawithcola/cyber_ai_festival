@@ -2,6 +2,13 @@
 /* iPhone 14/15 Classic Notch with Visible Status Icons */
 
 .apple-phone-container {
+  --phone-base-width: 390px;
+  --phone-base-height: 844px;
+  --phone-notch-width: 210px;
+  --phone-notch-height: 30px;
+  --phone-status-height: 30px;
+  --phone-status-side-width: calc((var(--phone-base-width) - var(--phone-notch-width)) / 2);
+  --phone-status-side-inset: 14px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -11,12 +18,21 @@
   background: transparent;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  overflow: visible;
+}
+
+.phone-scale-frame {
+  width: var(--data-shadows-phone-width, var(--phone-base-width));
+  height: var(--data-shadows-phone-height, var(--phone-base-height));
+  position: relative;
+  flex-shrink: 0;
+  overflow: visible;
 }
 
 /* Device Bezel - iPhone 14/15 Classic Notch */
 .phone-bezel {
-  width: 100%;
-  height: 100%;
+  width: var(--phone-base-width);
+  height: var(--phone-base-height);
   background: #000;
   border-radius: 50px;
   overflow: hidden;
@@ -24,7 +40,11 @@
     0 25px 60px rgba(0, 0, 0, 0.8),
     0 0 0 1px rgba(255, 255, 255, 0.1),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(var(--data-shadows-phone-scale));
+  transform-origin: center center;
   border: 12px solid #111;
   flex-shrink: 0;
 }
@@ -36,8 +56,8 @@
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 210px;
-  height: 30px;
+  width: var(--phone-notch-width);
+  height: var(--phone-notch-height);
   background: #000;
   border-radius: 0 0 20px 20px;
   z-index: 20;
@@ -63,7 +83,7 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: 30px;
+  height: var(--phone-status-height);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -75,31 +95,34 @@
 .status-left-container {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 105px;
-  height: 30px;
+  left: var(--phone-status-side-inset);
+  width: calc(var(--phone-status-side-width) - var(--phone-status-side-inset));
+  height: var(--phone-status-height);
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  padding-left: 24px;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .status-right-container {
   position: absolute;
   top: 0;
-  right: 0;
-  width: 105px;
-  height: 30px;
+  right: var(--phone-status-side-inset);
+  width: calc(var(--phone-status-side-width) - var(--phone-status-side-inset));
+  height: var(--phone-status-height);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding-right: 24px;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* 状态栏内容样式 - 固定为白色，确保在黑色刘海屏上可见 */
 .status-content {
   display: flex;
   align-items: center;
+  justify-content: center;
   height: 100%;
 }
 
@@ -117,6 +140,7 @@
 .status-indicators {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 

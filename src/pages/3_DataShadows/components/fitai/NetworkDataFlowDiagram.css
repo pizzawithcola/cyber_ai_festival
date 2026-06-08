@@ -19,7 +19,8 @@
   height: auto;
   min-height: 0;
   overflow: visible;
-  padding: 16px 14px 18px;
+  padding: 18px 16px 22px;
+  gap: 16px;
 }
 
 .data-shadows-portrait-reveal .data-flow-header {
@@ -29,13 +30,13 @@
 }
 
 .data-shadows-portrait-reveal .data-flow-title {
-  font-size: clamp(24px, 4vw, 32px);
+  font-size: clamp(28px, 4.4vw, 36px);
   line-height: 1.15;
 }
 
 .data-shadows-portrait-reveal .data-flow-subtitle,
 .data-shadows-portrait-reveal .privacy-score-label {
-  font-size: clamp(14px, 2.1vw, 18px);
+  font-size: clamp(16px, 2.3vw, 20px);
 }
 
 .data-shadows-portrait-reveal .privacy-score-block {
@@ -45,12 +46,13 @@
 }
 
 .data-shadows-portrait-reveal .privacy-score-value {
-  font-size: clamp(32px, 5vw, 42px);
+  font-size: clamp(36px, 5.4vw, 48px);
 }
 
 .data-shadows-portrait-reveal .network-data-flow-body {
   grid-template-columns: 1fr;
   overflow: visible;
+  gap: 14px;
 }
 
 .data-shadows-portrait-reveal .network-visual-panel {
@@ -58,11 +60,78 @@
 }
 
 .data-shadows-portrait-reveal .network-diagram-container {
-  min-height: 520px;
+  min-height: clamp(420px, 44vh, 560px);
+  padding: 10px;
 }
 
 .data-shadows-portrait-reveal .data-flow-info-strip {
   max-height: none;
+  gap: 8px;
+}
+
+.data-shadows-portrait-reveal .node-label-svg {
+  font-size: 28px;
+  stroke-width: 3px;
+}
+
+.data-shadows-portrait-reveal .connection-flow-label-text {
+  font-size: 17px;
+  stroke-width: 1.6px;
+}
+
+.data-shadows-portrait-reveal .flow-node-detail {
+  padding: 16px 16px;
+  text-align: left;
+}
+
+.data-shadows-portrait-reveal .flow-node-overview-heading {
+  gap: 10px;
+}
+
+.data-shadows-portrait-reveal .flow-node-detail-title {
+  font-size: clamp(26px, 3.5vw, 34px);
+  text-align: center;
+}
+
+.data-shadows-portrait-reveal .flow-node-detail-desc {
+  font-size: 17px;
+  line-height: 1.5;
+  max-width: none;
+}
+
+.data-shadows-portrait-reveal .flow-node-overview-item,
+.data-shadows-portrait-reveal .flow-node-module p,
+.data-shadows-portrait-reveal .flow-node-consequence,
+.data-shadows-portrait-reveal .flow-node-impact,
+.data-shadows-portrait-reveal .flow-node-detail-status,
+.data-shadows-portrait-reveal .flow-node-fields,
+.data-shadows-portrait-reveal .flow-node-sample {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.data-shadows-portrait-reveal .flow-node-module strong,
+.data-shadows-portrait-reveal .flow-node-consequence strong {
+  font-size: 14px;
+}
+
+.data-shadows-portrait-reveal .flow-node-detail-selected,
+.data-shadows-portrait-reveal .flow-node-detail-main,
+.data-shadows-portrait-reveal .flow-node-detail-footer {
+  width: 100%;
+  max-width: none;
+}
+
+.data-shadows-portrait-reveal .flow-node-detail-selected {
+  gap: 12px;
+}
+
+.data-shadows-portrait-reveal .data-flow-leaderboard-button,
+.data-shadows-portrait-reveal .data-flow-retry-button {
+  width: 100%;
+  max-width: 480px;
+  padding: 15px 18px;
+  font-size: 13px;
 }
 
 .data-flow-header {
@@ -370,10 +439,29 @@
 }
 
 .data-flow-info-content {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   align-items: stretch;
+}
+
+.data-shadows-reveal-layout:not(.data-shadows-portrait-reveal) .data-flow-info-strip {
+  overflow: hidden;
+}
+
+.data-shadows-reveal-layout:not(.data-shadows-portrait-reveal) .data-flow-info-content {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.data-shadows-reveal-layout:not(.data-shadows-portrait-reveal) .data-flow-info-content-overview {
+  flex-direction: column;
+  justify-content: center;
+}
+
+.data-shadows-reveal-layout:not(.data-shadows-portrait-reveal) .data-flow-info-content-selected .flow-node-detail-selected {
+  height: 100%;
+  max-height: 100%;
 }
 
 .data-flow-leaderboard-button,
@@ -418,7 +506,7 @@
   background: rgba(3, 7, 18, 0.78);
   border-radius: 8px;
   border: 2px solid rgba(244, 114, 182, 0.24);
-  height: 100%;
+  height: auto;
   min-height: 0;
   box-sizing: border-box;
   overflow-y: auto;
@@ -657,16 +745,28 @@
   font-weight: 600;
   cursor: pointer;
   width: min(100%, 360px);
-  justify-self: center;
   align-self: center;
+  flex-shrink: 0;
 }
 
 .flow-node-detail-selected {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: center;
-  justify-items: center;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.flow-node-detail-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  justify-items: stretch;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
 }
 
 .flow-node-detail-main {
@@ -674,7 +774,7 @@
   grid-template-columns: 1fr;
   gap: 12px;
   align-items: center;
-  justify-items: center;
+  justify-items: stretch;
   width: min(100%, 620px);
 }
 
@@ -690,8 +790,27 @@
   grid-template-columns: 1fr;
   gap: 10px;
   align-items: center;
-  justify-items: center;
+  justify-items: stretch;
   width: min(100%, 620px);
+}
+
+@media (min-width: 720px) {
+  .data-shadows-portrait-reveal .flow-node-detail-main {
+    grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .data-shadows-portrait-reveal .flow-node-detail-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+
+  .data-shadows-portrait-reveal .flow-node-fields,
+  .data-shadows-portrait-reveal .flow-node-detail-status {
+    text-align: left;
+  }
 }
 
 .flow-node-detail-close:hover {
