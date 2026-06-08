@@ -1,6 +1,8 @@
 /* DataShadows layout */
 .data-shadows-container {
   --data-shadows-display-font: 'Electrolize', sans-serif;
+  --data-shadows-phone-width: 390px;
+  --data-shadows-phone-height: 844px;
   display: grid;
   grid-template-columns: minmax(24px, 1fr) 390px 0 minmax(24px, 1fr);
   min-height: 100vh;
@@ -29,6 +31,11 @@
 .data-shadows-stage-shell,
 .data-shadows-stage-canvas {
   width: 100%;
+}
+
+.data-shadows-stage-shell {
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .data-shadows-reveal-canvas {
@@ -145,8 +152,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 390px;
-  height: 844px; /* Match phone height exactly */
+  width: var(--data-shadows-phone-width);
+  height: var(--data-shadows-phone-height);
   justify-self: center;
   transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
 }
@@ -165,7 +172,7 @@
   width: 100%;
   min-width: 0;
   max-width: 0;
-  height: 844px; /* Match phone height exactly */
+  height: var(--data-shadows-phone-height);
   overflow: hidden;
   opacity: 0;
   pointer-events: none;
@@ -177,7 +184,7 @@
 .truth-reveal-right-visible {
   min-width: 0;
   max-width: 100%;
-  height: 844px; /* Match phone height exactly */
+  height: var(--data-shadows-phone-height);
   opacity: 1;
   pointer-events: auto;
   overflow: hidden;
@@ -621,4 +628,100 @@
     height: 844px;
     min-height: 0;
   }
+}
+
+@media (orientation: portrait) {
+  .data-shadows-stage-shell {
+    overflow-y: auto;
+  }
+}
+
+.data-shadows-portrait-stage {
+  padding: 24px 24px 40px;
+  gap: 24px;
+}
+
+.data-shadows-portrait-stage.data-shadows-phone-only,
+.data-shadows-portrait-stage.data-shadows-sidebar-layout {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+
+.data-shadows-portrait-stage.data-shadows-phone-only {
+  align-content: center;
+}
+
+.data-shadows-portrait-stage.data-shadows-sidebar-layout {
+  align-content: start;
+}
+
+.data-shadows-portrait-stage.data-shadows-phone-only .phone-panel,
+.data-shadows-portrait-stage.data-shadows-sidebar-layout .phone-panel {
+  grid-column: 1;
+  width: var(--data-shadows-phone-width);
+  max-width: none;
+}
+
+.data-shadows-portrait-stage.data-shadows-sidebar-layout .data-shadows-side-panel {
+  grid-column: 1;
+  width: min(100%, 560px);
+  max-width: min(100%, 560px);
+  height: auto;
+  min-height: 0;
+  transform: translateY(18px);
+  justify-self: center;
+}
+
+.data-shadows-portrait-stage.data-shadows-sidebar-layout .data-shadows-side-panel-visible {
+  height: auto;
+  max-width: min(100%, 560px);
+  overflow: visible;
+}
+
+.data-shadows-portrait-stage.data-shadows-sidebar-layout .data-shadows-sidebar-card {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.data-shadows-portrait-stage.data-shadows-sidebar-layout .data-shadows-sidebar-title {
+  font-size: clamp(28px, 5vw, 36px);
+}
+
+.data-shadows-portrait-stage.data-shadows-sidebar-layout .data-shadows-sidebar-lead {
+  max-width: none;
+}
+
+.data-shadows-portrait-reveal {
+  width: 100%;
+  max-width: min(100%, 980px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 24px 40px;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: start;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+.data-shadows-portrait-reveal .phone-panel {
+  grid-column: 1;
+  width: var(--data-shadows-phone-width);
+  max-width: none;
+}
+
+.data-shadows-portrait-reveal .data-shadows-side-panel,
+.data-shadows-portrait-reveal .truth-reveal-right-visible {
+  grid-column: 1;
+  width: min(100%, 940px);
+  max-width: min(100%, 940px);
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  justify-self: stretch;
+}
+
+.data-shadows-portrait-reveal .truth-reveal-right-visible {
+  border-radius: 18px;
 }
