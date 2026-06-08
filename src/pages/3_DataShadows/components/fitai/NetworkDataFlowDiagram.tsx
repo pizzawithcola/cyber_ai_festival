@@ -1031,8 +1031,8 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
           </div>
         </section>
 
-        <section className="data-flow-info-strip">
-          <div className="data-flow-info-content">
+        <section className={`data-flow-info-strip ${selectedNode ? 'data-flow-info-strip-selected' : 'data-flow-info-strip-overview'}`}>
+          <div className={`data-flow-info-content ${selectedNode ? 'data-flow-info-content-selected' : 'data-flow-info-content-overview'}`}>
             {selectedNode ? (() => {
             const isAlwaysEnabled = selectedNode.id === 'user' || selectedNode.id === 'app'
             const nodeActive = isAlwaysEnabled || isNodeActive(selectedNode.id)
@@ -1048,61 +1048,63 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
 
             return (
               <div className="flow-node-detail flow-node-detail-selected" role="dialog" aria-label={selectedNode.label}>
-                <div className="flow-node-detail-main">
-                  <div>
-                    <h3 className="flow-node-detail-title">{selectedNode.label}</h3>
-                    <p className="flow-node-detail-desc">{selectedNode.description}</p>
-                  </div>
-
-                  <div className="flow-node-compact-io">
-                    <div className="flow-node-module flow-node-module-in">
-                      <strong>Inbound</strong>
-                      <p>{selectedNode.inboundData ?? ioSummary.inbound}</p>
+                <div className="flow-node-detail-scroll">
+                  <div className="flow-node-detail-main">
+                    <div>
+                      <h3 className="flow-node-detail-title">{selectedNode.label}</h3>
+                      <p className="flow-node-detail-desc">{selectedNode.description}</p>
                     </div>
 
-                    <div className="flow-node-module flow-node-module-out">
-                      <strong>Outbound</strong>
-                      <p>{selectedNode.outboundData ?? ioSummary.outbound}</p>
+                    <div className="flow-node-compact-io">
+                      <div className="flow-node-module flow-node-module-in">
+                        <strong>Inbound</strong>
+                        <p>{selectedNode.inboundData ?? ioSummary.inbound}</p>
+                      </div>
+
+                      <div className="flow-node-module flow-node-module-out">
+                        <strong>Outbound</strong>
+                        <p>{selectedNode.outboundData ?? ioSummary.outbound}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {selectedNode.scoreImpactCategory && selectedNode.scoreImpactCategory !== 'none' && (
-                  <div className={`flow-node-impact ${emphasis.className.includes('low') ? 'flow-node-impact-risk' : 'flow-node-impact-safe'}`}>
-                    <strong>
-                      {emphasis.indicator ? emphasis.indicator + ' — ' : ''}
-                      {selectedNode.scoreImpactCategory === 'reading' && 'Visibility depends on terms comprehension'}
-                      {selectedNode.scoreImpactCategory === 'consent' && 'Affected by your privacy toggle choices'}
-                      {selectedNode.scoreImpactCategory === 'exposure' && 'Increases with personal data disclosure'}
-                    </strong>
-                  </div>
-                )}
-
-                <div className="flow-node-consequence">
-                  <strong>Possible consequence</strong>
-                  <p>{consequence}</p>
-                </div>
-
-                <div className="flow-node-detail-footer">
-                  <div
-                    className={[
-                      'flow-node-detail-status',
-                      isAlwaysEnabled || nodeActive
-                        ? 'flow-node-detail-status-risk'
-                        : 'flow-node-detail-status-safe',
-                    ].join(' ')}
-                  >
-                    <strong>Status:</strong>{' '}
-                    {isAlwaysEnabled || nodeActive
-                      ? 'Your data reaches this node' + (isAlwaysEnabled ? '' : ' through active consent paths')
-                      : 'No active data route with your current choices'}
-                  </div>
-
-                  {(isAlwaysEnabled || nodeActive) && nodeData && 'fields' in nodeData && Array.isArray(nodeData.fields) && nodeData.fields.length > 0 && (
-                    <div className="flow-node-fields">
-                      <strong>Fields:</strong> {(nodeData.fields as string[]).join(', ')}
+                  {selectedNode.scoreImpactCategory && selectedNode.scoreImpactCategory !== 'none' && (
+                    <div className={`flow-node-impact ${emphasis.className.includes('low') ? 'flow-node-impact-risk' : 'flow-node-impact-safe'}`}>
+                      <strong>
+                        {emphasis.indicator ? emphasis.indicator + ' — ' : ''}
+                        {selectedNode.scoreImpactCategory === 'reading' && 'Visibility depends on terms comprehension'}
+                        {selectedNode.scoreImpactCategory === 'consent' && 'Affected by your privacy toggle choices'}
+                        {selectedNode.scoreImpactCategory === 'exposure' && 'Increases with personal data disclosure'}
+                      </strong>
                     </div>
                   )}
+
+                  <div className="flow-node-consequence">
+                    <strong>Possible consequence</strong>
+                    <p>{consequence}</p>
+                  </div>
+
+                  <div className="flow-node-detail-footer">
+                    <div
+                      className={[
+                        'flow-node-detail-status',
+                        isAlwaysEnabled || nodeActive
+                          ? 'flow-node-detail-status-risk'
+                          : 'flow-node-detail-status-safe',
+                      ].join(' ')}
+                    >
+                      <strong>Status:</strong>{' '}
+                      {isAlwaysEnabled || nodeActive
+                        ? 'Your data reaches this node' + (isAlwaysEnabled ? '' : ' through active consent paths')
+                        : 'No active data route with your current choices'}
+                    </div>
+
+                    {(isAlwaysEnabled || nodeActive) && nodeData && 'fields' in nodeData && Array.isArray(nodeData.fields) && nodeData.fields.length > 0 && (
+                      <div className="flow-node-fields">
+                        <strong>Fields:</strong> {(nodeData.fields as string[]).join(', ')}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <button

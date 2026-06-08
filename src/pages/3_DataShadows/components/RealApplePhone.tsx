@@ -73,58 +73,60 @@ const RealApplePhone: React.FC = () => {
 
   return (
     <div className="apple-phone-container">
-      <div className="phone-bezel">
-        <div className="phone-screen">
-          {/* Status Bar - Grey theme with time, signal and battery */}
-          <div className="status-bar">
-            {/* Left side of notch - Time */}
-            <div className="status-left-container">
-              <div className="status-content">
-                <span className="status-time">{currentTime}</span>
+      <div className="phone-scale-frame">
+        <div className="phone-bezel">
+          <div className="phone-screen">
+            {/* Status Bar - Grey theme with time, signal and battery */}
+            <div className="status-bar">
+              {/* Left side of notch - Time */}
+              <div className="status-left-container">
+                <div className="status-content">
+                  <span className="status-time">{currentTime}</span>
+                </div>
               </div>
-            </div>
-            
-            {/* Right side of notch - Signal and Battery */}
-            <div className="status-right-container">
-              <div className="status-indicators">
-                {/* Cellular Signal - Dynamic bars based on signal strength */}
-                <div className="cellular-signal">
-                  {[1, 2, 3, 4].map((i) => (
+              
+              {/* Right side of notch - Signal and Battery */}
+              <div className="status-right-container">
+                <div className="status-indicators">
+                  {/* Cellular Signal - Dynamic bars based on signal strength */}
+                  <div className="cellular-signal">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div 
+                        key={i} 
+                        className="cellular-bar"
+                        style={{ 
+                          opacity: i <= signalStrength ? 0.85 : 0.3,
+                          background: i <= signalStrength ? 
+                            '#000000 !important' : 
+                            '#CCCCCC !important'
+                        }}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Battery Indicator - Dynamic level */}
+                  <div className="battery-icon">
                     <div 
-                      key={i} 
-                      className="cellular-bar"
-                      style={{ 
-                        opacity: i <= signalStrength ? 0.85 : 0.3,
-                        background: i <= signalStrength ? 
-                          '#000000 !important' : 
-                          '#CCCCCC !important'
-                      }}
+                      className="battery-fill"
+                      style={{ width: `${batteryLevel}%` }}
                     />
-                  ))}
-                </div>
-                
-                {/* Battery Indicator - Dynamic level */}
-                <div className="battery-icon">
-                  <div 
-                    className="battery-fill"
-                    style={{ width: `${batteryLevel}%` }}
-                  />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Main Screen Content */}
-          <div className="screen-content">
-            {currentScreen === 'home' ? (
-              <HomeScreen onAppTap={handleAppTap} />
-            ) : (
-              <FitAI onBack={handleBackToHome} />
-            )}
-          </div>
+            {/* Main Screen Content */}
+            <div className="screen-content">
+              {currentScreen === 'home' ? (
+                <HomeScreen onAppTap={handleAppTap} />
+              ) : (
+                <FitAI onBack={handleBackToHome} />
+              )}
+            </div>
 
-          {/* Home Indicator */}
-          <div className="home-indicator" />
+            {/* Home Indicator */}
+            <div className="home-indicator" />
+          </div>
         </div>
       </div>
     </div>

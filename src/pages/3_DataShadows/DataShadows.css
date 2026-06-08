@@ -3,8 +3,10 @@
   --data-shadows-display-font: 'Electrolize', sans-serif;
   --data-shadows-phone-width: 390px;
   --data-shadows-phone-height: 844px;
+  --data-shadows-phone-scale: 1;
+  --data-shadows-sidebar-width: 388px;
   display: grid;
-  grid-template-columns: minmax(24px, 1fr) 390px 0 minmax(24px, 1fr);
+  grid-template-columns: minmax(24px, 1fr) var(--data-shadows-phone-width) 0 minmax(24px, 1fr);
   min-height: 100vh;
   width: 100%;
   max-width: 100vw;
@@ -17,6 +19,7 @@
 }
 
 .data-shadows-reveal-shell {
+  height: 100vh;
   min-height: 100vh;
   width: 100%;
   display: flex;
@@ -125,12 +128,12 @@
 }
 
 .data-shadows-sidebar-layout {
-  grid-template-columns: minmax(24px, 1fr) 390px minmax(330px, 388px) minmax(24px, 1fr);
+  grid-template-columns: minmax(24px, 1fr) var(--data-shadows-phone-width) minmax(330px, var(--data-shadows-sidebar-width)) minmax(24px, 1fr);
   align-items: center;
 }
 
 .data-shadows-reveal-layout {
-  grid-template-columns: 390px minmax(0, 930px);
+  grid-template-columns: var(--data-shadows-phone-width) minmax(0, 930px);
   align-items: stretch;
   justify-content: center;
   gap: 28px;

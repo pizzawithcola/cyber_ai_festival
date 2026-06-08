@@ -7,6 +7,7 @@ import './DataShadows.css'
 
 const REVEAL_CANVAS_WIDTH = 1396
 const REVEAL_CANVAS_HEIGHT = 892
+const REVEAL_MAX_SCALE = 1.18
 const PHONE_BASE_WIDTH = 390
 const PHONE_BASE_HEIGHT = 844
 const PHONE_ASPECT_RATIO = PHONE_BASE_WIDTH / PHONE_BASE_HEIGHT
@@ -39,7 +40,12 @@ function DataShadowsContent() {
     ? (() => {
         const horizontalPadding = 48
         const verticalPadding = isTruthRevealFinalStep ? 96 : 48
-        const availableWidth = Math.max(280, viewportSize.width - horizontalPadding)
+        const widthReserve = isTruthRevealFinalStep
+          ? 0
+          : showSidebarNotice
+            ? 460
+            : 0
+        const availableWidth = Math.max(280, viewportSize.width - horizontalPadding - widthReserve)
         const availableHeight = isTruthRevealFinalStep
           ? Math.max(520, viewportSize.height - verticalPadding)
           : showSidebarNotice
@@ -49,17 +55,19 @@ function DataShadowsContent() {
           ? 430
           : isPortraitViewport
             ? showSidebarNotice ? 468 : 507
-            : PHONE_BASE_WIDTH
+            : showSidebarNotice ? 460 : 500
         const minPhoneWidth = isTruthRevealFinalStep ? 280 : 260
         const computedPhoneWidth = Math.max(
           minPhoneWidth,
           Math.min(maxPhoneWidth, availableWidth, availableHeight * PHONE_ASPECT_RATIO)
         )
         const computedPhoneHeight = computedPhoneWidth / PHONE_ASPECT_RATIO
+        const computedPhoneScale = computedPhoneWidth / PHONE_BASE_WIDTH
 
         return {
           ['--data-shadows-phone-width' as const]: `${computedPhoneWidth}px`,
           ['--data-shadows-phone-height' as const]: `${computedPhoneHeight}px`,
+          ['--data-shadows-phone-scale' as const]: `${computedPhoneScale}`,
         } as React.CSSProperties
       })()
     : undefined
@@ -72,7 +80,7 @@ function DataShadowsContent() {
       const viewportHeight = window.innerHeight
       const widthScale = (viewportWidth - 24) / REVEAL_CANVAS_WIDTH
       const heightScale = (viewportHeight - 24) / REVEAL_CANVAS_HEIGHT
-      setRevealScale(Math.min(1, widthScale, heightScale))
+      setRevealScale(Math.min(REVEAL_MAX_SCALE, widthScale, heightScale))
     }
 
     updateRevealScale()
