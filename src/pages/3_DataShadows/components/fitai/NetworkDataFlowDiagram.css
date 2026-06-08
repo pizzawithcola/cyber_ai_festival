@@ -15,6 +15,56 @@
   font-family: var(--data-shadows-display-font, 'Electrolize', sans-serif);
 }
 
+.data-shadows-portrait-reveal .network-data-flow-diagram {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  padding: 16px 14px 18px;
+}
+
+.data-shadows-portrait-reveal .data-flow-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.data-shadows-portrait-reveal .data-flow-title {
+  font-size: clamp(24px, 4vw, 32px);
+  line-height: 1.15;
+}
+
+.data-shadows-portrait-reveal .data-flow-subtitle,
+.data-shadows-portrait-reveal .privacy-score-label {
+  font-size: clamp(14px, 2.1vw, 18px);
+}
+
+.data-shadows-portrait-reveal .privacy-score-block {
+  width: 100%;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.data-shadows-portrait-reveal .privacy-score-value {
+  font-size: clamp(32px, 5vw, 42px);
+}
+
+.data-shadows-portrait-reveal .network-data-flow-body {
+  grid-template-columns: 1fr;
+  overflow: visible;
+}
+
+.data-shadows-portrait-reveal .network-visual-panel {
+  min-height: 0;
+}
+
+.data-shadows-portrait-reveal .network-diagram-container {
+  min-height: 520px;
+}
+
+.data-shadows-portrait-reveal .data-flow-info-strip {
+  max-height: none;
+}
+
 .data-flow-header {
   flex-shrink: 0;
   display: flex;

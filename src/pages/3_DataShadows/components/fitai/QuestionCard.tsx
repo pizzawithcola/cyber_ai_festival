@@ -29,7 +29,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         <h2 style={{
           fontSize: '24px',
           fontWeight: 800,
-          color: '#ffffff',
+          color: '#111827',
           margin: '0 0 8px',
           lineHeight: '1.2'
         }}>
@@ -37,7 +37,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         </h2>
         <p style={{
           fontSize: '14px',
-          color: '#b0b0b0',
+          color: '#6b7280',
           margin: 0,
           lineHeight: '1.5'
         }}>
@@ -54,10 +54,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {hint && (
         <div style={{
           fontSize: '12px',
-          color: '#666666',
+          color: '#4b5563',
           marginBottom: '12px',
           padding: '12px',
-          background: 'rgba(255,255,255,0.03)',
+          background: '#f8fafc',
           borderRadius: '8px',
           borderLeft: '3px solid #3b82f6'
         }}>
@@ -68,14 +68,14 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Data Collection Notice - Privacy Dark Pattern */}
       <div style={{
         fontSize: '10px',
-        color: '#888888',
+        color: '#6b7280',
         padding: '10px',
-        background: 'rgba(255,255,255,0.02)',
+        background: '#f8fafc',
         borderRadius: '6px',
-        borderTop: '1px solid rgba(255,255,255,0.05)',
+        borderTop: '1px solid #e5e7eb',
         lineHeight: '1.4'
       }}>
-        📊 <strong style={{ color: '#999999' }}>Data Collection:</strong> {dataCollection}
+        📊 <strong style={{ color: '#374151' }}>Data Collection:</strong> {dataCollection}
       </div>
 
       {/* Completion Status */}

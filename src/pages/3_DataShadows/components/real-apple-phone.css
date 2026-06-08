@@ -5,16 +5,18 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  padding: 20px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+  padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
 }
 
 /* Device Bezel - iPhone 14/15 Classic Notch */
 .phone-bezel {
-  width: 390px;
-  height: 844px;
+  width: 100%;
+  height: 100%;
   background: #000;
   border-radius: 50px;
   overflow: hidden;
