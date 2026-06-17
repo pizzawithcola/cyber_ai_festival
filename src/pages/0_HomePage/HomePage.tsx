@@ -371,19 +371,46 @@ const HomePage: React.FC<HomePageProps> = () => {
           </Box>
         </Box>
 
-        {/* Bottom Panel: Speaker Dots + Coin Slot */}
+        {/* Bottom Panel: Dashboard + Coin Slot + Leaderboard */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, pb: 2.5, pt: 1 }}>
-          {/* Left speaker dots */}
-          <Box sx={{ display: 'flex', gap: 0.6 }}>
-            {[...Array(7)].map((_, i) => (
-              <Box key={`l-${i}`} sx={{
-                width: '4px', height: '4px', borderRadius: '50%',
-                backgroundColor: i % 2 === 0 ? `${ARCADE_COLORS.cyan}50` : '#2a2a4a',
-              }} />
-            ))}
+          {/* Dashboard Button - Left */}
+          <Box
+            onClick={() => navigate('/admin')}
+            sx={{
+              px: 2,
+              py: 0.6,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              border: `1px solid ${ARCADE_COLORS.white}25`,
+              borderRadius: '2px',
+              backgroundColor: '#0a0a15',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                borderColor: `${ARCADE_COLORS.magenta}80`,
+                backgroundColor: `${ARCADE_COLORS.magenta}08`,
+                boxShadow: `0 0 8px ${ARCADE_COLORS.magenta}20`,
+                '& .nav-label': { color: ARCADE_COLORS.magenta },
+              },
+            }}
+          >
+            <ArcadeTypography
+              arcadeSize="xs"
+              component="span"
+              monospace
+              className="nav-label"
+              sx={{ 
+                fontSize: '0.65rem', 
+                color: `${ARCADE_COLORS.white}50`, 
+                letterSpacing: '2px',
+                transition: 'color 0.3s ease',
+              }}
+            >
+              DASHBOARD
+            </ArcadeTypography>
           </Box>
 
-          {/* Coin Slot */}
+          {/* Coin Slot - Center */}
           <Box sx={{
             display: 'flex',
             alignItems: 'center',
@@ -412,14 +439,41 @@ const HomePage: React.FC<HomePageProps> = () => {
             }} />
           </Box>
 
-          {/* Right speaker dots */}
-          <Box sx={{ display: 'flex', gap: 0.6 }}>
-            {[...Array(7)].map((_, i) => (
-              <Box key={`r-${i}`} sx={{
-                width: '4px', height: '4px', borderRadius: '50%',
-                backgroundColor: i % 2 === 0 ? `${ARCADE_COLORS.cyan}50` : '#2a2a4a',
-              }} />
-            ))}
+          {/* Leaderboard Button - Right */}
+          <Box
+            onClick={() => navigate('/leaderboard')}
+            sx={{
+              px: 2,
+              py: 0.6,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              border: `1px solid ${ARCADE_COLORS.white}25`,
+              borderRadius: '2px',
+              backgroundColor: '#0a0a15',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                borderColor: `${ARCADE_COLORS.yellow}80`,
+                backgroundColor: `${ARCADE_COLORS.yellow}08`,
+                boxShadow: `0 0 8px ${ARCADE_COLORS.yellow}20`,
+                '& .nav-label': { color: ARCADE_COLORS.yellow },
+              },
+            }}
+          >
+            <ArcadeTypography
+              arcadeSize="xs"
+              component="span"
+              monospace
+              className="nav-label"
+              sx={{ 
+                fontSize: '0.65rem', 
+                color: `${ARCADE_COLORS.white}50`, 
+                letterSpacing: '2px',
+                transition: 'color 0.3s ease',
+              }}
+            >
+              LEADERBOARD
+            </ArcadeTypography>
           </Box>
         </Box>
       </Box>

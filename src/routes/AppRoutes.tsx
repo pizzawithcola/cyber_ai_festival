@@ -13,6 +13,8 @@ import LeaderboardPage from '../components/functional/LeaderboardPage';
 import AdminPage from '../components/functional/AdminPage';
 import LoginPage from '../components/sharedPages/LoginPage';
 import DesignPage from '../components/sharedPages/DesignPage';
+import RegisterPage from '../components/sharedPages/RegisterPage';
+import UltimateShowdown from '../pages/6_UltimateShowdown/UltimateShowdown';
 
 
 interface AppRoutesProps {
@@ -35,6 +37,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/ranking/game/:game" element={<RankingPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
       <Route path="/design" element={<DesignPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/final" element={<UltimateShowdown />} />
       <Route path="/admin" element={<AdminPage />} />
     </Routes>
   );

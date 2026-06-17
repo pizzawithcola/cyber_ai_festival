@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Typography,
   Table,
   TableBody,
   TableCell,
@@ -9,1348 +8,579 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  styled,
   CircularProgress,
-  Alert,
   Snackbar,
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   TextField,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   Checkbox,
-  IconButton,
-  useTheme,
   TableSortLabel,
   InputAdornment,
 } from '@mui/material';
-import { Close, ArrowUpward, Search } from '@mui/icons-material';
+import { ArrowUpward, Search } from '@mui/icons-material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import Header from '../common/Header';
 import { getStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
 import { API_URL } from '../../services/api';
+import { GRID_COLOR as _grid } from '../../theme/theme';
 
-// API endpoints to test
+// ─── Sci-Fi Design Tokens ─────────────────────────────────────────────────────
+const SF = {
+  bg:       '#030812',
+  panel:    '#06101f',
+  panelAlt: '#040d18',
+  border:   '#1a3a5c',
+  cyan:     '#00d4ff',
+  lime:     '#00ff88',
+  red:      '#ff3355',
+  yellow:   '#ffd700',
+  magenta:  '#cc44ff',
+  white:    '#e8f4ff',
+  dim:      '#4a7a9b',
+  fontTitle:  '"Orbitron", "Electrolize", sans-serif',
+  fontBody:   '"Electrolize", "Courier New", monospace',
+  fontMono:   '"Courier New", monospace',
+  // font scale
+  fsTitle:  '1.1rem',
+  fsHead:   '0.75rem',
+  fsLabel:  '0.65rem',
+  fsBody:   '0.8rem',
+  fsMono:   '0.78rem',
+  fsSmall:  '0.65rem',
+};
+
+// ─── Reusable clip-path panel style ──────────────────────────────────────────
+const hudPanel = (color = SF.cyan) => ({
+  backgroundColor: SF.panel,
+  border: `1px solid ${color}30`,
+  position: 'relative' as const,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    height: '1px',
+    background: `linear-gradient(90deg, transparent, ${color}80, transparent)`,
+  },
+});
+
+// ─── Score colour helper ──────────────────────────────────────────────────────
+const scoreColor = (score: number, max = 100) => {
+  const pct = score / max;
+  if (pct >= 0.8) return SF.lime;
+  if (pct >= 0.6) return SF.yellow;
+  return SF.red;
+};
+
+// ─── Sci-Fi Button ────────────────────────────────────────────────────────────
+const SFButton: React.FC<{
+  color?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+  startIcon?: React.ReactNode;
+  variant?: 'outline' | 'filled';
+}> = ({ color = SF.cyan, onClick, disabled, children, startIcon, variant = 'outline' }) => (
+  <Box
+    component="button"
+    onClick={onClick}
+    disabled={disabled}
+    sx={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 0.75,
+      px: 1.5,
+      py: 0.6,
+      fontFamily: SF.fontTitle,
+      fontSize: '0.58rem',
+      fontWeight: 700,
+      letterSpacing: '0.12em',
+      textTransform: 'uppercase',
+      borderRadius: '4px',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      border: `1px solid ${disabled ? `${color}30` : `${color}70`}`,
+      backgroundColor: variant === 'filled' ? (disabled ? `${color}20` : `${color}25`) : 'transparent',
+      color: disabled ? `${color}40` : color,
+      transition: 'all 0.15s ease',
+      '&:hover:not(:disabled)': {
+        backgroundColor: `${color}20`,
+        borderColor: color,
+        boxShadow: `0 0 12px ${color}40`,
+      },
+      '&:active:not(:disabled)': { transform: 'translateY(1px)' },
+    }}
+  >
+    {startIcon && <Box sx={{ display: 'flex', alignItems: 'center', '& svg': { fontSize: '1rem !important' } }}>{startIcon}</Box>}
+    {children}
+  </Box>
+);
+
+// ─── Section header with decorative line ─────────────────────────────────────
+const SFSectionHeader: React.FC<{ label: string; color?: string; right?: React.ReactNode }> = ({ label, color = SF.cyan, right }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box sx={{ width: 3, height: 14, backgroundColor: color, boxShadow: `0 0 8px ${color}` }} />
+      <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.25em', color, textTransform: 'uppercase' }}>
+        {label}
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 40, height: '1px', background: `linear-gradient(90deg, ${color}50, transparent)`, ml: 1 }} />
+    </Box>
+    {right}
+  </Box>
+);
+
+// ─── Form input style ─────────────────────────────────────────────────────────
+const sfInputSx = {
+  '& .MuiOutlinedInput-root': {
+    fontFamily: SF.fontBody,
+    fontSize: '0.85rem',
+    color: SF.white,
+    '& fieldset': { borderColor: `${SF.cyan}30` },
+    '&:hover fieldset': { borderColor: `${SF.cyan}70` },
+    '&.Mui-focused fieldset': { borderColor: SF.cyan, boxShadow: `0 0 8px ${SF.cyan}30` },
+  },
+  '& .MuiInputLabel-root': {
+    fontFamily: SF.fontBody,
+    fontSize: '0.8rem',
+    color: `${SF.white}50`,
+    '&.Mui-focused': { color: SF.cyan },
+  },
+  '& input': { color: SF.white },
+};
+
+// ─── Interfaces ───────────────────────────────────────────────────────────────
 const API_ENDPOINTS = [
-  { name: 'Health Check', method: 'GET', path: '/health', needsAuth: false },
-  { name: 'Users List', method: 'GET', path: '/users/?skip=0&limit=1', needsAuth: true },
-  { name: 'User Scores', method: 'GET', path: '/users/userscores', needsAuth: true },
-  { name: 'Rankings (Total)', method: 'GET', path: '/rankings/total?limit=1', needsAuth: true },
-  { name: 'Rankings (Game1)', method: 'GET', path: '/rankings/game1?limit=1', needsAuth: true },
-  { name: 'Rankings (Game2)', method: 'GET', path: '/rankings/game2?limit=1', needsAuth: true },
-  { name: 'Rankings (Game3)', method: 'GET', path: '/rankings/game3?limit=1', needsAuth: true },
-  { name: 'Rankings (Game4)', method: 'GET', path: '/rankings/game4?limit=1', needsAuth: true },
-  { name: 'Rankings (Game5)', method: 'GET', path: '/rankings/game5?limit=1', needsAuth: true },
-  { name: 'LLM Chat', method: 'POST', path: '/llm/chat', needsAuth: true },
+  { name: 'Health Check',     method: 'GET',  path: '/health',                  needsAuth: false },
+  { name: 'Users List',       method: 'GET',  path: '/users/?skip=0&limit=1',   needsAuth: true  },
+  { name: 'User Scores',      method: 'GET',  path: '/users/userscores',        needsAuth: true  },
+  { name: 'Rankings (Total)', method: 'GET',  path: '/rankings/total?limit=1',  needsAuth: true  },
+  { name: 'Rankings (G1)',    method: 'GET',  path: '/rankings/game1?limit=1',  needsAuth: true  },
+  { name: 'Rankings (G2)',    method: 'GET',  path: '/rankings/game2?limit=1',  needsAuth: true  },
+  { name: 'Rankings (G3)',    method: 'GET',  path: '/rankings/game3?limit=1',  needsAuth: true  },
+  { name: 'Rankings (G4)',    method: 'GET',  path: '/rankings/game4?limit=1',  needsAuth: true  },
+  { name: 'Rankings (G5)',    method: 'GET',  path: '/rankings/game5?limit=1',  needsAuth: true  },
+  { name: 'LLM Chat',         method: 'POST', path: '/llm/chat',                needsAuth: true  },
 ];
 
-interface ApiStatus {
-  name: string;
-  status: 'idle' | 'loading' | 'normal' | 'error';
-  latency?: number;
-  error?: string;
-}
+interface ApiStatus { name: string; status: 'idle' | 'loading' | 'normal' | 'error'; latency?: number; error?: string; }
+interface UserScore  { id: number; firstname: string; lastname: string; email: string; region: string; game1_score: number; game2_score: number; game3_score: number; game4_score: number; game5_score: number; total_score: number; }
 
-// User score interface
-interface UserScore {
-  id: number;
-  firstname: string;
-  lastname: string;
-  email: string;
-  region: string;
-  game1_score: number;
-  game2_score: number;
-  game3_score: number;
-  game4_score: number;
-  game5_score: number;
-  total_score: number;
-}
-
-// Styled components for consistent styling
-const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
-  background: theme.palette.mode === 'light'
-    ? `linear-gradient(145deg, ${theme.palette.grey[50]}, ${theme.palette.common.white})`
-    : `linear-gradient(145deg, ${theme.palette.background.paper}, ${theme.palette.grey[800]})`,
-  borderRadius: '16px',
-  border: `1px solid ${
-    theme.palette.mode === 'dark' 
-      ? 'rgba(255,255,255,0.1)' 
-      : 'rgba(0,0,0,0.05)'
-  }`,
-  boxShadow: theme.palette.mode === 'dark'
-    ? `0 8px 32px rgba(0,0,0,0.3)`
-    : `0 8px 32px rgba(0,0,0,0.1)`,
-  backdropFilter: 'blur(4px)',
-}));
-
-const EditableCell = styled(TableCell)(({ theme }) => ({
-  cursor: 'default',
-  transition: 'background-color 0.2s ease',
-  maxWidth: 150,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-  '&:hover': {
-    backgroundColor: theme.palette.action.hover,
-  },
-}));
-
+// ─── Component ────────────────────────────────────────────────────────────────
 const AdminPage: React.FC = () => {
-  const theme = useTheme();
-  const [users, setUsers] = useState<UserScore[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ 
-    open: false, 
-    message: '', 
-    severity: 'success' 
-  });
+  const [users, setUsers]                 = useState<UserScore[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
+  const [page, setPage]                   = useState(0);
+  const [rowsPerPage, setRowsPerPage]     = useState(10);
+  const [snackbar, setSnackbar]           = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'warning' }>({ open: false, message: '', severity: 'success' });
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog]     = useState(false);
+  const [openAddDialog, setOpenAddDialog]       = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserScore | null>(null);
-  const [formData, setFormData] = useState<Omit<UserScore, 'id' | 'total_score'>>({
-    firstname: '',
-    lastname: '',
-    email: '',
-    region: 'United States',
-    game1_score: 0,
-    game2_score: 0,
-    game3_score: 0,
-    game4_score: 0,
-    game5_score: 0,
+  const [editingUser, setEditingUser]     = useState<UserScore | null>(null);
+  const [formData, setFormData]           = useState<Omit<UserScore, 'id' | 'total_score'>>({
+    firstname: '', lastname: '', email: '', region: 'United States',
+    game1_score: 0, game2_score: 0, game3_score: 0, game4_score: 0, game5_score: 0,
   });
-  
-  // Sorting state
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
-  const [orderBy, setOrderBy] = useState<string>('id');
-  
-  // Search state
+  const [order, setOrder]         = useState<'asc' | 'desc'>('asc');
+  const [orderBy, setOrderBy]     = useState<string>('id');
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // API Health Check state
-  const [apiStatuses, setApiStatuses] = useState<ApiStatus[]>(
-    API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'idle' as const }))
-  );
+  const [apiStatuses, setApiStatuses] = useState<ApiStatus[]>(API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'idle' as const })));
   const [isTestingApis, setIsTestingApis] = useState(false);
-  
+
   const user = getStoredUser();
 
-  // Fetch user scores
   useEffect(() => {
-    const fetchUserScores = async () => {
+    (async () => {
       try {
         setLoading(true);
-        const response = await apiFetch('/users/userscores');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data: UserScore[] = await response.json();
-        setUsers(data);
+        const res = await apiFetch('/users/userscores');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setUsers(await res.json());
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch user scores:', err);
-        setError('Failed to load user scores. Please try again later.');
-        setSnackbar({
-          open: true,
-          message: 'Failed to load user scores: ' + (err instanceof Error ? err.message : 'Unknown error'),
-          severity: 'error'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserScores();
+        setError('Failed to load user scores.');
+        setSnackbar({ open: true, message: 'Load error: ' + (err instanceof Error ? err.message : ''), severity: 'error' });
+      } finally { setLoading(false); }
+    })();
   }, []);
 
-  // Handle page change
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+  const handleChangePage        = (_: unknown, p: number) => setPage(p);
+  const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); };
+  const handleRequestSort       = (field: string) => { setOrder(orderBy === field && order === 'asc' ? 'desc' : 'asc'); setOrderBy(field); };
+  const handleSnackbarClose     = () => setSnackbar(p => ({ ...p, open: false }));
+  const handleSelectUser        = (id: number) => setSelectedUsers(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+  const handleSelectAll         = () => selectedUsers.length === paginatedUsers.length ? setSelectedUsers([]) : setSelectedUsers(paginatedUsers.map(u => u.id));
 
-  // Handle rows per page change
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+  const handleAddClick    = () => { setFormData({ firstname: '', lastname: '', email: '', region: 'United States', game1_score: 0, game2_score: 0, game3_score: 0, game4_score: 0, game5_score: 0 }); setOpenAddDialog(true); };
+  const handleDeleteClick = () => { if (!selectedUsers.length) { setSnackbar({ open: true, message: 'Select at least one user', severity: 'error' }); return; } setOpenDeleteDialog(true); };
+  const handleEditOpen    = (u: UserScore) => { setEditingUser(u); setFormData({ firstname: u.firstname, lastname: u.lastname, email: u.email, region: u.region, game1_score: u.game1_score, game2_score: u.game2_score, game3_score: u.game3_score, game4_score: u.game4_score, game5_score: u.game5_score }); setOpenEditDialog(true); };
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; setFormData(p => ({ ...p, [name]: name.includes('_score') ? parseFloat(value) || 0 : value })); };
+  const calcTotal         = (d: Omit<UserScore, 'id' | 'total_score'>) => d.game1_score + d.game2_score + d.game3_score + d.game4_score + d.game5_score;
 
-  // Handle sort request
-  const handleRequestSort = (property: string) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-
-  // Handle search input change
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
-
-  // Compare function for sorting
-  const descendingComparator = <T,>(a: T, b: T, orderBy: keyof T) => {
-    if (b[orderBy] < a[orderBy]) {
-      return -1;
-    }
-    if (b[orderBy] > a[orderBy]) {
-      return 1;
-    }
-    return 0;
-  };
-
-  // Get comparator for sorting
-  const getComparator = (
-    order: 'asc' | 'desc',
-    orderBy: string
-  ): ((a: UserScore, b: UserScore) => number) => {
-    return order === 'desc'
-      ? (a, b) => descendingComparator(a, b, orderBy as keyof UserScore)
-      : (a, b) => -descendingComparator(a, b, orderBy as keyof UserScore);
-  };
-
-
-
-  // Handle snackbar close
-  const handleSnackbarClose = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
-  };
-
-  // Handle user selection for deletion
-  const handleSelectUser = (id: number) => {
-    setSelectedUsers(prev => 
-      prev.includes(id) 
-        ? prev.filter(userId => userId !== id) 
-        : [...prev, id]
-    );
-  };
-
-  // Handle select all users
-  const handleSelectAll = () => {
-    if (selectedUsers.length === paginatedUsers.length) {
-      setSelectedUsers([]);
-    } else {
-      setSelectedUsers(paginatedUsers.map(user => user.id));
-    }
-  };
-
-  // Handle Add button click
-  const handleAddClick = () => {
-    setFormData({
-      firstname: '',
-      lastname: '',
-      email: '',
-      region: 'US',
-      game1_score: 0,
-      game2_score: 0,
-      game3_score: 0,
-      game4_score: 0,
-      game5_score: 0,
-    });
-    setOpenAddDialog(true);
-  };
-
-  // Handle Delete button click - opens confirmation dialog
-  const handleDeleteClick = () => {
-    if (selectedUsers.length === 0) {
-      setSnackbar({
-        open: true,
-        message: 'Please select at least one user to delete',
-        severity: 'error'
-      });
-      return;
-    }
-    
-    setOpenDeleteDialog(true);
-  };
-
-  // Confirm delete action
-  const confirmDelete = async () => {
-    try {
-      // Delete users via API calls
-      const deletePromises = selectedUsers.map(id => 
-        apiFetch(`/users/${id}`, { method: 'DELETE' })
-      );
-      
-      const responses = await Promise.all(deletePromises);
-      const failedDeletes = responses.filter(res => !res.ok);
-      
-      if (failedDeletes.length > 0) {
-        throw new Error(`${failedDeletes.length} user(s) failed to delete`);
-      }
-      
-      // Update local state after successful API calls
-      setUsers(prevUsers => prevUsers.filter(user => !selectedUsers.includes(user.id)));
-      setSelectedUsers([]);
-      setSnackbar({
-        open: true,
-        message: `${selectedUsers.length} user(s) deleted successfully`,
-        severity: 'success'
-      });
-      setOpenDeleteDialog(false);
-    } catch (err) {
-      console.error('Failed to delete users:', err);
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete users: ' + (err instanceof Error ? err.message : 'Unknown error'),
-        severity: 'error'
-      });
-      setOpenDeleteDialog(false);
-    }
-  };
-
-  // Cancel delete dialog
-  const cancelDelete = () => {
-    setOpenDeleteDialog(false);
-  };
-
-  // Handle Edit dialog open
-  const handleEditOpen = (userData: UserScore) => {
-    setEditingUser(userData);
-    setFormData({
-      firstname: userData.firstname,
-      lastname: userData.lastname,
-      email: userData.email,
-      region: userData.region,
-      game1_score: userData.game1_score,
-      game2_score: userData.game2_score,
-      game3_score: userData.game3_score,
-      game4_score: userData.game4_score,
-      game5_score: userData.game5_score,
-    });
-    setOpenEditDialog(true);
-  };
-
-  // Handle Add dialog close
-  const handleAddClose = () => {
-    setOpenAddDialog(false);
-  };
-
-  // Handle Edit dialog close
-  const handleEditClose = () => {
-    setOpenEditDialog(false);
-    setEditingUser(null);
-  };
-
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name.includes('_score') ? parseFloat(value) || 0 : value
-    }));
-  };
-
-  // Calculate total score
-  const calculateTotalScore = (data: Omit<UserScore, 'id' | 'total_score'>): number => {
-    return data.game1_score + data.game2_score + data.game3_score + data.game4_score + data.game5_score;
-  };
-
-  // Validate form data
-  const validateForm = (): boolean => {
-    if (!formData.firstname.trim()) {
-      setSnackbar({
-        open: true,
-        message: 'First name is required',
-        severity: 'error'
-      });
-      return false;
-    }
-    if (!formData.lastname.trim()) {
-      setSnackbar({
-        open: true,
-        message: 'Last name is required',
-        severity: 'error'
-      });
-      return false;
-    }
-    if (!formData.email.trim()) {
-      setSnackbar({
-        open: true,
-        message: 'Email is required',
-        severity: 'error'
-      });
-      return false;
-    }
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setSnackbar({
-        open: true,
-        message: 'Email is invalid',
-        severity: 'error'
-      });
-      return false;
-    }
-    // Validate scores are between 0 and 100 (inclusive) and are valid numbers
-    const scores = [
-      formData.game1_score,
-      formData.game2_score,
-      formData.game3_score,
-      formData.game4_score,
-      formData.game5_score
-    ];
-    
-    for (const score of scores) {
-      if (isNaN(score) || score < 0 || score > 100) {
-        setSnackbar({
-          open: true,
-          message: 'All scores must be between 0 and 100',
-          severity: 'error'
-        });
-        return false;
-      }
-    }
-    
+  const validateForm = () => {
+    if (!formData.firstname.trim())           { setSnackbar({ open: true, message: 'First name required', severity: 'error' }); return false; }
+    if (!formData.lastname.trim())            { setSnackbar({ open: true, message: 'Last name required',  severity: 'error' }); return false; }
+    if (!formData.email.trim())               { setSnackbar({ open: true, message: 'Email required',      severity: 'error' }); return false; }
+    if (!/\S+@\S+\.\S+/.test(formData.email)){ setSnackbar({ open: true, message: 'Email invalid',        severity: 'error' }); return false; }
+    const scores = [formData.game1_score, formData.game2_score, formData.game3_score, formData.game4_score, formData.game5_score];
+    if (scores.some(s => isNaN(s) || s < 0 || s > 100)) { setSnackbar({ open: true, message: 'Scores must be 0–100', severity: 'error' }); return false; }
     return true;
   };
 
-  // Handle form submit for editing
+  const confirmDelete = async () => {
+    try {
+      const rs = await Promise.all(selectedUsers.map(id => apiFetch(`/users/${id}`, { method: 'DELETE' })));
+      if (rs.some(r => !r.ok)) throw new Error('Some deletes failed');
+      setUsers(p => p.filter(u => !selectedUsers.includes(u.id)));
+      setSelectedUsers([]);
+      setSnackbar({ open: true, message: `${selectedUsers.length} record(s) deleted`, severity: 'success' });
+      setOpenDeleteDialog(false);
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Delete failed: ' + (err instanceof Error ? err.message : ''), severity: 'error' });
+      setOpenDeleteDialog(false);
+    }
+  };
+
   const handleEditSubmit = async () => {
     if (!validateForm() || !editingUser) return;
-
     try {
-      const userRes = await apiFetch(`/users/${editingUser.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          firstname: formData.firstname,
-          lastname: formData.lastname,
-          email: formData.email,
-          region: formData.region
-        })
-      });
-
-      if (!userRes.ok) {
-        throw new Error(`Failed to update user: ${userRes.status} ${userRes.statusText}`);
-      }
-
-      const scoresRes = await apiFetch(`/scores/${editingUser.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          game1_score: formData.game1_score,
-          game2_score: formData.game2_score,
-          game3_score: formData.game3_score,
-          game4_score: formData.game4_score,
-          game5_score: formData.game5_score
-        })
-      });
-
-      if (!scoresRes.ok) {
-        throw new Error(`Failed to update scores: ${scoresRes.status} ${scoresRes.statusText}`);
-      }
-
-      // Update local state after successful API calls
-      const updatedUsers = users.map(user => 
-        user.id === editingUser.id 
-          ? { 
-              ...user, 
-              ...formData,
-              total_score: calculateTotalScore(formData)
-            } 
-          : user
-      );
-      setUsers(updatedUsers);
-      
-      setSnackbar({
-        open: true,
-        message: 'User updated successfully',
-        severity: 'success'
-      });
-      handleEditClose();
-    } catch (err) {
-      console.error('Failed to update user:', err);
-      setSnackbar({
-        open: true,
-        message: 'Failed to update user: ' + (err instanceof Error ? err.message : 'Unknown error'),
-        severity: 'error'
-      });
-    }
+      const ur = await apiFetch(`/users/${editingUser.id}`,  { method: 'PUT', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, email: formData.email, region: formData.region }) });
+      if (!ur.ok) throw new Error(`User update ${ur.status}`);
+      const sr = await apiFetch(`/scores/${editingUser.id}`, { method: 'PUT', body: JSON.stringify({ game1_score: formData.game1_score, game2_score: formData.game2_score, game3_score: formData.game3_score, game4_score: formData.game4_score, game5_score: formData.game5_score }) });
+      if (!sr.ok) throw new Error(`Score update ${sr.status}`);
+      setUsers(p => p.map(u => u.id === editingUser.id ? { ...u, ...formData, total_score: calcTotal(formData) } : u));
+      setSnackbar({ open: true, message: 'Record updated', severity: 'success' });
+      setOpenEditDialog(false); setEditingUser(null);
+    } catch (err) { setSnackbar({ open: true, message: 'Update failed: ' + (err instanceof Error ? err.message : ''), severity: 'error' }); }
   };
 
-  // Handle form submit for adding
   const handleAddSubmit = async () => {
     if (!validateForm()) return;
-
     try {
-      const userRes = await apiFetch('/users', {
-        method: 'POST',
-        body: JSON.stringify({
-          firstname: formData.firstname,
-          lastname: formData.lastname,
-          email: formData.email,
-          region: formData.region
-        })
-      });
-
-      if (!userRes.ok) {
-        throw new Error(`Failed to create user: ${userRes.status} ${userRes.statusText}`);
-      }
-
-      const newUser = await userRes.json();
-      
-      // Update scores for the newly created user
-      const scoresRes = await apiFetch(`/scores/${newUser.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          game1_score: formData.game1_score,
-          game2_score: formData.game2_score,
-          game3_score: formData.game3_score,
-          game4_score: formData.game4_score,
-          game5_score: formData.game5_score
-        })
-      });
-
-      if (!scoresRes.ok) {
-        throw new Error(`Failed to update scores: ${scoresRes.status} ${scoresRes.statusText}`);
-      }
-
-      // Update local state after successful API calls
-      const newUserWithScores: UserScore = {
-        id: newUser.id,
-        ...formData,
-        total_score: calculateTotalScore(formData)
-      };
-      
-      setUsers(prev => [...prev, newUserWithScores]);
-      
-      setSnackbar({
-        open: true,
-        message: 'User added successfully',
-        severity: 'success'
-      });
-      handleAddClose();
-    } catch (err) {
-      console.error('Failed to add user:', err);
-      setSnackbar({
-        open: true,
-        message: 'Failed to add user: ' + (err instanceof Error ? err.message : 'Unknown error'),
-        severity: 'error'
-      });
-    }
+      const ur = await apiFetch('/users', { method: 'POST', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, email: formData.email, region: formData.region }) });
+      if (!ur.ok) throw new Error(`Create ${ur.status}`);
+      const newUser = await ur.json();
+      const sr = await apiFetch(`/scores/${newUser.id}`, { method: 'PUT', body: JSON.stringify({ game1_score: formData.game1_score, game2_score: formData.game2_score, game3_score: formData.game3_score, game4_score: formData.game4_score, game5_score: formData.game5_score }) });
+      if (!sr.ok) throw new Error(`Score update ${sr.status}`);
+      setUsers(p => [...p, { id: newUser.id, ...formData, total_score: calcTotal(formData) }]);
+      setSnackbar({ open: true, message: 'Record created', severity: 'success' });
+      setOpenAddDialog(false);
+    } catch (err) { setSnackbar({ open: true, message: 'Create failed: ' + (err instanceof Error ? err.message : ''), severity: 'error' }); }
   };
 
-  // API Health Check
   const runApiHealthCheck = async () => {
     setIsTestingApis(true);
     setApiStatuses(API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'loading' as const })));
-
-    const results = await Promise.all(
-      API_ENDPOINTS.map(async (ep) => {
-        const start = performance.now();
-        try {
-          let response: Response;
-          if (ep.needsAuth) {
-            if (ep.method === 'POST') {
-              response = await apiFetch(ep.path, {
-                method: 'POST',
-                body: JSON.stringify({ prompt: 'ping', model: 'deepseek-chat' }),
-              });
-            } else {
-              response = await apiFetch(ep.path);
-            }
-          } else {
-            response = await fetch(`${API_URL}${ep.path}`);
-          }
-          const latency = Math.round(performance.now() - start);
-
-          if (response.ok) {
-            return { name: ep.name, status: 'normal' as const, latency };
-          } else {
-            return { name: ep.name, status: 'error' as const, latency, error: `HTTP ${response.status}` };
-          }
-        } catch (err) {
-          const latency = Math.round(performance.now() - start);
-          return { name: ep.name, status: 'error' as const, latency, error: err instanceof Error ? err.message : 'Unknown error' };
-        }
-      })
-    );
-
+    const results = await Promise.all(API_ENDPOINTS.map(async ep => {
+      const t0 = performance.now();
+      try {
+        const res = ep.needsAuth
+          ? ep.method === 'POST' ? await apiFetch(ep.path, { method: 'POST', body: JSON.stringify({ prompt: 'ping', model: 'deepseek-chat' }) }) : await apiFetch(ep.path)
+          : await fetch(`${API_URL}${ep.path}`);
+        const lat = Math.round(performance.now() - t0);
+        return res.ok ? { name: ep.name, status: 'normal' as const, latency: lat } : { name: ep.name, status: 'error' as const, latency: lat, error: `HTTP ${res.status}` };
+      } catch (err) {
+        return { name: ep.name, status: 'error' as const, latency: Math.round(performance.now() - t0), error: err instanceof Error ? err.message : 'Unknown' };
+      }
+    }));
     setApiStatuses(results);
     setIsTestingApis(false);
   };
 
-  // Filter users based on search term
-  const filteredUsers = users.filter((user) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      user.firstname.toLowerCase().includes(searchLower) ||
-      user.lastname.toLowerCase().includes(searchLower) ||
-      user.email.toLowerCase().includes(searchLower) ||
-      user.region.toLowerCase().includes(searchLower)
-    );
+  const desc = <T,>(a: T, b: T, key: keyof T) => (b[key] < a[key] ? -1 : b[key] > a[key] ? 1 : 0);
+  const cmp  = (ord: 'asc' | 'desc', ob: string) => ord === 'desc'
+    ? (a: UserScore, b: UserScore) => desc(a, b, ob as keyof UserScore)
+    : (a: UserScore, b: UserScore) => -desc(a, b, ob as keyof UserScore);
+
+  const filteredUsers  = users.filter(u => { const s = searchTerm.toLowerCase(); return u.firstname.toLowerCase().includes(s) || u.lastname.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || u.region.toLowerCase().includes(s); });
+  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const sortedUsers    = [...paginatedUsers].sort(cmp(order, orderBy));
+
+  // ─── shared cell sx ───────────────────────────────────────────────────────
+  const thSx = { backgroundColor: '#030e1a', borderBottom: `1px solid ${SF.cyan}25`, py: 1.2, px: 1.5 };
+  const tdSx = { borderBottom: `1px solid ${SF.white}06`, py: 0, px: 1.5, height: 46 };
+
+  // ─── dialog panel sx ─────────────────────────────────────────────────────
+  const dlgPaper = (accent: string) => ({
+    backgroundColor: SF.panel,
+    border: `1px solid ${accent}50`,
+    borderRadius: '4px',
+    boxShadow: `0 0 40px ${accent}20, 0 20px 60px rgba(0,0,0,0.6)`,
+    minWidth: 500,
   });
 
-  // Slice data for pagination
-  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  // ─── shared form ─────────────────────────────────────────────────────────
+  const renderFormFields = (accent: string) => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ flex: 1 }}>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>FIRST NAME</Box>
+          <TextField autoFocus name="firstname" fullWidth variant="outlined" value={formData.firstname} onChange={handleInputChange} sx={sfInputSx} />
+        </Box>
+        <Box sx={{ flex: 1 }}>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>LAST NAME</Box>
+          <TextField name="lastname" fullWidth variant="outlined" value={formData.lastname} onChange={handleInputChange} sx={sfInputSx} />
+        </Box>
+      </Box>
+      <Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>EMAIL ADDRESS</Box>
+        <TextField name="email" fullWidth variant="outlined" value={formData.email} onChange={handleInputChange} sx={sfInputSx} />
+      </Box>
+      <Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>REGION</Box>
+        <FormControl fullWidth>
+          <Select name="region" value={formData.region} onChange={e => setFormData(p => ({ ...p, region: e.target.value as string }))}
+            sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white, '& .MuiOutlinedInput-notchedOutline': { borderColor: `${SF.cyan}30` }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: `${SF.cyan}70` }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: SF.cyan }, '& .MuiSvgIcon-root': { color: SF.cyan } }}
+            MenuProps={{ PaperProps: { sx: { backgroundColor: '#060f1e', border: `1px solid ${SF.cyan}30`, '& .MuiMenuItem-root': { fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.white, '&:hover': { backgroundColor: `${SF.cyan}15` }, '&.Mui-selected': { backgroundColor: `${SF.cyan}25` } } } } }}
+          >
+            {COUNTRIES.map(c => <MenuItem key={c.code} value={c.name}>{c.name}</MenuItem>)}
+          </Select>
+        </FormControl>
+      </Box>
+      <Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>GAME SCORES  <Box component="span" sx={{ color: `${SF.white}30`, fontWeight: 400 }}>(0 – 100)</Box></Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {(['game1_score','game2_score','game3_score','game4_score','game5_score'] as const).map((k, i) => (
+            <TextField key={k} name={k} label={`G${i+1}`} type="number" inputProps={{ min:0, max:100, step:0.1 }} value={formData[k]} onChange={handleInputChange} sx={{ ...sfInputSx, width: 80 }} />
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  );
 
-  // Sort and paginate data
-  const sortedUsers = [...paginatedUsers].sort(getComparator(order, orderBy));
-
+  // ─── Loading ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <CircularProgress />
-        <Typography sx={{ mt: 2 }}>Loading user scores...</Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: SF.bg, gap: 2 }}>
+        <CircularProgress size={32} sx={{ color: SF.cyan }} />
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.25em', color: SF.cyan }}>INITIALIZING DATA LINK...</Box>
       </Box>
     );
   }
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Header
-        title='Admin Dashboard - User Scores'
-        firstname={user?.firstname}
-        lastname={user?.lastname}
-        countryCode={user?.countryCode}
-      />
-      
-      <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
-        <Box sx={{ maxWidth: 1200, width: '100%' }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-          
-          {/* Action buttons and Search bar */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
-            <TextField
-              size="small"
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              sx={{ 
-                minWidth: 300,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={handleAddClick}
-            >
-              Add
-            </Button>
-            <Button 
-              variant="contained" 
-              // color="secondary" 
-              disabled={selectedUsers.length === 0}
-              onClick={handleDeleteClick}
-              sx={{ backgroundColor: '#ef1f1f' }}
-            >
-              Delete {selectedUsers.length > 0 && `(${selectedUsers.length})`}
-            </Button>
+    <Box sx={{
+      width: '100%', minHeight: '100vh',
+      backgroundColor: SF.bg,
+      backgroundImage: `
+        radial-gradient(ellipse at 20% 0%, ${SF.cyan}08 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, ${SF.magenta}06 0%, transparent 50%),
+        repeating-linear-gradient(0deg, transparent, transparent 39px, ${SF.cyan}08 39px, ${SF.cyan}08 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, ${SF.cyan}08 39px, ${SF.cyan}08 40px)
+      `,
+      backgroundSize: '100% 100%, 100% 100%, 40px 40px, 40px 40px',
+      p: { xs: 2, md: 3 },
+      boxSizing: 'border-box',
+    }}>
+
+      {/* ── Top header ── */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3, pb: 2, borderBottom: `1px solid ${SF.cyan}20` }}>
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            {/* HUD corner brackets */}
+            <Box sx={{ width: 10, height: 10, borderTop: `2px solid ${SF.cyan}`, borderLeft: `2px solid ${SF.cyan}` }} />
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.25rem', fontWeight: 900, letterSpacing: '0.2em', color: SF.cyan, textShadow: `0 0 20px ${SF.cyan}60` }}>
+              ADMIN DASHBOARD
+            </Box>
+            <Box sx={{ width: 10, height: 10, borderTop: `2px solid ${SF.cyan}`, borderRight: `2px solid ${SF.cyan}` }} />
           </Box>
-          
-          <StyledTableContainer>
-            <Table sx={{ minWidth: 650 }} aria-label="user scores table">
+          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.82rem', color: SF.dim, letterSpacing: '0.08em' }}>
+            {user ? `OPERATOR: ${user.firstname?.toUpperCase()} ${user.lastname?.toUpperCase()}` : 'OPERATOR: UNKNOWN'}
+            <Box component="span" sx={{ mx: 2, color: `${SF.white}20` }}>|</Box>
+            FACILITY MANAGEMENT SYSTEM v2.1
+          </Box>
+        </Box>
+        <Box sx={{ textAlign: 'right' }}>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.cyan, lineHeight: 1 }}>{users.length}</Box>
+          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim, letterSpacing: '0.12em' }}>REGISTERED</Box>
+        </Box>
+      </Box>
+
+      {/* ── Error ── */}
+      {error && (
+        <Box sx={{ mb: 2, p: 1.5, border: `1px solid ${SF.red}50`, backgroundColor: `${SF.red}08` }}>
+          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.red }}>{error}</Box>
+        </Box>
+      )}
+
+      {/* ── Toolbar ── */}
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+        <TextField
+          size="small"
+          placeholder="Search records..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          sx={{
+            minWidth: 260,
+            '& .MuiOutlinedInput-root': { fontFamily: SF.fontBody, fontSize: '0.82rem', color: SF.white, backgroundColor: `${SF.cyan}05`, '& fieldset': { borderColor: `${SF.white}15` }, '&:hover fieldset': { borderColor: `${SF.cyan}50` }, '&.Mui-focused fieldset': { borderColor: SF.cyan } },
+            '& input': { color: SF.white, '&::placeholder': { color: `${SF.white}25`, opacity: 1 } },
+          }}
+          InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ color: `${SF.cyan}50`, fontSize: '1rem' }} /></InputAdornment> }}
+        />
+        <SFButton color={SF.cyan} onClick={handleAddClick}>+ NEW RECORD</SFButton>
+        <SFButton color={SF.red} onClick={handleDeleteClick} disabled={selectedUsers.length === 0}>
+          DELETE {selectedUsers.length > 0 && `(${selectedUsers.length})`}
+        </SFButton>
+      </Box>
+
+      {/* ── User Table ── */}
+      <Box sx={{ ...hudPanel(SF.cyan), borderRadius: '4px', overflow: 'hidden', mb: 4 }}>
+        <TableContainer>
+          <Table sx={{ minWidth: 900 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ ...thSx, width: 48 }}>
+                  <Checkbox size="small"
+                    checked={selectedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
+                    indeterminate={selectedUsers.length > 0 && selectedUsers.length < paginatedUsers.length}
+                    onChange={handleSelectAll}
+                    sx={{ color: `${SF.cyan}40`, '&.Mui-checked': { color: SF.cyan }, '&.MuiCheckbox-indeterminate': { color: SF.cyan }, p: 0 }}
+                  />
+                </TableCell>
+                {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['G1','game1_score'],['G2','game2_score'],['G3','game3_score'],['G4','game4_score'],['G5','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
+                  <TableCell key={field} sx={thSx}>
+                    <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
+                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
+                      {label}
+                    </TableSortLabel>
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {sortedUsers.map(u => (
+                <TableRow key={u.id} onDoubleClick={() => handleEditOpen(u)}
+                  sx={{ cursor: 'pointer', backgroundColor: selectedUsers.includes(u.id) ? `${SF.cyan}08` : 'transparent', transition: 'background 0.12s', '&:hover': { backgroundColor: `${SF.cyan}0c` } }}>
+                  <TableCell sx={{ ...tdSx, width: 48 }}>
+                    <Checkbox size="small" checked={selectedUsers.includes(u.id)} onClick={e => { e.stopPropagation(); handleSelectUser(u.id); }}
+                      sx={{ color: `${SF.cyan}30`, '&.Mui-checked': { color: SF.cyan }, p: 0 }} />
+                  </TableCell>
+                  {[u.firstname, u.lastname, u.email, u.region].map((val, i) => (
+                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.82rem', color: `${SF.white}85`, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
+                  ))}
+                  {[u.game1_score, u.game2_score, u.game3_score, u.game4_score, u.game5_score].map((s, i) => (
+                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.82rem', color: scoreColor(s), textAlign: 'center' }}>{s.toFixed(1)}</TableCell>
+                  ))}
+                  <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, color: scoreColor(u.total_score, 500), textAlign: 'center' }}>
+                    {u.total_score.toFixed(1)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination rowsPerPageOptions={[5,10,25]} component="div" count={filteredUsers.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{ borderTop: `1px solid ${SF.cyan}15`, backgroundColor: SF.panelAlt, color: SF.dim, fontFamily: SF.fontBody, fontSize: '0.65rem',
+            '& .MuiTablePagination-select': { color: SF.cyan, fontFamily: SF.fontBody },
+            '& .MuiTablePagination-selectIcon': { color: SF.cyan },
+            '& .MuiTablePagination-displayedRows': { fontFamily: SF.fontBody, fontSize: '0.78rem', color: SF.dim },
+            '& .MuiIconButton-root': { color: SF.dim, '&:not(.Mui-disabled):hover': { color: SF.cyan } },
+          }} />
+      </Box>
+
+      {/* ── API Health Check ── */}
+      <Box sx={{ mb: 4 }}>
+        <SFSectionHeader label="System Diagnostics" color={SF.yellow} right={
+          <SFButton color={SF.yellow} onClick={runApiHealthCheck} disabled={isTestingApis} startIcon={<RefreshIcon />}>
+            {isTestingApis ? 'SCANNING...' : 'RUN DIAGNOSTIC'}
+          </SFButton>
+        } />
+        <Box sx={{ ...hudPanel(SF.yellow), borderRadius: '4px', overflow: 'hidden' }}>
+          <TableContainer>
+            <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
-                      indeterminate={selectedUsers.length > 0 && selectedUsers.length < paginatedUsers.length}
-                      onChange={handleSelectAll}
-                    />
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'firstname' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'firstname'}
-                      direction={orderBy === 'firstname' ? order : 'asc'}
-                      onClick={() => handleRequestSort('firstname')}
-                      IconComponent={ArrowUpward}
-                    >
-                      First Name
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'lastname' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'lastname'}
-                      direction={orderBy === 'lastname' ? order : 'asc'}
-                      onClick={() => handleRequestSort('lastname')}
-                      IconComponent={ArrowUpward}
-                    >
-                      Last Name
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'email' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'email'}
-                      direction={orderBy === 'email' ? order : 'asc'}
-                      onClick={() => handleRequestSort('email')}
-                      IconComponent={ArrowUpward}
-                    >
-                      Email
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'region' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'region'}
-                      direction={orderBy === 'region' ? order : 'asc'}
-                      onClick={() => handleRequestSort('region')}
-                      IconComponent={ArrowUpward}
-                    >
-                      Region
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'game1_score' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'game1_score'}
-                      direction={orderBy === 'game1_score' ? order : 'asc'}
-                      onClick={() => handleRequestSort('game1_score')}
-                      IconComponent={ArrowUpward}
-                    >
-                      G1
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'game2_score' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'game2_score'}
-                      direction={orderBy === 'game2_score' ? order : 'asc'}
-                      onClick={() => handleRequestSort('game2_score')}
-                      IconComponent={ArrowUpward}
-                    >
-                      G2
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'game3_score' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'game3_score'}
-                      direction={orderBy === 'game3_score' ? order : 'asc'}
-                      onClick={() => handleRequestSort('game3_score')}
-                      IconComponent={ArrowUpward}
-                    >
-                      G3
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'game4_score' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'game4_score'}
-                      direction={orderBy === 'game4_score' ? order : 'asc'}
-                      onClick={() => handleRequestSort('game4_score')}
-                      IconComponent={ArrowUpward}
-                    >
-                      G4
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'game5_score' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'game5_score'}
-                      direction={orderBy === 'game5_score' ? order : 'asc'}
-                      onClick={() => handleRequestSort('game5_score')}
-                      IconComponent={ArrowUpward}
-                    >
-                      G5
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={orderBy === 'total_score' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'total_score'}
-                      direction={orderBy === 'total_score' ? order : 'asc'}
-                      onClick={() => handleRequestSort('total_score')}
-                      IconComponent={ArrowUpward}
-                    >
-                      Total
-                    </TableSortLabel>
-                  </TableCell>
+                  {['SIG','ENDPOINT','METHOD','PATH','LATENCY','STATUS'].map(h => (
+                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.yellow}25`, fontFamily: SF.fontTitle, fontSize: '0.6rem', letterSpacing: '0.1em', color: `${SF.white}50` }}>{h}</TableCell>
+                  ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {sortedUsers.map((user) => (
-                  <TableRow
-                    key={user.id}
-                    sx={{ 
-                      height: 52,
-                      '&:last-child td, &:last-child th': { border: 0 },
-                      '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                      }
-                    }}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={selectedUsers.includes(user.id)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectUser(user.id);
-                        }}
-                      />
-                    </TableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                    >
-                      {user.firstname}
-                    </EditableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                    >
-                      {user.lastname}
-                    </EditableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                    >
-                      {user.email}
-                    </EditableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                    >
-                      {user.region}
-                    </EditableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                      sx={{ color: user.game1_score >= 80 ? '#4caf50' : user.game1_score >= 60 ? '#ff9800' : '#f44336' }}
-                    >
-                      {user.game1_score.toFixed(1)}
-                    </EditableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                      sx={{ color: user.game2_score >= 80 ? '#4caf50' : user.game2_score >= 60 ? '#ff9800' : '#f44336' }}
-                    >
-                      {user.game2_score.toFixed(1)}
-                    </EditableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                      sx={{ color: user.game3_score >= 80 ? '#4caf50' : user.game3_score >= 60 ? '#ff9800' : '#f44336' }}
-                    >
-                      {user.game3_score.toFixed(1)}
-                    </EditableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                      sx={{ color: user.game4_score >= 80 ? '#4caf50' : user.game4_score >= 60 ? '#ff9800' : '#f44336' }}
-                    >
-                      {user.game4_score.toFixed(1)}
-                    </EditableCell>
-                    <EditableCell 
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleEditOpen(user);
-                      }}
-                      sx={{ color: user.game5_score >= 80 ? '#4caf50' : user.game5_score >= 60 ? '#ff9800' : '#f44336' }}
-                    >
-                      {user.game5_score.toFixed(1)}
-                    </EditableCell>
-                    <TableCell sx={{ fontWeight: 'bold', color: user.total_score >= 400 ? '#4caf50' : user.total_score >= 300 ? '#ff9800' : '#f44336' }}>
-                      {user.total_score.toFixed(1)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {API_ENDPOINTS.map((ep, i) => {
+                  const s = apiStatuses[i];
+                  const dot = s.status === 'normal' ? SF.lime : s.status === 'error' ? SF.red : s.status === 'loading' ? SF.yellow : `${SF.white}20`;
+                  return (
+                    <TableRow key={ep.name} sx={{ '&:hover': { backgroundColor: `${SF.white}03` } }}>
+                      <TableCell sx={tdSx}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dot, boxShadow: s.status !== 'idle' ? `0 0 8px ${dot}` : 'none', transition: 'all 0.3s' }} />
+                      </TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.82rem', color: `${SF.white}80` }}>{ep.name}</TableCell>
+                      <TableCell sx={tdSx}>
+                        <Box component="span" sx={{ px: 1, py: 0.2, fontFamily: SF.fontTitle, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', backgroundColor: ep.method === 'GET' ? `${SF.cyan}15` : `${SF.lime}15`, color: ep.method === 'GET' ? SF.cyan : SF.lime, border: `1px solid ${ep.method === 'GET' ? SF.cyan : SF.lime}30` }}>
+                          {ep.method}
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.75rem', color: SF.dim }}>{ep.path}</TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.78rem', color: SF.yellow, textAlign: 'right' }}>
+                        {s.latency !== undefined ? `${s.latency}ms` : '—'}
+                      </TableCell>
+                      <TableCell sx={tdSx}>
+                        {s.status === 'loading' ? <CircularProgress size={10} sx={{ color: SF.yellow }} /> :
+                         s.status === 'normal'  ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.78rem', color: SF.lime }}>NOMINAL</Box> :
+                         s.status === 'error'   ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.78rem', color: SF.red }}>FAULT — {s.error}</Box> :
+                         <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.78rem', color: `${SF.white}25` }}>STANDBY</Box>}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={filteredUsers.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-          </StyledTableContainer>
-
-          {/* API Health Check Section */}
-          <Box sx={{ mt: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                API Health Check
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<RefreshIcon />}
-                onClick={runApiHealthCheck}
-                disabled={isTestingApis}
-                size="small"
-              >
-                {isTestingApis ? 'Testing...' : 'Run Test'}
-              </Button>
-            </Box>
-            <StyledTableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', width: 60 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Endpoint</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Method</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Path</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', width: 100, textAlign: 'right' }}>Latency</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Message</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {API_ENDPOINTS.map((ep, index) => {
-                    const apiStatus = apiStatuses[index];
-                    return (
-                      <TableRow key={ep.name} sx={{ height: 52 }}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box
-                              sx={{
-                                width: 12,
-                                height: 12,
-                                borderRadius: '50%',
-                                backgroundColor:
-                                  apiStatus.status === 'normal' ? '#4caf50' :
-                                  apiStatus.status === 'error' ? '#f44336' :
-                                  apiStatus.status === 'loading' ? '#ff9800' :
-                                  theme.palette.grey[400],
-                                boxShadow:
-                                  apiStatus.status === 'normal' ? '0 0 6px rgba(76,175,80,0.6)' :
-                                  apiStatus.status === 'error' ? '0 0 6px rgba(244,67,54,0.6)' :
-                                  'none',
-                              }}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 500 }}>{ep.name}</TableCell>
-                        <TableCell>
-                          <Typography
-                            component="span"
-                            sx={{
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: 1,
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              backgroundColor: ep.method === 'GET' 
-                                ? 'rgba(33,150,243,0.1)' 
-                                : 'rgba(76,175,80,0.1)',
-                              color: ep.method === 'GET' ? '#1976d2' : '#388e3c',
-                            }}
-                          >
-                            {ep.method}
-                          </Typography>
-                        </TableCell>
-                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{ep.path}</TableCell>
-                        <TableCell sx={{ textAlign: 'right', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                          {apiStatus.latency !== undefined ? `${apiStatus.latency}ms` : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {apiStatus.status === 'loading' ? (
-                            <CircularProgress size={14} />
-                          ) : apiStatus.status === 'normal' ? (
-                            <Typography sx={{ color: '#4caf50', fontWeight: 500, fontSize: '0.875rem' }}>Normal</Typography>
-                          ) : apiStatus.status === 'error' ? (
-                            <Typography sx={{ color: '#f44336', fontWeight: 500, fontSize: '0.875rem' }}>Error: {apiStatus.error}</Typography>
-                          ) : (
-                            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>Not tested</Typography>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </StyledTableContainer>
-          </Box>
-          
-          {/* Delete Confirmation Dialog */}
-          <Dialog 
-            open={openDeleteDialog} 
-            onClose={cancelDelete}
-            maxWidth="sm"
-            fullWidth
-          >
-            <DialogTitle>
-              Confirm Deletion
-              <IconButton
-                aria-label="close"
-                onClick={cancelDelete}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                  color: (theme) => theme.palette.grey[500],
-                }}
-              >
-                <Close />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-              <Typography variant="body1">
-                Are you sure you want to delete {selectedUsers.length} user(s)? This action cannot be undone.
-              </Typography>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={cancelDelete}>Cancel</Button>
-              <Button onClick={confirmDelete} variant="contained" color="error">
-                Delete
-              </Button>
-            </DialogActions>
-          </Dialog>
-          
-          {/* Edit Dialog */}
-          <Dialog 
-            open={openEditDialog} 
-            onClose={handleEditClose}
-            maxWidth="sm"
-            fullWidth
-          >
-            <DialogTitle>
-              Edit User
-              <IconButton
-                aria-label="close"
-                onClick={handleEditClose}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                  color: (theme) => theme.palette.grey[500],
-                }}
-              >
-                <Close />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    autoFocus
-                    margin="dense"
-                    name="firstname"
-                    label="First Name"
-                    fullWidth
-                    variant="outlined"
-                    value={formData.firstname}
-                    onChange={handleInputChange}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="lastname"
-                    label="Last Name"
-                    fullWidth
-                    variant="outlined"
-                    value={formData.lastname}
-                    onChange={handleInputChange}
-                  />
-                </Box>
-                <TextField
-                  margin="dense"
-                  name="email"
-                  label="Email"
-                  fullWidth
-                  variant="outlined"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-                <FormControl fullWidth margin="dense">
-                  <InputLabel>Region</InputLabel>
-                  <Select
-                    name="region"
-                    value={formData.region}
-                    label="Region"
-                    onChange={(e) => setFormData(prev => ({ ...prev, region: e.target.value as string }))}
-                  >
-                    {COUNTRIES.map((country) => (
-                      <MenuItem key={country.code} value={country.name}>
-                        {country.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <TextField
-                    margin="dense"
-                    name="game1_score"
-                    label="Game 1 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                   variant="outlined"
-                   value={formData.game1_score}
-                   onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="game2_score"
-                    label="Game 2 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game2_score}
-                    onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="game3_score"
-                    label="Game 3 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game3_score}
-                    onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="game4_score"
-                    label="Game 4 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game4_score}
-                    onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="game5_score"
-                    label="Game 5 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game5_score}
-                    onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                </Box>
-              </Box>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleEditClose}>Cancel</Button>
-              <Button onClick={handleEditSubmit} variant="contained">Confirm</Button>
-            </DialogActions>
-          </Dialog>
-          
-          {/* Add Dialog */}
-          <Dialog 
-            open={openAddDialog} 
-            onClose={handleAddClose}
-            maxWidth="md"
-            fullWidth
-          >
-            <DialogTitle>
-              Add New User
-              <IconButton
-                aria-label="close"
-                onClick={handleAddClose}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                  color: (theme) => theme.palette.grey[500],
-                }}
-              >
-                <Close />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    autoFocus
-                    margin="dense"
-                    name="firstname"
-                    label="First Name *"
-                    fullWidth
-                    variant="outlined"
-                    value={formData.firstname}
-                    onChange={handleInputChange}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="lastname"
-                    label="Last Name *"
-                    fullWidth
-                    variant="outlined"
-                    value={formData.lastname}
-                    onChange={handleInputChange}
-                  />
-                </Box>
-                <TextField
-                  margin="dense"
-                  name="email"
-                  label="Email *"
-                  fullWidth
-                  variant="outlined"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-                <FormControl fullWidth margin="dense">
-                  <InputLabel>Region *</InputLabel>
-                  <Select
-                    name="region"
-                    value={formData.region}
-                    label="Region *"
-                    onChange={(e) => setFormData(prev => ({ ...prev, region: e.target.value as string }))}
-                  >
-                    {COUNTRIES.map((country) => (
-                      <MenuItem key={country.code} value={country.name}>
-                        {country.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <TextField
-                    margin="dense"
-                    name="game1_score"
-                    label="Game 1 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                   variant="outlined"
-                   value={formData.game1_score}
-                   onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="game2_score"
-                    label="Game 2 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game2_score}
-                    onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="game3_score"
-                    label="Game 3 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game3_score}
-                    onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="game4_score"
-                    label="Game 4 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game4_score}
-                    onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                  <TextField
-                    margin="dense"
-                    name="game5_score"
-                    label="Game 5 Score"
-                    type="number"
-                    inputProps={{ 
-                      min: 0, 
-                      max: 100,
-                      step: 0.1
-                    }}
-                    fullWidth
-                    variant="outlined"
-                    value={formData.game5_score}
-                    onChange={handleInputChange}
-                    sx={{ flex: '1 1 30%', minWidth: 100 }}
-                  />
-                </Box>
-              </Box>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleAddClose}>Cancel</Button>
-              <Button onClick={handleAddSubmit} variant="contained">Confirm</Button>
-            </DialogActions>
-          </Dialog>
+          </TableContainer>
         </Box>
       </Box>
-      
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
+
+      {/* ── Delete Dialog ── */}
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} PaperProps={{ sx: dlgPaper(SF.red) }}>
+        <DialogTitle sx={{ borderBottom: `1px solid ${SF.red}25`, py: 2, px: 3 }}>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', letterSpacing: '0.2em', color: SF.red }}>⚠ DELETE CONFIRMATION</Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3, pb: 2, px: 3 }}>
+          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: `${SF.white}80`, lineHeight: 1.8 }}>
+            You are about to permanently delete <Box component="span" sx={{ color: SF.red, fontWeight: 700 }}>{selectedUsers.length}</Box> record(s).
+            <br />This operation cannot be reversed.
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1.5 }}>
+          <SFButton color={SF.dim} onClick={() => setOpenDeleteDialog(false)}>ABORT</SFButton>
+          <SFButton color={SF.red} variant="filled" onClick={confirmDelete}>CONFIRM DELETE</SFButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Edit Dialog ── */}
+      <Dialog open={openEditDialog} onClose={() => { setOpenEditDialog(false); setEditingUser(null); }} PaperProps={{ sx: dlgPaper(SF.cyan) }}>
+        <DialogTitle sx={{ borderBottom: `1px solid ${SF.cyan}25`, py: 2, px: 3 }}>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', letterSpacing: '0.2em', color: SF.cyan }}>MODIFY RECORD</Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3, pb: 1, px: 3 }}>{renderFormFields(SF.cyan)}</DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1.5 }}>
+          <SFButton color={SF.dim} onClick={() => { setOpenEditDialog(false); setEditingUser(null); }}>CANCEL</SFButton>
+          <SFButton color={SF.cyan} variant="filled" onClick={handleEditSubmit}>APPLY CHANGES</SFButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Add Dialog ── */}
+      <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} PaperProps={{ sx: dlgPaper(SF.lime) }}>
+        <DialogTitle sx={{ borderBottom: `1px solid ${SF.lime}25`, py: 2, px: 3 }}>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', letterSpacing: '0.2em', color: SF.lime }}>NEW RECORD</Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3, pb: 1, px: 3 }}>{renderFormFields(SF.lime)}</DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1.5 }}>
+          <SFButton color={SF.dim} onClick={() => setOpenAddDialog(false)}>CANCEL</SFButton>
+          <SFButton color={SF.lime} variant="filled" onClick={handleAddSubmit}>CREATE RECORD</SFButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Snackbar ── */}
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} variant="filled" sx={{ fontFamily: SF.fontBody, fontSize: '0.82rem' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

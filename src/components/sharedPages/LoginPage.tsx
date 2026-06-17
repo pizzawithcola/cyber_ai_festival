@@ -9,6 +9,7 @@ import {
   Snackbar,
   Alert,
   MenuItem,
+  Dialog,
   keyframes,
 } from '@mui/material';
 import { ArcadeButton, ArcadeTypography } from '../ui';
@@ -252,6 +253,7 @@ const LoginPage: React.FC = () => {
   const [regCountry, setRegCountry] = useState('');
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState<SnackState>({ open: false, message: '', severity: 'success' });
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   const theme = game && GAME_THEMES[game] ? GAME_THEMES[game] : DEFAULT_THEME;
   const gameRoute = game ? GAME_ROUTES[game] || '/' : '/';
@@ -292,6 +294,10 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const handleRegisterClick = () => {
+    setDisclaimerOpen(true);
+  };
+
   const handleRegister = async () => {
     if (!regFirstname || !regLastname || !regEmail || !regCountry) {
       setSnack({ open: true, message: 'Please fill in all fields.', severity: 'warning' });
@@ -312,6 +318,7 @@ const LoginPage: React.FC = () => {
         const err = await res.json();
         throw new Error(err.detail || 'Registration failed');
       }
+      setDisclaimerOpen(false);
       setSnack({ open: true, message: 'Registration successful! Please log in.', severity: 'success' });
       setIsRegister(false);
       setLoginEmail(regEmail);
@@ -696,12 +703,14 @@ const LoginPage: React.FC = () => {
                   variant="filled"
                   size="md"
                   glowing
-                  onClick={handleRegister}
+                onClick={handleRegisterClick}
                   disabled={loading}
                   sx={{ width: '100%', mt: 1 }}
                 >
                   {loading ? 'LOADING...' : 'REGISTER'}
                 </ArcadeButton>
+
+                {/* Disclaimer Dialog removed — now shown as popup */}
                 <Box sx={{ textAlign: 'center', mt: 0.5 }}>
                   <Box
                     component="button"
@@ -807,6 +816,103 @@ const LoginPage: React.FC = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Disclaimer Dialog */}
+      <Dialog
+        open={disclaimerOpen}
+        onClose={() => setDisclaimerOpen(false)}
+        PaperProps={{
+          sx: {
+            backgroundColor: '#0a0a1a',
+            border: `2px solid ${theme.color}`,
+            borderRadius: '8px',
+            boxShadow: `0 0 30px ${theme.color}40, 0 0 60px ${theme.color}20`,
+            maxWidth: 480,
+            width: '100%',
+            p: 0,
+            overflow: 'hidden',
+          },
+        }}
+      >
+        {/* Header */}
+        <Box sx={{
+          px: 3, py: 1.5,
+          borderBottom: `1px solid ${theme.color}30`,
+          backgroundColor: `${theme.color}10`,
+          textAlign: 'center',
+        }}>
+          <ArcadeTypography
+            arcadeSize="xs"
+            component="p"
+            sx={{ color: theme.color, fontSize: '0.8rem', letterSpacing: '0.2em' }}
+          >
+            ⚠ SYSTEM NOTICE
+          </ArcadeTypography>
+        </Box>
+
+        {/* Body */}
+        <Box sx={{ px: 3, py: 3 }}>
+          <Box sx={{
+            p: 2,
+            border: `1px solid ${theme.color}20`,
+            borderRadius: '4px',
+            backgroundColor: '#050510',
+            mb: 3,
+            '&::before': {
+              content: '""',
+              display: 'block',
+              height: '1px',
+              background: `linear-gradient(90deg, transparent, ${theme.color}40, transparent)`,
+              mb: 1.5,
+            },
+          }}>
+            <ArcadeTypography
+              arcadeSize="xs"
+              component="p"
+              monospace
+              glow={false}
+              sx={{ fontSize: '0.8rem', color: `${ARCADE_COLORS.white}80`, lineHeight: 2, letterSpacing: '0.05em' }}
+            >
+              By proceeding, you acknowledge that:
+            </ArcadeTypography>
+            <Box component="ul" sx={{ mt: 1, pl: 2, m: 0, listStyle: 'none' }}>
+              {[
+                'Do not enter personal or sensitive data during gameplay.',
+                'Your registration info is used solely for this event.',
+                'We will not share or retain your data beyond this event.',
+              ].map((line, i) => (
+                <Box key={i} component="li" sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                  <ArcadeTypography arcadeSize="xs" component="span" sx={{ color: theme.color, fontSize: '0.75rem', flexShrink: 0 }}>›</ArcadeTypography>
+                  <ArcadeTypography arcadeSize="xs" component="span" monospace glow={false} sx={{ fontSize: '0.75rem', color: `${ARCADE_COLORS.white}60`, lineHeight: 1.8 }}>{line}</ArcadeTypography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <ArcadeButton
+              color="white"
+              variant="outline"
+              size="sm"
+              onClick={() => setDisclaimerOpen(false)}
+              sx={{ flex: 1, borderColor: `${ARCADE_COLORS.white}40`, color: `${ARCADE_COLORS.white}60` }}
+            >
+              CANCEL
+            </ArcadeButton>
+            <ArcadeButton
+              color={theme.colorKey}
+              variant="filled"
+              size="sm"
+              glowing
+              onClick={handleRegister}
+              disabled={loading}
+              sx={{ flex: 1 }}
+            >
+              {loading ? 'LOADING...' : 'CONFIRM'}
+            </ArcadeButton>
+          </Box>
+        </Box>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar
