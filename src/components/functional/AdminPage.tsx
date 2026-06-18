@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Table,
@@ -175,6 +176,7 @@ interface UserScore  { id: number; firstname: string; lastname: string; email: s
 const AdminPage: React.FC = () => {
   // ─── Auth State ──────────────────────────────────────────────────────────────
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
   const [loginEmail, setLoginEmail] = useState('');
   const [loginName, setLoginName] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
@@ -322,14 +324,31 @@ const AdminPage: React.FC = () => {
                 {loginError}
               </Box>
             )}
-            <SFButton
-              color={SF.cyan}
-              variant="filled"
-              onClick={handleAdminLogin}
-              disabled={loginLoading}
-            >
-              {loginLoading ? 'AUTHENTICATING...' : 'AUTHORIZE'}
-            </SFButton>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, mt: 3 }}>
+              <Box
+                component="span"
+                onClick={() => navigate('/')}
+                sx={{
+                  cursor: loginLoading ? 'default' : 'pointer',
+                  fontFamily: SF.fontBody,
+                  fontSize: '0.85rem',
+                  color: loginLoading ? '#555' : SF.cyan,
+                  opacity: loginLoading ? 0.5 : 0.8,
+                  '&:hover': { opacity: loginLoading ? 0.5 : 1 },
+                  transition: 'opacity 0.2s, color 0.2s',
+                }}
+              >
+                ← Back
+              </Box>
+              <SFButton
+                color={SF.cyan}
+                variant="filled"
+                onClick={handleAdminLogin}
+                disabled={loginLoading}
+              >
+                {loginLoading ? 'AUTHENTICATING...' : 'LOGIN'}
+              </SFButton>
+            </Box>
           </Box>
         </Box>
       </Box>
