@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { ArcadeTypography, LightSign } from '../../components/ui';
-import { BrainCircuit, ScanEye, Store, Fish } from 'lucide-react';
+import { BrainCircuit, ScanEye, Store, Fish, Trophy } from 'lucide-react';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 import pkg from '../../../package.json';
 
@@ -347,6 +347,80 @@ const HomePage: React.FC<HomePageProps> = () => {
                 </Box>
               </GameCard>
             ))}
+          </Box>
+
+          {/* Ultimate Showdown Button */}
+          <Box
+            onClick={() => navigate('/final')}
+            sx={{
+              mt: 3,
+              mx: 'auto',
+              maxWidth: 480,
+              position: 'relative',
+              zIndex: 1,
+              cursor: 'pointer',
+              py: 1.5,
+              px: 3,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              border: `2px solid ${ARCADE_COLORS.orange}`,
+              borderRadius: '4px',
+              backgroundColor: `${ARCADE_COLORS.orange}08`,
+              boxShadow: `0 0 12px ${ARCADE_COLORS.orange}30, inset 0 0 15px ${ARCADE_COLORS.orange}08`,
+              animation: `${fadeIn} 0.6s ease-out both, ${neonPulse} 2.5s ease-in-out infinite`,
+              animationDelay: '0.6s',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-3px)',
+                borderColor: ARCADE_COLORS.orange,
+                backgroundColor: `${ARCADE_COLORS.orange}18`,
+                boxShadow: `0 0 20px ${ARCADE_COLORS.orange}60, 0 0 40px ${ARCADE_COLORS.orange}30, inset 0 0 20px ${ARCADE_COLORS.orange}15`,
+                '& .trophy-icon': {
+                  transform: 'scale(1.2) rotate(-5deg)',
+                  filter: `drop-shadow(0 0 8px ${ARCADE_COLORS.orange})`,
+                },
+                '& .showdown-title': {
+                  textShadow: `0 0 10px ${ARCADE_COLORS.orange}, 0 0 20px ${ARCADE_COLORS.orange}80`,
+                },
+              },
+            }}
+          >
+            <Box
+              className="trophy-icon"
+              sx={{
+                color: ARCADE_COLORS.orange,
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <Trophy size={24} strokeWidth={1.5} />
+            </Box>
+            <ArcadeTypography
+              arcadeSize="sm"
+              component="span"
+              className="showdown-title"
+              sx={{
+                color: ARCADE_COLORS.orange,
+                letterSpacing: '0.15em',
+                transition: 'text-shadow 0.3s ease',
+              }}
+            >
+              ULTIMATE SHOWDOWN
+            </ArcadeTypography>
+            <Box
+              className="trophy-icon"
+              sx={{
+                color: ARCADE_COLORS.orange,
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <Trophy size={24} strokeWidth={1.5} />
+            </Box>
           </Box>
 
           {/* Bottom prompt inside screen */}

@@ -516,28 +516,32 @@ const LoginPage: React.FC = () => {
               <Box component="span" sx={{ fontSize: '8px', color: '#5a5a7a', fontFamily: 'monospace' }}>LB</Box>
             </Box>
 
-            {/* Center coin slot */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{
-                width: '30px', height: '4px',
+            {/* Center EXIT button */}
+            <Box
+              component="button"
+              onClick={() => navigate('/')}
+              sx={{
+                width: 36,
+                height: 20,
                 backgroundColor: '#1a1a30',
-                borderRadius: '2px',
-                border: `1px solid #2a2a4a`,
-              }} />
-              <ArcadeTypography
-                arcadeSize="xs"
-                component="span"
-                monospace
-                sx={{ color: `${ARCADE_COLORS.white}20`, fontSize: '0.45rem' }}
-              >
-                COIN
-              </ArcadeTypography>
-              <Box sx={{
-                width: '30px', height: '4px',
-                backgroundColor: '#1a1a30',
-                borderRadius: '2px',
-                border: `1px solid #2a2a4a`,
-              }} />
+                border: `1px solid ${ARCADE_COLORS.red}`,
+                borderRadius: '4px',
+                boxShadow: `0 0 6px ${ARCADE_COLORS.red}30, inset 0 1px 2px rgba(255,255,255,0.05)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  backgroundColor: `${ARCADE_COLORS.red}15`,
+                  boxShadow: `0 0 10px ${ARCADE_COLORS.red}50, inset 0 1px 2px rgba(255,255,255,0.05)`,
+                },
+                '&:active': {
+                  boxShadow: `inset 0 2px 3px rgba(0,0,0,0.4)`,
+                },
+              }}
+            >
+              <Box component="span" sx={{ fontSize: '7px', fontWeight: 700, color: ARCADE_COLORS.red, fontFamily: 'monospace', letterSpacing: '0.05em' }}>EXIT</Box>
             </Box>
 
             {/* Right bumper */}
@@ -622,7 +626,7 @@ const LoginPage: React.FC = () => {
                       border: 'none',
                       color: `${ARCADE_COLORS.white}60`,
                       fontFamily: '"Courier New", monospace',
-                      fontSize: '0.6rem',
+                      fontSize: '0.8rem',
                       cursor: 'pointer',
                       letterSpacing: '0.1em',
                       '&:hover': { color: theme.color, textShadow: `0 0 6px ${theme.color}` },
@@ -720,7 +724,7 @@ const LoginPage: React.FC = () => {
                       border: 'none',
                       color: `${ARCADE_COLORS.white}60`,
                       fontFamily: '"Courier New", monospace',
-                      fontSize: '0.6rem',
+                      fontSize: '0.8rem',
                       cursor: 'pointer',
                       letterSpacing: '0.1em',
                       '&:hover': { color: theme.color, textShadow: `0 0 6px ${theme.color}` },
@@ -733,8 +737,8 @@ const LoginPage: React.FC = () => {
             )}
           </Box>
 
-          {/* --- Bottom: Controller Buttons (D-Pad + ABXY) --- */}
-          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+          {/* --- Bottom: Controller Buttons (D-Pad + EXIT + ABXY) --- */}
+          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             {/* D-Pad */}
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {/* Up */}
@@ -767,6 +771,30 @@ const LoginPage: React.FC = () => {
                 width: 20, height: 20, backgroundColor: '#1a1a30',
                 border: `1px solid #3a3a5a`, borderRadius: '3px',
                 mt: '-1px',
+              }} />
+            </Box>
+
+            {/* COIN slot (center, decorative) */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{
+                width: '30px', height: '4px',
+                backgroundColor: '#1a1a30',
+                borderRadius: '2px',
+                border: `1px solid #2a2a4a`,
+              }} />
+              <ArcadeTypography
+                arcadeSize="xs"
+                component="span"
+                monospace
+                sx={{ color: `${ARCADE_COLORS.white}20`, fontSize: '0.45rem' }}
+              >
+                COIN
+              </ArcadeTypography>
+              <Box sx={{
+                width: '30px', height: '4px',
+                backgroundColor: '#1a1a30',
+                borderRadius: '2px',
+                border: `1px solid #2a2a4a`,
               }} />
             </Box>
 
