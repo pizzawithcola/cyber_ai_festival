@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Typography, Box, Collapse, Slider, Stack, Avatar } from '@mui/material';
-import { Flag as FlagIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { Search as SearchIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 
 import { BOSS_TYPES, NORMALIZED_SENTENCE_POOL } from './training/data';
 import { ChapterComplete } from './training/ChapterComplete';
@@ -90,8 +90,8 @@ const trainingIntroSlides = [
   },
   {
     label: 'Decision mode',
-    title: 'Flag or pass.',
-    body: 'Flag confident claims that need verification. Pass answers that stay cautious, checkable, and honest about uncertainty.',
+    title: 'Verify or trust.',
+    body: 'Verify confident claims that need evidence. Trust answers that stay cautious, checkable, and honest about uncertainty.',
     prompt: 'Do not reward a sentence just because it sounds polished.',
   },
   {
@@ -518,10 +518,10 @@ export function TrainingArena({
       activeFeedbackKind === 'correct'
         ? "Good catch — that one needed a closer look."
         : activeFeedbackKind === 'missed'
-        ? "I'd flag that one. It slips past a lot of people."
+        ? "I'd verify that one. It slips past a lot of people."
         : activeFeedbackKind === 'falsePos'
-        ? "I'd actually let that through — the language stays cautious enough."
-        : "Agreed, nothing to flag here.";
+        ? "I'd actually trust that one — the language stays cautious enough."
+        : "Agreed, nothing risky to verify here.";
 
     const bodyText =
       activeFeedbackKind === 'correct' || activeFeedbackKind === 'missed'
@@ -529,10 +529,10 @@ export function TrainingArena({
         : activeFeedbackKind === 'falsePos'
         ? activeCard.isDecoySafe
           ? 'This is a decoy — it models cautious, uncertain language, which is exactly what good AI output looks like.'
-          : 'Not a pitfall. Watch for over-flagging; cautious language is fine to pass.'
+          : 'Not a pitfall. Watch for over-checking; cautious language is fine to trust.'
         : activeCard.isDecoySafe
         ? 'This is a decoy — it models cautious, uncertain language, which is exactly what good AI output looks like.'
-        : 'Safe to pass — the claim stays cautious and points toward verification.';
+        : 'Safe to trust — the claim stays cautious and points toward verification.';
 
     const showChecklist =
       activeFeedbackKind === 'correct' ||
@@ -1070,7 +1070,7 @@ export function TrainingArena({
                                       <ArcadeButton
                                         size="lg"
                                         color="orange"
-                                        startIcon={<FlagIcon />}
+                                        startIcon={<SearchIcon />}
                                         onClick={handleFlashFlag}
                                         sx={{
                                           flex: 1,
@@ -1080,7 +1080,7 @@ export function TrainingArena({
                                           '& .MuiButton-startIcon': { color: 'inherit !important' },
                                         }}
                                       >
-                                        Flag
+                                        Verify
                                       </ArcadeButton>
                                       <ArcadeButton
                                         size="lg"
@@ -1095,7 +1095,7 @@ export function TrainingArena({
                                           '& .MuiButton-startIcon': { color: 'inherit !important' },
                                         }}
                                       >
-                                        Pass
+                                        Trust
                                       </ArcadeButton>
                                     </Stack>
                                     <Typography
@@ -1106,7 +1106,7 @@ export function TrainingArena({
                                         lineHeight: 1.5,
                                       }}
                                     >
-                                      No proof? Flag it. Careful and checkable? Pass.
+                                      No proof? Verify it. Careful and checkable? Trust it.
                                     </Typography>
                                   </Stack>
                                 </Box>
@@ -1375,8 +1375,8 @@ export function TrainingArena({
                             <Stack spacing={0.4}>
                               <Typography variant="body2" sx={{ color: '#eaffff', fontWeight: 800, fontSize: { xs: '0.96rem', sm: '1rem' } }}>
                                 {activeDecision === 'flag'
-                                  ? "I'd flag this one."
-                                  : "I'll pass on this one."}
+                                  ? "I'd verify this one."
+                                  : "I'll trust this one."}
                               </Typography>
                               <Typography variant="caption" sx={{ color: 'rgba(228, 241, 255, 0.6)', fontSize: '0.78rem' }}>
                                 Confidence {formatConfidenceMultiplier(activeConfidenceValue)}
