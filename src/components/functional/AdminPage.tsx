@@ -23,9 +23,9 @@ import {
   TableSortLabel,
   InputAdornment,
 } from '@mui/material';
-import { ArrowUpward, Search } from '@mui/icons-material';
+import { ArrowUpward, Search, LockOutlined } from '@mui/icons-material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { getStoredUser } from '../../utils/userStorage';
+import { getAdminToken, setAdminToken, clearAdminToken } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
 import { API_URL } from '../../services/api';
@@ -169,10 +169,17 @@ const API_ENDPOINTS = [
 ];
 
 interface ApiStatus { name: string; status: 'idle' | 'loading' | 'normal' | 'error'; latency?: number; error?: string; }
-interface UserScore  { id: number; firstname: string; lastname: string; email: string; region: string; game1_score: number; game2_score: number; game3_score: number; game4_score: number; game5_score: number; total_score: number; }
+interface UserScore  { id: number; firstname: string; lastname: string; email: string; region: string; role: string; game1_score: number; game2_score: number; game3_score: number; game4_score: number; game5_score: number; total_score: number; }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const AdminPage: React.FC = () => {
+  // ─── Auth State ──────────────────────────────────────────────────────────────
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginName, setLoginName] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
   const [users, setUsers]                 = useState<UserScore[]>([]);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState<string | null>(null);
@@ -185,7 +192,7 @@ const AdminPage: React.FC = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [editingUser, setEditingUser]     = useState<UserScore | null>(null);
   const [formData, setFormData]           = useState<Omit<UserScore, 'id' | 'total_score'>>({
-    firstname: '', lastname: '', email: '', region: 'United States',
+    firstname: '', lastname: '', email: '', region: 'United States', role: 'player',
     game1_score: 0, game2_score: 0, game3_score: 0, game4_score: 0, game5_score: 0,
   });
   const [order, setOrder]         = useState<'asc' | 'desc'>('asc');
@@ -194,9 +201,50 @@ const AdminPage: React.FC = () => {
   const [apiStatuses, setApiStatuses] = useState<ApiStatus[]>(API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'idle' as const })));
   const [isTestingApis, setIsTestingApis] = useState(false);
 
-  const user = getStoredUser();
+  // ─── Check token on mount ───────────────────────────────────────────────────
+  useEffect(() => {
+    const token = getAdminToken();
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // ─── Handle Admin Login ─────────────────────────────────────────────────────
+  const handleAdminLogin = async () => {
+    if (!loginEmail || !loginName) {
+      setLoginError('Please fill in all fields');
+      return;
+    }
+    setLoginLoading(true);
+    setLoginError('');
+    try {
+      const res = await apiFetch('/users/admin-login', {
+        method: 'POST',
+        body: JSON.stringify({ email: loginEmail, firstname: loginName }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Login failed');
+      }
+      const data = await res.json();
+      setAdminToken(data.token);
+      setIsAuthenticated(true);
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // ─── Handle Logout ──────────────────────────────────────────────────────────
+  const handleLogout = () => {
+    clearAdminToken();
+    setIsAuthenticated(false);
+    setUsers([]);
+  };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     (async () => {
       try {
         setLoading(true);
@@ -209,7 +257,84 @@ const AdminPage: React.FC = () => {
         setSnackbar({ open: true, message: 'Load error: ' + (err instanceof Error ? err.message : ''), severity: 'error' });
       } finally { setLoading(false); }
     })();
-  }, []);
+  }, [isAuthenticated]);
+
+  // ─── Login Screen (if not authenticated) ────────────────────────────────────
+  if (!isAuthenticated) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: SF.bg,
+          backgroundImage: `
+            repeating-linear-gradient(0deg, transparent, transparent 39px, ${SF.cyan}08 39px, ${SF.cyan}08 40px),
+            repeating-linear-gradient(90deg, transparent, transparent 39px, ${SF.cyan}08 39px, ${SF.cyan}08 40px)
+          `,
+          p: 3,
+        }}
+      >
+        <Box
+          sx={{
+            ...hudPanel(SF.cyan),
+            width: '100%',
+            maxWidth: 400,
+            p: 4,
+          }}
+        >
+          {/* Header */}
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <LockOutlined sx={{ fontSize: 48, color: SF.cyan, mb: 1 }} />
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.2em', color: SF.cyan }}>
+              ADMIN ACCESS
+            </Box>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim, mt: 0.5 }}>
+              AUTHORIZED PERSONNEL ONLY
+            </Box>
+          </Box>
+
+          {/* Login Form */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="EMAIL"
+              type="email"
+              fullWidth
+              size="small"
+              value={loginEmail}
+              onChange={e => setLoginEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+              sx={sfInputSx}
+            />
+            <TextField
+              label="FIRST NAME"
+              fullWidth
+              size="small"
+              value={loginName}
+              onChange={e => setLoginName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+              sx={sfInputSx}
+            />
+            {loginError && (
+              <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.red, textAlign: 'center' }}>
+                {loginError}
+              </Box>
+            )}
+            <SFButton
+              color={SF.cyan}
+              variant="filled"
+              onClick={handleAdminLogin}
+              disabled={loginLoading}
+            >
+              {loginLoading ? 'AUTHENTICATING...' : 'AUTHORIZE'}
+            </SFButton>
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
 
   const handleChangePage        = (_: unknown, p: number) => setPage(p);
   const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); };
@@ -218,9 +343,9 @@ const AdminPage: React.FC = () => {
   const handleSelectUser        = (id: number) => setSelectedUsers(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
   const handleSelectAll         = () => selectedUsers.length === paginatedUsers.length ? setSelectedUsers([]) : setSelectedUsers(paginatedUsers.map(u => u.id));
 
-  const handleAddClick    = () => { setFormData({ firstname: '', lastname: '', email: '', region: 'United States', game1_score: 0, game2_score: 0, game3_score: 0, game4_score: 0, game5_score: 0 }); setOpenAddDialog(true); };
+  const handleAddClick    = () => { setFormData({ firstname: '', lastname: '', email: '', region: 'United States', role: 'player', game1_score: 0, game2_score: 0, game3_score: 0, game4_score: 0, game5_score: 0 }); setOpenAddDialog(true); };
   const handleDeleteClick = () => { if (!selectedUsers.length) { setSnackbar({ open: true, message: 'Select at least one user', severity: 'error' }); return; } setOpenDeleteDialog(true); };
-  const handleEditOpen    = (u: UserScore) => { setEditingUser(u); setFormData({ firstname: u.firstname, lastname: u.lastname, email: u.email, region: u.region, game1_score: u.game1_score, game2_score: u.game2_score, game3_score: u.game3_score, game4_score: u.game4_score, game5_score: u.game5_score }); setOpenEditDialog(true); };
+  const handleEditOpen    = (u: UserScore) => { setEditingUser(u); setFormData({ firstname: u.firstname, lastname: u.lastname, email: u.email, region: u.region, role: u.role || 'player', game1_score: u.game1_score, game2_score: u.game2_score, game3_score: u.game3_score, game4_score: u.game4_score, game5_score: u.game5_score }); setOpenEditDialog(true); };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; setFormData(p => ({ ...p, [name]: name.includes('_score') ? parseFloat(value) || 0 : value })); };
   const calcTotal         = (d: Omit<UserScore, 'id' | 'total_score'>) => d.game1_score + d.game2_score + d.game3_score + d.game4_score + d.game5_score;
 
@@ -251,7 +376,7 @@ const AdminPage: React.FC = () => {
   const handleEditSubmit = async () => {
     if (!validateForm() || !editingUser) return;
     try {
-      const ur = await apiFetch(`/users/${editingUser.id}`,  { method: 'PUT', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, email: formData.email, region: formData.region }) });
+      const ur = await apiFetch(`/users/${editingUser.id}`,  { method: 'PUT', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, email: formData.email, region: formData.region, role: formData.role }) });
       if (!ur.ok) throw new Error(`User update ${ur.status}`);
       const sr = await apiFetch(`/scores/${editingUser.id}`, { method: 'PUT', body: JSON.stringify({ game1_score: formData.game1_score, game2_score: formData.game2_score, game3_score: formData.game3_score, game4_score: formData.game4_score, game5_score: formData.game5_score }) });
       if (!sr.ok) throw new Error(`Score update ${sr.status}`);
@@ -264,7 +389,7 @@ const AdminPage: React.FC = () => {
   const handleAddSubmit = async () => {
     if (!validateForm()) return;
     try {
-      const ur = await apiFetch('/users', { method: 'POST', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, email: formData.email, region: formData.region }) });
+      const ur = await apiFetch('/users', { method: 'POST', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, email: formData.email, region: formData.region, role: formData.role }) });
       if (!ur.ok) throw new Error(`Create ${ur.status}`);
       const newUser = await ur.json();
       const sr = await apiFetch(`/scores/${newUser.id}`, { method: 'PUT', body: JSON.stringify({ game1_score: formData.game1_score, game2_score: formData.game2_score, game3_score: formData.game3_score, game4_score: formData.game4_score, game5_score: formData.game5_score }) });
@@ -345,6 +470,18 @@ const AdminPage: React.FC = () => {
         </FormControl>
       </Box>
       <Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>ROLE</Box>
+        <FormControl fullWidth>
+          <Select value={formData.role || 'player'} onChange={e => setFormData(p => ({ ...p, role: e.target.value as string }))}
+            sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white, '& .MuiOutlinedInput-notchedOutline': { borderColor: `${SF.cyan}30` }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: `${SF.cyan}70` }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: SF.cyan }, '& .MuiSvgIcon-root': { color: SF.cyan } }}
+            MenuProps={{ PaperProps: { sx: { backgroundColor: '#060f1e', border: `1px solid ${SF.cyan}30`, '& .MuiMenuItem-root': { fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.white, '&:hover': { backgroundColor: `${SF.cyan}15` }, '&.Mui-selected': { backgroundColor: `${SF.cyan}25` } } } } }}
+          >
+            <MenuItem value="player">Player</MenuItem>
+            <MenuItem value="admin">Admin</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+      <Box>
         <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>GAME SCORES  <Box component="span" sx={{ color: `${SF.white}30`, fontWeight: 400 }}>(0 – 100)</Box></Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           {(['game1_score','game2_score','game3_score','game4_score','game5_score'] as const).map((k, i) => (
@@ -392,10 +529,15 @@ const AdminPage: React.FC = () => {
             </Box>
             <Box sx={{ width: 10, height: 10, borderTop: `2px solid ${SF.cyan}`, borderRight: `2px solid ${SF.cyan}` }} />
           </Box>
-          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.82rem', color: SF.dim, letterSpacing: '0.08em' }}>
-            {user ? `OPERATOR: ${user.firstname?.toUpperCase()} ${user.lastname?.toUpperCase()}` : 'OPERATOR: UNKNOWN'}
-            <Box component="span" sx={{ mx: 2, color: `${SF.white}20` }}>|</Box>
-            FACILITY MANAGEMENT SYSTEM v2.1
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.82rem', color: SF.dim, letterSpacing: '0.08em' }}>
+              OPERATOR: ADMIN
+              <Box component="span" sx={{ mx: 2, color: `${SF.white}20` }}>|</Box>
+              FACILITY MANAGEMENT SYSTEM v2.1
+            </Box>
+            <SFButton color={SF.red} variant="outline" onClick={handleLogout}>
+              LOGOUT
+            </SFButton>
           </Box>
         </Box>
         <Box sx={{ textAlign: 'right' }}>
@@ -445,7 +587,7 @@ const AdminPage: React.FC = () => {
                     sx={{ color: `${SF.cyan}40`, '&.Mui-checked': { color: SF.cyan }, '&.MuiCheckbox-indeterminate': { color: SF.cyan }, p: 0 }}
                   />
                 </TableCell>
-                {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['G1','game1_score'],['G2','game2_score'],['G3','game3_score'],['G4','game4_score'],['G5','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
+                {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['ROLE','role'],['G1','game1_score'],['G2','game2_score'],['G3','game3_score'],['G4','game4_score'],['G5','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
                   <TableCell key={field} sx={thSx}>
                     <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
                       sx={{ fontFamily: SF.fontTitle, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
@@ -466,6 +608,7 @@ const AdminPage: React.FC = () => {
                   {[u.firstname, u.lastname, u.email, u.region].map((val, i) => (
                     <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.82rem', color: `${SF.white}85`, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
                   ))}
+                  <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', color: u.role === 'admin' ? SF.lime : SF.dim, textAlign: 'center' }}>{u.role?.toUpperCase() || 'PLAYER'}</TableCell>
                   {[u.game1_score, u.game2_score, u.game3_score, u.game4_score, u.game5_score].map((s, i) => (
                     <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.82rem', color: scoreColor(s), textAlign: 'center' }}>{s.toFixed(1)}</TableCell>
                   ))}
