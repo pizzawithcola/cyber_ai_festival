@@ -133,7 +133,7 @@ const TruthReveal: React.FC = () => {
     return () => window.clearTimeout(timer)
   }, [isTransitioningToReveal])
 
-  // Sync final-step layout (phone left, diagram right) and portal diagram into right slot
+  // Sync final-step layout and portal the diagram into the full-page slot.
   useEffect(() => {
     setTruthRevealFinalStep(showAllLayers)
     return () => { setTruthRevealFinalStep(false) }
@@ -141,9 +141,6 @@ const TruthReveal: React.FC = () => {
 
   useEffect(() => {
     if (!showAllLayers) return
-
-    const isPortraitViewport = window.innerHeight > window.innerWidth
-    if (isPortraitViewport) return
 
     const previousHtmlOverflow = document.documentElement.style.overflow
     const previousBodyOverflow = document.body.style.overflow
@@ -258,7 +255,7 @@ const TruthReveal: React.FC = () => {
           width: '100%',
           height: '100%',
           background: '#000000',
-          overflow: showAllLayers ? 'auto' : 'hidden',
+          overflow: 'hidden',
           position: 'relative',
           color: '#ffffff',
           transition: screenShake ? 'transform 0.1s' : 'none',
@@ -302,7 +299,7 @@ const TruthReveal: React.FC = () => {
                 Loading Dataflow Map...
               </div>
               <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.6 }}>
-                Your phone stays in view while the network unfolds beside it.
+                The dataflow diagram expands into a single-page view.
               </div>
               <div style={{
                 marginTop: '18px',
@@ -471,7 +468,7 @@ const TruthReveal: React.FC = () => {
         )}
 
         {/* Phase 3+: Truth Revelations */}
-        {phase >= 3 && (
+        {phase >= 3 && !showAllLayers && (
           <div style={{ 
             padding: '20px',
             transition: 'all 0.3s ease-out',

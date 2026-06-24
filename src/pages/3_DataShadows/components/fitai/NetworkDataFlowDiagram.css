@@ -15,125 +15,6 @@
   font-family: var(--data-shadows-display-font, 'Electrolize', sans-serif);
 }
 
-.data-shadows-portrait-reveal .network-data-flow-diagram {
-  height: auto;
-  min-height: 0;
-  overflow: visible;
-  padding: 18px 16px 22px;
-  gap: 16px;
-}
-
-.data-shadows-portrait-reveal .data-flow-header {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-}
-
-.data-shadows-portrait-reveal .data-flow-title {
-  font-size: clamp(28px, 4.4vw, 36px);
-  line-height: 1.15;
-}
-
-.data-shadows-portrait-reveal .data-flow-subtitle,
-.data-shadows-portrait-reveal .privacy-score-label {
-  font-size: clamp(16px, 2.3vw, 20px);
-}
-
-.data-shadows-portrait-reveal .privacy-score-block {
-  width: 100%;
-  justify-content: space-between;
-  box-sizing: border-box;
-}
-
-.data-shadows-portrait-reveal .privacy-score-value {
-  font-size: clamp(36px, 5.4vw, 48px);
-}
-
-.data-shadows-portrait-reveal .network-data-flow-body {
-  grid-template-columns: 1fr;
-  overflow: visible;
-  gap: 14px;
-}
-
-.data-shadows-portrait-reveal .network-visual-panel {
-  min-height: 0;
-}
-
-.data-shadows-portrait-reveal .network-diagram-container {
-  min-height: clamp(420px, 44vh, 560px);
-  padding: 10px;
-}
-
-.data-shadows-portrait-reveal .data-flow-info-strip {
-  max-height: none;
-  gap: 8px;
-}
-
-.data-shadows-portrait-reveal .node-label-svg {
-  font-size: 28px;
-  stroke-width: 3px;
-}
-
-.data-shadows-portrait-reveal .connection-flow-label-text {
-  font-size: 17px;
-  stroke-width: 1.6px;
-}
-
-.data-shadows-portrait-reveal .flow-node-detail {
-  padding: 16px 16px;
-  text-align: left;
-}
-
-.data-shadows-portrait-reveal .flow-node-overview-heading {
-  gap: 10px;
-}
-
-.data-shadows-portrait-reveal .flow-node-detail-title {
-  font-size: clamp(26px, 3.5vw, 34px);
-  text-align: center;
-}
-
-.data-shadows-portrait-reveal .flow-node-detail-desc {
-  font-size: 17px;
-  line-height: 1.5;
-  max-width: none;
-}
-
-.data-shadows-portrait-reveal .flow-node-overview-item,
-.data-shadows-portrait-reveal .flow-node-module p,
-.data-shadows-portrait-reveal .flow-node-consequence,
-.data-shadows-portrait-reveal .flow-node-impact,
-.data-shadows-portrait-reveal .flow-node-detail-status,
-.data-shadows-portrait-reveal .flow-node-fields,
-.data-shadows-portrait-reveal .flow-node-sample {
-  font-size: 16px;
-  line-height: 1.45;
-}
-
-.data-shadows-portrait-reveal .flow-node-module strong,
-.data-shadows-portrait-reveal .flow-node-consequence strong {
-  font-size: 14px;
-}
-
-.data-shadows-portrait-reveal .flow-node-detail-selected,
-.data-shadows-portrait-reveal .flow-node-detail-main,
-.data-shadows-portrait-reveal .flow-node-detail-footer {
-  width: 100%;
-  max-width: none;
-}
-
-.data-shadows-portrait-reveal .flow-node-detail-selected {
-  gap: 12px;
-}
-
-.data-shadows-portrait-reveal .data-flow-leaderboard-button,
-.data-shadows-portrait-reveal .data-flow-retry-button {
-  width: 100%;
-  max-width: 480px;
-  padding: 15px 18px;
-  font-size: 13px;
-}
-
 .data-flow-header {
   flex-shrink: 0;
   display: flex;
@@ -462,6 +343,220 @@
 .data-shadows-reveal-layout:not(.data-shadows-portrait-reveal) .data-flow-info-content-selected .flow-node-detail-selected {
   height: 100%;
   max-height: 100%;
+}
+
+.data-shadows-diagram-only-layout .network-data-flow-diagram {
+  height: 100%;
+  min-height: 0;
+  padding: clamp(10px, 1.5vw, 16px);
+  gap: clamp(8px, 1vw, 12px);
+}
+
+.data-shadows-diagram-only-layout .data-flow-title {
+  font-size: clamp(22px, 2.35vw, 32px);
+  line-height: 1.08;
+  margin-bottom: 4px;
+}
+
+.data-shadows-diagram-only-layout .data-flow-subtitle {
+  font-size: clamp(13px, 1.3vw, 18px);
+  line-height: 1.28;
+}
+
+.data-shadows-diagram-only-layout .privacy-score-block {
+  padding: 8px 12px;
+}
+
+.data-shadows-diagram-only-layout .privacy-score-label {
+  font-size: clamp(12px, 1.2vw, 17px);
+}
+
+.data-shadows-diagram-only-layout .privacy-score-value {
+  font-size: clamp(28px, 3vw, 40px);
+}
+
+.data-shadows-diagram-only-layout .network-data-flow-body {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.34fr);
+  gap: clamp(8px, 1.2vw, 14px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.data-shadows-diagram-only-layout .network-diagram-container {
+  min-height: 0;
+  padding: clamp(8px, 1vw, 12px);
+}
+
+.data-shadows-diagram-only-layout .data-flow-info-strip {
+  max-height: none;
+  overflow: hidden;
+  gap: 8px;
+}
+
+.data-shadows-diagram-only-layout .data-flow-info-content {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.data-shadows-diagram-only-layout .data-flow-info-content-overview {
+  flex-direction: column;
+  justify-content: center;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .network-data-flow-diagram {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(8px, 1.2vh, 14px);
+  padding: clamp(8px, 1.4vh, 14px);
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .data-flow-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .data-flow-title {
+  font-size: clamp(20px, 3vh, 30px);
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .data-flow-subtitle {
+  font-size: clamp(12px, 1.8vh, 17px);
+  line-height: 1.25;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .privacy-score-block {
+  width: 100%;
+  justify-content: space-between;
+  padding: clamp(8px, 1.4vh, 12px) clamp(10px, 1.8vw, 14px);
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .privacy-score-label {
+  font-size: clamp(11px, 1.5vh, 15px);
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .privacy-score-value {
+  font-size: clamp(24px, 3.8vh, 40px);
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .network-data-flow-body {
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1.55fr) minmax(0, 0.95fr);
+  gap: clamp(8px, 1.2vh, 12px);
+  min-height: 0;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .network-visual-panel {
+  min-height: 0;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .network-diagram-container {
+  padding: clamp(6px, 1vh, 10px);
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .network-diagram-stage {
+  width: 100%;
+  height: 100%;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .data-flow-info-strip {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  gap: 6px;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .data-flow-info-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-detail {
+  padding: clamp(10px, 1.45vh, 16px) clamp(12px, 2.2vw, 18px);
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-detail-title {
+  font-size: clamp(20px, 2.8vh, 32px);
+  line-height: 1.08;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-detail-desc,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-overview-item,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-module p,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-consequence,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-impact,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-detail-status,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-fields {
+  font-size: clamp(14px, 1.9vh, 20px);
+  line-height: 1.3;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-overview-badge,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-module strong,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-consequence strong {
+  font-size: clamp(11px, 1.4vh, 14px);
+  letter-spacing: 0.14em;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .data-flow-leaderboard-button,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .data-flow-retry-button {
+  width: 100%;
+  max-width: none;
+  padding: clamp(12px, 1.65vh, 16px) clamp(12px, 2vw, 16px);
+  font-size: clamp(11px, 1.35vh, 14px);
+  letter-spacing: 0.14em;
+}
+
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-detail-main,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-detail-footer,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-detail-scroll,
+.data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .flow-node-overview-list {
+  gap: 10px;
+}
+
+.data-shadows-diagram-only-layout .flow-node-detail {
+  padding: clamp(10px, 1.2vw, 16px);
+}
+
+.data-shadows-diagram-only-layout .flow-node-detail-title {
+  font-size: clamp(18px, 1.8vw, 24px);
+}
+
+.data-shadows-diagram-only-layout .flow-node-detail-desc {
+  font-size: clamp(12px, 1vw, 15px);
+  line-height: 1.35;
+}
+
+.data-shadows-diagram-only-layout .flow-node-overview-item,
+.data-shadows-diagram-only-layout .flow-node-module p,
+.data-shadows-diagram-only-layout .flow-node-consequence,
+.data-shadows-diagram-only-layout .flow-node-impact,
+.data-shadows-diagram-only-layout .flow-node-detail-status,
+.data-shadows-diagram-only-layout .flow-node-fields,
+.data-shadows-diagram-only-layout .flow-node-sample {
+  font-size: clamp(11px, 0.95vw, 14px);
+  line-height: 1.32;
+}
+
+.data-shadows-diagram-only-layout .flow-node-overview-list,
+.data-shadows-diagram-only-layout .flow-node-detail-main,
+.data-shadows-diagram-only-layout .flow-node-detail-footer,
+.data-shadows-diagram-only-layout .flow-node-detail-scroll {
+  gap: 8px;
+}
+
+.data-shadows-diagram-only-layout .flow-node-detail-selected {
+  height: 100%;
+  max-height: 100%;
+}
+
+.data-shadows-diagram-only-layout .data-flow-leaderboard-button,
+.data-shadows-diagram-only-layout .data-flow-retry-button {
+  padding: 10px 12px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
 }
 
 .data-flow-leaderboard-button,
@@ -880,6 +975,19 @@
   .network-diagram-stage {
     max-width: 780px;
   }
+
+  .data-shadows-diagram-only-layout .network-data-flow-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.36fr);
+    overflow: hidden;
+  }
+
+  .data-shadows-diagram-only-layout .network-diagram-stage {
+    max-width: none;
+  }
+
+  .data-shadows-diagram-only-layout .data-flow-info-strip {
+    max-height: none;
+  }
 }
 
 @media (max-width: 720px) {
@@ -934,5 +1042,110 @@
 
   .flow-node-overview-list {
     grid-template-columns: 1fr;
+  }
+
+  .data-shadows-diagram-only-layout .network-data-flow-diagram {
+    padding: 8px;
+    gap: 7px;
+  }
+
+  .data-shadows-diagram-only-layout .data-flow-header {
+    gap: 8px;
+  }
+
+  .data-shadows-diagram-only-layout .data-flow-title {
+    font-size: 19px;
+  }
+
+  .data-shadows-diagram-only-layout .data-flow-subtitle {
+    font-size: 12px;
+  }
+
+  .data-shadows-diagram-only-layout .privacy-score-block {
+    padding: 6px 8px;
+  }
+
+  .data-shadows-diagram-only-layout .privacy-score-label {
+    font-size: 11px;
+  }
+
+  .data-shadows-diagram-only-layout .privacy-score-value {
+    font-size: 24px;
+  }
+
+  .data-shadows-diagram-only-layout:not(.data-shadows-diagram-only-portrait) .network-data-flow-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(116px, 28vh);
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .data-shadows-diagram-only-layout .network-diagram-container {
+    padding: 6px;
+  }
+
+  .data-shadows-diagram-only-layout .network-diagram-toolbar {
+    top: 8px;
+    right: 8px;
+  }
+
+  .data-shadows-diagram-only-layout .network-diagram-reset {
+    min-height: 28px;
+    padding: 0 9px;
+    font-size: 9px;
+  }
+
+  .data-shadows-diagram-only-layout .network-diagram-stage {
+    max-width: none;
+    padding: 0;
+  }
+
+  .data-shadows-diagram-only-layout .node-label-svg {
+    font-size: 19px;
+    stroke-width: 3.2px;
+  }
+
+  .data-shadows-diagram-only-layout .connection-flow-label-text {
+    font-size: 13px;
+  }
+
+  .data-shadows-diagram-only-layout .data-flow-info-strip {
+    max-height: none;
+    min-height: 0;
+  }
+
+  .data-shadows-diagram-only-layout .flow-node-detail {
+    padding: 8px;
+  }
+
+  .data-shadows-diagram-only-layout .flow-node-overview-heading {
+    gap: 5px;
+  }
+
+  .data-shadows-diagram-only-layout .flow-node-overview-badge,
+  .data-shadows-diagram-only-layout .flow-node-module strong,
+  .data-shadows-diagram-only-layout .flow-node-consequence strong {
+    font-size: 10px;
+  }
+
+  .data-shadows-diagram-only-layout .flow-node-detail-title {
+    font-size: 16px;
+  }
+
+  .data-shadows-diagram-only-layout .flow-node-detail-desc,
+  .data-shadows-diagram-only-layout .flow-node-overview-item,
+  .data-shadows-diagram-only-layout .flow-node-module p,
+  .data-shadows-diagram-only-layout .flow-node-consequence,
+  .data-shadows-diagram-only-layout .flow-node-impact,
+  .data-shadows-diagram-only-layout .flow-node-detail-status,
+  .data-shadows-diagram-only-layout .flow-node-fields {
+    font-size: 11px;
+    line-height: 1.22;
+  }
+
+  .data-shadows-diagram-only-layout .data-flow-leaderboard-button,
+  .data-shadows-diagram-only-layout .data-flow-retry-button {
+    padding: 7px 9px;
+    font-size: 9px;
   }
 }

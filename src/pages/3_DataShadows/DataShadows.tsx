@@ -5,9 +5,6 @@ import DataShadowsIntro from './components/DataShadowsIntro'
 import DataShadowsSidebar from './components/DataShadowsSidebar'
 import './DataShadows.css'
 
-const REVEAL_CANVAS_WIDTH = 1396
-const REVEAL_CANVAS_HEIGHT = 892
-const REVEAL_MAX_SCALE = 1.18
 const PHONE_BASE_WIDTH = 390
 const PHONE_BASE_HEIGHT = 844
 const PHONE_ASPECT_RATIO = PHONE_BASE_WIDTH / PHONE_BASE_HEIGHT
@@ -21,78 +18,84 @@ function DataShadowsContent() {
     showSidebarNotice,
     isPhoneRecentering,
   } = useDataShadowsLayout()
-  const [revealScale, setRevealScale] = useState(1)
   const [viewportSize, setViewportSize] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
   }))
 
   const isPortraitViewport = viewportSize.height > viewportSize.width
-  const isPortraitReveal = isTruthRevealFinalStep && isPortraitViewport
+  const hasPortraitSidebarLayout = isPortraitViewport && showSidebarNotice
+  const isFinalPortraitViewport = isTruthRevealFinalStep && isPortraitViewport
 
   const layoutClassName = isTruthRevealFinalStep
-    ? 'data-shadows-reveal-layout'
+    ? 'data-shadows-diagram-only-layout'
     : showSidebarNotice
       ? 'data-shadows-sidebar-layout'
       : 'data-shadows-phone-only'
 
-  const responsiveLayoutStyle: React.CSSProperties | undefined = (!isTruthRevealFinalStep || isPortraitReveal)
+  const responsiveLayoutStyle: React.CSSProperties | undefined = !isTruthRevealFinalStep
     ? (() => {
-        const horizontalPadding = 48
-        const verticalPadding = isTruthRevealFinalStep ? 96 : 48
-        const widthReserve = isTruthRevealFinalStep
-          ? 0
-          : showSidebarNotice
-            ? 460
-            : 0
-        const availableWidth = Math.max(280, viewportSize.width - horizontalPadding - widthReserve)
-        const availableHeight = isTruthRevealFinalStep
-          ? Math.max(520, viewportSize.height - verticalPadding)
-          : showSidebarNotice
-            ? Math.max(360, viewportSize.height - verticalPadding)
-            : Math.max(360, viewportSize.height - verticalPadding)
-        const maxPhoneWidth = isTruthRevealFinalStep
-          ? 430
-          : isPortraitViewport
-            ? showSidebarNotice ? 468 : 507
-            : showSidebarNotice ? 460 : 500
-        const minPhoneWidth = isTruthRevealFinalStep ? 280 : 260
-        const computedPhoneWidth = Math.max(
-          minPhoneWidth,
-          Math.min(maxPhoneWidth, availableWidth, availableHeight * PHONE_ASPECT_RATIO)
+        const stagePaddingX = Math.max(
+          16,
+          Math.round(viewportSize.width * (isPortraitViewport ? 0.03 : 0.022))
         )
+        const stagePaddingY = Math.max(
+          16,
+          Math.round(viewportSize.height * (isPortraitViewport ? 0.024 : 0.03))
+        )
+        const stageGap = Math.max(
+          16,
+          Math.round(Math.min(viewportSize.width, viewportSize.height) * 0.02)
+        )
+        const availableWidth = Math.max(1, viewportSize.width - stagePaddingX * 2)
+        const availableHeight = Math.max(1, viewportSize.height - stagePaddingY * 2)
+        const widthReserve = showSidebarNotice && !isPortraitViewport
+          ? availableWidth * 0.34
+          : 0
+        const phoneAvailableWidth = Math.max(
+          1,
+          availableWidth - widthReserve - (showSidebarNotice && !isPortraitViewport ? stageGap : 0)
+        )
+        const stackedContentHeight = Math.max(1, availableHeight - stageGap)
+        const targetPortraitPhoneHeight = stackedContentHeight * 0.6
+        const computedPhoneWidth = hasPortraitSidebarLayout
+          ? Math.min(availableWidth, targetPortraitPhoneHeight * PHONE_ASPECT_RATIO)
+          : Math.min(phoneAvailableWidth, availableHeight * PHONE_ASPECT_RATIO)
         const computedPhoneHeight = computedPhoneWidth / PHONE_ASPECT_RATIO
         const computedPhoneScale = computedPhoneWidth / PHONE_BASE_WIDTH
+        const computedPortraitSidebarHeight = hasPortraitSidebarLayout
+          ? Math.max(1, stackedContentHeight - computedPhoneHeight)
+          : 0
 
         return {
           ['--data-shadows-phone-width' as const]: `${computedPhoneWidth}px`,
           ['--data-shadows-phone-height' as const]: `${computedPhoneHeight}px`,
           ['--data-shadows-phone-scale' as const]: `${computedPhoneScale}`,
+          ['--data-shadows-stage-padding-x' as const]: `${stagePaddingX}px`,
+          ['--data-shadows-stage-padding-y' as const]: `${stagePaddingY}px`,
+          ['--data-shadows-stage-gap' as const]: `${stageGap}px`,
+          ['--data-shadows-portrait-sidebar-height' as const]: `${computedPortraitSidebarHeight}px`,
         } as React.CSSProperties
       })()
-    : undefined
+    : (() => {
+        const shellPadding = Math.max(8, Math.min(20, Math.round(Math.min(viewportSize.width, viewportSize.height) * 0.02)))
+        const contentWidth = Math.max(1, viewportSize.width - shellPadding * 2)
+        const contentHeight = Math.max(1, viewportSize.height - shellPadding * 2)
+        const isPortraitLike = viewportSize.height >= viewportSize.width
 
-  useEffect(() => {
-    if (!isTruthRevealFinalStep || isPortraitReveal) return
-
-    const updateRevealScale = () => {
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
-      const widthScale = (viewportWidth - 24) / REVEAL_CANVAS_WIDTH
-      const heightScale = (viewportHeight - 24) / REVEAL_CANVAS_HEIGHT
-      setRevealScale(Math.min(REVEAL_MAX_SCALE, widthScale, heightScale))
-    }
-
-    updateRevealScale()
-    window.addEventListener('resize', updateRevealScale)
-    return () => window.removeEventListener('resize', updateRevealScale)
-  }, [isPortraitReveal, isTruthRevealFinalStep])
+        return {
+          ['--data-shadows-final-shell-padding' as const]: `${shellPadding}px`,
+          ['--data-shadows-final-content-width' as const]: `${contentWidth}px`,
+          ['--data-shadows-final-content-height' as const]: `${contentHeight}px`,
+          ['--data-shadows-final-layout-direction' as const]: isPortraitLike ? 'column' : 'row',
+        } as React.CSSProperties
+      })()
 
   const containerClassName = [
     'data-shadows-container',
     layoutClassName,
     isPortraitViewport && !isTruthRevealFinalStep ? 'data-shadows-portrait-stage' : '',
-    isPortraitReveal ? 'data-shadows-portrait-reveal' : '',
+    isFinalPortraitViewport ? 'data-shadows-diagram-only-portrait' : '',
   ].filter(Boolean).join(' ')
 
   useEffect(() => {
@@ -108,21 +111,10 @@ function DataShadowsContent() {
     return () => window.removeEventListener('resize', updateViewportSize)
   }, [])
 
-  const layoutContainerStyle: React.CSSProperties | undefined = isTruthRevealFinalStep
-    ? isPortraitReveal
-      ? responsiveLayoutStyle
-      : {
-          width: `${REVEAL_CANVAS_WIDTH}px`,
-          height: `${REVEAL_CANVAS_HEIGHT}px`,
-          minHeight: `${REVEAL_CANVAS_HEIGHT}px`,
-          maxWidth: 'none',
-        }
-    : responsiveLayoutStyle
-
   const layoutContent = (
     <div
       className={containerClassName}
-      style={layoutContainerStyle}
+      style={responsiveLayoutStyle}
     >
       <div className={`phone-panel ${isPhoneRecentering ? 'phone-panel-recentering' : ''} ${isTruthRevealFinalStep ? 'phone-panel-truth-reveal' : ''}`}>
         <RealApplePhone />
@@ -143,10 +135,9 @@ function DataShadowsContent() {
 
   return (
     <>
-      <div className={isTruthRevealFinalStep && !isPortraitReveal ? 'data-shadows-reveal-shell' : 'data-shadows-stage-shell'}>
+      <div className={isTruthRevealFinalStep ? 'data-shadows-diagram-shell' : 'data-shadows-stage-shell'}>
         <div
-          className={isTruthRevealFinalStep && !isPortraitReveal ? 'data-shadows-reveal-canvas' : 'data-shadows-stage-canvas'}
-          style={isTruthRevealFinalStep && !isPortraitReveal ? { transform: `scale(${revealScale})` } : undefined}
+          className={isTruthRevealFinalStep ? 'data-shadows-diagram-canvas' : 'data-shadows-stage-canvas'}
         >
           {layoutContent}
         </div>
