@@ -408,11 +408,25 @@ const AdminConsole: React.FC = () => {
   };
 
   const handleStartGame = () => { startGame(10); };
-  const handlePause = () => { pauseGame(); setIsPaused(true); };
-  const handleResume = () => { resumeGame(); setIsPaused(false); };
+  const handlePause = async () => {
+    try {
+      await apiFetch(`/rooms/${roomCode}/pause`, { method: 'POST' });
+      pauseGame();
+      setIsPaused(true);
+    } catch { setSnack({ open: true, message: 'Failed to pause', severity: 'error' }); }
+  };
+  const handleResume = async () => {
+    try {
+      await apiFetch(`/rooms/${roomCode}/resume`, { method: 'POST' });
+      resumeGame();
+      setIsPaused(false);
+    } catch { setSnack({ open: true, message: 'Failed to resume', severity: 'error' }); }
+  };
   const handleEnd = async () => {
     if (roomCode) {
-      await apiFetch(`/rooms/${roomCode}/end`, { method: 'POST' });
+      try {
+        await apiFetch(`/rooms/${roomCode}/end`, { method: 'POST' });
+      } catch { /* ignore */ }
     }
   };
   const handleNewGame = () => {
