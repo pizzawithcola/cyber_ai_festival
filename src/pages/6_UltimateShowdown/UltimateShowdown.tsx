@@ -380,8 +380,9 @@ const CountdownView: React.FC<{ value: number }> = ({ value }) => (
 const QuestionView: React.FC<{
   question: QuestionData;
   timeRemaining: number;
+  isPaused: boolean;
   onAnswer: (option: string) => void;
-}> = ({ question, timeRemaining, onAnswer }) => {
+}> = ({ question, timeRemaining, isPaused, onAnswer }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const progress = timeRemaining / question.time_limit;
 
@@ -417,9 +418,22 @@ const QuestionView: React.FC<{
         '& .MuiLinearProgress-bar': {
           backgroundColor: progress > 0.4 ? ARCADE_COLORS.lime : progress > 0.2 ? ARCADE_COLORS.yellow : ARCADE_COLORS.red,
           borderRadius: 0,
-          transition: 'width 1s linear',
+          transition: isPaused ? 'none' : 'width 1s linear',
         },
       }} />
+
+      {/* Paused overlay */}
+      {isPaused && (
+        <Box sx={{
+          textAlign: 'center', mb: 2, py: 1.5,
+          backgroundColor: `${ARCADE_COLORS.yellow}15`, border: `2px solid ${ARCADE_COLORS.yellow}60`,
+          borderRadius: '6px',
+        }}>
+          <Box sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.7rem', color: ARCADE_COLORS.yellow, textShadow: `0 0 10px ${ARCADE_COLORS.yellow}60` }}>
+            ⏸ GAME PAUSED
+          </Box>
+        </Box>
+      )}
 
       {/* Question card */}
       <Box sx={{
@@ -887,6 +901,7 @@ const UltimateShowdown: React.FC = () => {
           <QuestionView
             question={state.question}
             timeRemaining={state.timeRemaining}
+            isPaused={state.isPaused}
             onAnswer={handleAnswer}
           />
         )}

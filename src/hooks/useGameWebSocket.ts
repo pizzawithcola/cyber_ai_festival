@@ -51,6 +51,7 @@ export interface GameState {
   countdownValue: number;
   timeRemaining: number;
   answeredCount: number;
+  isPaused: boolean;
 }
 
 type MessageHandler = (msg: Record<string, unknown>) => void;
@@ -84,6 +85,7 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
     countdownValue: 0,
     timeRemaining: 0,
     answeredCount: 0,
+    isPaused: false,
   });
 
   // Message handlers by type
@@ -133,6 +135,7 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
           timeRemaining: (msg as unknown as QuestionData).time_limit,
           answeredCount: 0,
           result: null,
+          isPaused: false,
         }));
         break;
 
@@ -141,6 +144,22 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
           ...prev,
           timeRemaining: msg.remaining as number,
           answeredCount: msg.answered_count as number,
+        }));
+        break;
+
+      case 'paused':
+        setState(prev => ({
+          ...prev,
+          isPaused: true,
+          timeRemaining: (msg.remaining as number) ?? prev.timeRemaining,
+        }));
+        break;
+
+      case 'resumed':
+        setState(prev => ({
+          ...prev,
+          isPaused: false,
+          timeRemaining: (msg.remaining as number) ?? prev.timeRemaining,
         }));
         break;
 

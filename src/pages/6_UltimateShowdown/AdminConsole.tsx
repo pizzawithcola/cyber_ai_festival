@@ -168,7 +168,7 @@ const QuestionControlPanel: React.FC<{
         mb: 3, height: 6, borderRadius: 0, backgroundColor: `${ARCADE_COLORS.white}15`,
         '& .MuiLinearProgress-bar': {
           backgroundColor: progress > 0.4 ? ARCADE_COLORS.lime : progress > 0.2 ? ARCADE_COLORS.yellow : ARCADE_COLORS.red,
-          borderRadius: 0, transition: 'width 1s linear',
+          borderRadius: 0, transition: isPaused ? 'none' : 'width 1s linear',
         },
       }} />
       {/* Question card */}
@@ -380,7 +380,6 @@ const AdminConsole: React.FC = () => {
   const { state, connect, disconnect, startGame, pauseGame, resumeGame, isConnected } = useGameWebSocket();
   const [roomCode, setRoomCode] = useState<string>('');
   const [creating, setCreating] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const [snack, setSnack] = useState<SnackState>({ open: false, message: '', severity: 'success' });
 
   // Auth check
@@ -389,10 +388,7 @@ const AdminConsole: React.FC = () => {
     if (!token) { navigate('/admin'); return; }
   }, []);
 
-  // Track pause state from WS
-  useEffect(() => {
-    if (state.phase === 'question') setIsPaused(false); // reset on new question
-  }, [state.phase, state.question]);
+
 
   const handleCreateRoom = async () => {
     setCreating(true);
@@ -412,14 +408,12 @@ const AdminConsole: React.FC = () => {
     try {
       await apiFetch(`/rooms/${roomCode}/pause`, { method: 'POST' });
       pauseGame();
-      setIsPaused(true);
     } catch { setSnack({ open: true, message: 'Failed to pause', severity: 'error' }); }
   };
   const handleResume = async () => {
     try {
       await apiFetch(`/rooms/${roomCode}/resume`, { method: 'POST' });
       resumeGame();
-      setIsPaused(false);
     } catch { setSnack({ open: true, message: 'Failed to resume', severity: 'error' }); }
   };
   const handleEnd = async () => {
@@ -432,7 +426,6 @@ const AdminConsole: React.FC = () => {
   const handleNewGame = () => {
     disconnect();
     setRoomCode('');
-    setIsPaused(false);
   };
 
   // Determine view
@@ -477,7 +470,7 @@ const AdminConsole: React.FC = () => {
           <QuestionControlPanel
             question={state.question} timeRemaining={state.timeRemaining}
             answeredCount={state.answeredCount} playerCount={state.playerCount}
-            isPaused={isPaused} onPause={handlePause} onResume={handleResume} onEnd={handleEnd}
+            isPaused={state.isPaused} onPause={handlePause} onResume={handleResume} onEnd={handleEnd}
           />
         )}
         {view === 'result' && state.result && state.question && (
