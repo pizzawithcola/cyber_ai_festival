@@ -24,7 +24,7 @@ import {
   TableSortLabel,
   InputAdornment,
 } from '@mui/material';
-import { ArrowUpward, Search, LockOutlined } from '@mui/icons-material';
+import { ArrowUpward, Search, LockOutlined, Castle } from '@mui/icons-material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { getAdminToken, setAdminToken, clearAdminToken } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
@@ -203,6 +203,18 @@ const AdminPage: React.FC = () => {
   const [apiStatuses, setApiStatuses] = useState<ApiStatus[]>(API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'idle' as const })));
   const [isTestingApis, setIsTestingApis] = useState(false);
 
+  // ─── Final Rooms state ──────────────────────────────────────────────────────
+  interface RoomPlayer {
+    id: number; user_id: number; player_name: string; total_score: number; streak: number;
+  }
+  interface RoomEntry {
+    room_code: string; status: string; player_count: number;
+    question_count: number; current_question: number; created_at: string;
+    players: RoomPlayer[];
+  }
+  const [rooms, setRooms] = useState<RoomEntry[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(false);
+
   // ─── Check token on mount ───────────────────────────────────────────────────
   useEffect(() => {
     const token = getAdminToken();
@@ -259,6 +271,27 @@ const AdminPage: React.FC = () => {
         setSnackbar({ open: true, message: 'Load error: ' + (err instanceof Error ? err.message : ''), severity: 'error' });
       } finally { setLoading(false); }
     })();
+  }, [isAuthenticated]);
+
+  // ─── Fetch Final Rooms ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    (async () => {
+      try {
+        setRoomsLoading(true);
+        const res = await apiFetch('/rooms/');
+        if (res.ok) setRooms(await res.json());
+      } catch { /* ignore */ }
+      finally { setRoomsLoading(false); }
+    })();
+    // Poll every 5s
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiFetch('/rooms/');
+        if (res.ok) setRooms(await res.json());
+      } catch { /* ignore */ }
+    }, 5000);
+    return () => clearInterval(interval);
   }, [isAuthenticated]);
 
   // ─── Login Screen (if not authenticated) ────────────────────────────────────
@@ -697,6 +730,134 @@ const AdminPage: React.FC = () => {
             </Table>
           </TableContainer>
         </Box>
+      </Box>
+
+      {/* ── Final Rooms Section ── */}
+      <Box
+        sx={{
+          ...hudPanel(SF.cyan),
+          mt: 3, mb: 3,
+          borderRadius: '4px',
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          px: 3, py: 2.5,
+          borderBottom: `1px solid ${SF.cyan}20`,
+          backgroundColor: `${SF.cyan}08`,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Castle sx={{ fontSize: 18, color: SF.cyan }} />
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.cyan }}>
+              FINAL ROOMS
+            </Box>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.65rem', color: SF.dim }}>
+              ({rooms.length} room{rooms.length !== 1 ? 's' : ''})
+            </Box>
+          </Box>
+          <SFButton
+            color={SF.cyan}
+            variant="outline"
+            onClick={() => navigate('/final/admin')}
+          >
+            OPEN CONSOLE
+          </SFButton>
+        </Box>
+
+        {roomsLoading && rooms.length === 0 ? (
+          <Box sx={{ p: 4, textAlign: 'center' }}>
+            <CircularProgress size={24} sx={{ color: SF.cyan }} />
+          </Box>
+        ) : rooms.length === 0 ? (
+          <Box sx={{ p: 4, textAlign: 'center', fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim }}>
+            No rooms created yet. Use the admin console to create one.
+          </Box>
+        ) : (
+          <Box sx={{ maxHeight: 360, overflow: 'auto' }}>
+            {rooms.map((room) => {
+              const statusColor = room.status === 'playing' ? SF.lime : room.status === 'paused' ? SF.yellow : room.status === 'finished' ? SF.red : SF.dim;
+              return (
+                <Box
+                  key={room.room_code}
+                  sx={{
+                    px: 3, py: 2.5,
+                    borderBottom: `1px solid ${SF.cyan}08`,
+                    '&:last-of-type': { borderBottom: 'none' },
+                    '&:hover': { backgroundColor: `${SF.cyan}04` },
+                  }}
+                >
+                  {/* Room header */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: room.players.length > 0 ? 1.5 : 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box sx={{
+                        fontFamily: '"Courier New", monospace',
+                        fontSize: '1.05rem', fontWeight: 700,
+                        color: SF.cyan, letterSpacing: '0.15em',
+                        px: 1.5, py: 0.3,
+                        border: `1px solid ${SF.cyan}30`, borderRadius: '3px',
+                        backgroundColor: `${SF.cyan}08`,
+                      }}>
+                        {room.room_code}
+                      </Box>
+                      <Box sx={{
+                        px: 1.5, py: 0.3, borderRadius: '3px',
+                        fontFamily: SF.fontBody, fontSize: '0.65rem',
+                        letterSpacing: '0.1em', textTransform: 'uppercase',
+                        color: statusColor,
+                        border: `1px solid ${statusColor}30`,
+                        backgroundColor: `${statusColor}08`,
+                      }}>
+                        {room.status}
+                      </Box>
+                      <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim }}>
+                        {room.player_count} player{room.player_count !== 1 ? 's' : ''}
+                      </Box>
+                      {room.status === 'playing' && (
+                        <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.65rem', color: SF.dim }}>
+                          Q{room.current_question}/{room.question_count}
+                        </Box>
+                      )}
+                    </Box>
+                    <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.6rem', color: `${SF.white}20` }}>
+                      {room.created_at ? new Date(room.created_at).toLocaleTimeString() : ''}
+                    </Box>
+                  </Box>
+
+                  {/* Player list */}
+                  {room.players.length > 0 && (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                      {room.players.map((p, i) => {
+                        const colors = [SF.cyan, SF.magenta, SF.lime, SF.yellow, '#ff8000'];
+                        const c = colors[i % colors.length];
+                        return (
+                          <Box key={p.id} sx={{
+                            display: 'flex', alignItems: 'center', gap: 1,
+                            px: 1.5, py: 0.6, borderRadius: '3px',
+                            border: `1px solid ${c}25`,
+                            backgroundColor: `${c}06`,
+                          }}>
+                            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: `${SF.white}80`, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {p.player_name}
+                            </Box>
+                            <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', fontWeight: 700, color: c }}>
+                              {p.total_score.toLocaleString()}
+                            </Box>
+                            {p.streak > 0 && (
+                              <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.6rem', color: '#ff8000' }}>
+                                🔥{p.streak}
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  )}
+                </Box>
+              );
+            })}
+          </Box>
+        )}
       </Box>
 
       {/* ── Delete Dialog ── */}

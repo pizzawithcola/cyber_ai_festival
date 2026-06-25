@@ -26,6 +26,7 @@ jobs:
         env:
           VITE_API_URL: https://d24umo4oysfx97.cloudfront.net
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
+          VITE_WS_URL: wss://d24umo4oysfx97.cloudfront.net
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
