@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type GamePhase = 'idle' | 'waiting' | 'countdown' | 'question' | 'result' | 'finished';
+export type GamePhase = 'idle' | 'waiting' | 'countdown' | 'question' | 'result' | 'leaderboard' | 'finished';
 
 export interface OptionItem {
   id: string;
@@ -62,6 +62,8 @@ export interface UseGameWebSocketReturn {
   send: (msg: Record<string, unknown>) => void;
   submitAnswer: (questionId: number, option: string) => void;
   startGame: (questionCount?: number) => void;
+  pauseGame: () => void;
+  resumeGame: () => void;
   isConnected: boolean;
 }
 
@@ -147,6 +149,14 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
           ...prev,
           phase: 'result',
           result: msg as unknown as ResultData,
+        }));
+        break;
+
+      case 'leaderboard':
+        setState(prev => ({
+          ...prev,
+          phase: 'leaderboard',
+          leaderboard: (msg.leaderboard as LeaderboardEntry[]) || [],
         }));
         break;
 
@@ -247,6 +257,14 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
     send({ type: 'start_game', question_count: questionCount });
   }, [send]);
 
+  const pauseGame = useCallback(() => {
+    send({ type: 'pause' });
+  }, [send]);
+
+  const resumeGame = useCallback(() => {
+    send({ type: 'resume' });
+  }, [send]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -266,6 +284,8 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
     send,
     submitAnswer,
     startGame,
+    pauseGame,
+    resumeGame,
     isConnected,
   };
 }
