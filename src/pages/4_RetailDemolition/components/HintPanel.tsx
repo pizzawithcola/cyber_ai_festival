@@ -50,8 +50,10 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children }) => {
 
   return (
     <div
-      className={`w-[460px] shrink-0 flex flex-col max-h-[820px] transition-all duration-300 ease-out relative z-[2] ${
-        visible || children ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
+      className={`w-[460px] portrait:w-full portrait:max-w-[440px] shrink-0 flex flex-col max-h-[820px] portrait:max-h-[40vh] transition-all duration-300 ease-out relative z-[2] portrait:order-first ${
+        visible || children
+          ? 'opacity-100 translate-x-0 portrait:translate-y-0'
+          : 'opacity-0 translate-x-4 portrait:translate-x-0 portrait:-translate-y-4'
       }`}
     >
       {/* Hint card */}

@@ -8,6 +8,7 @@ import CheckoutConfirmation from './CheckoutConfirmation';
 import { PREDEFINED_PRODUCTS, RETAILERS, PRODUCT_PROMPTS } from '../constants/gameData';
 import type { GameState, Message, CartItem } from '../hooks/useRetailDemolition';
 import type { Product, Retailer, SavedCard, SavedAddress } from '../constants/gameData';
+import { playNotificationSound } from '../utils/notificationSound';
 
 interface PhoneSimulatorProps {
   gameState: GameState;
@@ -89,6 +90,16 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
       chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, chatBottomRef]);
+
+  // Play a chime whenever a new SMS notification arrives (newest is at index 0).
+  const lastNotificationId = useRef<number | null>(null);
+  useEffect(() => {
+    const newest = notifications[0];
+    if (newest && newest.id !== lastNotificationId.current) {
+      lastNotificationId.current = newest.id;
+      playNotificationSound();
+    }
+  }, [notifications]);
 
   // Live clock for the phone status bar — synced on every user interaction.
   const [now, setNow] = useState<Date>(() => new Date());

@@ -72,7 +72,7 @@ const RetailDemolition = () => {
 
   // ── Main Layout: HintPanel + Phone ──
   return (
-    <div className="relative flex h-screen w-full text-slate-300 font-sans overflow-hidden items-center justify-center gap-8 px-8">
+    <div className="relative flex h-screen w-full text-slate-300 font-sans overflow-hidden items-center justify-center gap-8 px-8 portrait:flex-col portrait:justify-start portrait:gap-4 portrait:px-4 portrait:py-4 portrait:overflow-y-auto">
       <ArcadeBackground />
       {/* Phone */}
       <PhoneSimulator
