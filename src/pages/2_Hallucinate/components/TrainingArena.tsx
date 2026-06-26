@@ -656,7 +656,8 @@ export function TrainingArena({
                 position: 'relative',
                 overflow: 'hidden',
                 px: { xs: 1.8, sm: 2.7 },
-                py: { xs: 1.7, sm: 2.05 },
+                pt: { xs: 3.1, sm: 2.05 },
+                pb: { xs: 1.45, sm: 1.75 },
                 border: '1px solid rgba(255, 0, 255, 0.36)',
                 background:
                   'linear-gradient(180deg, rgba(10, 4, 24, 0.92), rgba(18, 8, 38, 0.82))',
@@ -686,6 +687,32 @@ export function TrainingArena({
                 },
               }}
             >
+              <Typography
+                variant="caption"
+                sx={{
+                  position: 'absolute',
+                  zIndex: 2,
+                  top: { xs: 10, sm: 12 },
+                  right: { xs: 10, sm: 14 },
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  px: { xs: 0.85, sm: 1 },
+                  py: 0.38,
+                  border: '1px solid rgba(255, 191, 77, 0.34)',
+                  background: 'rgba(255, 191, 77, 0.08)',
+                  color: 'rgba(255, 230, 179, 0.9)',
+                  fontWeight: 900,
+                  fontSize: { xs: '0.66rem', sm: '0.76rem' },
+                  fontFamily: READABLE_FONT,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.25,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {isIntroMode ? `Boot ${introStep + 1} / ${trainingIntroSlides.length}` : `Card ${currentCardIndex + 1} / ${sentences.length || 5}`}
+              </Typography>
               <Stack
                 direction="row"
                 spacing={1}
@@ -746,29 +773,6 @@ export function TrainingArena({
                   Hallucination Training Game
                 </Typography>
               </Box>
-              <Typography
-                variant="caption"
-                sx={{
-                  position: 'relative',
-                  zIndex: 1,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  px: 1.1,
-                  py: 0.45,
-                  border: '1px solid rgba(255, 191, 77, 0.34)',
-                  background: 'rgba(255, 191, 77, 0.08)',
-                  color: 'rgba(255, 230, 179, 0.9)',
-                  fontWeight: 900,
-                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                  fontFamily: READABLE_FONT,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.3,
-                }}
-              >
-                {isIntroMode ? `Training boot ${introStep + 1} / ${trainingIntroSlides.length}` : `Card ${currentCardIndex + 1} / ${sentences.length || 5}`}
-              </Typography>
             </Box>
           )}
         </Box>
@@ -872,50 +876,132 @@ export function TrainingArena({
 
                 {isRunning && activeCard && (
                   <Stack spacing={1.8} sx={{ width: '100%', alignItems: 'stretch', animation: 'fadeRise 360ms ease-out' }}>
-                    {currentCardIndex === 0 && renderBubble({
-                      role: 'assistant',
-                      children: (
-                        <Stack spacing={0.8}>
+                    {currentCardIndex === 0 && (
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          overflow: 'hidden',
+                          width: 'min(100%, 820px)',
+                          alignSelf: 'center',
+                          px: { xs: 1.4, sm: 1.65 },
+                          py: { xs: 1.05, sm: 1.15 },
+                          borderRadius: 1,
+                          border: '1px solid rgba(255, 191, 77, 0.32)',
+                          background:
+                            'linear-gradient(180deg, rgba(16, 24, 42, 0.9), rgba(7, 13, 28, 0.86))',
+                          boxShadow:
+                            '0 8px 18px rgba(0,0,0,0.16), inset 0 0 0 1px rgba(255,255,255,0.03)',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: 3,
+                            background:
+                              'linear-gradient(90deg, rgba(255, 191, 77, 0.95), rgba(0, 194, 255, 0.66), rgba(255, 0, 255, 0.58))',
+                          },
+                          '& > *': {
+                            position: 'relative',
+                            zIndex: 1,
+                          },
+                        }}
+                      >
+                        <Stack
+                          direction={{ xs: 'column', md: 'row' }}
+                          spacing={{ xs: 0.65, md: 1.05 }}
+                          alignItems={{ xs: 'flex-start', md: 'center' }}
+                        >
                           <Typography
                             variant="caption"
                             sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.45,
+                              alignSelf: { xs: 'flex-start', md: 'center' },
+                              px: 0.85,
+                              py: 0.32,
+                              border: '1px solid rgba(255, 191, 77, 0.4)',
+                              background: 'rgba(255, 191, 77, 0.1)',
                               color: '#ffbf4d',
                               fontWeight: 900,
-                              textTransform: 'uppercase',
                               letterSpacing: '0.1em',
+                              lineHeight: 1.2,
+                              textTransform: 'uppercase',
+                              fontSize: { xs: '0.64rem', sm: '0.7rem' },
+                              flexShrink: 0,
                             }}
                           >
-                            System cue
+                            <Box
+                              component="span"
+                              sx={{
+                                width: 14,
+                                height: 14,
+                                flexShrink: 0,
+                                borderRadius: '50%',
+                                display: 'inline-grid',
+                                placeItems: 'center',
+                                border: '1px solid rgba(255, 191, 77, 0.58)',
+                                fontSize: '0.58rem',
+                                lineHeight: 1,
+                              }}
+                            >
+                              i
+                            </Box>
+                            <Box component="span">Player guidance</Box>
                           </Typography>
                           <Typography
                             variant="body2"
                             sx={{
-                              lineHeight: 1.78,
-                              color: 'rgba(228, 241, 255, 0.88)',
-                              fontSize: { xs: '1.02rem', sm: '1.1rem' },
+                              lineHeight: 1.45,
+                              color: 'rgba(242, 251, 255, 0.9)',
+                              fontWeight: 800,
+                              fontSize: { xs: '0.84rem', sm: '0.9rem' },
+                              overflowWrap: 'anywhere',
                             }}
                           >
-                            The round is now live. Read the AI reply below, then decide whether it should be trusted before someone acts on it.
+                            Judge the AI reply before acting: look for unsupported claims, set your wager, then choose trust or verify.
                           </Typography>
                         </Stack>
-                      ),
-                    })}
+                      </Box>
+                    )}
 
                     {renderBubble({
                       role: 'assistant',
                       children: (
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            lineHeight: 1.72,
-                            fontWeight: 800,
-                            color: '#f2fbff',
-                            textShadow: '0 1px 0 rgba(0,0,0,0.28)',
-                            fontSize: { xs: '1.08rem', sm: '1.16rem', md: '1.22rem' },
-                          }}
-                        >
-                          {activeCard.text}
-                        </Typography>
+                        <Stack spacing={1.05}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: 'inline-flex',
+                              alignSelf: 'flex-start',
+                              px: 0.85,
+                              py: 0.32,
+                              border: '1px solid rgba(143, 196, 255, 0.36)',
+                              background: 'rgba(143, 196, 255, 0.1)',
+                              color: '#9fe6ff',
+                              fontWeight: 900,
+                              letterSpacing: '0.1em',
+                              lineHeight: 1.2,
+                              textTransform: 'uppercase',
+                              fontSize: { xs: '0.66rem', sm: '0.72rem' },
+                            }}
+                          >
+                            AI output to judge
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              lineHeight: 1.72,
+                              fontWeight: 800,
+                              color: '#f2fbff',
+                              textShadow: '0 1px 0 rgba(0,0,0,0.28)',
+                              fontSize: { xs: '1.08rem', sm: '1.16rem', md: '1.22rem' },
+                            }}
+                          >
+                            {activeCard.text}
+                          </Typography>
+                        </Stack>
                       ),
                     })}
 
@@ -1114,6 +1200,7 @@ export function TrainingArena({
                                 <Box
                                   sx={{
                                     position: 'relative',
+                                    overflow: 'hidden',
                                     flex: '1 1 48%',
                                     minWidth: { xs: '100%', md: 330 },
                                     px: { xs: 1.2, sm: 1.55 },
@@ -1127,57 +1214,30 @@ export function TrainingArena({
                                       : null),
                                   }}
                                 >
-                                  {currentCardIndex === 0 && !hasTouchedActiveConfidence && (
-                                    <Box
-                                      sx={{
-                                        position: 'absolute',
-                                        top: { xs: -12, sm: -14 },
-                                        right: { xs: 12, sm: 14 },
-                                        zIndex: 2,
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: 0.8,
-                                        maxWidth: 'calc(100% - 24px)',
-                                        px: 0.95,
-                                        py: 0.42,
-                                        border: '1px solid rgba(255, 191, 77, 0.42)',
-                                        background:
-                                          'linear-gradient(135deg, rgba(16, 11, 28, 0.96), rgba(48, 19, 58, 0.92))',
-                                        boxShadow:
-                                          '0 0 0 1px rgba(255, 191, 77, 0.08), 0 8px 18px rgba(0, 0, 0, 0.28), 0 0 14px rgba(255, 191, 77, 0.08)',
-                                        pointerEvents: 'none',
-                                        animation: 'fadeRise 240ms ease-out',
-                                        borderRadius: 999,
-                                      }}
+                                  <Stack spacing={1.1}>
+                                    <Stack
+                                      direction="row"
+                                      spacing={0.75}
+                                      alignItems="center"
+                                      justifyContent="flex-start"
+                                      sx={{ minWidth: 0 }}
                                     >
-                                      <Box
-                                        sx={{
-                                          width: 7,
-                                          height: 7,
-                                          flexShrink: 0,
-                                          backgroundColor: '#ffbf4d',
-                                          boxShadow: '0 0 10px rgba(255, 191, 77, 0.72)',
-                                        }}
-                                      />
                                       <Typography
                                         variant="caption"
                                         sx={{
-                                          color: '#ffe6b3',
+                                          color: 'rgba(248, 231, 255, 0.78)',
                                           fontWeight: 900,
-                                          letterSpacing: '0.08em',
+                                          letterSpacing: '0.1em',
                                           textTransform: 'uppercase',
                                           lineHeight: 1.2,
-                                          fontSize: { xs: '0.62rem', sm: '0.68rem' },
-                                          whiteSpace: 'normal',
-                                          textAlign: 'center',
+                                          fontSize: { xs: '0.68rem', sm: '0.74rem' },
+                                          minWidth: 0,
                                         }}
                                       >
-                                        Set wager
+                                        Confidence stakes
                                       </Typography>
-                                    </Box>
-                                  )}
+                                    </Stack>
 
-                                  <Stack spacing={1.1}>
                                     <Stack
                                       direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
                                       spacing={1}
@@ -1251,13 +1311,66 @@ export function TrainingArena({
 
                                     <Box
                                       sx={{
+                                        position: 'relative',
                                         px: { xs: 0.8, sm: 1.05 },
-                                        pt: 0.8,
+                                        pt: currentCardIndex === 0 && !hasTouchedActiveConfidence ? 3.1 : 0.8,
                                         pb: 0.55,
                                         border: '1px solid rgba(255, 255, 255, 0.08)',
                                         background: 'rgba(255, 255, 255, 0.035)',
                                       }}
                                     >
+                                      {currentCardIndex === 0 && !hasTouchedActiveConfidence && (
+                                        <Box
+                                          sx={{
+                                            position: 'absolute',
+                                            top: 7,
+                                            left: `calc(${getConfidenceMarkOffset(activeConfidenceValue)} + 12px)`,
+                                            maxWidth: 'calc(100% - 24px)',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 0.55,
+                                            px: 0.8,
+                                            py: 0.34,
+                                            border: '1px solid rgba(255, 191, 77, 0.42)',
+                                            background:
+                                              'linear-gradient(135deg, rgba(20, 12, 34, 0.96), rgba(58, 18, 62, 0.92))',
+                                            boxShadow:
+                                              '0 0 0 1px rgba(255, 191, 77, 0.08), 0 6px 14px rgba(0, 0, 0, 0.24)',
+                                            pointerEvents: 'none',
+                                            animation: 'fadeRise 240ms ease-out',
+                                            transform:
+                                              activeConfidenceValue > (MIN_CONFIDENCE_MULTIPLIER + MAX_CONFIDENCE_MULTIPLIER) / 2
+                                                ? 'translateX(calc(-100% - 24px))'
+                                                : 'none',
+                                          }}
+                                        >
+                                          <Box
+                                            sx={{
+                                              width: 6,
+                                              height: 6,
+                                              flexShrink: 0,
+                                              backgroundColor: '#ffbf4d',
+                                              boxShadow: '0 0 10px rgba(255, 191, 77, 0.72)',
+                                            }}
+                                          />
+                                          <Typography
+                                            variant="caption"
+                                            sx={{
+                                              color: '#ffe6b3',
+                                              fontWeight: 900,
+                                              letterSpacing: '0.07em',
+                                              textTransform: 'uppercase',
+                                              lineHeight: 1.2,
+                                              fontSize: { xs: '0.58rem', sm: '0.64rem' },
+                                              whiteSpace: 'nowrap',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis',
+                                            }}
+                                          >
+                                            Set wager
+                                          </Typography>
+                                        </Box>
+                                      )}
                                       <Slider
                                         value={activeConfidenceValue}
                                         min={MIN_CONFIDENCE_MULTIPLIER}
