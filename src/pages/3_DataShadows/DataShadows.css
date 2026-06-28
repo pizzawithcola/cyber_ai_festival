@@ -668,7 +668,7 @@
 
 .data-shadows-portrait-stage.data-shadows-sidebar-layout {
   align-content: stretch;
-  grid-template-rows: minmax(0, var(--data-shadows-phone-height)) minmax(0, var(--data-shadows-portrait-sidebar-height));
+  grid-template-rows: minmax(0, var(--data-shadows-portrait-sidebar-height)) minmax(0, var(--data-shadows-phone-height));
 }
 
 .data-shadows-portrait-stage.data-shadows-phone-only .phone-panel,
@@ -680,6 +680,7 @@
 
 .data-shadows-portrait-stage.data-shadows-sidebar-layout .phone-panel {
   align-self: stretch;
+  order: 2;
 }
 
 .data-shadows-portrait-stage.data-shadows-sidebar-layout .data-shadows-side-panel {
@@ -688,6 +689,7 @@
   max-width: 100%;
   height: var(--data-shadows-portrait-sidebar-height);
   min-height: 0;
+  order: 1;
   transform: translateY(0);
   justify-self: stretch;
 }
