@@ -386,9 +386,7 @@ const AdminConsole: React.FC = () => {
   useEffect(() => {
     const token = getAdminToken();
     if (!token) { navigate('/admin'); return; }
-  }, []);
-
-
+  }, [navigate]);
 
   const handleCreateRoom = async () => {
     setCreating(true);
