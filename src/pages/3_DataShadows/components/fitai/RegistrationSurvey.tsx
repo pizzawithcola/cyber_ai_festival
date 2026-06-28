@@ -8,7 +8,7 @@ interface QuestionData {
   name?: string
   avatar?: string
   bodyParts?: string[]
-  workHours?: number
+  workoutMinutes?: number
   occupation?: string
   locations?: string[]
   goals?: string[]
@@ -20,7 +20,7 @@ interface QuestionData {
 const RegistrationSurvey: React.FC = () => {
   const { setScreen, updateUserChoices, userChoices } = useFitAI()
   const [currentStep, setCurrentStep] = useState(1)
-  const [data, setData] = useState<QuestionData>({})
+  const [data, setData] = useState<QuestionData>({ workoutMinutes: 0 })
   const [showAI, setShowAI] = useState(false)
   const [lastAnswer, setLastAnswer] = useState('')
   const aiTrainingConsent = (userChoices?.privacySettings as { aiTraining?: boolean } | undefined)?.aiTraining === true
@@ -89,6 +89,7 @@ const RegistrationSurvey: React.FC = () => {
         surveyWeight: data.weight,
         surveyOccupation: data.occupation,
         surveyHomeAddress: data.homeAddress,
+        surveyWorkoutMinutes: data.workoutMinutes,
       }
       
       console.log('Survey Scoring:', {
@@ -125,7 +126,7 @@ const RegistrationSurvey: React.FC = () => {
       case 2:
         return (data.bodyParts?.length || 0) > 0
       case 3:
-        return data.workHours !== undefined && data.workHours > 0
+        return data.workoutMinutes !== undefined
       case 4:
         return (data.locations?.length || 0) > 0
       case 5:
@@ -422,21 +423,21 @@ const RegistrationSurvey: React.FC = () => {
           </QuestionCard>
         )}
 
-        {/* Step 3: Lifestyle - 修改为工作相关信息 */}
+        {/* Step 3: Lifestyle - Workout duration */}
         {currentStep === 3 && (
           <QuestionCard
-            title="What is your daily work schedule?"
-            description="This helps us understand your availability and plan workouts around your lifestyle"
-            hint="Knowing your work schedule helps optimize timing for workouts"
-            dataCollection="Work schedule data used to optimize workout timing, engagement strategies, and behavioral profiling"
-            isCompleted={data.workHours !== undefined && data.workHours > 0}
+            title="How much time do you usually spend on a workout?"
+            description="This helps us shape realistic coaching intensity and daily exercise recommendations."
+            hint="Workout duration gives FitAI a quick read on your routine and recovery rhythm."
+            dataCollection="Workout duration data used for recommendation timing, engagement analysis, and behavioral profiling"
+            isCompleted={data.workoutMinutes !== undefined}
           >
             <div style={{ marginTop: '20px', marginBottom: '20px' }}>
               <div style={{
                 marginBottom: '16px'
               }}>
                 <label style={{ fontSize: '14px', fontWeight: 600, color: '#1f2937', marginBottom: '8px', display: 'block' }}>
-                  How many hours do you typically work per day?
+                  How many minutes do you spend on your workout each day?
                 </label>
                 <div style={{
                   fontSize: '32px',
@@ -445,15 +446,16 @@ const RegistrationSurvey: React.FC = () => {
                   textAlign: 'center',
                   marginBottom: '20px'
                 }}>
-                  {data.workHours || 0} hours
+                  {data.workoutMinutes ?? 0} mins
                 </div>
 
                 <input
                   type="range"
-                  min="1"
-                  max="16"
-                  value={data.workHours || 0}
-                  onChange={(e) => setData({ ...data, workHours: parseInt(e.target.value) })}
+                  min="0"
+                  max="480"
+                  step="15"
+                  value={data.workoutMinutes ?? 0}
+                  onChange={(e) => setData({ ...data, workoutMinutes: Number(e.target.value) })}
                   style={{
                     width: '100%',
                     height: '6px',
@@ -472,8 +474,8 @@ const RegistrationSurvey: React.FC = () => {
                   color: '#9ca3af',
                   marginTop: '12px'
                 }}>
-                  <span>1h</span>
-                  <span>16h</span>
+                  <span>0 mins</span>
+                  <span>480 mins</span>
                 </div>
               </div>
 
@@ -487,7 +489,7 @@ const RegistrationSurvey: React.FC = () => {
                 border: '1px solid rgba(16,185,129,0.2)',
                 lineHeight: '1.5'
               }}>
-                💡 This information helps us recommend workout times that fit your schedule and avoid burnout. Research shows people with demanding jobs benefit from strategic workout scheduling.
+                💡 This helps FitAI calibrate realistic workout pacing, recovery windows, and push timing. Short sessions and long training blocks can trigger very different nudges inside the app.
               </div>
             </div>
 

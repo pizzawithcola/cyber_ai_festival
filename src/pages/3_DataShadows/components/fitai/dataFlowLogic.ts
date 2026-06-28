@@ -21,7 +21,7 @@ export interface SurveyData {
   name?: string
   avatar?: string
   bodyParts?: string[]
-  workHours?: number
+  workoutMinutes?: number
   occupation?: string
   locations?: string[]
   goals?: string[]
@@ -84,7 +84,7 @@ export function determineDataFlow(
     // Anonymised data: reading progress, completion steps, feature usage, etc.
     // Here we simulate survey‑based anonymous indicators
     if (hasField('bodyParts')) analyticsFields.push('bodyParts')
-    if (hasField('workHours')) analyticsFields.push('workHours')
+    if (hasField('workoutMinutes')) analyticsFields.push('workoutMinutes')
     if (hasField('locations')) analyticsFields.push('locations')
     if (hasField('goals')) analyticsFields.push('goals')
     // Optional fields like height/weight are not included unless de‑identified
@@ -111,7 +111,7 @@ export function determineDataFlow(
     // De‑identified body data
     if (hasField('bodyParts')) thirdPartyFields.push('bodyParts_aggregated')
     if (hasField('height') && hasField('weight')) thirdPartyFields.push('bmi_category')
-    if (hasField('workHours')) thirdPartyFields.push('workHours')
+    if (hasField('workoutMinutes')) thirdPartyFields.push('workoutMinutes')
     if (hasField('occupation')) thirdPartyFields.push('occupation_category')
     if (hasField('locations')) thirdPartyFields.push('locations')
     if (hasField('goals')) thirdPartyFields.push('goals')
@@ -123,7 +123,7 @@ export function determineDataFlow(
   const aiTrainingFields: string[] = []
   if (privacy.aiTraining) {
     if (hasField('bodyParts')) aiTrainingFields.push('bodyParts')
-    if (hasField('workHours')) aiTrainingFields.push('workHours')
+    if (hasField('workoutMinutes')) aiTrainingFields.push('workoutMinutes')
     if (hasField('occupation')) aiTrainingFields.push('occupation')
     if (hasField('locations')) aiTrainingFields.push('locations')
     if (hasField('goals')) aiTrainingFields.push('goals')
@@ -152,7 +152,7 @@ export function determineDataFlow(
       enabled: privacy.analytics,
       fields: analyticsFields,
       description: 'Anonymised usage data used to improve app performance and user experience.',
-      sample: privacy.analytics ? { bodyParts: ['Chest', 'Abs'], workHours: 8 } : undefined,
+      sample: privacy.analytics ? { bodyParts: ['Chest', 'Abs'], workoutMinutes: 45 } : undefined,
     },
     marketing: {
       enabled: privacy.marketing,
@@ -164,7 +164,7 @@ export function determineDataFlow(
       enabled: privacy.thirdParty,
       fields: thirdPartyFields,
       description: 'Anonymised research data shared with partners for health trend analysis.',
-      sample: privacy.thirdParty ? { bmi_category: 'Normal', workHours: 8 } : undefined,
+      sample: privacy.thirdParty ? { bmi_category: 'Normal', workoutMinutes: 45 } : undefined,
     },
     aiTraining: {
       enabled: privacy.aiTraining,

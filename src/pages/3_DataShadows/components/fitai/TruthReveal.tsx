@@ -229,6 +229,7 @@ const TruthReveal: React.FC = () => {
     weight: typeof userChoices?.surveyWeight === 'number' ? userChoices.surveyWeight : undefined,
     occupation: typeof userChoices?.surveyOccupation === 'string' ? userChoices.surveyOccupation : undefined,
     homeAddress: typeof userChoices?.surveyHomeAddress === 'string' ? userChoices.surveyHomeAddress : undefined,
+    workoutMinutes: typeof userChoices?.surveyWorkoutMinutes === 'number' ? userChoices.surveyWorkoutMinutes : undefined,
   }
   const termsReadingProgress = termsConsent.termsReadingProgress ?? 0
   const termsReadingScore = typeof userChoices?.termsReadingScore === 'number' ? userChoices.termsReadingScore : 0

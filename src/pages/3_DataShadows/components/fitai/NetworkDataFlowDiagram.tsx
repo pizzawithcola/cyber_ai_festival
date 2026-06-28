@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Activity, ArrowRightLeft, Database, ShieldAlert, Sparkles } from 'lucide-react'
 import { useFitAI } from './fitaiContext'
 import {
   determineDataFlow,
@@ -77,7 +78,7 @@ const NODE_POSITIONS: NodePosition[] = [
     shortLabel: 'You',
     labelLines: ['You'],
     labelPosition: 'above',
-    description: `Your profile data: name, fitness goals, body measurements, location, work hours. App behavior: taps, swipes, viewing duration, feature usage. Foundation for all downstream data flows.`,
+    description: `Your profile data: name, fitness goals, body measurements, location, workout duration. App behavior: taps, swipes, viewing duration, feature usage. Foundation for all downstream data flows.`,
     color: '#3b82f6',
     category: 'user',
     scoreImpactCategory: 'none',
@@ -117,7 +118,7 @@ const NODE_POSITIONS: NodePosition[] = [
     labelLines: ['AI', 'Profiling'],
     labelPosition: 'right',
     description: `Machine learning models for fitness recommendations and health risk inference.`,
-    inboundData: `Fitness data (goals, schedule) + Demographics (Height/Weight, Occupation)`,
+    inboundData: `Fitness data (goals, workout duration) + Demographics (Height/Weight, Occupation)`,
     outboundData: `Personalized recommendations + Health risk inferences → Forms basis for downstream targeting`,
     color: '#93c5fd',
     category: 'internal',
@@ -405,7 +406,7 @@ function getNodeFlowSummary(nodeId: string): { inbound: string; outbound: string
       }
     case 'ai':
       return {
-        inbound: 'goals/body/work',
+        inbound: 'goals/body/workout',
         outbound: 'recs + risk signals',
       }
     case 'sdk':
@@ -1057,12 +1058,18 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
 
                     <div className="flow-node-compact-io">
                       <div className="flow-node-module flow-node-module-in">
-                        <strong>Inbound</strong>
+                        <div className="flow-node-section-label flow-node-section-label-in">
+                          <ArrowRightLeft className="flow-node-section-icon" aria-hidden="true" />
+                          <strong>Inbound</strong>
+                        </div>
                         <p>{selectedNode.inboundData ?? ioSummary.inbound}</p>
                       </div>
 
                       <div className="flow-node-module flow-node-module-out">
-                        <strong>Outbound</strong>
+                        <div className="flow-node-section-label flow-node-section-label-out">
+                          <ArrowRightLeft className="flow-node-section-icon" aria-hidden="true" />
+                          <strong>Outbound</strong>
+                        </div>
                         <p>{selectedNode.outboundData ?? ioSummary.outbound}</p>
                       </div>
                     </div>
@@ -1080,7 +1087,10 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
                   )}
 
                   <div className="flow-node-consequence">
-                    <strong>Possible consequence</strong>
+                    <div className="flow-node-section-label flow-node-section-label-consequence">
+                      <ShieldAlert className="flow-node-section-icon" aria-hidden="true" />
+                      <strong>Possible consequence</strong>
+                    </div>
                     <p>{consequence}</p>
                   </div>
 
@@ -1093,15 +1103,24 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
                           : 'flow-node-detail-status-safe',
                       ].join(' ')}
                     >
-                      <strong>Status:</strong>{' '}
-                      {isAlwaysEnabled || nodeActive
-                        ? 'Your data reaches this node' + (isAlwaysEnabled ? '' : ' through active consent paths')
-                        : 'No active data route with your current choices'}
+                      <div className="flow-node-section-label flow-node-section-label-status">
+                        <Activity className="flow-node-section-icon" aria-hidden="true" />
+                        <strong>Status</strong>
+                      </div>
+                      <span>
+                        {isAlwaysEnabled || nodeActive
+                          ? 'Your data reaches this node' + (isAlwaysEnabled ? '' : ' through active consent paths')
+                          : 'No active data route with your current choices'}
+                      </span>
                     </div>
 
                     {(isAlwaysEnabled || nodeActive) && nodeData && 'fields' in nodeData && Array.isArray(nodeData.fields) && nodeData.fields.length > 0 && (
                       <div className="flow-node-fields">
-                        <strong>Fields:</strong> {(nodeData.fields as string[]).join(', ')}
+                        <div className="flow-node-section-label flow-node-section-label-fields">
+                          <Database className="flow-node-section-icon" aria-hidden="true" />
+                          <strong>Fields</strong>
+                        </div>
+                        <span>{(nodeData.fields as string[]).join(', ')}</span>
                       </div>
                     )}
                   </div>
@@ -1125,7 +1144,10 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
               <p className="flow-node-detail-desc">{overview.summary}</p>
               <div className="flow-node-overview-list">
                 {overview.bullets.map((bullet) => (
-                  <div key={bullet} className="flow-node-overview-item">{bullet}</div>
+                  <div key={bullet} className="flow-node-overview-item">
+                    <Sparkles className="flow-node-overview-item-icon" aria-hidden="true" />
+                    <span>{bullet}</span>
+                  </div>
                 ))}
               </div>
             </div>
