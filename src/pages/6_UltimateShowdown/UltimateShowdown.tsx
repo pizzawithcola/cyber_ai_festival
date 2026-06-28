@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   LinearProgress,
+  MenuItem,
   TextField,
   keyframes,
 } from '@mui/material';
@@ -703,6 +704,34 @@ const UltimateShowdown: React.FC = () => {
 
   const user = getStoredUser();
 
+  // ── Refs ────────────────────────────────────────────────────────────
+  const didAutoJoinRef = useRef(false);
+
+  // ── Handlers ────────────────────────────────────────────────────────
+
+  // Actually join the room via REST + WebSocket
+  const handleJoinRoom = useCallback(async (code: string, userId: number, playerName: string) => {
+    setJoinLoading(true);
+    setJoinError('');
+    try {
+      const res = await apiFetch(`/rooms/${code}/join`, {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId, player_name: playerName }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Failed to join');
+      }
+      connect(code, userId, 'player');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Join failed';
+      setJoinError(msg);
+      setRoomCode('');
+    } finally {
+      setJoinLoading(false);
+    }
+  }, [connect]);
+
   // Determine current view
   const getView = useCallback((): string => {
     if (!roomCode) return 'join';
@@ -728,47 +757,12 @@ const UltimateShowdown: React.FC = () => {
 
   const view = getView();
 
-  // Auto-join from URL param ?code=XXXX when user is already logged in
-  useEffect(() => {
-    const codeParam = searchParams.get('code');
-    if (codeParam && user?.id && !roomCode) {
-      setRoomCode(codeParam);
-      handleJoinRoom(codeParam, user.id, user.firstname);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Step 1: Enter room code → proceed to login or auto-join
   const handleEnterCode = async (code: string) => {
     setJoinError('');
     setRoomCode(code);
     if (user?.id) {
-      // Already logged in → join immediately
       handleJoinRoom(code, user.id, user.firstname);
-    }
-    // Otherwise loginScreen will show
-  };
-
-  // Actually join the room via REST + WebSocket
-  const handleJoinRoom = async (code: string, userId: number, playerName: string) => {
-    setJoinLoading(true);
-    setJoinError('');
-    try {
-      const res = await apiFetch(`/rooms/${code}/join`, {
-        method: 'POST',
-        body: JSON.stringify({ user_id: userId, player_name: playerName }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || 'Failed to join');
-      }
-      connect(code, userId, 'player');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Join failed';
-      setJoinError(msg);
-      setRoomCode('');
-    } finally {
-      setJoinLoading(false);
     }
   };
 
@@ -837,6 +831,19 @@ const UltimateShowdown: React.FC = () => {
     if (!state.question) return;
     submitAnswer(state.question.question_id, option);
   };
+
+  // ── Effects ──────────────────────────────────────────────────────────
+
+  // Auto-join from URL param ?code=XXXX when user is already logged in
+  useEffect(() => {
+    if (didAutoJoinRef.current) return;
+    const codeParam = searchParams.get('code');
+    if (codeParam && user?.id && !roomCode) {
+      didAutoJoinRef.current = true;
+      setRoomCode(codeParam);
+      handleJoinRoom(codeParam, user.id, user.firstname);
+    }
+  }, [searchParams, user, roomCode, handleJoinRoom]);
 
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
