@@ -216,6 +216,8 @@ const AdminPage: React.FC = () => {
   }
   const [rooms, setRooms] = useState<RoomEntry[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
+  const [roomsPage, setRoomsPage] = useState(0);
+  const [roomsRowsPerPage, setRoomsRowsPerPage] = useState(10);
 
   // ─── Check token on mount ───────────────────────────────────────────────────
   useEffect(() => {
@@ -482,6 +484,7 @@ const AdminPage: React.FC = () => {
   const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   const sortedUsers    = [...paginatedUsers].sort(cmp(order, orderBy));
   const uniqueCountries = new Set(users.map(u => u.region).filter(Boolean)).size;
+  const paginatedRooms = rooms.slice(roomsPage * roomsRowsPerPage, roomsPage * roomsRowsPerPage + roomsRowsPerPage);
 
   // ─── shared cell sx ───────────────────────────────────────────────────────
   const thSx = { backgroundColor: '#030e1a', borderBottom: `1px solid ${SF.cyan}25`, py: 1.2, px: 1.5 };
@@ -780,14 +783,7 @@ const AdminPage: React.FC = () => {
 
       {/* ── Final Rooms Section ── */}
       {activeTab === 'rooms' && (
-      <Box
-        sx={{
-          ...hudPanel(SF.cyan),
-          mt: 3, mb: 3,
-          borderRadius: '4px',
-          overflow: 'hidden',
-        }}
-      >
+      <Box sx={{ ...hudPanel(SF.cyan), borderRadius: '4px', overflow: 'hidden', mb: 4 }}>
         <Box sx={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           px: 3, py: 2.5,
@@ -800,7 +796,7 @@ const AdminPage: React.FC = () => {
               FINAL ROOMS
             </Box>
             <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>
-              ({rooms.length} room{rooms.length !== 1 ? 's' : ''})
+              ({rooms.length})
             </Box>
           </Box>
           <SFButton
@@ -812,99 +808,134 @@ const AdminPage: React.FC = () => {
           </SFButton>
         </Box>
 
-        {roomsLoading && rooms.length === 0 ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress size={24} sx={{ color: SF.cyan }} />
-          </Box>
-        ) : rooms.length === 0 ? (
-          <Box sx={{ p: 4, textAlign: 'center', fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>
-            No rooms created yet. Use the admin console to create one.
-          </Box>
-        ) : (
-          <Box sx={{ maxHeight: 360, overflow: 'auto' }}>
-            {rooms.map((room) => {
-              const statusColor = room.status === 'playing' ? SF.lime : room.status === 'paused' ? SF.yellow : room.status === 'finished' ? SF.red : SF.dim;
-              return (
-                <Box
-                  key={room.room_code}
-                  sx={{
-                    px: 3, py: 2.5,
-                    borderBottom: `1px solid ${SF.cyan}08`,
-                    '&:last-of-type': { borderBottom: 'none' },
-                    '&:hover': { backgroundColor: `${SF.cyan}04` },
-                  }}
-                >
-                  {/* Room header */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: room.players.length > 0 ? 1.5 : 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{
-                        fontFamily: '"Courier New", monospace',
-                        fontSize: '1.15rem', fontWeight: 700,
-                        color: SF.cyan, letterSpacing: '0.15em',
-                        px: 1.5, py: 0.3,
-                        border: `1px solid ${SF.cyan}30`, borderRadius: '3px',
-                        backgroundColor: `${SF.cyan}08`,
-                      }}>
-                        {room.room_code}
-                      </Box>
-                      <Box sx={{
-                        px: 1.5, py: 0.3, borderRadius: '3px',
-                        fontFamily: SF.fontBody, fontSize: '0.75rem',
-                        letterSpacing: '0.1em', textTransform: 'uppercase',
-                        color: statusColor,
-                        border: `1px solid ${statusColor}30`,
-                        backgroundColor: `${statusColor}08`,
-                      }}>
-                        {room.status}
-                      </Box>
-                      <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: SF.dim }}>
-                        {room.player_count} player{room.player_count !== 1 ? 's' : ''}
-                      </Box>
-                      {room.status === 'playing' && (
-                        <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.65rem', color: SF.dim }}>
-                          Q{room.current_question}/{room.question_count}
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60` }}>ROOM CODE</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60` }}>STATUS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60` }}>PLAYERS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60`, textAlign: 'right' }}>CREATED</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {roomsLoading && rooms.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} sx={{ ...tdSx, textAlign: 'center', py: 4 }}>
+                    <CircularProgress size={24} sx={{ color: SF.cyan }} />
+                  </TableCell>
+                </TableRow>
+              ) : paginatedRooms.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} sx={{ ...tdSx, textAlign: 'center', fontFamily: SF.fontBody, fontSize: '0.92rem', color: SF.dim, py: 4 }}>
+                    No rooms created yet. Use the admin console to create one.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedRooms.map((room) => {
+                  const statusColor = room.status === 'playing' ? SF.lime : room.status === 'paused' ? SF.yellow : room.status === 'finished' ? SF.red : SF.dim;
+                  return (
+                    <TableRow key={room.room_code} sx={{ '&:hover': { backgroundColor: `${SF.cyan}04` } }}>
+                      {/* Room Code */}
+                      <TableCell sx={{ ...tdSx }}>
+                        <Box sx={{
+                          display: 'inline-block',
+                          fontFamily: '"Courier New", monospace',
+                          fontSize: '0.95rem', fontWeight: 700,
+                          color: SF.cyan, letterSpacing: '0.15em',
+                          px: 1.5, py: 0.3,
+                          border: `1px solid ${SF.cyan}30`, borderRadius: '3px',
+                          backgroundColor: `${SF.cyan}08`,
+                        }}>
+                          {room.room_code}
                         </Box>
-                      )}
-                    </Box>
-                    <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.6rem', color: `${SF.white}20` }}>
-                      {room.created_at ? new Date(room.created_at).toLocaleTimeString() : ''}
-                    </Box>
-                  </Box>
+                      </TableCell>
 
-                  {/* Player list */}
-                  {room.players.length > 0 && (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
-                      {room.players.map((p, i) => {
-                        const colors = [SF.cyan, SF.magenta, SF.lime, SF.yellow, '#ff8000'];
-                        const c = colors[i % colors.length];
-                        return (
-                          <Box key={p.id} sx={{
-                            display: 'flex', alignItems: 'center', gap: 1,
-                            px: 1.5, py: 0.6, borderRadius: '3px',
-                            border: `1px solid ${c}25`,
-                            backgroundColor: `${c}06`,
+                      {/* Status */}
+                      <TableCell sx={{ ...tdSx }}>
+                        <Box sx={{
+                          display: 'inline-flex', alignItems: 'center', gap: 1,
+                        }}>
+                          <Box sx={{
+                            width: 8, height: 8, borderRadius: '50%',
+                            backgroundColor: statusColor,
+                            boxShadow: `0 0 6px ${statusColor}`,
+                          }} />
+                          <Box sx={{
+                            fontFamily: SF.fontBody, fontSize: '0.82rem',
+                            letterSpacing: '0.08em', textTransform: 'uppercase',
+                            color: statusColor,
                           }}>
-                            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: `${SF.white}80`, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {p.player_name}
-                            </Box>
-                            <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', fontWeight: 700, color: c }}>
-                              {p.total_score.toLocaleString()}
-                            </Box>
-                            {p.streak > 0 && (
-                              <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.6rem', color: '#ff8000' }}>
-                                🔥{p.streak}
-                              </Box>
-                            )}
+                            {room.status}
                           </Box>
-                        );
-                      })}
-                    </Box>
-                  )}
-                </Box>
-              );
-            })}
-          </Box>
-        )}
+                          {room.status === 'playing' && (
+                            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.72rem', color: SF.dim, ml: 0.5 }}>
+                              Q{room.current_question}/{room.question_count}
+                            </Box>
+                          )}
+                        </Box>
+                      </TableCell>
+
+                      {/* Players */}
+                      <TableCell sx={{ ...tdSx, maxWidth: 360 }}>
+                        {room.players.length > 0 ? (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {room.players.map((p, i) => {
+                              const colors = [SF.cyan, SF.magenta, SF.lime, SF.yellow, '#ff8000'];
+                              const c = colors[i % colors.length];
+                              return (
+                                <Box key={p.id} sx={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                                  px: 1, py: 0.4, borderRadius: '3px',
+                                  border: `1px solid ${c}25`,
+                                  backgroundColor: `${c}06`,
+                                }}>
+                                  <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: `${SF.white}80`, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {p.player_name}
+                                  </Box>
+                                  <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', fontWeight: 700, color: c }}>
+                                    {p.total_score.toLocaleString()}
+                                  </Box>
+                                  {p.streak > 0 && (
+                                    <Box sx={{ fontSize: '0.6rem' }}>🔥{p.streak}</Box>
+                                  )}
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        ) : (
+                          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>—</Box>
+                        )}
+                      </TableCell>
+
+                      {/* Created */}
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: `${SF.white}50`, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {room.created_at ? new Date(room.created_at).toLocaleTimeString() : '—'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 50]}
+          component="div"
+          count={rooms.length}
+          rowsPerPage={roomsRowsPerPage}
+          page={roomsPage}
+          onPageChange={(_, p) => setRoomsPage(p)}
+          onRowsPerPageChange={(e) => { setRoomsRowsPerPage(parseInt(e.target.value, 10)); setRoomsPage(0); }}
+          sx={{
+            borderTop: `1px solid ${SF.cyan}15`, backgroundColor: SF.panelAlt, color: SF.dim, fontFamily: SF.fontBody, fontSize: '0.65rem',
+            '& .MuiTablePagination-select': { color: SF.cyan, fontFamily: SF.fontBody },
+            '& .MuiTablePagination-selectIcon': { color: SF.cyan },
+            '& .MuiTablePagination-displayedRows': { fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.dim },
+            '& .MuiIconButton-root': { color: SF.dim, '&:not(.Mui-disabled):hover': { color: SF.cyan } },
+          }}
+        />
       </Box>
       )}
 
