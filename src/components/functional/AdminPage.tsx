@@ -659,7 +659,7 @@ const AdminPage: React.FC = () => {
           sx={{
             minWidth: 260,
             '& .MuiOutlinedInput-root': { fontFamily: SF.fontBody, fontSize: '0.92rem', color: SF.white, backgroundColor: `${SF.cyan}05`, '& fieldset': { borderColor: `${SF.white}15` }, '&:hover fieldset': { borderColor: `${SF.cyan}50` }, '&.Mui-focused fieldset': { borderColor: SF.cyan } },
-            '& input': { color: SF.white, '&::placeholder': { color: `${SF.white}25`, opacity: 1 } },
+            '& input': { color: SF.white, '&::placeholder': { color: `${SF.white}85`, opacity: 1 } },
           }}
           InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ color: `${SF.cyan}50`, fontSize: '1rem' }} /></InputAdornment> }}
         />
@@ -688,7 +688,7 @@ const AdminPage: React.FC = () => {
                 {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['ROLE','role'],['H/G1','game1_score'],['DS/G2','game2_score'],['R/G3','game3_score'],['P/G4','game4_score'],['F/G5','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
                   <TableCell key={field} sx={thSx}>
                     <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
-                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
+                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
                       {label}
                     </TableSortLabel>
                   </TableCell>
@@ -742,7 +742,7 @@ const AdminPage: React.FC = () => {
               <TableHead>
                 <TableRow>
                   {['SIG','ENDPOINT','METHOD','PATH','LATENCY','STATUS'].map(h => (
-                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.yellow}25`, fontFamily: SF.fontTitle, fontSize: '0.72rem', letterSpacing: '0.1em', color: `${SF.white}50` }}>{h}</TableCell>
+                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.yellow}25`, fontFamily: SF.fontTitle, fontSize: '0.72rem', letterSpacing: '0.1em', color: `${SF.white}85` }}>{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHead>
@@ -769,7 +769,7 @@ const AdminPage: React.FC = () => {
                         {s.status === 'loading' ? <CircularProgress size={10} sx={{ color: SF.yellow }} /> :
                          s.status === 'normal'  ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.lime }}>NOMINAL</Box> :
                          s.status === 'error'   ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.red }}>FAULT — {s.error}</Box> :
-                         <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: `${SF.white}25` }}>STANDBY</Box>}
+                         <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: `${SF.white}85` }}>STANDBY</Box>}
                       </TableCell>
                     </TableRow>
                   );
@@ -812,10 +812,10 @@ const AdminPage: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60` }}>ROOM CODE</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60` }}>STATUS</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60` }}>PLAYERS</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60`, textAlign: 'right' }}>CREATED</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>ROOM CODE</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>STATUS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>PLAYERS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, textAlign: 'right' }}>CREATED</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -909,7 +909,7 @@ const AdminPage: React.FC = () => {
                       </TableCell>
 
                       {/* Created */}
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: `${SF.white}50`, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: `${SF.white}85`, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         {room.created_at ? new Date(room.created_at).toLocaleTimeString() : '—'}
                       </TableCell>
                     </TableRow>
