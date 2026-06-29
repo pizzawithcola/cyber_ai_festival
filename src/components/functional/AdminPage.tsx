@@ -26,7 +26,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from '@mui/material';
-import { ArrowUpward, Search, LockOutlined, Castle } from '@mui/icons-material';
+import { ArrowUpward, Search, LockOutlined, Castle, Pause, PlayArrow } from '@mui/icons-material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { getAdminToken, setAdminToken, clearAdminToken } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
@@ -475,6 +475,20 @@ const AdminPage: React.FC = () => {
     setIsTestingApis(false);
   };
 
+  // ─── Room Actions ───────────────────────────────────────────────────────
+  const handleRoomAction = async (code: string, action: 'pause' | 'resume' | 'end') => {
+    try {
+      const res = await apiFetch(`/rooms/${code}/${action}`, { method: 'POST' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSnackbar({ open: true, message: `Room ${code}: ${action} successful`, severity: 'success' });
+      // Refresh rooms list
+      const roomsRes = await apiFetch('/rooms/');
+      if (roomsRes.ok) setRooms(await roomsRes.json());
+    } catch {
+      setSnackbar({ open: true, message: `Room ${code}: ${action} failed`, severity: 'error' });
+    }
+  };
+
   const desc = <T,>(a: T, b: T, key: keyof T) => (b[key] < a[key] ? -1 : b[key] > a[key] ? 1 : 0);
   const cmp  = (ord: 'asc' | 'desc', ob: string) => ord === 'desc'
     ? (a: UserScore, b: UserScore) => desc(a, b, ob as keyof UserScore)
@@ -816,18 +830,19 @@ const AdminPage: React.FC = () => {
                 <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>STATUS</TableCell>
                 <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>PLAYERS</TableCell>
                 <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, textAlign: 'right' }}>CREATED</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, textAlign: 'center', width: 100 }}>ACTIONS</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {roomsLoading && rooms.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} sx={{ ...tdSx, textAlign: 'center', py: 4 }}>
+                  <TableCell colSpan={5} sx={{ ...tdSx, textAlign: 'center', py: 4 }}>
                     <CircularProgress size={24} sx={{ color: SF.cyan }} />
                   </TableCell>
                 </TableRow>
               ) : paginatedRooms.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} sx={{ ...tdSx, textAlign: 'center', fontFamily: SF.fontBody, fontSize: '0.92rem', color: SF.dim, py: 4 }}>
+                  <TableCell colSpan={5} sx={{ ...tdSx, textAlign: 'center', fontFamily: SF.fontBody, fontSize: '0.92rem', color: SF.dim, py: 4 }}>
                     No rooms created yet. Use the admin console to create one.
                   </TableCell>
                 </TableRow>
@@ -911,6 +926,47 @@ const AdminPage: React.FC = () => {
                       {/* Created */}
                       <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: `${SF.white}85`, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         {room.created_at ? new Date(room.created_at).toLocaleTimeString() : '—'}
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell sx={{ ...tdSx, textAlign: 'center' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                          {room.status === 'playing' && (
+                            <>
+                              <SFButton color={SF.yellow} variant="outline" onClick={() => handleRoomAction(room.room_code, 'pause')}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Pause sx={{ fontSize: '0.85rem !important' }} />
+                                </Box>
+                              </SFButton>
+                              <SFButton color={SF.red} variant="outline" onClick={() => handleRoomAction(room.room_code, 'end')}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <RefreshIcon sx={{ fontSize: '0.85rem !important' }} />
+                                </Box>
+                              </SFButton>
+                            </>
+                          )}
+                          {room.status === 'paused' && (
+                            <>
+                              <SFButton color={SF.lime} variant="outline" onClick={() => handleRoomAction(room.room_code, 'resume')}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <PlayArrow sx={{ fontSize: '0.85rem !important' }} />
+                                </Box>
+                              </SFButton>
+                              <SFButton color={SF.red} variant="outline" onClick={() => handleRoomAction(room.room_code, 'end')}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <RefreshIcon sx={{ fontSize: '0.85rem !important' }} />
+                                </Box>
+                              </SFButton>
+                            </>
+                          )}
+                          {room.status === 'waiting' && (
+                            <SFButton color={SF.red} variant="outline" onClick={() => handleRoomAction(room.room_code, 'end')}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <RefreshIcon sx={{ fontSize: '0.85rem !important' }} /> END
+                              </Box>
+                            </SFButton>
+                          )}
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
