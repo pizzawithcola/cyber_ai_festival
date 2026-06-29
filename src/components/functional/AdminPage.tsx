@@ -23,6 +23,8 @@ import {
   Checkbox,
   TableSortLabel,
   InputAdornment,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import { ArrowUpward, Search, LockOutlined, Castle } from '@mui/icons-material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -30,7 +32,6 @@ import { getAdminToken, setAdminToken, clearAdminToken } from '../../utils/userS
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
 import { API_URL } from '../../services/api';
-import { GRID_COLOR as _grid } from '../../theme/theme';
 
 // ─── Sci-Fi Design Tokens ─────────────────────────────────────────────────────
 const SF = {
@@ -140,7 +141,7 @@ const SFSectionHeader: React.FC<{ label: string; color?: string; right?: React.R
 const sfInputSx = {
   '& .MuiOutlinedInput-root': {
     fontFamily: SF.fontBody,
-    fontSize: '0.85rem',
+    fontSize: '0.95rem',
     color: SF.white,
     '& fieldset': { borderColor: `${SF.cyan}30` },
     '&:hover fieldset': { borderColor: `${SF.cyan}70` },
@@ -202,6 +203,7 @@ const AdminPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [apiStatuses, setApiStatuses] = useState<ApiStatus[]>(API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'idle' as const })));
   const [isTestingApis, setIsTestingApis] = useState(false);
+  const [activeTab, setActiveTab] = useState<'personnel' | 'rooms' | 'api'>('personnel');
 
   // ─── Final Rooms state ──────────────────────────────────────────────────────
   interface RoomPlayer {
@@ -326,7 +328,7 @@ const AdminPage: React.FC = () => {
             <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.2em', color: SF.cyan }}>
               ADMIN ACCESS
             </Box>
-            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim, mt: 0.5 }}>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: SF.dim, mt: 0.5 }}>
               AUTHORIZED PERSONNEL ONLY
             </Box>
           </Box>
@@ -479,6 +481,7 @@ const AdminPage: React.FC = () => {
   const filteredUsers  = users.filter(u => { const s = searchTerm.toLowerCase(); return u.firstname.toLowerCase().includes(s) || u.lastname.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || u.region.toLowerCase().includes(s); });
   const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   const sortedUsers    = [...paginatedUsers].sort(cmp(order, orderBy));
+  const uniqueCountries = new Set(users.map(u => u.region).filter(Boolean)).size;
 
   // ─── shared cell sx ───────────────────────────────────────────────────────
   const thSx = { backgroundColor: '#030e1a', borderBottom: `1px solid ${SF.cyan}25`, py: 1.2, px: 1.5 };
@@ -498,35 +501,35 @@ const AdminPage: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{ display: 'flex', gap: 2 }}>
         <Box sx={{ flex: 1 }}>
-          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>FIRST NAME</Box>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>FIRST NAME</Box>
           <TextField autoFocus name="firstname" fullWidth variant="outlined" value={formData.firstname} onChange={handleInputChange} sx={sfInputSx} />
         </Box>
         <Box sx={{ flex: 1 }}>
-          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>LAST NAME</Box>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>LAST NAME</Box>
           <TextField name="lastname" fullWidth variant="outlined" value={formData.lastname} onChange={handleInputChange} sx={sfInputSx} />
         </Box>
       </Box>
       <Box>
-        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>EMAIL ADDRESS</Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>EMAIL ADDRESS</Box>
         <TextField name="email" fullWidth variant="outlined" value={formData.email} onChange={handleInputChange} sx={sfInputSx} />
       </Box>
       <Box>
-        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>REGION</Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>REGION</Box>
         <FormControl fullWidth>
           <Select name="region" value={formData.region} onChange={e => setFormData(p => ({ ...p, region: e.target.value as string }))}
             sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white, '& .MuiOutlinedInput-notchedOutline': { borderColor: `${SF.cyan}30` }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: `${SF.cyan}70` }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: SF.cyan }, '& .MuiSvgIcon-root': { color: SF.cyan } }}
-            MenuProps={{ PaperProps: { sx: { backgroundColor: '#060f1e', border: `1px solid ${SF.cyan}30`, '& .MuiMenuItem-root': { fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.white, '&:hover': { backgroundColor: `${SF.cyan}15` }, '&.Mui-selected': { backgroundColor: `${SF.cyan}25` } } } } }}
+            MenuProps={{ PaperProps: { sx: { backgroundColor: '#060f1e', border: `1px solid ${SF.cyan}30`, '& .MuiMenuItem-root': { fontFamily: SF.fontBody, fontSize: '0.8rem', color: SF.white, '&:hover': { backgroundColor: `${SF.cyan}15` }, '&.Mui-selected': { backgroundColor: `${SF.cyan}25` } } } } }}
           >
             {COUNTRIES.map(c => <MenuItem key={c.code} value={c.name}>{c.name}</MenuItem>)}
           </Select>
         </FormControl>
       </Box>
       <Box>
-        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>ROLE</Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>ROLE</Box>
         <FormControl fullWidth>
           <Select value={formData.role || 'player'} onChange={e => setFormData(p => ({ ...p, role: e.target.value as string }))}
             sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white, '& .MuiOutlinedInput-notchedOutline': { borderColor: `${SF.cyan}30` }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: `${SF.cyan}70` }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: SF.cyan }, '& .MuiSvgIcon-root': { color: SF.cyan } }}
-            MenuProps={{ PaperProps: { sx: { backgroundColor: '#060f1e', border: `1px solid ${SF.cyan}30`, '& .MuiMenuItem-root': { fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.white, '&:hover': { backgroundColor: `${SF.cyan}15` }, '&.Mui-selected': { backgroundColor: `${SF.cyan}25` } } } } }}
+            MenuProps={{ PaperProps: { sx: { backgroundColor: '#060f1e', border: `1px solid ${SF.cyan}30`, '& .MuiMenuItem-root': { fontFamily: SF.fontBody, fontSize: '0.8rem', color: SF.white, '&:hover': { backgroundColor: `${SF.cyan}15` }, '&.Mui-selected': { backgroundColor: `${SF.cyan}25` } } } } }}
           >
             <MenuItem value="player">Player</MenuItem>
             <MenuItem value="admin">Admin</MenuItem>
@@ -534,7 +537,7 @@ const AdminPage: React.FC = () => {
         </FormControl>
       </Box>
       <Box>
-        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>GAME SCORES (H=Hallucinate, DS=DataShadows, R=Retail, P=Phishing, F=Final)  <Box component="span" sx={{ color: `${SF.white}30`, fontWeight: 400 }}>(0 – 100)</Box></Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>GAME SCORES (H=Hallucinate, DS=DataShadows, R=Retail, P=Phishing, F=Final)  <Box component="span" sx={{ color: `${SF.white}30`, fontWeight: 400 }}>(0 – 100)</Box></Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           {(['game1_score','game2_score','game3_score','game4_score','game5_score'] as const).map((k, i) => (
             <TextField key={k} name={k} label={`G${i+1}`} type="number" inputProps={{ min:0, max:100, step:0.1 }} value={formData[k]} onChange={handleInputChange} sx={{ ...sfInputSx, width: 80 }} />
@@ -592,20 +595,58 @@ const AdminPage: React.FC = () => {
             </SFButton>
           </Box>
         </Box>
-        <Box sx={{ textAlign: 'right' }}>
-          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.cyan, lineHeight: 1 }}>{users.length}</Box>
-          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim, letterSpacing: '0.12em' }}>REGISTERED</Box>
+        <Box sx={{ textAlign: 'right', display: 'flex', gap: 3 }}>
+          <Box>
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.cyan, lineHeight: 1 }}>{users.length}</Box>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim, letterSpacing: '0.12em' }}>PLAYERS</Box>
+          </Box>
+          <Box>
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.lime, lineHeight: 1 }}>{uniqueCountries}</Box>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim, letterSpacing: '0.12em' }}>COUNTRIES</Box>
+          </Box>
         </Box>
+      </Box>
+
+      {/* ── Tab Toggle ── */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <ToggleButtonGroup
+          value={activeTab}
+          exclusive
+          onChange={(_, v) => v && setActiveTab(v)}
+          sx={{
+            '& .MuiToggleButton-root': {
+              fontFamily: SF.fontTitle,
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              px: 3,
+              py: 0.8,
+              color: SF.dim,
+              borderColor: `${SF.cyan}25`,
+              '&:hover': { color: `${SF.cyan}80`, borderColor: `${SF.cyan}50` },
+              '&.Mui-selected': {
+                color: SF.cyan,
+                backgroundColor: `${SF.cyan}12`,
+                borderColor: SF.cyan,
+              },
+            },
+          }}
+        >
+          <ToggleButton value="personnel">PERSONNEL</ToggleButton>
+          <ToggleButton value="rooms">FINAL ROOMS</ToggleButton>
+          <ToggleButton value="api">API DIAGNOSTICS</ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       {/* ── Error ── */}
       {error && (
         <Box sx={{ mb: 2, p: 1.5, border: `1px solid ${SF.red}50`, backgroundColor: `${SF.red}08` }}>
-          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.red }}>{error}</Box>
+          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: SF.red }}>{error}</Box>
         </Box>
       )}
 
       {/* ── Toolbar ── */}
+      {activeTab === 'personnel' && (
       <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField
           size="small"
@@ -614,7 +655,7 @@ const AdminPage: React.FC = () => {
           onChange={e => setSearchTerm(e.target.value)}
           sx={{
             minWidth: 260,
-            '& .MuiOutlinedInput-root': { fontFamily: SF.fontBody, fontSize: '0.82rem', color: SF.white, backgroundColor: `${SF.cyan}05`, '& fieldset': { borderColor: `${SF.white}15` }, '&:hover fieldset': { borderColor: `${SF.cyan}50` }, '&.Mui-focused fieldset': { borderColor: SF.cyan } },
+            '& .MuiOutlinedInput-root': { fontFamily: SF.fontBody, fontSize: '0.92rem', color: SF.white, backgroundColor: `${SF.cyan}05`, '& fieldset': { borderColor: `${SF.white}15` }, '&:hover fieldset': { borderColor: `${SF.cyan}50` }, '&.Mui-focused fieldset': { borderColor: SF.cyan } },
             '& input': { color: SF.white, '&::placeholder': { color: `${SF.white}25`, opacity: 1 } },
           }}
           InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ color: `${SF.cyan}50`, fontSize: '1rem' }} /></InputAdornment> }}
@@ -624,8 +665,10 @@ const AdminPage: React.FC = () => {
           DELETE {selectedUsers.length > 0 && `(${selectedUsers.length})`}
         </SFButton>
       </Box>
+      )}
 
       {/* ── User Table ── */}
+      {activeTab === 'personnel' && (
       <Box sx={{ ...hudPanel(SF.cyan), borderRadius: '4px', overflow: 'hidden', mb: 4 }}>
         <TableContainer>
           <Table sx={{ minWidth: 900 }}>
@@ -642,7 +685,7 @@ const AdminPage: React.FC = () => {
                 {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['ROLE','role'],['H/G1','game1_score'],['DS/G2','game2_score'],['R/G3','game3_score'],['P/G4','game4_score'],['F/G5','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
                   <TableCell key={field} sx={thSx}>
                     <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
-                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
+                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
                       {label}
                     </TableSortLabel>
                   </TableCell>
@@ -658,13 +701,13 @@ const AdminPage: React.FC = () => {
                       sx={{ color: `${SF.cyan}30`, '&.Mui-checked': { color: SF.cyan }, p: 0 }} />
                   </TableCell>
                   {[u.firstname, u.lastname, u.email, u.region].map((val, i) => (
-                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.82rem', color: `${SF.white}85`, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
+                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.92rem', color: `${SF.white}85`, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
                   ))}
-                  <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', color: u.role === 'admin' ? SF.lime : SF.dim, textAlign: 'center' }}>{u.role?.toUpperCase() || 'PLAYER'}</TableCell>
+                  <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: u.role === 'admin' ? SF.lime : SF.dim, textAlign: 'center' }}>{u.role?.toUpperCase() || 'PLAYER'}</TableCell>
                   {[u.game1_score, u.game2_score, u.game3_score, u.game4_score, u.game5_score].map((s, i) => (
-                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.82rem', color: scoreColor(s), textAlign: 'center' }}>{s.toFixed(1)}</TableCell>
+                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.92rem', color: scoreColor(s), textAlign: 'center' }}>{s.toFixed(1)}</TableCell>
                   ))}
-                  <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, color: scoreColor(u.total_score, 500), textAlign: 'center' }}>
+                  <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.82rem', fontWeight: 700, color: scoreColor(u.total_score, 500), textAlign: 'center' }}>
                     {u.total_score.toFixed(1)}
                   </TableCell>
                 </TableRow>
@@ -676,12 +719,14 @@ const AdminPage: React.FC = () => {
           sx={{ borderTop: `1px solid ${SF.cyan}15`, backgroundColor: SF.panelAlt, color: SF.dim, fontFamily: SF.fontBody, fontSize: '0.65rem',
             '& .MuiTablePagination-select': { color: SF.cyan, fontFamily: SF.fontBody },
             '& .MuiTablePagination-selectIcon': { color: SF.cyan },
-            '& .MuiTablePagination-displayedRows': { fontFamily: SF.fontBody, fontSize: '0.78rem', color: SF.dim },
+            '& .MuiTablePagination-displayedRows': { fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.dim },
             '& .MuiIconButton-root': { color: SF.dim, '&:not(.Mui-disabled):hover': { color: SF.cyan } },
           }} />
       </Box>
+      )}
 
       {/* ── API Health Check ── */}
+      {activeTab === 'api' && (
       <Box sx={{ mb: 4 }}>
         <SFSectionHeader label="System Diagnostics" color={SF.yellow} right={
           <SFButton color={SF.yellow} onClick={runApiHealthCheck} disabled={isTestingApis} startIcon={<RefreshIcon />}>
@@ -694,7 +739,7 @@ const AdminPage: React.FC = () => {
               <TableHead>
                 <TableRow>
                   {['SIG','ENDPOINT','METHOD','PATH','LATENCY','STATUS'].map(h => (
-                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.yellow}25`, fontFamily: SF.fontTitle, fontSize: '0.6rem', letterSpacing: '0.1em', color: `${SF.white}50` }}>{h}</TableCell>
+                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.yellow}25`, fontFamily: SF.fontTitle, fontSize: '0.72rem', letterSpacing: '0.1em', color: `${SF.white}50` }}>{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHead>
@@ -707,21 +752,21 @@ const AdminPage: React.FC = () => {
                       <TableCell sx={tdSx}>
                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dot, boxShadow: s.status !== 'idle' ? `0 0 8px ${dot}` : 'none', transition: 'all 0.3s' }} />
                       </TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.82rem', color: `${SF.white}80` }}>{ep.name}</TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.92rem', color: `${SF.white}80` }}>{ep.name}</TableCell>
                       <TableCell sx={tdSx}>
                         <Box component="span" sx={{ px: 1, py: 0.2, fontFamily: SF.fontTitle, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', backgroundColor: ep.method === 'GET' ? `${SF.cyan}15` : `${SF.lime}15`, color: ep.method === 'GET' ? SF.cyan : SF.lime, border: `1px solid ${ep.method === 'GET' ? SF.cyan : SF.lime}30` }}>
                           {ep.method}
                         </Box>
                       </TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.75rem', color: SF.dim }}>{ep.path}</TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.78rem', color: SF.yellow, textAlign: 'right' }}>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: SF.dim }}>{ep.path}</TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.88rem', color: SF.yellow, textAlign: 'right' }}>
                         {s.latency !== undefined ? `${s.latency}ms` : '—'}
                       </TableCell>
                       <TableCell sx={tdSx}>
                         {s.status === 'loading' ? <CircularProgress size={10} sx={{ color: SF.yellow }} /> :
-                         s.status === 'normal'  ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.78rem', color: SF.lime }}>NOMINAL</Box> :
-                         s.status === 'error'   ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.78rem', color: SF.red }}>FAULT — {s.error}</Box> :
-                         <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.78rem', color: `${SF.white}25` }}>STANDBY</Box>}
+                         s.status === 'normal'  ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.lime }}>NOMINAL</Box> :
+                         s.status === 'error'   ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.red }}>FAULT — {s.error}</Box> :
+                         <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: `${SF.white}25` }}>STANDBY</Box>}
                       </TableCell>
                     </TableRow>
                   );
@@ -731,8 +776,10 @@ const AdminPage: React.FC = () => {
           </TableContainer>
         </Box>
       </Box>
+      )}
 
       {/* ── Final Rooms Section ── */}
+      {activeTab === 'rooms' && (
       <Box
         sx={{
           ...hudPanel(SF.cyan),
@@ -752,7 +799,7 @@ const AdminPage: React.FC = () => {
             <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.cyan }}>
               FINAL ROOMS
             </Box>
-            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.65rem', color: SF.dim }}>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>
               ({rooms.length} room{rooms.length !== 1 ? 's' : ''})
             </Box>
           </Box>
@@ -770,7 +817,7 @@ const AdminPage: React.FC = () => {
             <CircularProgress size={24} sx={{ color: SF.cyan }} />
           </Box>
         ) : rooms.length === 0 ? (
-          <Box sx={{ p: 4, textAlign: 'center', fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim }}>
+          <Box sx={{ p: 4, textAlign: 'center', fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>
             No rooms created yet. Use the admin console to create one.
           </Box>
         ) : (
@@ -792,7 +839,7 @@ const AdminPage: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Box sx={{
                         fontFamily: '"Courier New", monospace',
-                        fontSize: '1.05rem', fontWeight: 700,
+                        fontSize: '1.15rem', fontWeight: 700,
                         color: SF.cyan, letterSpacing: '0.15em',
                         px: 1.5, py: 0.3,
                         border: `1px solid ${SF.cyan}30`, borderRadius: '3px',
@@ -802,7 +849,7 @@ const AdminPage: React.FC = () => {
                       </Box>
                       <Box sx={{
                         px: 1.5, py: 0.3, borderRadius: '3px',
-                        fontFamily: SF.fontBody, fontSize: '0.65rem',
+                        fontFamily: SF.fontBody, fontSize: '0.75rem',
                         letterSpacing: '0.1em', textTransform: 'uppercase',
                         color: statusColor,
                         border: `1px solid ${statusColor}30`,
@@ -810,7 +857,7 @@ const AdminPage: React.FC = () => {
                       }}>
                         {room.status}
                       </Box>
-                      <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim }}>
+                      <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: SF.dim }}>
                         {room.player_count} player{room.player_count !== 1 ? 's' : ''}
                       </Box>
                       {room.status === 'playing' && (
@@ -837,7 +884,7 @@ const AdminPage: React.FC = () => {
                             border: `1px solid ${c}25`,
                             backgroundColor: `${c}06`,
                           }}>
-                            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: `${SF.white}80`, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: `${SF.white}80`, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {p.player_name}
                             </Box>
                             <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', fontWeight: 700, color: c }}>
@@ -859,6 +906,7 @@ const AdminPage: React.FC = () => {
           </Box>
         )}
       </Box>
+      )}
 
       {/* ── Delete Dialog ── */}
       <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} PaperProps={{ sx: dlgPaper(SF.red) }}>
