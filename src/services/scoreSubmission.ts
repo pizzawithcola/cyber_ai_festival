@@ -6,6 +6,7 @@ export type GameScoreKey =
   | 'datashadows'
   | 'retaildemolition'
   | 'phishing'
+  | 'final'
 
 type ScoreField =
   | 'game1_score'
@@ -16,10 +17,11 @@ type ScoreField =
 
 const GAME_SCORE_FIELD_MAP: Record<GameScoreKey, ScoreField> = {
   deepfake: 'game1_score',
-  hallucinate: 'game2_score',
-  datashadows: 'game3_score',
-  retaildemolition: 'game4_score',
-  phishing: 'game5_score',
+  hallucinate: 'game1_score',
+  datashadows: 'game2_score',
+  retaildemolition: 'game3_score',
+  phishing: 'game4_score',
+  final: 'game5_score',
 }
 
 interface SubmitGameScoreParams {

@@ -175,12 +175,12 @@ const TruthReveal: React.FC = () => {
 
         if (existingScoreResponse.ok) {
           const existingScore = await existingScoreResponse.json()
-          const serverScore = Number(existingScore?.game3_score) || 0
+          const serverScore = Number(existingScore?.game2_score) || 0
           const scoreToSubmit = Math.max(serverScore, sessionHighScore)
 
           const updateResponse = await apiFetch(`/scores/${userId}`, {
             method: 'PUT',
-            body: JSON.stringify({ game3_score: scoreToSubmit }),
+            body: JSON.stringify({ game2_score: scoreToSubmit }),
           })
 
           if (!updateResponse.ok) {
@@ -194,7 +194,7 @@ const TruthReveal: React.FC = () => {
             method: 'POST',
             body: JSON.stringify({
               user_id: userId,
-              game3_score: sessionHighScore,
+              game2_score: sessionHighScore,
             }),
           })
 

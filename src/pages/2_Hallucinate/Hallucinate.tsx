@@ -497,7 +497,7 @@ const Hallucinate: React.FC = () => {
 
         if (getResponse.ok) {
           const userData = await getResponse.json();
-          serverScore = Number(userData.game2_score) || 0;
+          serverScore = Number(userData.game1_score) || 0;
         }
       } catch (err) {
         console.error('[Hallucinate] Failed to fetch existing score:', err);
@@ -506,7 +506,7 @@ const Hallucinate: React.FC = () => {
       const scoreToSubmit = Math.max(serverScore, finalScore);
       const updateResponse = await apiFetch(`/scores/${userId}`, {
         method: 'PUT',
-        body: JSON.stringify({ game2_score: scoreToSubmit }),
+        body: JSON.stringify({ game1_score: scoreToSubmit }),
       });
 
       if (!updateResponse.ok) {

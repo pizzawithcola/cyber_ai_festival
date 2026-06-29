@@ -24,29 +24,29 @@ interface RankingData {
 }
 
 const GAME_TO_SCORE_TYPE: Record<string, string> = {
-  deepfake: 'game1',
-  hallucinate: 'game2',
-  datashadows: 'game3',
-  retaildemolition: 'game4',
-  phishing: 'game5',
+  hallucinate: 'game1',
+  datashadows: 'game2',
+  retaildemolition: 'game3',
+  phishing: 'game4',
+  final: 'game5',
 };
 
 const SCORE_TYPE_LABELS: Record<string, string> = {
-  game1: 'DEEPFAKE',
-  game2: 'AI HALLUCINATION',
-  game3: 'DATA SHADOWS',
-  game4: 'RETAIL DEMOLITION',
-  game5: 'PHISHING ATTACK',
+  game1: 'AI HALLUCINATION',
+  game2: 'DATA SHADOWS',
+  game3: 'RETAIL DEMOLITION',
+  game4: 'PHISHING ATTACK',
+  game5: 'FINAL SHOWDOWN',
   total: 'TOTAL SCORE',
 };
 
 // Game-specific theme colors
 const GAME_THEME_COLORS: Record<string, string> = {
   game1: ARCADE_COLORS.magenta,
-  game2: ARCADE_COLORS.magenta,
-  game3: ARCADE_COLORS.cyan,
-  game4: ARCADE_COLORS.yellow,
-  game5: ARCADE_COLORS.lime,
+  game2: ARCADE_COLORS.cyan,
+  game3: ARCADE_COLORS.yellow,
+  game4: ARCADE_COLORS.lime,
+  game5: ARCADE_COLORS.orange,
   total: ARCADE_COLORS.cyan,
 };
 

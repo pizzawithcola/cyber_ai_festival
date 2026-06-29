@@ -534,7 +534,7 @@ const AdminPage: React.FC = () => {
         </FormControl>
       </Box>
       <Box>
-        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>GAME SCORES  <Box component="span" sx={{ color: `${SF.white}30`, fontWeight: 400 }}>(0 – 100)</Box></Box>
+        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.65rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>GAME SCORES (H=Hallucinate, DS=DataShadows, R=Retail, P=Phishing, F=Final)  <Box component="span" sx={{ color: `${SF.white}30`, fontWeight: 400 }}>(0 – 100)</Box></Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           {(['game1_score','game2_score','game3_score','game4_score','game5_score'] as const).map((k, i) => (
             <TextField key={k} name={k} label={`G${i+1}`} type="number" inputProps={{ min:0, max:100, step:0.1 }} value={formData[k]} onChange={handleInputChange} sx={{ ...sfInputSx, width: 80 }} />
@@ -639,7 +639,7 @@ const AdminPage: React.FC = () => {
                     sx={{ color: `${SF.cyan}40`, '&.Mui-checked': { color: SF.cyan }, '&.MuiCheckbox-indeterminate': { color: SF.cyan }, p: 0 }}
                   />
                 </TableCell>
-                {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['ROLE','role'],['G1','game1_score'],['G2','game2_score'],['G3','game3_score'],['G4','game4_score'],['G5','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
+                {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['ROLE','role'],['H/G1','game1_score'],['DS/G2','game2_score'],['R/G3','game3_score'],['P/G4','game4_score'],['F/G5','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
                   <TableCell key={field} sx={thSx}>
                     <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
                       sx={{ fontFamily: SF.fontTitle, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}60 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>

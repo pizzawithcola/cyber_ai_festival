@@ -115,7 +115,7 @@ const PhishingScorePage: React.FC = () => {
         
         if (getResponse.ok) {
           const userData = await getResponse.json();
-          serverScore = Number(userData.game5_score) || 0;
+          serverScore = Number(userData.game4_score) || 0;
         }
       } catch (err) {
         console.log('[PhishingScorePage] Error fetching existing score:', err);
@@ -146,7 +146,7 @@ const PhishingScorePage: React.FC = () => {
       // Submit to server
       const url = `/scores/${userId}`;
       const requestBody = {
-        game5_score: scoreToSubmit
+        game4_score: scoreToSubmit
       };
     
       console.log('[PhishingScorePage] Submitting score:', scoreToSubmit);

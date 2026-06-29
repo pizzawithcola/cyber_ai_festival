@@ -25,21 +25,21 @@ interface RankingData {
 
 const SCORE_TYPES = [
   { key: 'total', label: 'TOTAL' },
-  { key: 'game1', label: 'DEEPFAKE' },
-  { key: 'game2', label: 'HALLUCINATE' },
-  { key: 'game3', label: 'DATA SHADOWS' },
-  { key: 'game4', label: 'RETAIL' },
-  { key: 'game5', label: 'PHISHING' },
+  { key: 'game1', label: 'HALLUCINATE' },
+  { key: 'game2', label: 'DATA SHADOWS' },
+  { key: 'game3', label: 'RETAIL' },
+  { key: 'game4', label: 'PHISHING' },
+  { key: 'game5', label: 'FINAL' },
 ];
 
 // Each game has its own theme color
 const SCORE_TYPE_COLORS: Record<string, string> = {
   total: ARCADE_COLORS.cyan,
   game1: ARCADE_COLORS.magenta,
-  game2: ARCADE_COLORS.magenta,
-  game3: ARCADE_COLORS.cyan,
-  game4: ARCADE_COLORS.yellow,
-  game5: ARCADE_COLORS.lime,
+  game2: ARCADE_COLORS.cyan,
+  game3: ARCADE_COLORS.yellow,
+  game4: ARCADE_COLORS.lime,
+  game5: ARCADE_COLORS.orange,
 };
 
 const scanlineAnim = keyframes`
