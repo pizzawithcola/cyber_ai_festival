@@ -64,7 +64,7 @@ const JoinScreen: React.FC<{
     <Box sx={{ width: '100%', maxWidth: 400, textAlign: 'center', ...cardSx }}>
       <Box sx={{
         fontFamily: '"Press Start 2P", monospace', fontSize: '0.85rem',
-        color: ARCADE_COLORS.magenta, textShadow: `0 0 15px ${ARCADE_COLORS.magenta}60`,
+        color: ARCADE_COLORS.orange, textShadow: `0 0 15px ${ARCADE_COLORS.orange}60`,
         mb: 3, letterSpacing: '0.1em',
       }}>
         JOIN GAME
@@ -81,12 +81,12 @@ const JoinScreen: React.FC<{
           mb: 2,
           '& .MuiOutlinedInput-root': {
             backgroundColor: 'rgba(5, 5, 15, 0.8)',
-            '& fieldset': { borderColor: `${ARCADE_COLORS.magenta}40` },
-            '&:hover fieldset': { borderColor: `${ARCADE_COLORS.magenta}80` },
-            '&.Mui-focused fieldset': { borderColor: ARCADE_COLORS.magenta },
+            '& fieldset': { borderColor: `${ARCADE_COLORS.orange}40` },
+            '&:hover fieldset': { borderColor: `${ARCADE_COLORS.orange}80` },
+            '&.Mui-focused fieldset': { borderColor: ARCADE_COLORS.orange },
           },
-          '& .MuiInputLabel-root': { color: `${ARCADE_COLORS.magenta}80`, fontFamily: '"Courier New", monospace' },
-          '& .MuiInputLabel-root.Mui-focused': { color: ARCADE_COLORS.magenta },
+          '& .MuiInputLabel-root': { color: `${ARCADE_COLORS.orange}80`, fontFamily: '"Courier New", monospace' },
+          '& .MuiInputLabel-root.Mui-focused': { color: ARCADE_COLORS.orange },
         }}
       />
       {error && (
@@ -95,7 +95,7 @@ const JoinScreen: React.FC<{
         </Box>
       )}
       <ArcadeButton
-        color="magenta"
+        color="orange"
         variant="filled"
         size="md"
         glowing
@@ -301,7 +301,7 @@ const WaitingRoom: React.FC<{
     <Box sx={{ mb: 4 }}>
       <Box sx={{
         fontFamily: '"Press Start 2P", monospace', fontSize: '0.8rem',
-        color: ARCADE_COLORS.magenta, textShadow: `0 0 15px ${ARCADE_COLORS.magenta}60`,
+        color: ARCADE_COLORS.orange, textShadow: `0 0 15px ${ARCADE_COLORS.orange}60`,
         mb: 2, letterSpacing: '0.1em',
       }}>
         WAITING ROOM
@@ -850,9 +850,9 @@ const UltimateShowdown: React.FC = () => {
     <Box sx={pageBg}>
       {/* Header strip */}
       <Box sx={{ width: '100%', maxWidth: 900, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pb: 2, borderBottom: `1px solid ${ARCADE_COLORS.magenta}25` }}>
-          <Box sx={{ width: 4, height: 20, backgroundColor: ARCADE_COLORS.magenta, boxShadow: `0 0 10px ${ARCADE_COLORS.magenta}` }} />
-          <Box sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.8rem', color: ARCADE_COLORS.magenta, letterSpacing: '0.15em', textShadow: `0 0 15px ${ARCADE_COLORS.magenta}60` }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pb: 2, borderBottom: `1px solid ${ARCADE_COLORS.orange}25` }}>
+          <Box sx={{ width: 4, height: 20, backgroundColor: ARCADE_COLORS.orange, boxShadow: `0 0 10px ${ARCADE_COLORS.orange}` }} />
+          <Box sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.8rem', color: ARCADE_COLORS.orange, letterSpacing: '0.15em', textShadow: `0 0 15px ${ARCADE_COLORS.orange}60` }}>
             ULTIMATE SHOWDOWN
           </Box>
           <Box
