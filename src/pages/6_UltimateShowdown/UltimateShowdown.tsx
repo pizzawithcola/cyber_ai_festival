@@ -35,7 +35,7 @@ const pageBg = {
     repeating-linear-gradient(90deg, transparent, transparent 2px, ${GRID_COLOR}50 2px, ${GRID_COLOR}50 4px)
   `,
   backgroundSize: '40px 40px',
-  display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
+  display: 'flex', flexDirection: 'column' as const, alignItems: 'center',
   p: 3, boxSizing: 'border-box' as const,
 };
 
@@ -876,7 +876,7 @@ const UltimateShowdown: React.FC = () => {
       </Box>
 
       {/* Content */}
-      <Box sx={{ width: '100%', maxWidth: 900, display: 'flex', justifyContent: 'center' }}>
+      <Box sx={{ width: '100%', maxWidth: 900, display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         {view === 'join' && (
           <JoinScreen
             onJoin={handleEnterCode}
