@@ -602,19 +602,26 @@ const AdminPage: React.FC = () => {
             <Box sx={{ width: 10, height: 10, borderTop: `2px solid ${SF.cyan}`, borderRight: `2px solid ${SF.cyan}` }} />
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', flex: 1, justifyContent: 'center', gap: 3 }}>
-          <Box>
-            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.cyan, lineHeight: 1 }}>{users.length}</Box>
-            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim, letterSpacing: '0.12em' }}>PLAYERS</Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Box sx={{ display: 'flex', gap: 3 }}>
+            <Box>
+              <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.cyan, lineHeight: 1 }}>{users.length}</Box>
+              <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim, letterSpacing: '0.12em' }}>PLAYERS</Box>
+            </Box>
+            <Box>
+              <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.lime, lineHeight: 1 }}>{uniqueCountries}</Box>
+              <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim, letterSpacing: '0.12em' }}>COUNTRIES</Box>
+            </Box>
           </Box>
-          <Box>
-            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.lime, lineHeight: 1 }}>{uniqueCountries}</Box>
-            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim, letterSpacing: '0.12em' }}>COUNTRIES</Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <SFButton color={SF.cyan} variant="outline" onClick={() => navigate('/')}>
+              HOME
+            </SFButton>
+            <SFButton color={SF.red} variant="outline" onClick={handleLogout}>
+              LOGOUT
+            </SFButton>
           </Box>
         </Box>
-        <SFButton color={SF.red} variant="outline" onClick={handleLogout}>
-          LOGOUT
-        </SFButton>
       </Box>
 
       {/* ── Tab Toggle ── */}
