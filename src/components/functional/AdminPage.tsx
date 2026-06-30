@@ -502,7 +502,7 @@ const AdminPage: React.FC = () => {
 
   // ─── shared cell sx ───────────────────────────────────────────────────────
   const thSx = { backgroundColor: '#030e1a', borderBottom: `1px solid ${SF.cyan}25`, py: 1.2, px: 1.5 };
-  const tdSx = { borderBottom: `1px solid ${SF.white}06`, py: 0, px: 1.5, height: 46 };
+  const tdSx = { borderBottom: `1px solid ${SF.white}06`, py: 0, px: 1.5, height: 51 };
 
   // ─── dialog panel sx ─────────────────────────────────────────────────────
   const dlgPaper = (accent: string) => ({
