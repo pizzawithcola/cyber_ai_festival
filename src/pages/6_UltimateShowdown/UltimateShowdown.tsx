@@ -35,7 +35,7 @@ const pageBg = {
     repeating-linear-gradient(90deg, transparent, transparent 2px, ${GRID_COLOR}50 2px, ${GRID_COLOR}50 4px)
   `,
   backgroundSize: '40px 40px',
-  display: 'flex', flexDirection: 'column' as const, alignItems: 'center',
+  display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
   p: 3, boxSizing: 'border-box' as const,
 };
 
