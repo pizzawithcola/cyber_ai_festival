@@ -96,6 +96,7 @@ const SFButton: React.FC<{
     sx={{
       display: 'inline-flex',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: 0.75,
       px: 1.5,
       py: 0.6,
