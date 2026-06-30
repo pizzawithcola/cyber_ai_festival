@@ -601,18 +601,8 @@ const AdminPage: React.FC = () => {
             </Box>
             <Box sx={{ width: 10, height: 10, borderTop: `2px solid ${SF.cyan}`, borderRight: `2px solid ${SF.cyan}` }} />
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.82rem', color: SF.dim, letterSpacing: '0.08em' }}>
-              OPERATOR: ADMIN
-              <Box component="span" sx={{ mx: 2, color: `${SF.white}20` }}>|</Box>
-              FACILITY MANAGEMENT SYSTEM v2.1
-            </Box>
-            <SFButton color={SF.red} variant="outline" onClick={handleLogout}>
-              LOGOUT
-            </SFButton>
-          </Box>
         </Box>
-        <Box sx={{ textAlign: 'right', display: 'flex', gap: 3 }}>
+        <Box sx={{ display: 'flex', flex: 1, justifyContent: 'center', gap: 3 }}>
           <Box>
             <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', fontWeight: 900, color: SF.cyan, lineHeight: 1 }}>{users.length}</Box>
             <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim, letterSpacing: '0.12em' }}>PLAYERS</Box>
@@ -622,6 +612,9 @@ const AdminPage: React.FC = () => {
             <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.dim, letterSpacing: '0.12em' }}>COUNTRIES</Box>
           </Box>
         </Box>
+        <SFButton color={SF.red} variant="outline" onClick={handleLogout}>
+          LOGOUT
+        </SFButton>
       </Box>
 
       {/* ── Tab Toggle ── */}
@@ -699,7 +692,7 @@ const AdminPage: React.FC = () => {
                     sx={{ color: `${SF.cyan}40`, '&.Mui-checked': { color: SF.cyan }, '&.MuiCheckbox-indeterminate': { color: SF.cyan }, p: 0 }}
                   />
                 </TableCell>
-                {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['ROLE','role'],['H/G1','game1_score'],['DS/G2','game2_score'],['R/G3','game3_score'],['P/G4','game4_score'],['F/G5','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
+                {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['ROLE','role'],['G1/AH','game1_score'],['G2/DS','game2_score'],['G3/RD','game3_score'],['G4/FA','game4_score'],['G5/FS','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
                   <TableCell key={field} sx={thSx}>
                     <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
                       sx={{ fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
@@ -745,18 +738,18 @@ const AdminPage: React.FC = () => {
       {/* ── API Health Check ── */}
       {activeTab === 'api' && (
       <Box sx={{ mb: 4 }}>
-        <SFSectionHeader label="System Diagnostics" color={SF.yellow} right={
-          <SFButton color={SF.yellow} onClick={runApiHealthCheck} disabled={isTestingApis} startIcon={<RefreshIcon />}>
+        <SFSectionHeader label="System Diagnostics" color={SF.cyan} right={
+          <SFButton color={SF.cyan} onClick={runApiHealthCheck} disabled={isTestingApis} startIcon={<RefreshIcon />}>
             {isTestingApis ? 'SCANNING...' : 'RUN DIAGNOSTIC'}
           </SFButton>
         } />
-        <Box sx={{ ...hudPanel(SF.yellow), borderRadius: '4px', overflow: 'hidden' }}>
+        <Box sx={{ ...hudPanel(SF.cyan), borderRadius: '4px', overflow: 'hidden' }}>
           <TableContainer>
             <Table size="small">
               <TableHead>
                 <TableRow>
                   {['SIG','ENDPOINT','METHOD','PATH','LATENCY','STATUS'].map(h => (
-                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.yellow}25`, fontFamily: SF.fontTitle, fontSize: '0.72rem', letterSpacing: '0.1em', color: `${SF.white}85` }}>{h}</TableCell>
+                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.cyan}25`, fontFamily: SF.fontTitle, fontSize: '0.72rem', letterSpacing: '0.1em', color: `${SF.white}85` }}>{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHead>
@@ -776,11 +769,11 @@ const AdminPage: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: SF.dim }}>{ep.path}</TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.88rem', color: SF.yellow, textAlign: 'right' }}>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.88rem', color: SF.cyan, textAlign: 'right' }}>
                         {s.latency !== undefined ? `${s.latency}ms` : '—'}
                       </TableCell>
                       <TableCell sx={tdSx}>
-                        {s.status === 'loading' ? <CircularProgress size={10} sx={{ color: SF.yellow }} /> :
+                        {s.status === 'loading' ? <CircularProgress size={10} sx={{ color: SF.cyan }} /> :
                          s.status === 'normal'  ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.lime }}>NOMINAL</Box> :
                          s.status === 'error'   ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.red }}>FAULT — {s.error}</Box> :
                          <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: `${SF.white}85` }}>STANDBY</Box>}
