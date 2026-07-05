@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from '../pages/0_HomePage/HomePage';
-import DeepFake from '../pages/1_DeepFake/DeepFake';
 import Hallucinate from '../pages/2_Hallucinate/Hallucinate';
 import DataShadows from '../pages/3_DataShadows/DataShadows';
 import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition.tsx';
@@ -28,7 +27,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/" element={<HomePage toggleColorMode={toggleColorMode} />} />
       <Route path="/login/:game" element={<LoginPage />} />
       <Route path="/phishing/edu" element={<PhishingEducationPage />} />
-      <Route path="/deepfake" element={<DeepFake />} />
       <Route path="/hallucinate" element={<Hallucinate />} />
       <Route path="/datashadows" element={<DataShadows />} />
       <Route path="/retaildemolition" element={<RetailDemolition />} />

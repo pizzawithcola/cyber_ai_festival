@@ -1,7 +1,6 @@
 import { apiFetch } from './api'
 
 export type GameScoreKey =
-  | 'deepfake'
   | 'hallucinate'
   | 'datashadows'
   | 'retaildemolition'
@@ -16,7 +15,6 @@ type ScoreField =
   | 'game5_score'
 
 const GAME_SCORE_FIELD_MAP: Record<GameScoreKey, ScoreField> = {
-  deepfake: 'game1_score',
   hallucinate: 'game1_score',
   datashadows: 'game2_score',
   retaildemolition: 'game3_score',
