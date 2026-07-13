@@ -8,6 +8,7 @@ import { ResultsPanel } from './training/ResultsPanel';
 import { evidenceChecklistForSentence, shuffle } from './training/utils';
 import { type ResultPage, type ResultPitfalls, type SentenceItem } from './training/types';
 import { ARCADE_FONT, TITLE_FONT } from '../hallucinateUi';
+import { playAnswerFeedbackSound } from '../utils/feedbackSound';
 import { ArcadeButton } from '../../../components/ui';
 
 /** =========================================================
@@ -272,6 +273,7 @@ export function TrainingArena({
       const isCorrect = card.isPitfall;
       const confidenceValue = confidenceById[card.id] ?? DEFAULT_CONFIDENCE_MULTIPLIER;
       const scoreDelta = getScoreDelta(isCorrect, confidenceValue);
+      playAnswerFeedbackSound(isCorrect ? 'correct' : 'wrong');
       setSelected(nextSelected);
       setResolved((r) => ({ ...r, [card.id]: isCorrect ? 'correct' : 'wrong' }));
       setScoreDeltaById((current) => ({ ...current, [card.id]: scoreDelta }));
@@ -296,6 +298,7 @@ export function TrainingArena({
     const isCorrect = !card.isPitfall;
     const confidenceValue = confidenceById[card.id] ?? DEFAULT_CONFIDENCE_MULTIPLIER;
     const scoreDelta = getScoreDelta(isCorrect, confidenceValue);
+    playAnswerFeedbackSound(isCorrect ? 'correct' : 'wrong');
 
     setPassed((prev) => ({ ...prev, [card.id]: true }));
     setResolved((r) => ({ ...r, [card.id]: isCorrect ? 'correct' : 'wrong' }));
