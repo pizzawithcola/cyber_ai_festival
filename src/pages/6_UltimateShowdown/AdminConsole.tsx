@@ -392,7 +392,7 @@ const AdminConsole: React.FC = () => {
   const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const audio = new Audio('/final_bgm.mp3');
+    const audio = new Audio('/audio/final_bgm.mp3');
     audio.loop = true;
     audio.volume = 0.4;
     bgmRef.current = audio;
