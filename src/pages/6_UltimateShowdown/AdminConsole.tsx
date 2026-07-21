@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, LinearProgress, Snackbar, Alert, keyframes } from '@mui/material';
 import { Trophy, Pause, Play, XCircle } from 'lucide-react';
@@ -387,6 +387,43 @@ const AdminConsole: React.FC = () => {
     const token = getAdminToken();
     if (!token) { navigate('/admin'); return; }
   }, [navigate]);
+
+  // ─── BGM playback ────────────────────────────────────────────────────────────
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const audio = new Audio('/final_bgm.mp3');
+    audio.loop = true;
+    audio.volume = 0.4;
+    bgmRef.current = audio;
+
+    // Autoplay requires user interaction in most browsers, so we attempt to play
+    // and also add a one-time click handler on the document to trigger playback
+    const tryPlay = () => {
+      audio.play().catch(() => {
+        // Browser blocked autoplay – will retry on first user interaction
+      });
+    };
+    tryPlay();
+
+    const handleUserInteraction = () => {
+      if (audio.paused) {
+        audio.play().catch(() => {});
+      }
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+    };
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+
+    return () => {
+      audio.pause();
+      audio.src = '';
+      bgmRef.current = null;
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+    };
+  }, []);
 
   const handleCreateRoom = async () => {
     setCreating(true);

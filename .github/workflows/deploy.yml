@@ -24,9 +24,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: https://d24umo4oysfx97.cloudfront.net
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://cyber-ai-festival-alb-2006617150.ap-south-1.elb.amazonaws.com' }}
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
-          VITE_WS_URL: wss://d24umo4oysfx97.cloudfront.net
+          VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'ws://cyber-ai-festival-alb-2006617150.ap-south-1.elb.amazonaws.com' }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -38,5 +38,10 @@ jobs:
       - name: Deploy to S3
         run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
-      - name: Invalidate CloudFront cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+      - name: Invalidate CloudFront cache (graceful skip if CF not exists)
+        run: |
+          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*" 2>/dev/null || echo "⚠️ CloudFront invalidation skipped (distribution may not exist)"
+          else
+            echo "ℹ️ CLOUDFRONT_DISTRIBUTION_ID not set, skipping invalidation"
+          fi
