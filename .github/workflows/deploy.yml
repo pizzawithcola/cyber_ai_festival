@@ -24,9 +24,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://cyber-ai-festival-alb-2006617150.ap-south-1.elb.amazonaws.com' }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://d24umo4oysfx97.cloudfront.net' }}
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
-          VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'ws://cyber-ai-festival-alb-2006617150.ap-south-1.elb.amazonaws.com' }}
+          VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'wss://d24umo4oysfx97.cloudfront.net' }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
