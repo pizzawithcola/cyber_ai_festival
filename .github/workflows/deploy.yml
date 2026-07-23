@@ -38,6 +38,14 @@ jobs:
       - name: Deploy to S3
         run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
+      - name: Fix CloudFront CORS/OPTIONS configuration
+        run: |
+          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            bash scripts/fix-cloudfront-cors.sh "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
+          else
+            echo "ℹ️ CLOUDFRONT_DISTRIBUTION_ID not set, skipping CORS fix"
+          fi
+
       - name: Invalidate CloudFront cache (graceful skip if CF not exists)
         run: |
           if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
