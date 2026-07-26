@@ -504,35 +504,126 @@ const ResultView: React.FC<{
 
   return (
     <Box sx={{ width: '100%', maxWidth: 720, textAlign: 'center', animation: `${fadeIn} 0.5s ease` }}>
+      {/* Question recap */}
+      <Box sx={{
+        mb: 3, p: 3,
+        backgroundColor: '#0a0a1a',
+        border: '2px solid #2a2a4a',
+        borderRadius: '8px',
+        textAlign: 'left',
+      }}>
+        <Box sx={{
+          fontFamily: '"Courier New", monospace', fontSize: '0.6rem',
+          color: `${ARCADE_COLORS.white}40`, letterSpacing: '0.15em', mb: 1,
+        }}>
+          QUESTION {question.number} / {question.total}
+        </Box>
+        <Box sx={{
+          fontFamily: '"Audiowide", sans-serif', fontSize: '1rem',
+          color: ARCADE_COLORS.white, lineHeight: 1.5, mb: 2,
+        }}>
+          {question.text}
+        </Box>
+
+        {/* Options recap */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {question.options.map(opt => {
+            const isCorrectOption = opt.id === result.correct_option;
+            const isUserChoice = opt.id === result.your_option;
+            const isWrongChoice = isUserChoice && !isCorrect;
+
+            return (
+              <Box
+                key={opt.id}
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 1.5,
+                  p: 1.5,
+                  borderRadius: '6px',
+                  border: `2px solid ${
+                    isCorrectOption ? ARCADE_COLORS.lime :
+                    isWrongChoice ? ARCADE_COLORS.red :
+                    `${opt.color}20`
+                  }`,
+                  backgroundColor: isCorrectOption
+                    ? `${ARCADE_COLORS.lime}10`
+                    : isWrongChoice
+                    ? `${ARCADE_COLORS.red}10`
+                    : `${opt.color}08`,
+                  boxShadow: isCorrectOption
+                    ? `0 0 10px ${ARCADE_COLORS.lime}25`
+                    : 'none',
+                }}
+              >
+                <Box sx={{
+                  width: 32, height: 32,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: '"Press Start 2P", monospace', fontSize: '0.7rem',
+                  color: opt.color, flexShrink: 0,
+                  backgroundColor: `${opt.color}15`,
+                  borderRadius: '4px',
+                }}>
+                  {opt.icon}
+                </Box>
+                <Box sx={{
+                  flex: 1,
+                  fontFamily: '"Electrolize", sans-serif', fontSize: '0.8rem',
+                  color: ARCADE_COLORS.white,
+                }}>
+                  {opt.label}
+                </Box>
+                {isCorrectOption && (
+                  <Box sx={{
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem',
+                    color: ARCADE_COLORS.lime, px: 1, py: 0.5,
+                    backgroundColor: `${ARCADE_COLORS.lime}15`,
+                    borderRadius: '4px',
+                    boxShadow: `0 0 8px ${ARCADE_COLORS.lime}40`,
+                  }}>
+                    ✓ CORRECT
+                  </Box>
+                )}
+                {isWrongChoice && (
+                  <Box sx={{
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem',
+                    color: ARCADE_COLORS.red, px: 1, py: 0.5,
+                    backgroundColor: `${ARCADE_COLORS.red}15`,
+                    borderRadius: '4px',
+                  }}>
+                    ✗ YOURS
+                  </Box>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+
       {/* Correct / Wrong banner */}
       <Box sx={{
-        py: 3, mb: 4,
+        py: 2, mb: 3,
         backgroundColor: isCorrect ? `${ARCADE_COLORS.lime}15` : `${ARCADE_COLORS.red}15`,
         border: `2px solid ${isCorrect ? ARCADE_COLORS.lime : ARCADE_COLORS.red}`,
         borderRadius: '8px',
-        boxShadow: `0 0 30px ${isCorrect ? ARCADE_COLORS.lime : ARCADE_COLORS.red}30`,
+        boxShadow: `0 0 20px ${isCorrect ? ARCADE_COLORS.lime : ARCADE_COLORS.red}20`,
       }}>
         <Box sx={{
-          fontFamily: '"Press Start 2P", monospace', fontSize: '1.2rem',
+          fontFamily: '"Press Start 2P", monospace', fontSize: '0.9rem',
           color: isCorrect ? ARCADE_COLORS.lime : ARCADE_COLORS.red,
-          textShadow: `0 0 20px currentColor`, mb: 1,
+          textShadow: `0 0 15px currentColor`,
         }}>
           {isCorrect ? '✓ CORRECT!' : '✗ WRONG!'}
-        </Box>
-        <Box sx={{ fontFamily: '"Audiowide", sans-serif', fontSize: '0.85rem', color: `${ARCADE_COLORS.white}70` }}>
-          Your answer: <Box component="span" sx={{ color: isCorrect ? ARCADE_COLORS.lime : ARCADE_COLORS.red }}>{result.your_option}</Box>
         </Box>
       </Box>
 
       {/* Points earned */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 3 }}>
         <Box sx={{
-          fontFamily: '"Press Start 2P", monospace', fontSize: '2.2rem',
-          color: ARCADE_COLORS.yellow, textShadow: `0 0 30px ${ARCADE_COLORS.yellow}80`, lineHeight: 1,
+          fontFamily: '"Press Start 2P", monospace', fontSize: '1.8rem',
+          color: ARCADE_COLORS.yellow, textShadow: `0 0 20px ${ARCADE_COLORS.yellow}60`, lineHeight: 1,
         }}>
           +{result.score_earned?.toLocaleString() ?? 0}
         </Box>
-        <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.7rem', color: `${ARCADE_COLORS.white}40`, mt: 0.5, letterSpacing: '0.2em' }}>
+        <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', color: `${ARCADE_COLORS.white}40`, mt: 0.5, letterSpacing: '0.2em' }}>
           POINTS EARNED
         </Box>
       </Box>
@@ -541,20 +632,21 @@ const ResultView: React.FC<{
       {result.distribution && (
         <Box sx={{ mb: 3 }}>
           <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '0.15em', mb: 1.5, textAlign: 'left' }}>
-            ANSWER DISTRIBUTION
+            PLAYER DISTRIBUTION
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {question.options.map(opt => {
               const count = result.distribution?.[opt.id] ?? 0;
               const total = Object.values(result.distribution ?? {}).reduce((a, b) => a + b, 0);
               const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+              const isCorrectOpt = opt.id === result.correct_option;
               return (
                 <Box key={opt.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Box sx={{ width: 28, fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color: opt.color, textAlign: 'center', flexShrink: 0 }}>{opt.icon}</Box>
-                  <Box sx={{ flex: 1, height: 18, backgroundColor: `${opt.color}15`, borderRadius: '2px', overflow: 'hidden', border: `1px solid ${opt.color}20` }}>
+                  <Box sx={{ flex: 1, height: 16, backgroundColor: `${opt.color}15`, borderRadius: '2px', overflow: 'hidden', border: `1px solid ${opt.color}20` }}>
                     <Box sx={{
                       width: `${pct}%`, height: '100%',
-                      backgroundColor: opt.id === result.correct_option ? ARCADE_COLORS.lime : `${opt.color}60`,
+                      backgroundColor: isCorrectOpt ? ARCADE_COLORS.lime : `${opt.color}60`,
                       transition: 'width 0.6s ease',
                     }} />
                   </Box>

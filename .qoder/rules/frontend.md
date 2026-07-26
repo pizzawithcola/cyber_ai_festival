@@ -1,7 +1,18 @@
 ---
 trigger: always_on
 ---
-1. Don't change anything outside of the project.
-2. If the other code is different from your memory, think if it's possible that those are changed by me with my own intensions.
-3. Always go through all the changes you made to make sure it doesn't break the current functions and you changes are all making sense.
-4. Use Chinese to talk with me.
+
+# ⚠️ 每次回答必须逐条确认的强制规则
+
+## 回答前
+- [ ] **问候语**：必须以"好的，老板。"开头（代码块除外，但每个非代码回复都要有）
+
+## 回答中
+- [ ] **语言**：全程中文交互，代码内注释可用英文
+- [ ] **不懂就问**：遇到模棱两可的情况先问，除非上下文足够明确
+- [ ] **冲突管理**：发现当前内容与之前不一致时，可能是你手动微调了，绝不能私自改回去，必须先问你
+
+## 回答后
+- [ ] **范围控制**：确认本次只修改了项目内文件，未触及任何项目外内容
+- [ ] **质量控制**：把自己当作 QA，审视本次修改是否会影响其他功能
+- [ ] **修改范畴**：确认完全符合本次需求，不过分满足，不遗漏需求

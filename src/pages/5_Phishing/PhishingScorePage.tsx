@@ -38,6 +38,9 @@ const PhishingScorePage: React.FC = () => {
     return stateAttempts > 0 ? stateAttempts : parseInt(storedAttempts || '0', 10);
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+    // Check if this is a benchmark attempt (score won't be recorded)
+    const isBenchmark = sessionStorage.getItem('phishing_is_benchmark') === 'true';
 
   const state = location.state as {
     reply: {
@@ -90,6 +93,14 @@ const PhishingScorePage: React.FC = () => {
   const user = getStoredUser();
 
   const handleSubmitScoreAndNavigate = async () => {
+    // Check if this is a benchmark attempt — skip score submission
+    const isBenchmark = sessionStorage.getItem('phishing_is_benchmark') === 'true';
+    if (isBenchmark) {
+      sessionStorage.removeItem('phishing_is_benchmark');
+      navigate('/ranking/game/phishing');
+      return;
+    }
+
     if (!userId) {
       console.error('No user_id provided');
       navigate('/ranking/game/phishing');
@@ -178,6 +189,24 @@ const PhishingScorePage: React.FC = () => {
         />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
           <Box sx={{ maxWidth: 1200, width: '100%' }}>
+            {/* Benchmark Banner */}
+            {isBenchmark && (
+              <Box
+                sx={{
+                  p: 2,
+                  mb: 3,
+                  textAlign: 'center',
+                  border: `2px solid ${ARCADE_COLORS.yellow}`,
+                  backgroundColor: 'rgba(255, 193, 7, 0.08)',
+                  borderRadius: 1,
+                  boxShadow: `0 0 12px ${ARCADE_COLORS.yellow}30`,
+                }}
+              >
+                <ArcadeTypography font="electrolize" arcadeSize="sm" sx={{ color: ARCADE_COLORS.yellow }}>
+                  ⚠ BENCHMARK MODE — Score NOT recorded
+                </ArcadeTypography>
+              </Box>
+            )}
             {/* Total Score */}
             <Box
               sx={{
@@ -298,6 +327,7 @@ const PhishingScorePage: React.FC = () => {
                   setAttemptCount(newCount);
                   sessionStorage.setItem('phishing_attempt_count', newCount.toString());
                   navigate('/phishing');
+                  sessionStorage.removeItem('phishing_is_benchmark');
                 }}
                 sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
               >

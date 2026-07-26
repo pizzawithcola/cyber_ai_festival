@@ -394,7 +394,7 @@ const DesignPage: React.FC = () => {
         {/* Light Sign */}
         <Section title="LIGHT SIGN">
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <LightSign>CYBER AI ARCADE</LightSign>
+            <LightSign>AI CYBER ARCADE</LightSign>
           </Box>
         </Section>
 

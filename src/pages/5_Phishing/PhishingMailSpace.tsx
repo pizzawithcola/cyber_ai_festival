@@ -15,6 +15,10 @@ import {
   styled,
   Snackbar,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { 
   FormatBold, 
@@ -28,9 +32,22 @@ import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import TurndownService from 'turndown';
+import { keyframes } from '@mui/material';
 import { apiFetch } from '../../services/api';
 import { ArcadeButton, ArcadeTypography } from '../../components/ui';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
+
+// Neon pulse animation for Benchmark button
+const neonPulse = keyframes`
+  0%, 100% {
+    boxShadow: 0 0 4px ${ARCADE_COLORS.lime}60, 0 0 8px ${ARCADE_COLORS.lime}30;
+    borderColor: ${ARCADE_COLORS.lime}60;
+  }
+  50% {
+    boxShadow: 0 0 12px ${ARCADE_COLORS.lime}, 0 0 24px ${ARCADE_COLORS.lime}60;
+    borderColor: ${ARCADE_COLORS.lime};
+  }
+`;
 
 const turndown = new TurndownService({
   headingStyle: 'atx',
@@ -93,6 +110,12 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
   const [subject, setSubject] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'warning' }>({ open: false, message: '', severity: 'success' });
+    const [benchmarkDialogOpen, setBenchmarkDialogOpen] = useState(false);
+  
+    // Get current attempt count from sessionStorage
+    const attemptCount = parseInt(sessionStorage.getItem('phishing_attempt_count') || '0', 10);
+    // Show Benchmark only on the 3rd attempt (attemptCount === 2 means 2 attempts completed, this is the 3rd)
+    const shouldShowBenchmark = attemptCount === 2;
 
   const editor = useEditor({
     extensions: [
@@ -455,22 +478,25 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
 
             <Box sx={{ flex: 1 }} />
 
-            <ArcadeButton
-              color="lime"
-              size="sm"
-              onClick={() => {
-                const demo = demoEmails.find(d => d.targetId === target.id);
-                if (demo) {
-                  setSenderEmail(demo.senderEmail);
-                  setRecipient(demo.recipient);
-                  setSubject(demo.subject);
-                  editor?.commands.setContent(demo.content);
-                }
+            {shouldShowBenchmark && (
+            <Box
+              sx={{
+                mr: 1,
+                animation: `${neonPulse} 2s ease-in-out infinite`,
+                border: `2px solid ${ARCADE_COLORS.lime}60`,
+                borderRadius: '4px',
               }}
-              sx={{ height: 36, mr: 1, fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
             >
-              Demo
-            </ArcadeButton>
+              <ArcadeButton
+                color="lime"
+                size="sm"
+                onClick={() => setBenchmarkDialogOpen(true)}
+                sx={{ height: 36, fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
+              >
+                Benchmark
+              </ArcadeButton>
+            </Box>
+            )}
             <ArcadeButton
               color="white"
               variant="ghost"
@@ -538,6 +564,59 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Benchmark Confirmation Dialog */}
+      <Dialog
+        open={benchmarkDialogOpen}
+        onClose={() => setBenchmarkDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            backgroundColor: '#0d0d20',
+            border: `2px solid ${ARCADE_COLORS.lime}80`,
+            borderRadius: 0,
+            boxShadow: `0 0 20px ${ARCADE_COLORS.lime}30`,
+            maxWidth: 420,
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontFamily: '"Electrolize", sans-serif', color: ARCADE_COLORS.lime, fontSize: '1rem' }}>
+          ⚠ Benchmark Mode
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontFamily: '"Electrolize", sans-serif', color: ARCADE_COLORS.white, fontSize: '0.85rem', lineHeight: 1.6 }}>
+            This is your 3rd and final attempt. If you use the benchmark, your score for this round will NOT be recorded as your official result. Would you like to see the benchmark email?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <ArcadeButton
+            color="white"
+            variant="ghost"
+            size="sm"
+            onClick={() => setBenchmarkDialogOpen(false)}
+            sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px', border: `2px solid ${ARCADE_COLORS.white}30` }}
+          >
+            Cancel
+          </ArcadeButton>
+          <ArcadeButton
+            color="lime"
+            size="sm"
+            onClick={() => {
+              const demo = demoEmails.find(d => d.targetId === target.id);
+              if (demo) {
+                setSenderEmail(demo.senderEmail);
+                setRecipient(demo.recipient);
+                setSubject(demo.subject);
+                editor?.commands.setContent(demo.content);
+              }
+              sessionStorage.setItem('phishing_is_benchmark', 'true');
+              setBenchmarkDialogOpen(false);
+            }}
+            sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
+          >
+            Confirm
+          </ArcadeButton>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

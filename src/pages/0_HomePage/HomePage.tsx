@@ -213,7 +213,7 @@ const HomePage: React.FC<HomePageProps> = () => {
             textAlign: 'center',
           }}
         >
-          <LightSign>CYBER AI ARCADE</LightSign>
+          <LightSign>AI CYBER ARCADE</LightSign>
         </Box>
 
         {/* CRT Screen Area */}

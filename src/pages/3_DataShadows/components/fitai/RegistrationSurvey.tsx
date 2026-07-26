@@ -446,13 +446,13 @@ const RegistrationSurvey: React.FC = () => {
                   textAlign: 'center',
                   marginBottom: '20px'
                 }}>
-                  {data.workoutMinutes ?? 0} mins
+                  {(data.workoutMinutes ?? 0) >= 180 ? '180+' : (data.workoutMinutes ?? 0)} mins
                 </div>
 
                 <input
                   type="range"
                   min="0"
-                  max="480"
+                  max="180"
                   step="15"
                   value={data.workoutMinutes ?? 0}
                   onChange={(e) => setData({ ...data, workoutMinutes: Number(e.target.value) })}
@@ -475,7 +475,7 @@ const RegistrationSurvey: React.FC = () => {
                   marginTop: '12px'
                 }}>
                   <span>0 mins</span>
-                  <span>480 mins</span>
+                  <span>180+ mins</span>
                 </div>
               </div>
 
