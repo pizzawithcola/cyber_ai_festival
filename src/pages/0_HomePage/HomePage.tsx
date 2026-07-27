@@ -339,7 +339,7 @@ const HomePage: React.FC<HomePageProps> = () => {
                     sx={{
                       color: ARCADE_COLORS.white,
                       opacity: 0.6,
-                      fontSize: '0.65rem',
+                      fontSize: '0.75rem',
                     }}
                   >
                     {game.description}
@@ -474,7 +474,7 @@ const HomePage: React.FC<HomePageProps> = () => {
               monospace
               className="nav-label"
               sx={{ 
-                fontSize: '0.65rem', 
+                fontSize: '0.75rem', 
                 color: `${ARCADE_COLORS.white}50`, 
                 letterSpacing: '2px',
                 transition: 'color 0.3s ease',
@@ -540,7 +540,7 @@ const HomePage: React.FC<HomePageProps> = () => {
               monospace
               className="nav-label"
               sx={{ 
-                fontSize: '0.65rem', 
+                fontSize: '0.75rem', 
                 color: `${ARCADE_COLORS.white}50`, 
                 letterSpacing: '2px',
                 transition: 'color 0.3s ease',
@@ -559,8 +559,8 @@ const HomePage: React.FC<HomePageProps> = () => {
           component="p"
           monospace
           sx={{
-            color: `${ARCADE_COLORS.white}30`,
-            fontSize: '0.5rem',
+            color: `${ARCADE_COLORS.white}60`,
+            fontSize: '0.65rem',
             letterSpacing: '2px',
           }}
         >
