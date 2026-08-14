@@ -50,7 +50,6 @@ export function InteractiveScenarioChat({
   const [revealedAnalysisIds, setRevealedAnalysisIds] = useState<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [completeAcknowledged, setCompleteAcknowledged] = useState(false);
-  const [overviewStep, setOverviewStep] = useState(0);
 
   const scrollChatToBottom = () => {
     const container = chatContainerRef.current;
@@ -90,7 +89,6 @@ export function InteractiveScenarioChat({
   const handleScenarioComplete = () => {
     if (completeAcknowledged) return;
     setCompleteAcknowledged(true);
-    setOverviewStep(0);
     onComplete?.(scenario.id);
   };
 
@@ -131,26 +129,35 @@ export function InteractiveScenarioChat({
 
   const overviewSlides = [
     {
-      label: 'Scenario Overview',
-      title: 'This is one form of hallucination.',
-      body:
-        'In this scenario, the AI gives a fluent answer that misses the real-world goal. Hallucination is broader than this: it is any confident AI output that is false, unsupported, or misleading.',
-    },
-    {
-      label: 'Common Forms',
-      title: 'It can invent more than plans.',
-      body:
-        'A model might fabricate references, make up facts to satisfy a question, overstate what it knows, or follow a leading prompt into a false answer. The risk is higher when the answer sounds polished.',
-    },
-    {
       label: 'Key Lesson',
-      title: 'Confidence is not evidence.',
-      body:
-        'Before trusting an AI answer, ask what evidence supports it, whether the source can be checked, and what real-world constraints could make the answer fail.',
+      title: 'Chapter II: Confidence is not evidence.',
+      sections: [
+        {
+          heading: 'What just happened?',
+          color: '#ffcf7a',
+          body: 'The AI gave a fluent answer that sounded right — but missed the real goal entirely.',
+        },
+        {
+          heading: 'Hallucination can take many forms',
+          color: '#ff9e7a',
+          bullets: [
+            { text: 'Fabricating ', highlight: 'references', suffix: ' — inventing sources that don\'t exist' },
+            { text: 'Overstating ', highlight: 'facts', suffix: ' — presenting guesses as certainties' },
+            { text: 'Following ', highlight: 'bad prompts', suffix: ' — echoing misleading assumptions' },
+          ],
+        },
+        {
+          heading: 'Before you trust an AI answer',
+          color: '#7ad0d9',
+          bullets: [
+            { text: 'Ask what ', highlight: 'evidence', suffix: ' supports it' },
+            { text: 'Check if the ', highlight: 'source', suffix: ' can be verified' },
+          ],
+        },
+      ],
     },
   ];
-  const activeOverview = overviewSlides[overviewStep] ?? overviewSlides[0];
-  const isLastOverviewStep = overviewStep >= overviewSlides.length - 1;
+  const activeOverview = overviewSlides[0];
 
   return (
     <Grid
@@ -581,99 +588,172 @@ export function InteractiveScenarioChat({
           >
             <Box
               sx={{
-                ...arcadeScreenSx,
                 width: '100%',
-                px: { xs: 1.9, sm: 3.2, md: 4 },
-                py: { xs: 2.6, sm: 3.5, md: 4.2 },
+                maxWidth: 840,
+                mx: 'auto',
+                mb: 0,
+                borderRadius: 0,
+                border: '2px solid rgba(255, 0, 255, 0.48)',
+                background:
+                  'linear-gradient(180deg, rgba(5,2,12,0.98), rgba(8,3,20,0.98) 48%, rgba(3,2,9,0.98))',
+                boxShadow:
+                  '0 0 0 1px rgba(255, 0, 255, 0.16), inset 0 0 28px rgba(255, 0, 255, 0.08), 0 24px 58px rgba(3, 0, 12, 0.62)',
+                textAlign: 'left',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: 'softFadeUp 420ms ease-out both',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  background:
+                    'repeating-linear-gradient(0deg, rgba(255,255,255,0.035), rgba(255,255,255,0.035) 1px, transparent 1px, transparent 4px)',
+                  opacity: 0.42,
+                  pointerEvents: 'none',
+                },
               }}
             >
               <Box
                 sx={{
                   position: 'relative',
                   zIndex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2.4,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    ...arcadeKickerSx,
-                    color: '#ff70bf',
-                  }}
-                >
-                  {activeOverview.label}
-                </Typography>
-                <Box key={activeOverview.title} sx={{ maxWidth: 840, animation: 'softFadeUp 420ms ease-out both' }}>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontWeight: 900,
-                      mb: 1.6,
-                      color: '#ffffff',
-                      lineHeight: 1.35,
-                      fontFamily: TITLE_FONT,
-                      fontSize: { xs: '1.66rem', sm: '2.2rem', md: '2.65rem' },
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase',
-                      textShadow:
-                        '0 3px 0 rgba(0,0,0,0.48), 0 0 18px rgba(255, 46, 147,0.18), 0 0 28px rgba(255, 0, 255, 0.16)',
-                    }}
-                  >
-                    {activeOverview.title}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      ...readableBodySx,
-                      maxWidth: 780,
-                      mx: 'auto',
-                      fontSize: { xs: '1.08rem', sm: '1.18rem' },
-                    }}
-                  >
-                    {activeOverview.body}
-                  </Typography>
-                </Box>
-
-                <Stack direction="row" spacing={1} sx={{ justifyContent: 'center' }}>
-                  {overviewSlides.map((slide, index) => (
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1.5,
+                  px: { xs: 1.3, sm: 1.8 },
+                  py: 0.9,
+                  borderBottom: '1px solid rgba(255, 0, 255, 0.28)',
+                  background:
+                    'linear-gradient(90deg, rgba(255, 0, 255, 0.16), rgba(91, 46, 255, 0.1), rgba(255, 0, 255, 0.08))',
+                }}
+              >
+                <Stack direction="row" spacing={0.7} alignItems="center">
+                  {['#ff5f7a', '#ffbf4d', '#ff00ff'].map((color) => (
                     <Box
-                      key={slide.label}
+                      key={color}
                       sx={{
-                        width: index === overviewStep ? 26 : 9,
+                        width: 9,
                         height: 9,
-                        borderRadius: 999,
-                        backgroundColor: index === overviewStep ? '#ff00ff' : 'rgba(228, 241, 255, 0.24)',
-                        transition: 'width 220ms ease, background-color 220ms ease',
+                        borderRadius: '50%',
+                        backgroundColor: color,
+                        boxShadow: `0 0 10px ${color}80`,
                       }}
                     />
                   ))}
                 </Stack>
-
-                <ArcadeButton
-                  color="magenta"
-                  size="lg"
-                  animation="pulse"
-                  onClick={() => {
-                    if (!isLastOverviewStep) {
-                      setOverviewStep((step) => step + 1);
-                      return;
-                    }
-                    onStartGame?.();
-                  }}
+                <Typography
+                  variant="caption"
                   sx={{
-                    width: { xs: '100%', sm: 400 },
-                    minHeight: 54,
-                    whiteSpace: 'normal',
-                    lineHeight: 1.5,
-                    fontSize: { xs: '0.64rem', sm: '0.82rem' },
+                    color: 'rgba(248, 231, 255, 0.78)',
+                    fontFamily: "'VT323', 'Courier New', monospace",
+                    fontSize: { xs: '0.85rem', sm: '0.98rem' },
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                   }}
                 >
-                  {isLastOverviewStep ? 'Next: Training Game' : 'Next'}
-                </ArcadeButton>
+                  root@arcade:/lessons/overview.md
+                </Typography>
+              </Box>
+
+              <Box sx={{ position: 'relative', zIndex: 1, px: { xs: 1.7, sm: 2.8, md: 3.1 }, py: { xs: 2, sm: 2.6 } }}>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    mx: 0,
+                    mt: 0,
+                    mb: 2,
+                    textAlign: 'left',
+                    fontFamily: TITLE_FONT,
+                    color: '#f8e7ff',
+                    textShadow: '0 0 18px rgba(255, 0, 255, 0.22)',
+                    fontSize: { xs: '1.48rem', sm: '1.85rem', md: '2.15rem' },
+                    letterSpacing: '0.035em',
+                    lineHeight: 1.12,
+                  }}
+                >
+                  {activeOverview.title}
+                </Typography>
+
+                <Stack spacing={2.2} sx={{ textAlign: 'left', maxWidth: 780 }}>
+                  {(activeOverview as typeof overviewSlides[0] & { sections?: Array<{ heading: string; color?: string; body?: string; bullets?: Array<{ text: string; highlight: string; suffix: string }> }> }).sections?.map((section, si) => (
+                    <Box key={si}>
+                      <Typography
+                        sx={{
+                          display: 'block',
+                          mb: 0.6,
+                          color: section.color ?? '#ffffff',
+                          fontFamily: ARCADE_FONT,
+                          fontSize: { xs: '0.5rem', sm: '0.56rem' },
+                          fontWeight: 900,
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {section.heading}
+                      </Typography>
+                      {section.body && (
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            ...readableBodySx,
+                            fontSize: { xs: '0.98rem', sm: '1.06rem' },
+                            mb: 0,
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {section.body}
+                        </Typography>
+                      )}
+                      {section.bullets && (
+                        <Stack spacing={0.5} sx={{ pl: 0.5 }}>
+                          {section.bullets.map((bullet, bi) => (
+                            <Typography
+                              key={bi}
+                              variant="body1"
+                              sx={{
+                                ...readableBodySx,
+                                fontSize: { xs: '0.98rem', sm: '1.06rem' },
+                                lineHeight: 1.6,
+                                mb: 0,
+                              }}
+                            >
+                              <Box component="span" sx={{ color: '#ff00ff', mr: 0.3 }}>•</Box>
+                              {bullet.text}
+                              <Box component="span" sx={{ color: '#ffcf7a', fontWeight: 700 }}>
+                                {bullet.highlight}
+                              </Box>
+                              {bullet.suffix}
+                            </Typography>
+                          ))}
+                        </Stack>
+                      )}
+                    </Box>
+                  ))}
+                </Stack>
+
+                <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mt: 2.5 }}>
+                  <ArcadeButton
+                    color="magenta"
+                    size="lg"
+                    animation="pulse"
+                    onClick={() => {
+                      onStartGame?.();
+                    }}
+                    sx={{
+                      width: { xs: '100%', sm: 400 },
+                      minHeight: 54,
+                      whiteSpace: 'normal',
+                      lineHeight: 1.5,
+                      fontSize: { xs: '0.64rem', sm: '0.82rem' },
+                    }}
+                  >
+                    Next: Challenge
+                  </ArcadeButton>
+                </Box>
               </Box>
             </Box>
           </Box>

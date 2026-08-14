@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Typography, Box, Collapse, Slider, Stack, Avatar } from '@mui/material';
-import { Search as SearchIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, HelpOutline as HelpOutlineIcon } from '@mui/icons-material';
 
 import { BOSS_TYPES, NORMALIZED_SENTENCE_POOL } from './training/data';
 import { ChapterComplete } from './training/ChapterComplete';
@@ -72,6 +72,10 @@ const animationCss = `
   35% { box-shadow: 0 0 0 1px rgba(255, 191, 77, 0.24), 0 0 24px rgba(255, 191, 77, 0.16), inset 0 0 22px rgba(255, 191, 77, 0.08); }
   100% { box-shadow: 0 0 0 0 rgba(255, 191, 77, 0), inset 0 0 0 0 rgba(255, 191, 77, 0); }
 }
+@keyframes wagerDotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 191, 77, 0.72); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 191, 77, 0); }
+}
 @keyframes wagerThumbPrompt {
   0% { transform: translateX(0); }
   18% { transform: translateX(6px); }
@@ -84,30 +88,31 @@ const animationCss = `
 
 const trainingIntroSlides = [
   {
-    label: 'Training boot',
-    title: 'Keep the chat open.',
-    body: 'The next part works like the scenario you just finished: one AI message at a time, one decision at a time.',
-    prompt: 'Your job is to decide whether the output should be trusted as-is.',
-  },
-  {
-    label: 'Decision mode',
-    title: 'Verify or trust.',
-    body: 'Verify confident claims that need evidence. Trust answers that stay cautious, checkable, and honest about uncertainty.',
-    prompt: 'Do not reward a sentence just because it sounds polished.',
-  },
-  {
-    label: 'Confidence wager',
-    title: 'Set your confidence.',
-    body: 'Before each call, choose how strongly you trust your judgment. Higher confidence multiplies your reward when you are right and your penalty when you are wrong.',
-    prompt: 'If you are not sure, keep the slider low.',
-  },
-  {
-    label: 'Final cue',
-    title: 'Watch for the trap.',
-    body: 'Risky answers often invent sources, overstate facts, ignore missing context, or follow a misleading prompt too eagerly.',
-    prompt: 'Start when you are ready.',
+    label: 'Challenge',
+    title: 'Spot the hallucination',
+    sections: [
+      {
+        heading: 'How it works',
+        color: '#ffcf7a',
+        body: 'One AI message, one decision — just like the scenario.',
+      },
+      {
+        heading: 'Your job',
+        color: '#ff9e7a',
+        bullets: [
+          { text: 'Doubt ', highlight: 'confident claims', suffix: ' that need evidence' },
+          { text: 'Trust answers that are ', highlight: 'cautious', suffix: ' and checkable' },
+        ],
+      },
+      {
+        heading: 'Confidence slider',
+        color: '#7ad0d9',
+        body: 'Higher confidence = bigger reward when right, bigger penalty when wrong.',
+      },
+    ],
   },
 ];
+const mergedIntro = trainingIntroSlides[0];
 
 const READABLE_FONT = "'Electrolize', 'Inter', 'Roboto', 'Open Sans', 'Segoe UI', system-ui, sans-serif !important";
 const CORRECT_SCORE_POINTS = 20;
@@ -140,7 +145,7 @@ export function TrainingArena({
   onExitToScenarios?: () => void;
 }) {
   const [isRunning, setIsRunning] = useState(false);
-  const [introStep, setIntroStep] = useState(autoStart ? trainingIntroSlides.length : 0);
+  const [showIntro, setShowIntro] = useState(!autoStart);
 
   const [sentences, setSentences] = useState<SentenceItem[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -162,8 +167,12 @@ export function TrainingArena({
   const [isNavigatingToRanking, setIsNavigatingToRanking] = useState(false);
   const [expandedDetailId, setExpandedDetailId] = useState<string | null>(null);
   const detailScrollRef = React.useRef<HTMLDivElement | null>(null);
-  const isIntroMode = !autoStart && !isRunning && !showResults && introStep < trainingIntroSlides.length;
-  const activeIntro = trainingIntroSlides[introStep] ?? trainingIntroSlides[0];
+  const isIntroMode = showIntro && !isRunning && !showResults;
+
+  const startChallenge = () => {
+    setShowIntro(false);
+    initRound();
+  };
 
   const initRound = () => {
     setShowResults(false);
@@ -211,16 +220,6 @@ export function TrainingArena({
     setBossId(bossPick?.id ?? null);
 
     setFlash(false);
-  };
-
-  const advanceIntro = () => {
-    if (introStep < trainingIntroSlides.length - 1) {
-      setIntroStep((step) => step + 1);
-      return;
-    }
-
-    setIntroStep(trainingIntroSlides.length);
-    initRound();
   };
 
   React.useLayoutEffect(() => {
@@ -521,7 +520,7 @@ export function TrainingArena({
       activeFeedbackKind === 'correct'
         ? "Good catch — that one needed a closer look."
         : activeFeedbackKind === 'missed'
-        ? "I'd verify that one. It slips past a lot of people."
+        ? "I'd doubt that one. It slips past a lot of people."
         : activeFeedbackKind === 'falsePos'
         ? "I'd actually trust that one — the language stays cautious enough."
         : "Agreed, nothing risky to verify here.";
@@ -639,28 +638,29 @@ export function TrainingArena({
         width: '100%',
         maxWidth: 1080,
         mx: 'auto',
-        minHeight: 'calc(100vh - 150px)',
+        minHeight: 'calc(100vh - 112px)',
         display: 'flex',
-        alignItems: (isIntroMode || showResults) ? 'center' : 'flex-start',
-        justifyContent: 'center',
+        flexDirection: 'column',
+        alignItems: 'stretch',
         px: { xs: 1.2, md: 2.4 },
-        py: { xs: 3.8, md: 5.6 },
+        pt: 0,
+        pb: { xs: 2, md: 3 },
         animation: shake ? 'shake 280ms ease-out' : 'fadeRise 420ms ease-out',
         ...(flash ? { animation: 'flashRed 520ms ease-out' } : null),
       }}
     >
       <style>{animationCss}</style>
 
-      <Stack spacing={2.2} sx={{ width: '100%', textAlign: 'center', alignItems: 'center' }}>
-        <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto' }}>
+      <Stack spacing={2.2} sx={{ width: '100%', textAlign: 'center', alignItems: 'center', flex: 1 }}>
+        <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto', position: 'sticky', top: 0, zIndex: 10, pt: { xs: 1, sm: 1.2 }, pb: 0.6 }}>
           {!showResults && (
             <Box
               sx={{
                 position: 'relative',
                 overflow: 'hidden',
                 px: { xs: 1.8, sm: 2.7 },
-                pt: { xs: 3.1, sm: 2.05 },
-                pb: { xs: 1.45, sm: 1.75 },
+                pt: { xs: 1.6, sm: 1.35 },
+                pb: { xs: 0.8, sm: 1 },
                 border: '1px solid rgba(255, 0, 255, 0.36)',
                 background:
                   'linear-gradient(180deg, rgba(10, 4, 24, 0.92), rgba(18, 8, 38, 0.82))',
@@ -714,7 +714,7 @@ export function TrainingArena({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {isIntroMode ? `Boot ${introStep + 1} / ${trainingIntroSlides.length}` : `Card ${currentCardIndex + 1} / ${sentences.length || 5}`}
+                {isIntroMode ? 'Challenge intro' : `Card ${currentCardIndex + 1} / ${sentences.length || 5}`}
               </Typography>
               <Stack
                 direction="row"
@@ -724,7 +724,7 @@ export function TrainingArena({
                 sx={{
                   position: 'relative',
                   zIndex: 1,
-                  mb: 0.9,
+                  mb: 0.4,
                   flexWrap: 'wrap',
                 }}
               >
@@ -773,7 +773,7 @@ export function TrainingArena({
                       '0 3px 0 rgba(0,0,0,0.55), 0 0 12px rgba(255, 120, 255, 0.34), 0 0 28px rgba(191, 0, 255, 0.22)',
                   }}
                 >
-                  Hallucination Training Game
+                  Hallucination Challenge
                 </Typography>
               </Box>
             </Box>
@@ -796,18 +796,7 @@ export function TrainingArena({
                     {renderBubble({
                       role: 'assistant',
                       children: (
-                        <Stack spacing={1.2}>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: '#ff00ff',
-                              fontWeight: 900,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.1em',
-                            }}
-                          >
-                            {activeIntro.label}
-                          </Typography>
+                        <Stack spacing={2.2}>
                           <Typography
                             variant="h5"
                             sx={{
@@ -817,158 +806,88 @@ export function TrainingArena({
                               lineHeight: 1.55,
                               textTransform: 'uppercase',
                               textShadow: '0 0 16px rgba(255, 0, 255, 0.18)',
+                              mb: 0.5,
                             }}
                           >
-                            {activeIntro.title}
+                            {mergedIntro.title}
                           </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: 'rgba(228, 241, 255, 0.88)',
-                              lineHeight: 1.8,
-                              fontSize: { xs: '1.08rem', sm: '1.16rem' },
-                            }}
-                          >
-                            {activeIntro.body}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: 'rgba(228, 241, 255, 0.7)',
-                              lineHeight: 1.7,
-                              display: 'block',
-                            }}
-                          >
-                            {activeIntro.prompt}
-                          </Typography>
+                          {(mergedIntro as typeof trainingIntroSlides[0] & { sections?: Array<{ heading: string; color?: string; body?: string; bullets?: Array<{ text: string; highlight: string; suffix: string }> }> }).sections?.map((section, si) => (
+                            <Box key={si}>
+                              <Typography
+                                sx={{
+                                  display: 'block',
+                                  mb: 0.4,
+                                  color: section.color ?? '#ffffff',
+                                  fontFamily: "'Electrolize', 'Inter', sans-serif",
+                                  fontSize: { xs: '0.5rem', sm: '0.54rem' },
+                                  fontWeight: 900,
+                                  letterSpacing: '0.08em',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                {section.heading}
+                              </Typography>
+                              {section.body && (
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    color: 'rgba(228, 241, 255, 0.88)',
+                                    lineHeight: 1.7,
+                                    fontSize: { xs: '0.95rem', sm: '1.02rem' },
+                                    mb: 0,
+                                  }}
+                                >
+                                  {section.body}
+                                </Typography>
+                              )}
+                              {section.bullets && (
+                                <Stack spacing={0.2} sx={{ pl: 0.5 }}>
+                                  {section.bullets.map((bullet, bi) => (
+                                    <Typography
+                                      key={bi}
+                                      variant="body2"
+                                      sx={{
+                                        color: 'rgba(228, 241, 255, 0.82)',
+                                        lineHeight: 1.7,
+                                        fontSize: { xs: '0.95rem', sm: '1.02rem' },
+                                        mb: 0,
+                                      }}
+                                    >
+                                      <Box component="span" sx={{ color: '#ff00ff', mr: 0.3 }}>•</Box>
+                                      {bullet.text}
+                                      <Box component="span" sx={{ color: '#ffcf7a', fontWeight: 700 }}>
+                                        {bullet.highlight}
+                                      </Box>
+                                      {bullet.suffix}
+                                    </Typography>
+                                  ))}
+                                </Stack>
+                              )}
+                            </Box>
+                          ))}
                         </Stack>
                       ),
                     })}
 
-                    <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1.8} sx={{ px: 0.5 }}>
-                      <Stack direction="row" spacing={0.7} alignItems="center">
-                        {trainingIntroSlides.map((slide, index) => (
-                          <Box
-                            key={slide.label}
-                            sx={{
-                              width: index === introStep ? 24 : 8,
-                              height: 8,
-                              borderRadius: 999,
-                              backgroundColor: index === introStep ? '#ff00ff' : 'rgba(228, 241, 255, 0.24)',
-                              transition: 'width 220ms ease, background-color 220ms ease',
-                            }}
-                          />
-                        ))}
-                      </Stack>
-                      <ArcadeButton
-                        size="md"
-                        color="magenta"
-                        animation="pulse"
-                        onClick={advanceIntro}
-                        sx={{
-                          minHeight: 50,
-                          minWidth: { xs: 136, sm: 168 },
-                          fontSize: { xs: '0.64rem', sm: '0.78rem' },
-                        }}
-                      >
-                        {introStep < trainingIntroSlides.length - 1 ? 'Next' : 'Start cards'}
-                      </ArcadeButton>
-                    </Stack>
+                    <ArcadeButton
+                      size="md"
+                      color="magenta"
+                      animation="pulse"
+                      onClick={startChallenge}
+                      sx={{
+                        minHeight: 50,
+                        minWidth: { xs: 136, sm: 200 },
+                        fontSize: { xs: '0.64rem', sm: '0.78rem' },
+                        alignSelf: 'flex-end',
+                      }}
+                    >
+                      Start challenge
+                    </ArcadeButton>
                   </Stack>
                 )}
 
                 {isRunning && activeCard && (
                   <Stack spacing={1.8} sx={{ width: '100%', alignItems: 'stretch', animation: 'fadeRise 360ms ease-out' }}>
-                    {currentCardIndex === 0 && (
-                      <Box
-                        sx={{
-                          position: 'relative',
-                          overflow: 'hidden',
-                          width: 'min(100%, 820px)',
-                          alignSelf: 'center',
-                          px: { xs: 1.4, sm: 1.65 },
-                          py: { xs: 1.05, sm: 1.15 },
-                          borderRadius: 1,
-                          border: '1px solid rgba(255, 191, 77, 0.32)',
-                          background:
-                            'linear-gradient(180deg, rgba(16, 24, 42, 0.9), rgba(7, 13, 28, 0.86))',
-                          boxShadow:
-                            '0 8px 18px rgba(0,0,0,0.16), inset 0 0 0 1px rgba(255,255,255,0.03)',
-                          '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: 3,
-                            background:
-                              'linear-gradient(90deg, rgba(255, 191, 77, 0.95), rgba(0, 194, 255, 0.66), rgba(255, 0, 255, 0.58))',
-                          },
-                          '& > *': {
-                            position: 'relative',
-                            zIndex: 1,
-                          },
-                        }}
-                      >
-                        <Stack
-                          direction={{ xs: 'column', md: 'row' }}
-                          spacing={{ xs: 0.65, md: 1.05 }}
-                          alignItems={{ xs: 'flex-start', md: 'center' }}
-                        >
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 0.45,
-                              alignSelf: { xs: 'flex-start', md: 'center' },
-                              px: 0.85,
-                              py: 0.32,
-                              border: '1px solid rgba(255, 191, 77, 0.4)',
-                              background: 'rgba(255, 191, 77, 0.1)',
-                              color: '#ffbf4d',
-                              fontWeight: 900,
-                              letterSpacing: '0.1em',
-                              lineHeight: 1.2,
-                              textTransform: 'uppercase',
-                              fontSize: { xs: '0.64rem', sm: '0.7rem' },
-                              flexShrink: 0,
-                            }}
-                          >
-                            <Box
-                              component="span"
-                              sx={{
-                                width: 14,
-                                height: 14,
-                                flexShrink: 0,
-                                borderRadius: '50%',
-                                display: 'inline-grid',
-                                placeItems: 'center',
-                                border: '1px solid rgba(255, 191, 77, 0.58)',
-                                fontSize: '0.58rem',
-                                lineHeight: 1,
-                              }}
-                            >
-                              i
-                            </Box>
-                            <Box component="span">Player guidance</Box>
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              lineHeight: 1.45,
-                              color: 'rgba(242, 251, 255, 0.9)',
-                              fontWeight: 800,
-                              fontSize: { xs: '0.84rem', sm: '0.9rem' },
-                              overflowWrap: 'anywhere',
-                            }}
-                          >
-                            Judge the AI reply before acting: look for unsupported claims, set your wager, then choose trust or verify.
-                          </Typography>
-                        </Stack>
-                      </Box>
-                    )}
-
                     {renderBubble({
                       role: 'assistant',
                       children: (
@@ -1125,89 +1044,12 @@ export function TrainingArena({
                               >
                                 <Box
                                   sx={{
-                                    flex: '1 1 52%',
-                                    minWidth: 0,
-                                    px: { xs: 1.15, sm: 1.45 },
-                                    py: { xs: 1.15, sm: 1.35 },
-                                    border: '1px solid rgba(255, 191, 77, 0.3)',
-                                    background:
-                                      'linear-gradient(180deg, rgba(30, 16, 40, 0.78), rgba(14, 8, 27, 0.72))',
-                                  }}
-                                >
-                                  <Stack spacing={1.05} sx={{ height: '100%', justifyContent: 'center' }}>
-                                    <Typography
-                                      variant="caption"
-                                      sx={{
-                                        color: '#ffe6b3',
-                                        fontWeight: 900,
-                                        letterSpacing: '0.1em',
-                                        textTransform: 'uppercase',
-                                        lineHeight: 1.25,
-                                      }}
-                                    >
-                                      What should you do?
-                                    </Typography>
-                                    <Stack
-                                      direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
-                                      spacing={{ xs: 1.1, sm: 1.2 }}
-                                      sx={{
-                                        justifyContent: 'center',
-                                        alignItems: 'stretch',
-                                        width: '100%',
-                                      }}
-                                    >
-                                      <ArcadeButton
-                                        size="lg"
-                                        color="orange"
-                                        startIcon={<SearchIcon />}
-                                        onClick={handleFlashFlag}
-                                        sx={{
-                                          flex: 1,
-                                          minHeight: 58,
-                                          minWidth: 0,
-                                          fontSize: { xs: '0.76rem', sm: '0.86rem' },
-                                          '& .MuiButton-startIcon': { color: 'inherit !important' },
-                                        }}
-                                      >
-                                        Verify
-                                      </ArcadeButton>
-                                      <ArcadeButton
-                                        size="lg"
-                                        color="magenta"
-                                        startIcon={<CheckCircleIcon />}
-                                        onClick={handleFlashPass}
-                                        sx={{
-                                          flex: 1,
-                                          minHeight: 58,
-                                          minWidth: 0,
-                                          fontSize: { xs: '0.76rem', sm: '0.86rem' },
-                                          '& .MuiButton-startIcon': { color: 'inherit !important' },
-                                        }}
-                                      >
-                                        Trust
-                                      </ArcadeButton>
-                                    </Stack>
-                                    <Typography
-                                      variant="caption"
-                                      sx={{
-                                        color: 'rgba(228, 241, 255, 0.66)',
-                                        fontWeight: 800,
-                                        lineHeight: 1.5,
-                                      }}
-                                    >
-                                      No proof? Verify it. Careful and checkable? Trust it.
-                                    </Typography>
-                                  </Stack>
-                                </Box>
-
-                                <Box
-                                  sx={{
                                     position: 'relative',
                                     overflow: 'hidden',
-                                    flex: '1 1 48%',
+                                    flex: '1 1 52%',
                                     minWidth: { xs: '100%', md: 330 },
                                     px: { xs: 1.2, sm: 1.55 },
-                                    py: { xs: 1.15, sm: 1.35 },
+                                    py: { xs: 1.4, sm: 1.6 },
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     background: 'rgba(255, 255, 255, 0.045)',
                                     ...(currentCardIndex === 0 && !hasTouchedActiveConfidence
@@ -1217,7 +1059,7 @@ export function TrainingArena({
                                       : null),
                                   }}
                                 >
-                                  <Stack spacing={1.1}>
+                                  <Stack spacing={1.2}>
                                     <Stack
                                       direction="row"
                                       spacing={0.75}
@@ -1315,65 +1157,13 @@ export function TrainingArena({
                                     <Box
                                       sx={{
                                         position: 'relative',
-                                        px: { xs: 0.8, sm: 1.05 },
-                                        pt: currentCardIndex === 0 && !hasTouchedActiveConfidence ? 3.1 : 0.8,
-                                        pb: 0.55,
+                                        overflowX: 'hidden',
+                                        px: { xs: 1, sm: 1.3 },
+                                        py: 1.2,
                                         border: '1px solid rgba(255, 255, 255, 0.08)',
                                         background: 'rgba(255, 255, 255, 0.035)',
                                       }}
                                     >
-                                      {currentCardIndex === 0 && !hasTouchedActiveConfidence && (
-                                        <Box
-                                          sx={{
-                                            position: 'absolute',
-                                            top: 7,
-                                            left: `calc(${getConfidenceMarkOffset(activeConfidenceValue)} + 12px)`,
-                                            maxWidth: 'calc(100% - 24px)',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 0.55,
-                                            px: 0.8,
-                                            py: 0.34,
-                                            border: '1px solid rgba(255, 191, 77, 0.42)',
-                                            background:
-                                              'linear-gradient(135deg, rgba(20, 12, 34, 0.96), rgba(58, 18, 62, 0.92))',
-                                            boxShadow:
-                                              '0 0 0 1px rgba(255, 191, 77, 0.08), 0 6px 14px rgba(0, 0, 0, 0.24)',
-                                            pointerEvents: 'none',
-                                            animation: 'fadeRise 240ms ease-out',
-                                            transform:
-                                              activeConfidenceValue > (MIN_CONFIDENCE_MULTIPLIER + MAX_CONFIDENCE_MULTIPLIER) / 2
-                                                ? 'translateX(calc(-100% - 24px))'
-                                                : 'none',
-                                          }}
-                                        >
-                                          <Box
-                                            sx={{
-                                              width: 6,
-                                              height: 6,
-                                              flexShrink: 0,
-                                              backgroundColor: '#ffbf4d',
-                                              boxShadow: '0 0 10px rgba(255, 191, 77, 0.72)',
-                                            }}
-                                          />
-                                          <Typography
-                                            variant="caption"
-                                            sx={{
-                                              color: '#ffe6b3',
-                                              fontWeight: 900,
-                                              letterSpacing: '0.07em',
-                                              textTransform: 'uppercase',
-                                              lineHeight: 1.2,
-                                              fontSize: { xs: '0.58rem', sm: '0.64rem' },
-                                              whiteSpace: 'nowrap',
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
-                                            }}
-                                          >
-                                            Set wager
-                                          </Typography>
-                                        </Box>
-                                      )}
                                       <Slider
                                         value={activeConfidenceValue}
                                         min={MIN_CONFIDENCE_MULTIPLIER}
@@ -1397,7 +1187,7 @@ export function TrainingArena({
                                         sx={{
                                           color: '#ff00ff',
                                           width: '100%',
-                                          px: 0,
+                                          px: { xs: 1.4, sm: 1.8 },
                                           mt: 0.1,
                                           mb: 0.1,
                                           '& .MuiSlider-valueLabel': {
@@ -1440,7 +1230,7 @@ export function TrainingArena({
                                       <Stack
                                         sx={{
                                           mt: 0.45,
-                                          px: 0.1,
+                                          px: { xs: 1.4, sm: 1.8 },
                                           position: 'relative',
                                           height: 14,
                                         }}
@@ -1477,6 +1267,73 @@ export function TrainingArena({
                                     </Box>
                                   </Stack>
                                 </Box>
+
+                                <Box
+                                  sx={{
+                                    flex: '1 1 48%',
+                                    minWidth: 0,
+                                    px: { xs: 1.15, sm: 1.45 },
+                                    py: { xs: 1.15, sm: 1.35 },
+                                    border: '1px solid rgba(255, 191, 77, 0.3)',
+                                    background:
+                                      'linear-gradient(180deg, rgba(30, 16, 40, 0.78), rgba(14, 8, 27, 0.72))',
+                                  }}
+                                >
+                                  <Stack spacing={1.05} sx={{ height: '100%', justifyContent: 'center' }}>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: '#ffe6b3',
+                                        fontWeight: 900,
+                                        letterSpacing: '0.1em',
+                                        textTransform: 'uppercase',
+                                        lineHeight: 1.25,
+                                      }}
+                                    >
+                                      What should you do?
+                                    </Typography>
+                                    <Stack
+                                      direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
+                                      spacing={{ xs: 1.1, sm: 1.2 }}
+                                      sx={{
+                                        justifyContent: 'center',
+                                        alignItems: 'stretch',
+                                        width: '100%',
+                                      }}
+                                    >
+                                      <ArcadeButton
+                                        size="lg"
+                                        color="magenta"
+                                        startIcon={<HelpOutlineIcon />}
+                                        onClick={handleFlashFlag}
+                                        sx={{
+                                          flex: 1,
+                                          minHeight: 58,
+                                          minWidth: 0,
+                                          fontSize: { xs: '0.76rem', sm: '0.86rem' },
+                                          '& .MuiButton-startIcon': { color: 'inherit !important' },
+                                        }}
+                                      >
+                                        Doubt
+                                      </ArcadeButton>
+                                      <ArcadeButton
+                                        size="lg"
+                                        color="lime"
+                                        startIcon={<CheckCircleIcon />}
+                                        onClick={handleFlashPass}
+                                        sx={{
+                                          flex: 1,
+                                          minHeight: 58,
+                                          minWidth: 0,
+                                          fontSize: { xs: '0.76rem', sm: '0.86rem' },
+                                          '& .MuiButton-startIcon': { color: 'inherit !important' },
+                                        }}
+                                      >
+                                        Trust
+                                      </ArcadeButton>
+                                    </Stack>
+                                  </Stack>
+                                </Box>
                               </Stack>
                             </Stack>
                           </Box>
@@ -1491,7 +1348,7 @@ export function TrainingArena({
                             <Stack spacing={0.4}>
                               <Typography variant="body2" sx={{ color: '#eaffff', fontWeight: 800, fontSize: { xs: '0.96rem', sm: '1rem' } }}>
                                 {activeDecision === 'flag'
-                                  ? "I'd verify this one."
+                                  ? "I'd doubt this one."
                                   : "I'll trust this one."}
                               </Typography>
                               <Typography variant="caption" sx={{ color: 'rgba(228, 241, 255, 0.6)', fontSize: '0.78rem' }}>
