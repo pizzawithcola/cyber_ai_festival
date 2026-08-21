@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState } from 'react'
 
-type AppScreen = 'home' | 'survey' | 'terms' | 'visualization' | 'profile' | 'workout' | 'settings' | 'truthreveal'
+type AppScreen = 'home' | 'survey' | 'terms' | 'visualization' | 'profile' | 'workout' | 'settings'
 
 type UserData = {
   email: string

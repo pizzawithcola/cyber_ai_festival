@@ -452,6 +452,16 @@
   opacity: 1;
 }
 
+.data-shadows-start-gate-overlay {
+  background:
+    linear-gradient(rgba(34, 211, 238, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244, 114, 182, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.28), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.2), transparent 32%),
+    linear-gradient(180deg, rgb(2, 6, 23), rgb(12, 8, 30));
+  background-size: 22px 22px, 22px 22px, auto, auto, auto;
+}
+
 .data-shadows-intro-shell {
   position: relative;
   width: min(920px, 100%);
@@ -571,10 +581,251 @@
 
 .data-shadows-intro-footer {
   margin-top: clamp(16px, 2dvh, 20px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.data-shadows-intro-nav-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 96px;
+  padding: 9px 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(103, 232, 249, 0.48);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.16), rgba(34, 211, 238, 0.06));
+  color: #a5f3fc;
+  font-family: inherit;
   font-size: clamp(12px, 1.15dvh, 14px);
-  color: rgba(103, 232, 249, 0.86);
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+}
+
+.data-shadows-intro-nav-btn:hover:not(:disabled) {
+  border-color: rgba(244, 114, 182, 0.72);
+  background: linear-gradient(180deg, rgba(244, 114, 182, 0.18), rgba(244, 114, 182, 0.08));
+  color: #f9a8d4;
+  box-shadow: 0 0 16px rgba(244, 114, 182, 0.28);
+}
+
+.data-shadows-intro-nav-btn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.data-shadows-intro-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.data-shadows-intro-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(103, 232, 249, 0.28);
+  transition: width 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.data-shadows-intro-dot-active {
+  width: 24px;
+  background: #f472b6;
+  box-shadow: 0 0 12px rgba(244, 114, 182, 0.72);
+}
+
+.data-shadows-start-gate-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.4dvh, 16px);
+  min-height: 0;
+  text-align: center;
+}
+
+.data-shadows-start-gate-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(103, 232, 249, 0.4);
+  background: rgba(34, 211, 238, 0.1);
+  color: #a5f3fc;
+  font-size: clamp(10px, 1dvh, 12px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.data-shadows-start-gate-title {
+  font-size: clamp(26px, 3.2dvh, 40px);
+  line-height: 1.18;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #f8fafc;
+  text-shadow: 0 0 22px rgba(255, 255, 255, 0.1);
+}
+
+.data-shadows-start-gate-line {
+  margin: 0;
+  max-width: 640px;
+  font-size: clamp(14px, 1.55dvh, 17px);
+  line-height: 1.6;
+  color: rgba(226, 232, 240, 0.88);
+  letter-spacing: 0.02em;
+}
+
+.data-shadows-start-gate-kicker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: clamp(16px, 2dvh, 22px);
+}
+
+.data-shadows-start-gate-kicker-row .data-shadows-intro-kicker {
+  margin-bottom: 0;
+}
+
+.data-shadows-start-gate-note {
+  width: min(640px, 100%);
+  margin-top: clamp(18px, 2.4dvh, 26px);
+  padding: 10px 14px;
+  border-left: 3px solid rgba(244, 114, 182, 0.66);
+  background: rgba(244, 114, 182, 0.08);
+  text-align: left;
+}
+
+.data-shadows-start-gate-note-label {
+  margin-bottom: 4px;
+  color: #f9a8d4;
+  font-size: clamp(10px, 1dvh, 12px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.data-shadows-start-gate-note-copy {
+  margin: 0;
+  font-size: clamp(12px, 1.3dvh, 14px);
+  line-height: 1.5;
+  color: rgba(226, 232, 240, 0.84);
+}
+
+.data-shadows-start-gate-steps {
+  width: min(640px, 100%);
+  margin-top: clamp(14px, 1.8dvh, 20px);
+  text-align: left;
+}
+
+.data-shadows-start-gate-steps-label {
+  margin-bottom: 8px;
+  color: #67e8f9;
+  font-size: clamp(10px, 1dvh, 12px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.data-shadows-start-gate-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.data-shadows-start-gate-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.data-shadows-start-gate-step-number {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid rgba(103, 232, 249, 0.34);
+  background: rgba(34, 211, 238, 0.08);
+  color: #a5f3fc;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.data-shadows-start-gate-step-title {
+  font-size: clamp(13px, 1.4dvh, 15px);
+  color: rgba(241, 245, 249, 0.92);
+  letter-spacing: 0.02em;
+}
+
+.data-shadows-start-gate-footer {
+  justify-content: center;
+}
+
+.data-shadows-start-gate-btn {
+  min-width: 200px;
+  min-height: 46px;
+  padding: 10px 28px;
+  border-color: rgba(244, 114, 182, 0.62);
+  background: linear-gradient(180deg, rgba(244, 114, 182, 0.2), rgba(244, 114, 182, 0.08));
+  color: #f9a8d4;
+  font-size: clamp(13px, 1.3dvh, 15px);
+  box-shadow: 0 0 18px rgba(244, 114, 182, 0.2);
+}
+
+.data-shadows-start-gate-btn:hover {
+  border-color: rgba(103, 232, 249, 0.72);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.2), rgba(34, 211, 238, 0.08));
+  color: #a5f3fc;
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.3);
+}
+
+/* ================= Reveal Page（/datashadows/reveal） ================= */
+.data-shadows-reveal-page {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244, 114, 182, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.22), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.16), transparent 34%),
+    linear-gradient(180deg, rgb(2, 6, 23), rgb(12, 8, 30));
+  background-size: 22px 22px, 22px 22px, auto, auto, auto;
+}
+
+/* 隐藏数据流图内部 header（标题/分数已由页面顶部承担，避免重复） */
+.data-shadows-reveal-page .data-flow-header {
+  display: none;
+}
+
+@keyframes dsRevealFadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dsRevealGlitch {
+  0%, 100% { transform: translateX(0); filter: none; }
+  20% { transform: translateX(-4px); filter: hue-rotate(-12deg); }
+  40% { transform: translateX(3px); filter: hue-rotate(9deg); }
+  60% { transform: translateX(-2px); filter: hue-rotate(-6deg); }
+  80% { transform: translateX(2px); filter: hue-rotate(4deg); }
+}
+
+@media (max-width: 480px) {
+  .data-shadows-reveal-page {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
 @keyframes data-shadows-panel-reveal {

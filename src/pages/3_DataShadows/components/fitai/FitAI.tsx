@@ -8,7 +8,6 @@ import { DataVisualization } from './visualization/DataVisualization'
 import ProfilePage from './ProfilePage'
 import WorkoutPlan from './WorkoutPlan'
 import SettingsPage from './SettingsPage'
-import TruthReveal from './TruthReveal'
 import './fitai-styles.css'
 
 interface FitAIInnerProps {
@@ -26,11 +25,6 @@ const FitAIInner: React.FC<FitAIInnerProps> = ({ onBack }) => {
   // Show survey if user completed terms and not yet registered
   if (screen === 'survey' && !isRegistered) {
     return <RegistrationSurvey />
-  }
-
-  // Show truth reveal
-  if (screen === 'truthreveal') {
-    return <TruthReveal />
   }
 
   // Show data visualization

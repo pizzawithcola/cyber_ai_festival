@@ -1,9 +1,7 @@
-import React, { useState, useMemo, useRef } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Activity, ArrowRightLeft, Database, ShieldAlert, Sparkles } from 'lucide-react'
-import { useFitAI } from './fitaiContext'
+import { Activity, ArrowRightLeft, ShieldAlert, Sparkles } from 'lucide-react'
 import {
-  determineDataFlow,
   type TermsConsent,
   type SurveyData,
 } from './dataFlowLogic'
@@ -492,7 +490,6 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   overridePrivacyScore,
 }) => {
   const navigate = useNavigate()
-  const { setScreen } = useFitAI()
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [nodePositionOverrides, setNodePositionOverrides] = useState<Record<string, { x: number; y: number }>>({})
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
@@ -500,9 +497,6 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   const dragMovedRef = useRef(false)
   const pendingDragRef = useRef<PendingDragState | null>(null)
 
-  // Compute flow result
-  const flowResult = determineDataFlow(termsConsent, surveyData)
-  
   // Extract score components for emphasis calculation
   // These come from context/props that track scoring across the form flow
   const termsReadingProgress = termsConsent.termsReadingProgress ?? 0
@@ -685,6 +679,25 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
     return incomingConnections.some(conn => isConnectionActive(conn))
   }
 
+  // 自动高亮风险最高的活跃节点（arcade 现场：用户注意力短，先看重点）
+  useEffect(() => {
+    const autoSelectTimer = window.setTimeout(() => {
+      if (selectedNodeId !== null) return
+
+      const riskPriority = ['downstream', 'adplatform', 'broker', 'sdk']
+      const highRiskNode = NODE_POSITIONS.find(
+        (node) => riskPriority.includes(node.category) && isNodeActive(node.id)
+      )
+
+      if (highRiskNode) {
+        setSelectedNodeId(highRiskNode.id)
+      }
+    }, 1800)
+
+    return () => window.clearTimeout(autoSelectTimer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const selectedNode = selectedNodeId ? NODE_POSITIONS.find((n) => n.id === selectedNodeId) : null
   const overview = getOverviewContent(termsReadingProgress, termsConsent.privacySettings, optionalFieldsCount)
 
@@ -824,23 +837,6 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   }
 
   // Get detailed description for node based on flowResult
-  const getNodeFlowData = (nodeId: string) => {
-    switch (nodeId) {
-      case 'cloud':
-        return flowResult.analytics
-      case 'ai':
-        return flowResult.aiTraining
-      case 'sdk':
-        return flowResult.analytics
-      case 'broker':
-      case 'ads':
-      case 'ins':
-        return flowResult.thirdParty
-      default:
-        return null
-    }
-  }
-
   return (
     <div className="network-data-flow-diagram">
       <div className="data-flow-header">
@@ -1037,54 +1033,30 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
             {selectedNode ? (() => {
             const isAlwaysEnabled = selectedNode.id === 'user' || selectedNode.id === 'app'
             const nodeActive = isAlwaysEnabled || isNodeActive(selectedNode.id)
-            const nodeData = getNodeFlowData(selectedNode.id)
-            const emphasis = getNodeEmphasis(
-              selectedNode.id,
-              termsReadingProgress,
-              privacyScore,
-              optionalFieldsCount
-            )
             const ioSummary = getNodeFlowSummary(selectedNode.id)
             const consequence = getNodeConsequence(selectedNode.id)
 
             return (
               <div className="flow-node-detail flow-node-detail-selected" role="dialog" aria-label={selectedNode.label}>
                 <div className="flow-node-detail-scroll">
-                  <div className="flow-node-detail-main">
-                    <div>
-                      <h3 className="flow-node-detail-title">{selectedNode.label}</h3>
-                      <p className="flow-node-detail-desc">{selectedNode.description}</p>
-                    </div>
+                  <h3 className="flow-node-detail-title">{selectedNode.label}</h3>
 
-                    <div className="flow-node-compact-io">
-                      <div className="flow-node-module flow-node-module-in">
-                        <div className="flow-node-section-label flow-node-section-label-in">
-                          <ArrowRightLeft className="flow-node-section-icon" aria-hidden="true" />
-                          <strong>Inbound</strong>
-                        </div>
-                        <p>{selectedNode.inboundData ?? ioSummary.inbound}</p>
-                      </div>
-
-                      <div className="flow-node-module flow-node-module-out">
-                        <div className="flow-node-section-label flow-node-section-label-out">
-                          <ArrowRightLeft className="flow-node-section-icon" aria-hidden="true" />
-                          <strong>Outbound</strong>
-                        </div>
-                        <p>{selectedNode.outboundData ?? ioSummary.outbound}</p>
-                      </div>
+                  <div
+                    className={[
+                      'flow-node-detail-status',
+                      nodeActive ? 'flow-node-detail-status-risk' : 'flow-node-detail-status-safe',
+                    ].join(' ')}
+                  >
+                    <div className="flow-node-section-label flow-node-section-label-status">
+                      <Activity className="flow-node-section-icon" aria-hidden="true" />
+                      <strong>Status</strong>
                     </div>
+                    <span>
+                      {nodeActive
+                        ? 'Your data reaches this node' + (isAlwaysEnabled ? '' : ' through your current choices')
+                        : 'No active data route with your current choices'}
+                    </span>
                   </div>
-
-                  {selectedNode.scoreImpactCategory && selectedNode.scoreImpactCategory !== 'none' && (
-                    <div className={`flow-node-impact ${emphasis.className.includes('low') ? 'flow-node-impact-risk' : 'flow-node-impact-safe'}`}>
-                      <strong>
-                        {emphasis.indicator ? emphasis.indicator + ' — ' : ''}
-                        {selectedNode.scoreImpactCategory === 'reading' && 'Visibility depends on terms comprehension'}
-                        {selectedNode.scoreImpactCategory === 'consent' && 'Affected by your privacy toggle choices'}
-                        {selectedNode.scoreImpactCategory === 'exposure' && 'Increases with personal data disclosure'}
-                      </strong>
-                    </div>
-                  )}
 
                   <div className="flow-node-consequence">
                     <div className="flow-node-section-label flow-node-section-label-consequence">
@@ -1094,35 +1066,12 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
                     <p>{consequence}</p>
                   </div>
 
-                  <div className="flow-node-detail-footer">
-                    <div
-                      className={[
-                        'flow-node-detail-status',
-                        isAlwaysEnabled || nodeActive
-                          ? 'flow-node-detail-status-risk'
-                          : 'flow-node-detail-status-safe',
-                      ].join(' ')}
-                    >
-                      <div className="flow-node-section-label flow-node-section-label-status">
-                        <Activity className="flow-node-section-icon" aria-hidden="true" />
-                        <strong>Status</strong>
-                      </div>
-                      <span>
-                        {isAlwaysEnabled || nodeActive
-                          ? 'Your data reaches this node' + (isAlwaysEnabled ? '' : ' through active consent paths')
-                          : 'No active data route with your current choices'}
-                      </span>
+                  <div className="flow-node-module flow-node-module-out">
+                    <div className="flow-node-section-label flow-node-section-label-out">
+                      <ArrowRightLeft className="flow-node-section-icon" aria-hidden="true" />
+                      <strong>Data flow</strong>
                     </div>
-
-                    {(isAlwaysEnabled || nodeActive) && nodeData && 'fields' in nodeData && Array.isArray(nodeData.fields) && nodeData.fields.length > 0 && (
-                      <div className="flow-node-fields">
-                        <div className="flow-node-section-label flow-node-section-label-fields">
-                          <Database className="flow-node-section-icon" aria-hidden="true" />
-                          <strong>Fields</strong>
-                        </div>
-                        <span>{(nodeData.fields as string[]).join(', ')}</span>
-                      </div>
-                    )}
+                    <p>{ioSummary.inbound} → {ioSummary.outbound}</p>
                   </div>
                 </div>
 
@@ -1159,14 +1108,14 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
             className="data-flow-leaderboard-button"
             onClick={() => navigate('/ranking/game/datashadows')}
           >
-            View Leaderboard
+            Next
           </button>
           <button
             type="button"
             className="data-flow-retry-button"
-            onClick={() => setScreen('terms')}
+            onClick={() => navigate('/datashadows')}
           >
-            Would you like to try again?
+            Try Again
           </button>
         </section>
       </div>

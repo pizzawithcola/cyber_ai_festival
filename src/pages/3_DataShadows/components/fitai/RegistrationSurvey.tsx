@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useFitAI } from './fitaiContext'
 import ProgressIndicator from './ProgressIndicator'
 import QuestionCard from './QuestionCard'
 import AIAnalysis from './AIAnalysis'
+import { saveDataShadowsChoices } from '../../dataShadowsSession'
 
 interface QuestionData {
   name?: string
@@ -18,10 +20,12 @@ interface QuestionData {
 }
 
 const RegistrationSurvey: React.FC = () => {
-  const { setScreen, updateUserChoices, userChoices } = useFitAI()
+  const navigate = useNavigate()
+  const { updateUserChoices, userChoices } = useFitAI()
   const [currentStep, setCurrentStep] = useState(1)
   const [data, setData] = useState<QuestionData>({ workoutMinutes: 0 })
   const [showAI, setShowAI] = useState(false)
+  const [showGlitch, setShowGlitch] = useState(false)
   const [lastAnswer, setLastAnswer] = useState('')
   const aiTrainingConsent = (userChoices?.privacySettings as { aiTraining?: boolean } | undefined)?.aiTraining === true
   const [heightWeightVisible, setHeightWeightVisible] = useState(false)
@@ -106,16 +110,15 @@ const RegistrationSurvey: React.FC = () => {
       if (updateUserChoices) {
         updateUserChoices(choices)
       }
-      
-      // Navigate to truth reveal page
-      console.log('Navigating to truthreveal screen...')
-      if (setScreen) {
-        setScreen('truthreveal')
-      } else {
-        console.error('setScreen function is not available')
-        // Fallback: redirect or show error
-        alert('Cannot navigate to next page. Please contact administrator.')
-      }
+
+      // 保存到 sessionStorage 供 reveal 路由读取
+      saveDataShadowsChoices(choices as Parameters<typeof saveDataShadowsChoices>[0])
+
+      // 极简 glitch twist（约 1s）后跳转全屏揭示页
+      setShowGlitch(true)
+      window.setTimeout(() => {
+        navigate('/datashadows/reveal')
+      }, 1000)
     }
   }
 
@@ -185,6 +188,31 @@ const RegistrationSurvey: React.FC = () => {
       color: '#1f2937',
       overflow: 'hidden'
     }}>
+      {/* Glitch twist — 完成注册后的 1s 反转镜头，随后跳转全屏揭示页 */}
+      {showGlitch && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 999,
+          background: '#000000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'dsSurveyGlitch 0.32s linear infinite',
+        }}>
+          <div style={{
+            color: '#67e8f9',
+            fontSize: '15px',
+            fontWeight: 700,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            textShadow: '0 0 12px rgba(103, 232, 249, 0.8)',
+          }}>
+            Analyzing your data...
+          </div>
+        </div>
+      )}
+
       <AIAnalysis isActive={showAI} answer={lastAnswer} />
 
       <ProgressIndicator currentStep={currentStep} totalSteps={5} />
@@ -892,6 +920,13 @@ const RegistrationSurvey: React.FC = () => {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+
+        @keyframes dsSurveyGlitch {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-3px) scaleY(1.01); }
+          50% { transform: translateX(2px) scaleY(0.99); }
+          75% { transform: translateX(-2px) scaleY(1.01); }
         }
 
         input[type="range"]::-webkit-slider-thumb {

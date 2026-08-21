@@ -135,17 +135,17 @@ const SignupBar: React.FC<{ onSignup: () => void }> = ({ onSignup }) => {
             background: 'white',
             color: '#ff6b6b',
             border: 'none',
-            padding: '12px',
+            padding: '14px',
             borderRadius: '10px',
-            fontWeight: 700,
-            fontSize: '14px',
+            fontWeight: 800,
+            fontSize: '15px',
             cursor: 'pointer',
             transition: 'all 0.2s',
             transform: isAnimating ? 'scale(0.95)' : 'scale(1)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            boxShadow: '0 4px 12px rgba(0,0,0,0.18)'
           }}
         >
-          Register Now
+          Begin the Journey
         </button>
 
         {/* Hint Text */}
@@ -155,7 +155,7 @@ const SignupBar: React.FC<{ onSignup: () => void }> = ({ onSignup }) => {
           opacity: 0.8,
           textAlign: 'center'
         }}>
-          👆 Tap to start your fitness journey
+          Free for 7 days · then $9.99/month · cancel anytime
         </div>
       </div>
 

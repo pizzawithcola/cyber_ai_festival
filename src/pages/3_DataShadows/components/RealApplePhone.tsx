@@ -173,32 +173,58 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onAppTap }) => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* App Identity */}
       <div className="app-icon-container">
-        <button
+        <div
           className="fitai-icon"
-          onClick={onAppTap}
-          aria-label="Launch FitAI"
+          aria-label="FitAI"
         >
           <div className="icon-content">
             <FitAIActiveLogo />
           </div>
           <span className="fitai-icon-beacon" aria-hidden="true" />
-        </button>
+        </div>
 
         <h1 className="app-name">FitAI</h1>
         <p className="app-tagline">Intelligent Fitness Training</p>
       </div>
 
-      {/* Description */}
-      <div className="description-container">
-        <h2 className="description-title">Smart Fitness</h2>
-        <p className="description-text">
-          AI-powered workout tracking with real-time analytics and performance optimization.
+      {/* First-launch onboarding */}
+      <div className="welcome-container">
+        <h2 className="welcome-title">Welcome to FitAI</h2>
+        <p className="welcome-subtitle">Your AI-powered fitness coach</p>
+
+        <div className="welcome-features">
+          <div className="welcome-feature">
+            <span className="welcome-feature-star">✦</span>
+            Personalized workouts
+          </div>
+          <div className="welcome-feature">
+            <span className="welcome-feature-star">✦</span>
+            Real-time progress tracking
+          </div>
+          <div className="welcome-feature">
+            <span className="welcome-feature-star">✦</span>
+            Smart nutrition plans
+          </div>
+        </div>
+
+        <button
+          className="trial-button"
+          onClick={onAppTap}
+        >
+          Start 7-day Trial
+        </button>
+
+        <p className="trial-note">
+          Free for 7 days · then $9.99/month · cancel anytime
         </p>
-        <p className="instruction-text">
-          Tap the icon to start your fitness journey
-        </p>
+
+        <div className="welcome-links">
+          <button type="button" className="welcome-link">Sign in</button>
+          <span className="welcome-link-sep">·</span>
+          <button type="button" className="welcome-link">Restore purchases</button>
+        </div>
       </div>
     </div>
   )

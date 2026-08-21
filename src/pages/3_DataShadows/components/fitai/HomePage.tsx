@@ -1,6 +1,5 @@
 import React from 'react'
 import { useFitAI } from './fitaiContext'
-import { useDataShadowsLayout } from '../../DataShadowsLayoutContext'
 import HeroSection from './HeroSection'
 import SocialProof from './SocialProof'
 import FeatureCards from './FeatureCards'
@@ -8,11 +7,9 @@ import SignupBar from './SignupBar'
 
 const HomePage: React.FC = () => {
   const { initiateRegistrationFlow } = useFitAI()
-  const { recenterPhoneForExperience } = useDataShadowsLayout()
 
   // Register/Login button - triggers Terms
-  const handleSignup = async () => {
-    await recenterPhoneForExperience()
+  const handleSignup = () => {
     initiateRegistrationFlow()
   }
 
@@ -20,7 +17,6 @@ const HomePage: React.FC = () => {
     <div style={{ paddingBottom: 20 }}>
       {/* Hero Section */}
       <HeroSection onGetStarted={() => { void handleSignup() }} />
-
       {/* Social Proof */}
       <SocialProof />
 

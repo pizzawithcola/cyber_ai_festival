@@ -23,6 +23,35 @@ const HeroSection: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
       }} />
 
       <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Brand + Rating */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          marginBottom: '16px'
+        }}>
+          <div style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '12px',
+            background: 'rgba(255,255,255,0.95)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '22px',
+            fontWeight: 900,
+            color: '#ff8c42',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.18)'
+          }}>
+            F
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.3px' }}>FitAI</div>
+            <div style={{ fontSize: '11px', opacity: 0.92 }}>★★★★★ 4.8 · 128K reviews</div>
+          </div>
+        </div>
+
         {/* Before/After Visual */}
         <div style={{
           display: 'flex',
@@ -109,25 +138,28 @@ const HeroSection: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted }) =
           onMouseEnter={() => setScale(1.05)}
           onMouseLeave={() => setScale(1)}
           style={{
+            width: '100%',
+            maxWidth: '320px',
             background: 'white',
             color: '#ff8c42',
             border: 'none',
-            padding: '14px 28px',
-            fontSize: '16px',
-            fontWeight: 700,
-            borderRadius: '12px',
+            padding: '16px 28px',
+            fontSize: '17px',
+            fontWeight: 800,
+            borderRadius: '14px',
             cursor: 'pointer',
             transform: `scale(${scale})`,
             transition: 'all 0.3s ease',
-            boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
-            display: 'inline-block'
+            boxShadow: '0 8px 24px rgba(0,0,0,0.28)',
+            display: 'inline-block',
+            letterSpacing: '0.01em'
           }}
         >
-          Start Free →
+          Begin the Journey
         </button>
 
-        <p style={{ fontSize: '11px', opacity: 0.8, marginTop: '12px' }}>
-          No credit card required
+        <p style={{ fontSize: '11px', opacity: 0.85, marginTop: '12px' }}>
+          Free for 7 days · then $9.99/month · cancel anytime
         </p>
       </div>
     </div>

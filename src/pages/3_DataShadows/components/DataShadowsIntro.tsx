@@ -50,6 +50,25 @@ const DataShadowsIntro: React.FC<DataShadowsIntroProps> = ({ onComplete }) => {
     completeNow()
   }, [completeNow, currentIntroIndex])
 
+  const goPrev = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    if (currentIntroIndex === 0) return
+    setIsFadingOut(false)
+    setCurrentIntroIndex((prev) => prev - 1)
+  }
+
+  const goNext = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    setIsFadingOut(false)
+
+    if (currentIntroIndex < INTRO_LINES.length - 1) {
+      setCurrentIntroIndex((prev) => prev + 1)
+      return
+    }
+
+    completeNow()
+  }
+
   useEffect(() => {
     const enterTimer = window.setTimeout(() => setVisible(true), 60)
 
@@ -114,9 +133,34 @@ const DataShadowsIntro: React.FC<DataShadowsIntroProps> = ({ onComplete }) => {
           </div>
 
           <div className="data-shadows-intro-footer">
-            {currentIntroIndex < INTRO_LINES.length - 1
-              ? `Tap anywhere to continue · ${currentIntroIndex + 1}/${INTRO_LINES.length}`
-              : 'Tap anywhere to begin the simulation'}
+            <button
+              type="button"
+              className="data-shadows-intro-nav-btn"
+              onClick={goPrev}
+              disabled={currentIntroIndex === 0}
+            >
+              Prev
+            </button>
+
+            <div className="data-shadows-intro-dots">
+              {INTRO_LINES.map((intro, index) => (
+                <span
+                  key={intro.label}
+                  className={[
+                    'data-shadows-intro-dot',
+                    index === currentIntroIndex ? 'data-shadows-intro-dot-active' : '',
+                  ].filter(Boolean).join(' ')}
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="data-shadows-intro-nav-btn"
+              onClick={goNext}
+            >
+              {currentIntroIndex < INTRO_LINES.length - 1 ? 'Next' : 'Start'}
+            </button>
           </div>
         </div>
       </div>

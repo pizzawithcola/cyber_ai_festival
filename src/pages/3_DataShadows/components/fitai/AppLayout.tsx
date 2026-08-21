@@ -19,6 +19,7 @@ interface AppLayoutProps {
 const AppLayout: React.FC<AppLayoutProps> = ({ children, onBack }) => {
   const { isMenuOpen, toggleMenu, setScreen, screen } = useFitAI()
   const showBottomTabBar = screen !== 'home'
+  const isHome = screen === 'home'
 
   return (
     <div style={{
@@ -30,7 +31,50 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, onBack }) => {
       overflow: 'hidden',
       position: 'relative'
     }}>
-      {/* Top Bar - Fixed at top */}
+      {/* iOS Status Bar - home screen only */}
+      {isHome && (
+        <div style={{
+          height: '34px',
+          background: 'linear-gradient(135deg, #ff8c42 0%, #3b82f6 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 18px',
+          color: 'white',
+          fontSize: '13px',
+          fontWeight: 600,
+          flexShrink: 0,
+          position: 'relative',
+          zIndex: 100
+        }}>
+          <span>9:41</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Signal bars */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5px', height: '11px' }}>
+              {[4, 6, 8, 10].map((h, i) => (
+                <div key={i} style={{ width: '3px', height: `${h}px`, background: 'white', borderRadius: '1px' }} />
+              ))}
+            </div>
+            {/* WiFi */}
+            <span style={{ fontSize: '14px', lineHeight: 1 }}>⌒</span>
+            {/* Battery */}
+            <div style={{
+              width: '24px',
+              height: '12px',
+              border: '1.5px solid rgba(255,255,255,0.7)',
+              borderRadius: '3px',
+              padding: '1.5px',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <div style={{ width: '70%', height: '100%', background: 'white', borderRadius: '1px' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top Bar - Fixed at top (non-home screens) */}
+      {!isHome && (
       <div style={{
         height: '60px',
         background: '#ffffff',
@@ -97,6 +141,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, onBack }) => {
           {isMenuOpen ? '✕' : '☰'}
         </button>
       </div>
+      )}
 
       {/* Slide-up Menu - Contained within app frame */}
       {isMenuOpen && (

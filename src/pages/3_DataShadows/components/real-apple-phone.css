@@ -224,6 +224,7 @@
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
+  gap: 30px;
 }
 
 /* Background Elements */
@@ -250,16 +251,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   animation: fadeInUp 0.6s ease-out;
 }
 
 /* FitAI App Icon */
 .fitai-icon {
-  width: 108px;
-  height: 108px;
-  border-radius: 23px;
-  cursor: pointer;
+  width: 88px;
+  height: 88px;
+  border-radius: 20px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
@@ -368,40 +368,115 @@
   line-height: 1.2;
 }
 
-/* Description Text */
-.description-container {
-  position: absolute;
-  bottom: 100px;
-  left: 0;
-  right: 0;
-  padding: 0 40px;
+/* Welcome Onboarding */
+.welcome-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  padding: 0 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  animation: fadeIn 0.8s ease-out 0.3s both;
+  box-sizing: border-box;
+  animation: fadeIn 0.7s ease-out 0.25s both;
 }
 
-.description-title {
-  font-size: 18px;
-  font-weight: 600;
+.welcome-title {
+  font-size: 24px;
+  font-weight: 700;
   color: #fff;
-  margin-bottom: 8px;
-  letter-spacing: -0.3px;
+  margin: 0 0 4px;
+  letter-spacing: -0.4px;
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
 }
 
-.description-text {
+.welcome-subtitle {
   font-size: 14px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.5;
-  margin-bottom: 14px;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0 0 18px;
 }
 
-.instruction-text {
+.welcome-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.welcome-feature {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.welcome-feature-star {
+  color: #67e8f9;
   font-size: 11px;
+}
+
+.trial-button {
+  width: 100%;
+  max-width: 280px;
+  padding: 15px 24px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #22d3ee 0%, #818cf8 55%, #c084fc 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(99, 102, 241, 0.4);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
+}
+
+.trial-button:hover {
+  transform: scale(1.03);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.52);
+}
+
+.trial-button:active {
+  transform: scale(0.97);
+}
+
+.trial-note {
+  margin: 10px 0 14px;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.4;
+}
+
+.welcome-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.welcome-link {
+  background: none;
+  border: none;
+  padding: 4px;
+  font-size: 12px;
   font-weight: 600;
-  color: rgba(103, 232, 249, 0.82);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  animation: subtleFade 1.8s ease-in-out infinite;
+  color: rgba(103, 232, 249, 0.88);
+  cursor: pointer;
+  font-family: 'SF Pro Text', -apple-system, sans-serif;
+}
+
+.welcome-link:hover {
+  color: #fff;
+}
+
+.welcome-link-sep {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.32);
 }
 
 /* Home Indicator */
