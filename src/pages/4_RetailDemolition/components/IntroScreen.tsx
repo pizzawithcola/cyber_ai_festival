@@ -36,7 +36,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onStart }) => {
   const isLast = slide === SLIDES.length - 1;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-3xl mx-auto relative z-10">
+    <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 md:px-8 py-6 text-center max-w-3xl mx-auto relative z-10 w-full">
       {/* Title */}
       <ArcadeTypography arcadeColor="yellow" arcadeSize="sm" font="pressstart2p" sx={{ mb: 1.5 }}>
         CYBER AI FESTIVAL
@@ -68,7 +68,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onStart }) => {
       {/* Panel */}
       <ArcadePanel
         accent="yellow"
-        sx={{ width: '100%', mb: 5, p: { xs: 3, md: 4 } }}
+        sx={{ width: '100%', mb: 5, p: { xs: 2, md: 4 } }}
       >
         <div className="flex flex-col items-center gap-5">
           <div
@@ -101,19 +101,18 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onStart }) => {
         </div>
       </ArcadePanel>
 
-      {/* Navigation */}
-      <div className="flex items-center gap-4 w-full justify-center">
-        {slide > 0 && (
-          <ArcadeButton
-            color="yellow"
-            variant="outline"
-            size="md"
-            onClick={() => setSlide(s => s - 1)}
-            startIcon={<ChevronLeft size={16} />}
-          >
-            BACK
-          </ArcadeButton>
-        )}
+      {/* Navigation — 左右布局，与其他游戏统一 */}
+      <div className="flex items-center justify-between gap-4 w-full">
+        <ArcadeButton
+          color="yellow"
+          variant="outline"
+          size="lg"
+          onClick={() => setSlide(s => s - 1)}
+          disabled={slide === 0}
+          startIcon={<ChevronLeft size={18} />}
+        >
+          BACK
+        </ArcadeButton>
 
         <ArcadeButton
           color="yellow"

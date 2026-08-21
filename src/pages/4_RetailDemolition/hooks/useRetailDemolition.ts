@@ -48,7 +48,8 @@ export interface Decision {
 
 export const useRetailDemolition = () => {
   // ── Core State ──
-  const [gameState, setGameState] = useState<GameState>('intro');
+  // intro 已拆分为独立路由（/retaildemolition），游戏主体从 billing 开始
+  const [gameState, setGameState] = useState<GameState>('billing');
   const [isAgentic, setIsAgentic] = useState(true);
 
   // ── Billing Info ──

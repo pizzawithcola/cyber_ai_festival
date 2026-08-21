@@ -6,6 +6,8 @@ import DataShadows from '../pages/3_DataShadows/DataShadows';
 import DataShadowsGame from '../pages/3_DataShadows/DataShadowsGame';
 import DataShadowsReveal from '../pages/3_DataShadows/DataShadowsReveal';
 import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition.tsx';
+import RetailDemolitionGame from '../pages/4_RetailDemolition/RetailDemolitionGame';
+import RetailDemolitionSummary from '../pages/4_RetailDemolition/RetailDemolitionSummary';
 import PhishingPanel from '../pages/5_Phishing/PhishingPanel';
 import PhishingScorePage from '../pages/5_Phishing/PhishingScorePage';
 import PhishingEducationPage from '../pages/5_Phishing/PhishingEducationPage';
@@ -34,6 +36,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/datashadows/game" element={<DataShadowsGame />} />
       <Route path="/datashadows/reveal" element={<DataShadowsReveal />} />
       <Route path="/retaildemolition" element={<RetailDemolition />} />
+      <Route path="/retaildemolition/game" element={<RetailDemolitionGame />} />
+      <Route path="/retaildemolition/summary" element={<RetailDemolitionSummary />} />
       <Route path="/phishing" element={<PhishingPanel />} />
       <Route path="/phishing/score" element={<PhishingScorePage />} />
       <Route path="/ranking" element={<RankingPage />} />
