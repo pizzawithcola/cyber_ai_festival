@@ -20,6 +20,8 @@ export type DataShadowsChoices = {
   termsReadingProgress?: number
   termsReadingScore?: number
   privacyOptionsScore?: number
+  detailExpansionScore?: number
+  expandedOptions?: string[]
   totalTermsScore?: number
   surveyScore?: number
   uncheckedOptions?: string[]

@@ -12,11 +12,36 @@ import { useFitAI } from './fitaiContext'
  * - Professional layout with proper spacing and typography
  * - Reading progress tracking with hidden scoring mechanism
  */
+
+// 隐私选项配置（标题/描述 + 展开说明内容）
+const PRIVACY_OPTIONS = [
+  { key: 'analytics', emoji: '📊', title: 'Usage Analytics', desc: 'Help us improve the app by sharing usage data' },
+  { key: 'marketing', emoji: '📢', title: 'Marketing Communications', desc: 'Receive updates, tips, and special offers' },
+  { key: 'thirdParty', emoji: '🤝', title: 'Third-Party Sharing', desc: 'Share anonymized data with research partners' },
+  { key: 'dataRetention', emoji: '💾', title: 'Extended Data Retention', desc: 'Keep historical data for long-term insights' },
+  { key: 'aiTraining', emoji: '🤖', title: 'AI Model Training', desc: "Allow anonymized data to train and improve FitAI's algorithms" },
+]
+
+const PRIVACY_OPTION_DETAILS: Record<string, string> = {
+  analytics:
+    'We may process information about how you interact with the Service, including session duration and device details, in order to improve our products and better understand usage patterns. This information may be shared with our analytics providers and aggregated for business and operational purposes, subject to applicable law.',
+  marketing:
+    'By using the Service you may receive communications about products, services, and promotional offers that we believe may be of interest to you. Your contact details and preferences may be used to tailor these communications and to support advertising efforts undertaken together with third-party marketing partners, and you may adjust your preferences at any time.',
+  thirdParty:
+    'Certain anonymized and aggregate information may be shared with selected partners and research institutions to support product development and industry benchmarking. We take reasonable measures to protect such information; however, once transferred, data becomes subject to the recipient\'s own policies and may be further processed or combined with other datasets.',
+  dataRetention:
+    'We retain your personal information for as long as your account remains active or as otherwise required to provide the Service, comply with legal obligations, and support legitimate business purposes. Historical records may be maintained after account termination for backup, analytical, and compliance purposes, and retention periods may vary depending on the type of data involved.',
+  aiTraining:
+    'Anonymized health and fitness information may be used to train, evaluate, and improve our machine learning models and related technologies. Once data has been incorporated into a model, removal may not be feasible, and such processed information may be stored within our infrastructure or with third-party providers engaged to support model development.',
+}
+
 const TermsAndConditions: React.FC = () => {
   const { completeTerms, updateUserChoices } = useFitAI()
   const [hasReadTerms, setHasReadTerms] = useState(false)
-  const [showPrivacyDetails, setShowPrivacyDetails] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  // 隐私选项：expandedOptions = UI 当前展开状态；seenOptions = 已展开过的集合（计分依据，首次展开永久 +5/项）
+  const [expandedOptions, setExpandedOptions] = useState<string[]>([])
+  const [seenOptions, setSeenOptions] = useState<string[]>([])
   const [privacySettings, setPrivacySettings] = useState({
     analytics: true,
     marketing: true,
@@ -26,69 +51,61 @@ const TermsAndConditions: React.FC = () => {
   })
   const [termsReadingProgress, setTermsReadingProgress] = useState(0)
   const termsContentRef = useRef<HTMLDivElement>(null)
+  // 阅读计时：首次滚动（开始阅读）时间 + 触及 100% 时间，用于阅读计分
+  const termsStartTimeRef = useRef<number | null>(null)
+  const completionTimeRef = useRef<number | null>(null)
 
-  // Detailed terms content
+  // Detailed terms content（正式且精简，便于快速阅读）
   const detailedTerms = `TERMS OF SERVICE & PRIVACY POLICY
 
 LAST UPDATED: January 2026
 
-1. ACCEPTANCE OF TERMS
-By accessing and using the FitAI mobile application ("Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to these terms, please do not use this Service.
+1. ACCEPTANCE
+By using FitAI ("the Service"), you accept these terms. If you do not agree, please do not use the Service.
 
 2. ELIGIBILITY
-You must be at least 18 years of age or have parental consent to use this Service. The Service is not intended for use by persons under the age of 13.
+You must be at least 18 years old or have parental consent.
 
-3. SERVICE DESCRIPTION
-FitAI provides personalized fitness tracking, health insights, workout recommendations, and progress monitoring based on your personal data and activity patterns.
+3. SERVICE
+FitAI provides personalized fitness coaching, progress tracking, and health insights based on your personal data.
 
-4. USER DATA COLLECTION
-We collect the following types of information:
-- Personal Information: Name, age, gender, email address
-- Health and Fitness Data: Height, weight, body measurements, exercise habits, dietary preferences
-- Usage Data: App interactions, feature usage, session duration
-- Device Information: Device type, operating system, IP address
+4. DATA WE COLLECT
+- Personal information: name, age, gender, email
+- Health and fitness data: height, weight, body measurements, exercise habits
+- Usage data: app interactions, session duration
+- Device information: device type, OS, IP address
 
 5. HOW WE USE YOUR DATA
-- To provide personalized fitness recommendations
-- To track your progress and generate insights
+- To personalize fitness plans and recommendations
+- To track progress and generate insights
 - To improve our algorithms and services
-- To communicate important updates and notifications
-- To conduct research and development (anonymized data only)
+- To send updates and notifications
+- For research and development (anonymized data only)
 
-6. DATA SHARING AND THIRD PARTIES
-We do not sell your personal data. We may share data with:
-- Service providers necessary for app functionality
+6. DATA SHARING
+We do not sell your data. We may share data with:
+- Service providers required for app functionality
 - Analytics partners (only with your consent)
 - Research institutions (anonymized data only)
 - Legal authorities when required by law
 
-7. DATA RETENTION AND DELETION
-We retain your personal data for as long as your account is active or as needed to provide services. You may request deletion of your data at any time by contacting support@fitai.com.
+7. DATA RETENTION
+We retain your data while your account is active. You may request deletion anytime at support@fitai.com.
 
-8. SECURITY MEASURES
-We implement industry-standard security measures including:
-- End-to-end encryption for sensitive health data
-- Regular security audits and penetration testing
-- Secure server infrastructure with firewalls
-- Access controls and authentication protocols
+8. SECURITY
+We protect your data with encryption, regular security audits, and access controls.
 
-9. USER RIGHTS
-You have the right to:
-- Access your personal data
-- Correct inaccurate data
-- Delete your data
-- Export your data in a portable format
-- Opt-out of marketing communications
-- Withdraw consent for data processing
+9. YOUR RIGHTS
+You may access, correct, delete, or export your data, and withdraw consent at any time.
 
-10. LIMITATION OF LIABILITY
-FitAI provides fitness recommendations for informational purposes only. We are not medical professionals. Consult with healthcare providers before starting any new fitness program.
+10. NOT MEDICAL ADVICE
+FitAI provides fitness guidance for informational purposes only. Consult a healthcare professional before starting any program.
 
 11. CHANGES TO TERMS
-We may update these terms periodically. Continued use of the Service after changes constitutes acceptance of the new terms.
+We may update these terms. Continued use after changes means you accept them.
 
-12. CONTACT INFORMATION
-For questions about these terms, contact: legal@fitai.com`
+12. CONTACT
+For questions, contact: legal@fitai.com`
 
   // Calculate reading progress for terms section only
   useEffect(() => {
@@ -96,11 +113,26 @@ For questions about these terms, contact: legal@fitai.com`
     if (!container) return
 
     const handleScroll = () => {
+      // 已触及 100% 后进度锁定，不再变化（避免滚回后倒退）
+      if (completionTimeRef.current !== null) {
+        setTermsReadingProgress(100)
+        return
+      }
+      // 首次滚动即开始阅读计时
+      if (termsStartTimeRef.current === null) {
+        termsStartTimeRef.current = Date.now()
+      }
       const scrollTop = container.scrollTop
       const scrollHeight = container.scrollHeight
       const clientHeight = container.clientHeight
-      const progress = (scrollTop / (scrollHeight - clientHeight)) * 100
-      setTermsReadingProgress(Math.min(100, Math.max(0, Math.round(progress))))
+      const maxScroll = Math.max(1, scrollHeight - clientHeight)
+      const progress = (scrollTop / maxScroll) * 100
+      const clamped = Math.min(100, Math.max(0, Math.round(progress)))
+      setTermsReadingProgress(clamped)
+      // 触及 100%（读完）时记录时间戳，用于阅读计分
+      if (clamped >= 100) {
+        completionTimeRef.current = Date.now()
+      }
     }
 
     container.addEventListener('scroll', handleScroll)
@@ -109,10 +141,18 @@ For questions about these terms, contact: legal@fitai.com`
 
   // Calculate and save terms scoring
   const calculateAndSaveScore = useCallback(() => {
-    // Calculate reading score: +5 for every 25% read
-    const readingScore = Math.floor(termsReadingProgress / 25) * 5
+    // Reading score: 不读=0；读完=5；时间分：耗时≥1s=1、≥2s=3、≥3s=5（封顶）；满分10
+    const completedReading = completionTimeRef.current !== null
+    const secondsToRead =
+      completedReading &&
+      completionTimeRef.current !== null &&
+      termsStartTimeRef.current !== null
+        ? Math.round((completionTimeRef.current - termsStartTimeRef.current) / 1000)
+        : 0
+    const timeScore = secondsToRead >= 3 ? 5 : secondsToRead >= 2 ? 3 : secondsToRead >= 1 ? 1 : 0
+    const readingScore = completedReading ? 5 + timeScore : 0
     
-    // Calculate unchecked privacy options score: +10 for each unchecked
+    // Calculate unchecked privacy options score: +7 for each unchecked (max 5×7=35)
     let uncheckedCount = 0
     const uncheckedOptions: string[] = []
     
@@ -137,13 +177,17 @@ For questions about these terms, contact: legal@fitai.com`
       uncheckedOptions.push('aiTraining')
     }
     
-    const privacyOptionsScore = uncheckedCount * 10
-    const totalTermsScore = readingScore + privacyOptionsScore
+    // 展开说明分：每首次展开一个选项 +3（最多 5×3=15，收起不扣分）
+    const detailExpansionScore = seenOptions.length * 3
+    const privacyOptionsScore = uncheckedCount * 7
+    const totalTermsScore = readingScore + detailExpansionScore + privacyOptionsScore
 
     // Save privacy settings so RegistrationSurvey and TruthReveal can use them
     updateUserChoices({
       termsReadingProgress,
       termsReadingScore: readingScore,
+      expandedOptions: seenOptions,
+      detailExpansionScore,
       uncheckedOptions,
       privacyOptionsScore,
       totalTermsScore,
@@ -152,12 +196,17 @@ For questions about these terms, contact: legal@fitai.com`
     
     console.log('Terms Scoring:', {
       readingProgress: termsReadingProgress,
+      completedReading,
+      secondsToRead,
+      timeScore,
       readingScore,
+      seenOptions,
+      detailExpansionScore,
       uncheckedOptions,
       privacyOptionsScore,
       totalTermsScore
     })
-  }, [privacySettings, termsReadingProgress, updateUserChoices])
+  }, [privacySettings, termsReadingProgress, seenOptions, updateUserChoices])
 
   useEffect(() => {
     if (countdown <= 0) return
@@ -184,6 +233,14 @@ For questions about these terms, contact: legal@fitai.com`
       ...prev,
       [key]: !prev[key]
     }))
+  }
+
+  const toggleOptionDetail = (key: string) => {
+    setExpandedOptions(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
+    // 首次展开即永久计分（收起或再展开不会重复/丢失）
+    setSeenOptions(prev => (prev.includes(key) ? prev : [...prev, key]))
   }
 
   return (
@@ -327,290 +384,81 @@ For questions about these terms, contact: legal@fitai.com`
               Your privacy matters to us. We handle your data with care and transparency.
             </p>
 
-            {/* Privacy Settings Cards */}
+            {/* Privacy Settings Cards — 每项可独立展开说明 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {/* Analytics Toggle */}
-              <div style={{
-                background: '#f9fafb',
-                borderRadius: '12px',
-                padding: '12px',
-                border: '1px solid #e5e7eb',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#000' }}>
-                    📊 Usage Analytics
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                    Help us improve the app by sharing usage data
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={privacySettings.analytics}
-                  onChange={() => togglePrivacySetting('analytics')}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    cursor: 'pointer',
-                    accentColor: '#3b82f6'
-                  }}
-                />
-              </div>
+              {PRIVACY_OPTIONS.map((opt) => {
+                const isExpanded = expandedOptions.includes(opt.key)
+                return (
+                  <div key={opt.key} style={{
+                    background: '#f9fafb',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: '600', color: '#000' }}>
+                          {opt.emoji} {opt.title}
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                          {opt.desc}
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={privacySettings[opt.key as keyof typeof privacySettings]}
+                        onChange={() => togglePrivacySetting(opt.key as keyof typeof privacySettings)}
+                        style={{
+                          width: '44px',
+                          height: '24px',
+                          cursor: 'pointer',
+                          accentColor: '#3b82f6'
+                        }}
+                      />
+                    </div>
 
-              {/* Marketing Toggle */}
-              <div style={{
-                background: '#f9fafb',
-                borderRadius: '12px',
-                padding: '12px',
-                border: '1px solid #e5e7eb',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#000' }}>
-                    📢 Marketing Communications
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                    Receive updates, tips, and special offers
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={privacySettings.marketing}
-                  onChange={() => togglePrivacySetting('marketing')}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    cursor: 'pointer',
-                    accentColor: '#3b82f6'
-                  }}
-                />
-              </div>
+                    {/* 展开说明 - 无框纯文字链接 */}
+                    <button
+                      type="button"
+                      onClick={() => toggleOptionDetail(opt.key)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        marginTop: '10px',
+                        padding: 0,
+                        background: 'transparent',
+                        border: 'none',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: '#3b82f6',
+                        cursor: 'pointer',
+                        transition: 'opacity 0.2s'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
+                    >
+                      {isExpanded ? '▼ Hide details' : '▶ See details'}
+                    </button>
 
-              {/* Third-Party Sharing Toggle */}
-              <div style={{
-                background: '#f9fafb',
-                borderRadius: '12px',
-                padding: '12px',
-                border: '1px solid #e5e7eb',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#000' }}>
-                    🤝 Third-Party Sharing
+                    {isExpanded && (
+                      <div style={{
+                        marginTop: '10px',
+                        fontSize: '11.5px',
+                        color: '#6b7280',
+                        lineHeight: 1.7
+                      }}>
+                        {PRIVACY_OPTION_DETAILS[opt.key]}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                    Share anonymized data with research partners
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={privacySettings.thirdParty}
-                  onChange={() => togglePrivacySetting('thirdParty')}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    cursor: 'pointer',
-                    accentColor: '#3b82f6'
-                  }}
-                />
-              </div>
-
-              {/* Data Retention Toggle */}
-              <div style={{
-                background: '#f9fafb',
-                borderRadius: '12px',
-                padding: '12px',
-                border: '1px solid #e5e7eb',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#000' }}>
-                    💾 Extended Data Retention
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                    Keep historical data for long-term insights
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={privacySettings.dataRetention}
-                  onChange={() => togglePrivacySetting('dataRetention')}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    cursor: 'pointer',
-                    accentColor: '#3b82f6'
-                  }}
-                />
-              </div>
-
-              {/* AI Model Training Toggle (原 Crash Reports) */}
-              <div style={{
-                background: '#f9fafb',
-                borderRadius: '12px',
-                padding: '12px',
-                border: '1px solid #e5e7eb',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#000' }}>
-                    🤖 AI Model Training
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                    Allow anonymized data to train and improve FitAI’s algorithms
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={privacySettings.aiTraining}
-                  onChange={() => togglePrivacySetting('aiTraining')}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    cursor: 'pointer',
-                    accentColor: '#3b82f6'
-                  }}
-                />
-              </div>
+                )
+              })}
             </div>
-
-            {/* Privacy Details Expander */}
-            <button
-              onClick={() => setShowPrivacyDetails(!showPrivacyDetails)}
-              style={{
-                width: '100%',
-                marginTop: '12px',
-                padding: '12px',
-                background: '#f9fafb',
-                border: '1px solid #e5e7eb',
-                borderRadius: '12px',
-                fontSize: '15px',
-                fontWeight: '500',
-                color: '#3b82f6',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              {showPrivacyDetails ? '▼ Hide More Details' : '▶ Show More Details'}
-            </button>
-
-            {/* Detailed Privacy Information */}
-            {showPrivacyDetails && (
-              <div style={{
-                marginTop: '12px',
-                background: '#f9fafb',
-                borderRadius: '12px',
-                padding: '14px',
-                border: '1px solid #e5e7eb'
-              }}>
-                {/* Data Collection */}
-                <div style={{ marginBottom: '14px' }}>
-                  <h3 style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#000',
-                    margin: '0 0 8px'
-                  }}>
-                    📊 Data We Collect
-                  </h3>
-                  <ul style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    margin: 0,
-                    paddingLeft: '16px',
-                    lineHeight: '1.5'
-                  }}>
-                    <li>Personal profile (name, age, gender, height, weight)</li>
-                    <li>Fitness goals and activity level</li>
-                    <li>Health and behavioral insights</li>
-                    <li>Device information and usage patterns</li>
-                  </ul>
-                </div>
-
-                {/* Data Usage */}
-                <div style={{ marginBottom: '14px' }}>
-                  <h3 style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#000',
-                    margin: '0 0 8px'
-                  }}>
-                    🔍 How We Use Your Data
-                  </h3>
-                  <ul style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    margin: 0,
-                    paddingLeft: '16px',
-                    lineHeight: '1.5'
-                  }}>
-                    <li>Provide personalized recommendations</li>
-                    <li>Track progress and generate insights</li>
-                    <li>Improve service and algorithms</li>
-                    <li>Send notifications and updates</li>
-                  </ul>
-                </div>
-
-                {/* Data Protection Methods */}
-                <div style={{ marginBottom: '14px' }}>
-                  <h3 style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#000',
-                    margin: '0 0 8px'
-                  }}>
-                    🛡️ Protection Measures
-                  </h3>
-                  <ul style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    margin: 0,
-                    paddingLeft: '16px',
-                    lineHeight: '1.5'
-                  }}>
-                    <li>End-to-end encryption for sensitive data</li>
-                    <li>Secure servers with regular audits</li>
-                    <li>No third-party sharing without consent</li>
-                    <li>GDPR and privacy law compliance</li>
-                  </ul>
-                </div>
-
-                {/* Your Rights */}
-                <div>
-                  <h3 style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#000',
-                    margin: '0 0 8px'
-                  }}>
-                    ⚖️ Your Data Rights
-                  </h3>
-                  <ul style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    margin: 0,
-                    paddingLeft: '16px',
-                    lineHeight: '1.5'
-                  }}>
-                    <li>Access all your personal data anytime</li>
-                    <li>Request data deletion or correction</li>
-                    <li>Opt-out of analytics and tracking</li>
-                    <li>Export your data in standard format</li>
-                  </ul>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Acknowledgment Checkbox */}

@@ -40,8 +40,9 @@ function RevealContent() {
     if (!choices) return 0
     const termsReadingScore = typeof choices.termsReadingScore === 'number' ? choices.termsReadingScore : 0
     const privacyOptionsScore = typeof choices.privacyOptionsScore === 'number' ? choices.privacyOptionsScore : 0
+    const detailExpansionScore = typeof choices.detailExpansionScore === 'number' ? choices.detailExpansionScore : 0
     const surveyScore = typeof choices.surveyScore === 'number' ? choices.surveyScore : 0
-    return Math.max(0, Math.min(100, termsReadingScore + privacyOptionsScore + surveyScore))
+    return Math.max(0, Math.min(100, termsReadingScore + privacyOptionsScore + detailExpansionScore + surveyScore))
   }, [choices])
 
   // 分数滚动动画（0 → 目标值，约 1.1s）
