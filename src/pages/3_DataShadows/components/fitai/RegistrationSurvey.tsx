@@ -17,7 +17,24 @@ interface QuestionData {
   height?: number
   weight?: number
   homeAddress?: string
+  birthDate?: string
+  birthDay?: string
+  birthMonth?: string
+  birthYear?: string
+  maritalStatus?: string
+  income?: string
+  diningFrequency?: string
 }
+
+// 出生日期分段选项（日/月/年）
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'))
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
+// 年份范围：至少 18 岁，最多 80 岁
+const BIRTH_YEAR_OPTIONS = Array.from({ length: 63 }, (_, i) => String(new Date().getFullYear() - 18 - i))
+
+// 拒绝透露的值视为未收集数据（同样给予保护隐私加分）
+const REFUSED_TO_SAY = 'Prefer not to say'
+const isSkippedOptional = (value?: string): boolean => !value || value === REFUSED_TO_SAY
 
 const RegistrationSurvey: React.FC = () => {
   const navigate = useNavigate()
@@ -32,6 +49,36 @@ const RegistrationSurvey: React.FC = () => {
   const [addressVisible, setAddressVisible] = useState(false)
   const [occupationVisible, setOccupationVisible] = useState(false)
   const [showLocationSuccess, setShowLocationSuccess] = useState(false) 
+
+  // iOS 风格分段下拉的共享样式（与名字输入框同色系）
+  const segmentedSelectStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '12px 8px',
+    borderRadius: '10px',
+    border: '1px solid #d1d5db',
+    background: '#f9fafb',
+    color: '#1f2937',
+    fontSize: '14px',
+    boxSizing: 'border-box',
+    transition: 'all 0.2s',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 8px center',
+    backgroundSize: '14px'
+  }
+
+  // 组装出生日期：三段都选好后拼成 YYYY-MM-DD
+  const updateBirthField = (field: 'birthDay' | 'birthMonth' | 'birthYear', value: string) => {
+    const next = { ...data, [field]: value }
+    next.birthDate =
+      next.birthDay && next.birthMonth && next.birthYear
+        ? `${next.birthYear}-${next.birthMonth}-${next.birthDay}`
+        : ''
+    setData(next)
+  }
 
   const handleNext = () => {
     if (currentStep < 5) {
@@ -56,37 +103,68 @@ const RegistrationSurvey: React.FC = () => {
       const skippedOptionalQuestions: string[] = []
       let surveyScore = 0
       
-      // Height/Weight: counts only if BOTH filled when visible
+      // 头像、身高/体重不参与考察计分（合理需求），仅作为已填数据展示
       const heightWeightFilled = heightWeightVisible && data.height && data.weight
-      if (!heightWeightFilled) {
-        skippedOptionalQuestions.push('height_weight')
-        surveyScore += 10
-      }
       
-      // Home Address: counts only if filled when visible
+      // 6 个非健身必要字段全部纳入评分体系：跳过/拒绝透露/未实际填写 = +5 每个
       const addressFilled = addressVisible && data.homeAddress
       if (!addressFilled) {
         skippedOptionalQuestions.push('home_address')
-        surveyScore += 10
+        surveyScore += 5
       }
       
-      // Occupation: counts only if filled when visible
       const occupationFilled = occupationVisible && data.occupation
       if (!occupationFilled) {
         skippedOptionalQuestions.push('occupation')
-        surveyScore += 10
+        surveyScore += 5
+      }
+      
+      if (isSkippedOptional(data.birthDate)) {
+        skippedOptionalQuestions.push('birth_date')
+        surveyScore += 5
+      }
+      
+      if (isSkippedOptional(data.maritalStatus)) {
+        skippedOptionalQuestions.push('marital_status')
+        surveyScore += 5
+      }
+      
+      if (isSkippedOptional(data.diningFrequency)) {
+        skippedOptionalQuestions.push('dining_frequency')
+        surveyScore += 5
+      }
+      
+      if (isSkippedOptional(data.income)) {
+        skippedOptionalQuestions.push('income')
+        surveyScore += 5
       }
       
       // Update user choices - for privacy scoring
       // Store individual survey field values at top level for context compatibility
       const choices = {
+        // 条款页分数（从 context 合并，避免 sessionStorage 丢失 → reveal 页读不到）
+        termsReadingProgress: typeof userChoices?.termsReadingProgress === 'number' ? userChoices.termsReadingProgress : 0,
+        termsReadingScore: typeof userChoices?.termsReadingScore === 'number' ? userChoices.termsReadingScore : 0,
+        detailExpansionScore: typeof userChoices?.detailExpansionScore === 'number' ? userChoices.detailExpansionScore : 0,
+        expandedOptions: Array.isArray(userChoices?.expandedOptions) ? userChoices.expandedOptions : [],
+        uncheckedOptions: Array.isArray(userChoices?.uncheckedOptions) ? userChoices.uncheckedOptions : [],
+        privacyOptionsScore: typeof userChoices?.privacyOptionsScore === 'number' ? userChoices.privacyOptionsScore : 0,
+        totalTermsScore: typeof userChoices?.totalTermsScore === 'number' ? userChoices.totalTermsScore : 0,
+        privacySettings: userChoices?.privacySettings as Record<string, boolean> | undefined,
+        // 教育卡片：读完全部 4 张 = +10
+        educationCardsScore: userChoices?.educationCardsRead === 4 ? 10 : 0,
+        // 问卷
         surveyScore,
         skippedOptionalQuestions,
-        filledOptionalQuestions: 3 - skippedOptionalQuestions.length,
+        filledOptionalQuestions: 6 - skippedOptionalQuestions.length,
         sensitiveDataPoints: [
           ...(heightWeightFilled ? ['height', 'weight'] : []),
           ...(addressFilled ? ['home_address'] : []),
-          ...(occupationFilled ? ['occupation'] : [])
+          ...(occupationFilled ? ['occupation'] : []),
+          ...(data.birthDate ? ['birth_date'] : []),
+          ...(data.maritalStatus && data.maritalStatus !== REFUSED_TO_SAY ? ['marital_status'] : []),
+          ...(data.income && data.income !== REFUSED_TO_SAY ? ['income'] : []),
+          ...(data.diningFrequency && data.diningFrequency !== REFUSED_TO_SAY ? ['dining_frequency'] : [])
         ],
         // Store actual user input data at top level (UserChoices compatible)
         surveyHeight: data.height,
@@ -94,16 +172,21 @@ const RegistrationSurvey: React.FC = () => {
         surveyOccupation: data.occupation,
         surveyHomeAddress: data.homeAddress,
         surveyWorkoutMinutes: data.workoutMinutes,
+        surveyBirthDate: data.birthDate,
+        surveyMaritalStatus: data.maritalStatus,
+        surveyIncome: data.income,
+        surveyDiningFrequency: data.diningFrequency,
       }
       
       console.log('Survey Scoring:', {
         skippedOptionalQuestions,
         surveyScore,
         filledOptionalQuestions: choices.filledOptionalQuestions,
-        surveyHeight: choices.surveyHeight,
-        surveyWeight: choices.surveyWeight,
-        surveyOccupation: choices.surveyOccupation,
-        surveyHomeAddress: choices.surveyHomeAddress,
+        sensitiveDataPoints: choices.sensitiveDataPoints,
+        surveyBirthDate: choices.surveyBirthDate,
+        surveyMaritalStatus: choices.surveyMaritalStatus,
+        surveyIncome: choices.surveyIncome,
+        surveyDiningFrequency: choices.surveyDiningFrequency,
       })
       
       // Call updateUserChoices if exists
@@ -169,6 +252,36 @@ const RegistrationSurvey: React.FC = () => {
     'Other'
   ]
 
+  // 婚姻状况选项（直接显示）
+  const maritalOptions = [
+    'Select marital status',
+    'Single',
+    'Married',
+    'Married with children',
+    'Divorced',
+    'Prefer not to say'
+  ]
+
+  // 收入水平选项（直接显示）
+  const incomeOptions = [
+    'Select your income range',
+    'Under £20K',
+    '£20K – £50K',
+    '£50K – £100K',
+    '£100K+',
+    'Prefer not to say'
+  ]
+
+  // 外食频率选项（直接显示）
+  const diningOptions = [
+    'Select how often you eat out',
+    'Rarely / Never',
+    '1-2 times a week',
+    '3-5 times a week',
+    'Every day',
+    'Prefer not to say'
+  ]
+
   const handleGetCurrentLocation = () => {
     // Simulate getting current location
     setData({ ...data, homeAddress: '123 Main St, New York, NY 10001' })
@@ -229,6 +342,7 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 1: Basic Info */}
         {currentStep === 1 && (
           <QuestionCard
+            required
             title="What's your name?"
             description="Help us personalize your experience"
             hint="Use your name for personalized coaching"
@@ -253,6 +367,84 @@ const RegistrationSurvey: React.FC = () => {
                   transition: 'all 0.2s'
                 }}
               />
+            </div>
+
+            {/* Date of Birth - iOS 风格日/月/年分段选择 */}
+            <div style={{ marginTop: '20px' }}>
+              <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                Date of Birth
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select
+                  value={data.birthDay || ''}
+                  onChange={(e) => updateBirthField('birthDay', e.target.value)}
+                  style={{ ...segmentedSelectStyle, flex: 1 }}
+                >
+                  <option value="" disabled>Day</option>
+                  {DAY_OPTIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+                <select
+                  value={data.birthMonth || ''}
+                  onChange={(e) => updateBirthField('birthMonth', e.target.value)}
+                  style={{ ...segmentedSelectStyle, flex: 1 }}
+                >
+                  <option value="" disabled>Month</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  value={data.birthYear || ''}
+                  onChange={(e) => updateBirthField('birthYear', e.target.value)}
+                  style={{ ...segmentedSelectStyle, flex: 1.4 }}
+                >
+                  <option value="" disabled>Year</option>
+                  {BIRTH_YEAR_OPTIONS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Marital Status - 直接显示 */}
+            <div style={{ marginTop: '20px' }}>
+              <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                Marital Status
+              </label>
+              <select
+                value={data.maritalStatus || ''}
+                onChange={(e) => setData({ ...data, maritalStatus: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '1px solid #d1d5db',
+                  background: '#f9fafb',
+                  color: '#1f2937',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '16px'
+                }}
+              >
+                {maritalOptions.map((opt, idx) => (
+                  <option
+                    key={idx}
+                    value={opt === 'Select marital status' ? '' : opt}
+                    disabled={opt === 'Select marital status' && idx === 0}
+                  >
+                    {opt}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div style={{ marginTop: '20px' }}>
@@ -295,6 +487,7 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 2: Body Data */}
         {currentStep === 2 && (
           <QuestionCard
+            required
             title="Which areas to improve?"
             description="Select the body parts you want to focus on"
             hint="You can select multiple areas"
@@ -454,6 +647,7 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 3: Lifestyle - Workout duration */}
         {currentStep === 3 && (
           <QuestionCard
+            required
             title="How much time do you usually spend on a workout?"
             description="This helps us shape realistic coaching intensity and daily exercise recommendations."
             hint="Workout duration gives FitAI a quick read on your routine and recovery rhythm."
@@ -519,6 +713,48 @@ const RegistrationSurvey: React.FC = () => {
               }}>
                 💡 This helps FitAI calibrate realistic workout pacing, recovery windows, and push timing. Short sessions and long training blocks can trigger very different nudges inside the app.
               </div>
+            </div>
+
+            {/* Dining Out Frequency - 直接显示 */}
+            <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
+              <label style={{ fontSize: '14px', fontWeight: 600, color: '#1f2937', marginBottom: '8px', display: 'block' }}>
+                How often do you eat out or order takeaway?
+              </label>
+              <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 12px' }}>
+                Helps us tailor realistic nutrition guidance around your routine
+              </p>
+              <select
+                value={data.diningFrequency || ''}
+                onChange={(e) => setData({ ...data, diningFrequency: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '1px solid #3b82f6',
+                  background: 'rgba(59,130,246,0.05)',
+                  color: '#1f2937',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '16px'
+                }}
+              >
+                {diningOptions.map((opt, idx) => (
+                  <option
+                    key={idx}
+                    value={opt === 'Select how often you eat out' ? '' : opt}
+                    disabled={opt === 'Select how often you eat out' && idx === 0}
+                  >
+                    {opt}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Optional: Occupation - 改为下拉菜单 */}
@@ -621,12 +857,55 @@ const RegistrationSurvey: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Income Level - 直接显示 */}
+            <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
+              <label style={{ fontSize: '14px', fontWeight: 600, color: '#1f2937', marginBottom: '8px', display: 'block' }}>
+                What is your annual income range?
+              </label>
+              <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 12px' }}>
+                Helps us recommend the right premium plan tier for you
+              </p>
+              <select
+                value={data.income || ''}
+                onChange={(e) => setData({ ...data, income: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '1px solid #3b82f6',
+                  background: 'rgba(59,130,246,0.05)',
+                  color: '#1f2937',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '16px'
+                }}
+              >
+                {incomeOptions.map((opt, idx) => (
+                  <option
+                    key={idx}
+                    value={opt === 'Select your income range' ? '' : opt}
+                    disabled={opt === 'Select your income range' && idx === 0}
+                  >
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
           </QuestionCard>
         )}
 
         {/* Step 4: Exercise Locations */}
         {currentStep === 4 && (
           <QuestionCard
+            required
             title="Where do you usually exercise?"
             description="Select your typical exercise locations"
             hint="Multiple selections help with location-based recommendations"
@@ -793,6 +1072,7 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 5: Goals */}
         {currentStep === 5 && (
           <QuestionCard
+            required
             title="What are your main goals?"
             description="Select all that apply to your fitness journey"
             hint="Your goals will personalize your AI coaching"

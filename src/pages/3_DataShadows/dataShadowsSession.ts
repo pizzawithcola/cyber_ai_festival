@@ -34,6 +34,10 @@ export type DataShadowsChoices = {
   surveyOccupation?: string
   surveyHomeAddress?: string
   surveyWorkoutMinutes?: number
+  surveyBirthDate?: string
+  surveyMaritalStatus?: string
+  surveyIncome?: string
+  surveyDiningFrequency?: string
   [key: string]: unknown
 }
 

@@ -303,7 +303,7 @@ For questions, contact: legal@fitai.com`
                 margin: 0,
                 letterSpacing: '-0.3px'
               }}>
-                📄 Terms of Service
+                Terms of Service
               </h2>
               <div style={{
                 fontSize: '12px',
@@ -365,6 +365,20 @@ For questions, contact: legal@fitai.com`
 
           {/* Privacy Section */}
           <div style={{ marginBottom: '20px' }}>
+            {/* 提示：仅带星号为必填，其余可选（放在区块标题上方） */}
+            <div style={{
+              background: 'rgba(59,130,246,0.08)',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              color: '#3b82f6',
+              marginBottom: '12px',
+              border: '1px solid rgba(59,130,246,0.18)',
+              lineHeight: '1.5'
+            }}>
+              💡 Only fields marked with <strong style={{ color: '#dc2626' }}>*</strong> are required. Everything else is optional — you don't have to share it.
+            </div>
+
             <h2 style={{
               fontSize: '17px',
               fontWeight: '600',
@@ -372,7 +386,7 @@ For questions, contact: legal@fitai.com`
               margin: '0 0 10px',
               letterSpacing: '-0.3px'
             }}>
-              🔒 Privacy & Data Protection
+              Privacy & Data Protection
             </h2>
             <p style={{
               fontSize: '15px',
@@ -400,7 +414,7 @@ For questions, contact: legal@fitai.com`
                       justifyContent: 'space-between',
                       alignItems: 'center'
                     }}>
-                      <div>
+                      <div style={{ marginRight: '12px' }}>
                         <div style={{ fontSize: '15px', fontWeight: '600', color: '#000' }}>
                           {opt.emoji} {opt.title}
                         </div>
@@ -415,6 +429,9 @@ For questions, contact: legal@fitai.com`
                         style={{
                           width: '44px',
                           height: '24px',
+                          flexShrink: 0,
+                          marginLeft: '12px',
+                          marginRight: '-6px',
                           cursor: 'pointer',
                           accentColor: '#3b82f6'
                         }}

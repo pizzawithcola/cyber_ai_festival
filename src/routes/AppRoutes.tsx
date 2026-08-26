@@ -5,6 +5,7 @@ import Hallucinate from '../pages/2_Hallucinate/Hallucinate';
 import DataShadows from '../pages/3_DataShadows/DataShadows';
 import DataShadowsGame from '../pages/3_DataShadows/DataShadowsGame';
 import DataShadowsReveal from '../pages/3_DataShadows/DataShadowsReveal';
+import DataShadowsDataFlow from '../pages/3_DataShadows/DataShadowsDataFlow';
 import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition.tsx';
 import RetailDemolitionGame from '../pages/4_RetailDemolition/RetailDemolitionGame';
 import RetailDemolitionSummary from '../pages/4_RetailDemolition/RetailDemolitionSummary';
@@ -35,6 +36,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/datashadows" element={<DataShadows />} />
       <Route path="/datashadows/game" element={<DataShadowsGame />} />
       <Route path="/datashadows/reveal" element={<DataShadowsReveal />} />
+      <Route path="/datashadows/dataflow" element={<DataShadowsDataFlow />} />
       <Route path="/retaildemolition" element={<RetailDemolition />} />
       <Route path="/retaildemolition/game" element={<RetailDemolitionGame />} />
       <Route path="/retaildemolition/summary" element={<RetailDemolitionSummary />} />

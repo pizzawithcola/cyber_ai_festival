@@ -7,6 +7,7 @@ interface QuestionCardProps {
   hint: string
   dataCollection: string
   isCompleted: boolean
+  required?: boolean
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -15,7 +16,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   children,
   hint,
   dataCollection,
-  isCompleted
+  isCompleted,
+  required
 }) => {
   return (
     <div style={{
@@ -34,6 +36,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           lineHeight: '1.2'
         }}>
           {title}
+          {required && (
+            <span style={{ color: '#dc2626', marginLeft: 4, fontWeight: 700 }}>*</span>
+          )}
         </h2>
         <p style={{
           fontSize: '14px',

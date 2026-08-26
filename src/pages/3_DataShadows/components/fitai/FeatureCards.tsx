@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useFitAI } from './fitaiContext'
 
 const features = [
   {
@@ -36,8 +37,27 @@ const features = [
 ]
 
 const FeatureCards: React.FC = () => {
+  const { updateUserChoices, userChoices } = useFitAI()
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showAllWarnings, setShowAllWarnings] = useState(false)
+
+  // 已读卡片集合（展开过即算已读，不因收起而减少）
+  const [readIds, setReadIds] = useState<number[]>(() => {
+    const saved = userChoices?.educationCardsRead
+    return typeof saved === 'number' && saved > 0
+      ? Array.from({ length: saved }, (_, i) => i + 1)
+      : []
+  })
+
+  // 点击卡片：切换展开 + 记录已读状态（供成绩拆解页 "Read all education cards" 计分）
+  const handleCardClick = (id: number) => {
+    setExpandedId(expandedId === id ? null : id)
+    if (!readIds.includes(id)) {
+      const next = [...readIds, id]
+      setReadIds(next)
+      updateUserChoices({ educationCardsRead: next.length })
+    }
+  }
 
   return (
     <div style={{ padding: '24px 12px' }}>
@@ -64,7 +84,7 @@ const FeatureCards: React.FC = () => {
         {features.map((feature) => (
           <div
             key={feature.id}
-            onClick={() => setExpandedId(expandedId === feature.id ? null : feature.id)}
+            onClick={() => handleCardClick(feature.id)}
             style={{
               background: 'white',
               borderRadius: '14px',

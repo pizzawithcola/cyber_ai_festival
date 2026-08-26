@@ -28,6 +28,11 @@ export interface SurveyData {
   height?: number
   weight?: number
   homeAddress?: string
+  // 非健身必要信息（过度收集信号）
+  birthDate?: string
+  maritalStatus?: string
+  income?: string
+  diningFrequency?: string
   // Flags indicating whether optional sections were shown (used to detect user skipping)
   heightWeightVisible?: boolean
   occupationVisible?: boolean
@@ -102,6 +107,11 @@ export function determineDataFlow(
     if (hasField('occupation')) marketingFields.push('occupation')
     // City‑level location (simplified: we keep the raw address field as a placeholder)
     if (hasField('homeAddress')) marketingFields.push('homeAddress_city')
+    // Over-collected fields (non-fitness data) → marketing profiling
+    if (hasField('birthDate')) marketingFields.push('birthDate')
+    if (hasField('maritalStatus')) marketingFields.push('maritalStatus')
+    if (hasField('income')) marketingFields.push('income')
+    if (hasField('diningFrequency')) marketingFields.push('diningFrequency')
   }
 
   // ---- Third‑Party Sharing node ----
@@ -115,6 +125,10 @@ export function determineDataFlow(
     if (hasField('occupation')) thirdPartyFields.push('occupation_category')
     if (hasField('locations')) thirdPartyFields.push('locations')
     if (hasField('goals')) thirdPartyFields.push('goals')
+    // Aggregated lifestyle categories from over-collected fields
+    if (hasField('maritalStatus')) thirdPartyFields.push('maritalStatus_category')
+    if (hasField('income')) thirdPartyFields.push('income_category')
+    if (hasField('diningFrequency')) thirdPartyFields.push('diningFrequency')
     // No name, no exact address
   }
 
@@ -130,6 +144,11 @@ export function determineDataFlow(
     if (hasField('height') && hasField('weight')) aiTrainingFields.push('height_weight')
     // Address for location‑related features (not stored as exact coordinates)
     if (hasField('homeAddress')) aiTrainingFields.push('homeAddress_region')
+    // Over-collected fields feed model training signals
+    if (hasField('birthDate')) aiTrainingFields.push('birthDate')
+    if (hasField('maritalStatus')) aiTrainingFields.push('maritalStatus')
+    if (hasField('income')) aiTrainingFields.push('income')
+    if (hasField('diningFrequency')) aiTrainingFields.push('diningFrequency')
   }
 
   // ---- Location‑Based Services node ----
