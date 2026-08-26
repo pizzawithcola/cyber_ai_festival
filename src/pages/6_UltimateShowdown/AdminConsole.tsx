@@ -42,6 +42,13 @@ const cardSx = {
 
 type SnackState = { open: boolean; message: string; severity: 'success' | 'error' | 'warning' };
 
+// ─── BGM 曲目映射（仅 Admin 端播放）──────────────────────────────────────
+const BGM_SOURCES: Record<string, string> = {
+  lobby: '/audio/final_wait_room.mp3', // 等待室
+  game: '/audio/final_bgm.mp3',        // 游戏中
+  podium: '/audio/final_podium.ogg',   // 游戏后排行榜
+};
+
 // ─── Idle View ────────────────────────────────────────────────────────────────
 const IdleView: React.FC<{ onCreateRoom: () => void; creating: boolean }> = ({ onCreateRoom, creating }) => (
   <Box sx={{ textAlign: 'center', animation: `${fadeIn} 0.5s ease` }}>
@@ -388,42 +395,75 @@ const AdminConsole: React.FC = () => {
     if (!token) { navigate('/admin'); return; }
   }, [navigate]);
 
-  // ─── BGM playback ────────────────────────────────────────────────────────────
-  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  // ─── BGM playback（三段音乐按阶段切换，仅 Admin 端播放）──────────────────
+  const bgmRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
+  // 初始化三个音频对象（loop + 音量）
   useEffect(() => {
-    const audio = new Audio('/audio/final_bgm.mp3');
-    audio.loop = true;
-    audio.volume = 0.4;
-    bgmRef.current = audio;
-
-    // Autoplay requires user interaction in most browsers, so we attempt to play
-    // and also add a one-time click handler on the document to trigger playback
-    const tryPlay = () => {
-      audio.play().catch(() => {
-        // Browser blocked autoplay – will retry on first user interaction
-      });
-    };
-    tryPlay();
-
-    const handleUserInteraction = () => {
-      if (audio.paused) {
-        audio.play().catch(() => {});
-      }
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('keydown', handleUserInteraction);
-    };
-    document.addEventListener('click', handleUserInteraction);
-    document.addEventListener('keydown', handleUserInteraction);
+    Object.entries(BGM_SOURCES).forEach(([key, src]) => {
+      const audio = new Audio(src);
+      audio.loop = true;
+      audio.volume = 0.4;
+      bgmRefs.current[key] = audio;
+    });
 
     return () => {
-      audio.pause();
-      audio.src = '';
-      bgmRef.current = null;
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('keydown', handleUserInteraction);
+      Object.values(bgmRefs.current).forEach((a) => {
+        if (a) {
+          a.pause();
+          a.src = '';
+        }
+      });
+      bgmRefs.current = {};
     };
   }, []);
+
+  // 根据游戏阶段决定应播放的曲目
+  const activeBgmKey = (() => {
+    if (!roomCode) return null;
+    switch (state.phase) {
+      case 'waiting':
+        return 'lobby';
+      case 'countdown':
+      case 'question':
+      case 'result':
+        return 'game';
+      case 'leaderboard':
+      case 'finished':
+        return 'podium';
+      default:
+        return null;
+    }
+  })();
+
+  // 阶段变化时切换曲目（播放目标、暂停其他）
+  useEffect(() => {
+    Object.entries(bgmRefs.current).forEach(([key, audio]) => {
+      if (!audio) return;
+      if (key === activeBgmKey) {
+        if (audio.paused) audio.play().catch(() => {});
+      } else {
+        audio.pause();
+      }
+    });
+  }, [activeBgmKey]);
+
+  // 用户交互重试播放（处理浏览器 autoplay 限制）
+  useEffect(() => {
+    const retryPlay = () => {
+      Object.entries(bgmRefs.current).forEach(([key, audio]) => {
+        if (audio && key === activeBgmKey && audio.paused) {
+          audio.play().catch(() => {});
+        }
+      });
+    };
+    document.addEventListener('click', retryPlay);
+    document.addEventListener('keydown', retryPlay);
+    return () => {
+      document.removeEventListener('click', retryPlay);
+      document.removeEventListener('keydown', retryPlay);
+    };
+  }, [activeBgmKey]);
 
   const handleCreateRoom = async () => {
     setCreating(true);

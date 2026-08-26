@@ -248,6 +248,8 @@ const AdminPage: React.FC = () => {
       const data = await res.json();
       setAdminToken(data.token);
       setIsAuthenticated(true);
+      // 登录成功后直接进入游戏控制台（start a new room）
+      navigate('/final/admin');
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : 'Login failed');
     } finally {
