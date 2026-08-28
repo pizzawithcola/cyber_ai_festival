@@ -4,7 +4,6 @@ import AppLayout from './AppLayout'
 import HomePage from './HomePage'
 import TermsAndConditions from './TermsAndConditions'
 import RegistrationSurvey from './RegistrationSurvey'
-import { DataVisualization } from './visualization/DataVisualization'
 import ProfilePage from './ProfilePage'
 import WorkoutPlan from './WorkoutPlan'
 import SettingsPage from './SettingsPage'
@@ -25,11 +24,6 @@ const FitAIInner: React.FC<FitAIInnerProps> = ({ onBack }) => {
   // Show survey if user completed terms and not yet registered
   if (screen === 'survey' && !isRegistered) {
     return <RegistrationSurvey />
-  }
-
-  // Show data visualization
-  if (screen === 'visualization') {
-    return <DataVisualization />
   }
 
   // Default: Wrap all app screens in AppLayout
