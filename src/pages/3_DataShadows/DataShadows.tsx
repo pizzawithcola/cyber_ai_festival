@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataShadowsIntro from './components/DataShadowsIntro'
 import DataShadowsStartGate from './components/DataShadowsStartGate'
+import { useClickSound } from '../../hooks/useClickSound'
 import './DataShadows.css'
 
 /**
@@ -12,6 +13,9 @@ function DataShadowsContent() {
   const navigate = useNavigate()
   const [showIntroOverlay, setShowIntroOverlay] = useState(true)
   const [showStartGate, setShowStartGate] = useState(false)
+
+  // 全部按钮点击播放咔嚓按键音
+  useClickSound()
 
   const completeIntro = () => {
     setShowIntroOverlay(false)

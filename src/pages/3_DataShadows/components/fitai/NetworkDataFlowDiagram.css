@@ -445,7 +445,7 @@
   grid-template-areas:
     "info"
     "visual";
-  grid-template-rows: minmax(0, 0.95fr) minmax(0, 1.55fr);
+  grid-template-rows: minmax(0, 0.65fr) minmax(0, 2.35fr);
   gap: clamp(8px, 1.2vh, 12px);
   min-height: 0;
 }

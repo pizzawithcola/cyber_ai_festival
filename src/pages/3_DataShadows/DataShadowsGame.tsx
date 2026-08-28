@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import RealApplePhone from './components/RealApplePhone'
+import { useClickSound } from '../../hooks/useClickSound'
 import './DataShadows.css'
 
 const PHONE_BASE_WIDTH = 390
@@ -12,6 +13,9 @@ const PHONE_ASPECT_RATIO = PHONE_BASE_WIDTH / PHONE_BASE_HEIGHT
  * 流程结束后由 RegistrationSurvey 写入 sessionStorage 并跳转 /datashadows/reveal。
  */
 function DataShadowsGameContent() {
+  // 全部按钮（FitAI App 内）点击播放咔嚓按键音
+  useClickSound()
+
   const [viewportSize, setViewportSize] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,

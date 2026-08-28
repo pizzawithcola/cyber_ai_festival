@@ -1,11 +1,36 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Activity, ArrowRightLeft, ShieldAlert, Sparkles } from 'lucide-react'
+import { Activity, ArrowRightLeft, Database, ShieldAlert, Sparkles } from 'lucide-react'
 import {
+  determineDataFlow,
+  type DataFlowResult,
   type TermsConsent,
   type SurveyData,
 } from './dataFlowLogic'
 import './NetworkDataFlowDiagram.css'
+
+// 字段 key → 可读名称（用于数据足迹展示）
+const FIELD_LABELS: Record<string, string> = {
+  name: 'Name',
+  bodyParts: 'Body focus areas',
+  bodyParts_aggregated: 'Body data (aggregated)',
+  workoutMinutes: 'Workout duration',
+  locations: 'Exercise locations',
+  goals: 'Fitness goals',
+  occupation: 'Occupation',
+  occupation_category: 'Occupation category',
+  homeAddress_city: 'City (from address)',
+  homeAddress_region: 'Region (from address)',
+  birthDate: 'Date of birth',
+  maritalStatus: 'Marital status',
+  maritalStatus_category: 'Marital status category',
+  income: 'Income level',
+  income_category: 'Income category',
+  diningFrequency: 'Dining frequency',
+  bmi_category: 'BMI category',
+  height_weight: 'Height & weight',
+  bmi: 'BMI',
+}
 
 interface NetworkDataFlowDiagramProps {
   termsConsent: TermsConsent
@@ -497,28 +522,60 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   const dragMovedRef = useRef(false)
   const pendingDragRef = useRef<PendingDragState | null>(null)
 
+  // 竖屏适配：测量图容器宽高，动态扩展 viewBox 高度让图填满容器（纵向可拖空间最大化）
+  const diagramContainerRef = useRef<HTMLDivElement | null>(null)
+  const [diagramBox, setDiagramBox] = useState<{ w: number; h: number } | null>(null)
+
+  useEffect(() => {
+    const update = () => {
+      const el = diagramContainerRef.current
+      if (!el) return
+      setDiagramBox({ w: el.clientWidth, h: el.clientHeight })
+    }
+    update()
+    const timer = window.setTimeout(update, 60)
+    window.addEventListener('resize', update)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
+
+  // 竖屏（容器高 > 宽）：viewBox 高度 = 容器高 × 780/容器宽（保证内容同时填满宽高，纵向拓扑伸展）
+  const diagramViewBoxH = useMemo(() => {
+    if (!diagramBox || diagramBox.h <= diagramBox.w) return DIAGRAM_HEIGHT
+    return Math.max(DIAGRAM_HEIGHT, Math.round((diagramBox.h * DIAGRAM_WIDTH) / diagramBox.w))
+  }, [diagramBox])
+
   // Extract score components for emphasis calculation
   // These come from context/props that track scoring across the form flow
   const termsReadingProgress = termsConsent.termsReadingProgress ?? 0
-  // Count filled optional survey fields (each represents -5 points potential)
+  // 计分体系中的 6 个非必填字段（与 reveal 页一致；身高/体重不考察）
   const optionalFieldsCount = [
-    !!(surveyData.height && surveyData.weight),
     !!surveyData.occupation,
     !!surveyData.homeAddress,
+    !!surveyData.birthDate,
+    !!surveyData.maritalStatus,
+    !!surveyData.diningFrequency,
+    !!surveyData.income,
   ].filter(Boolean).length
-  
-  // Calculate total and privacy score
+
+  // 字段级数据流（determineDataFlow 已接入：数据足迹展示具体流出字段）
+  const flowResult: DataFlowResult = useMemo(
+    () => determineDataFlow(termsConsent, surveyData),
+    [termsConsent, surveyData]
+  )
+
+  // 兑底分数（仅在未传 overridePrivacyScore 时使用）：同意共享越多 → 分越低
   const computedScore = (() => {
     const enabledCount = Object.values(termsConsent.privacySettings).filter(Boolean).length
-    const hasHeightWeight = !!(surveyData.height && surveyData.weight)
-    const hasOccupation = !!surveyData.occupation
-    const hasAddress = !!surveyData.homeAddress
-    const optFilled = [hasHeightWeight, hasOccupation, hasAddress].filter(Boolean).length
-    return Math.min(100, Math.max(0, enabledCount * 20 - optFilled * 5))
+    return Math.min(100, Math.max(0, 100 - enabledCount * 15 - optionalFieldsCount * 5))
   })()
   const privacyScore = overridePrivacyScore !== undefined ? overridePrivacyScore : computedScore
 
   // Calculate node positions in pixels
+  // 初始位置固定在 DIAGRAM_HEIGHT（840）坐标——不随 viewBox 拉伸而改变布局；
+  // viewBox 的额外高度只作为节点的可拖动活动空间。
   const nodesWithPixels = useMemo(() => {
     return NODE_POSITIONS.map((node) => ({
       ...node,
@@ -537,12 +594,26 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
     if (!svg) return null
 
     const rect = svg.getBoundingClientRect()
-    const x = ((event.clientX - rect.left) / rect.width) * 100
-    const y = ((event.clientY - rect.top) / rect.height) * 100
+    // 用 viewBox 坐标系换算（修复 meet 缩放/居中留白导致的不跟手）
+    const viewBoxW = DIAGRAM_WIDTH
+    const viewBoxH = diagramViewBoxH
+    const scale = Math.min(rect.width / viewBoxW, rect.height / viewBoxH)
+    const contentW = viewBoxW * scale
+    const contentH = viewBoxH * scale
+    const offsetX = (rect.width - contentW) / 2
+    const offsetY = (rect.height - contentH) / 2
+
+    const viewBoxX = ((event.clientX - rect.left - offsetX) / contentW) * viewBoxW
+    const viewBoxY = ((event.clientY - rect.top - offsetY) / contentH) * viewBoxH
+
+    // y 百分比统一用 DIAGRAM_HEIGHT（840）坐标系（与节点 py 计算一致）；
+    // 上限跟随 viewBox 扩展高度 → 竖屏下活动范围随 viewBox 增大
+    const maxYPercent = (diagramViewBoxH / DIAGRAM_HEIGHT) * 100 - 3
 
     return {
-      x: Number(Math.min(92, Math.max(8, x)).toFixed(1)),
-      y: Number(Math.min(90, Math.max(8, y)).toFixed(1)),
+      // 放宽 clamp：允许拖到接近边缘（仅预留节点半径余量，防节点拖出 viewBox 丢失）
+      x: Number(Math.min(98, Math.max(2, (viewBoxX / viewBoxW) * 100)).toFixed(1)),
+      y: Number(Math.min(maxYPercent, Math.max(3, (viewBoxY / DIAGRAM_HEIGHT) * 100)).toFixed(1)),
     }
   }
 
@@ -558,6 +629,8 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
       isDragging: false,
     }
     setDraggingNodeId(null)
+    // pointer capture 必须设在节点本身（circle）上：
+    // 否则 pointerup 被重定向到 svg，down/up 目标不同 → click 事件不合成，节点点击失效
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
@@ -867,14 +940,14 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
               Restore Default Layout
             </button>
           </div>
-          <div className="network-diagram-container">
+          <div className="network-diagram-container" ref={diagramContainerRef}>
             <div className="network-diagram-stage">
               <svg
                 ref={svgRef}
                 className="network-svg"
                 width="100%"
                 height="100%"
-                viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
+                viewBox={`0 0 ${DIAGRAM_WIDTH} ${diagramViewBoxH}`}
                 preserveAspectRatio="xMidYMid meet"
                 shapeRendering="geometricPrecision"
                 onPointerMove={handleNodePointerMove}
@@ -1099,6 +1172,37 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
                   </div>
                 ))}
               </div>
+
+              {/* 数据足迹：enabled 节点实际流出的字段（determineDataFlow） */}
+              {(() => {
+                const footprintKeys = ['marketing', 'thirdParty', 'aiTraining', 'locationBased', 'healthAnalysis'] as const
+                const footprint = footprintKeys.filter((key) => flowResult[key].enabled && flowResult[key].fields.length > 0)
+                if (footprint.length === 0) return null
+                const footprintLabels: Record<string, string> = {
+                  marketing: 'Marketing',
+                  thirdParty: 'Third-Party',
+                  aiTraining: 'AI Training',
+                  locationBased: 'Location Services',
+                  healthAnalysis: 'Health Analysis',
+                }
+                return (
+                  <div className="flow-node-overview-footprint" style={{ marginTop: 14, borderTop: '1px solid rgba(148, 163, 184, 0.2)', paddingTop: 12 }}>
+                    <div className="flow-node-section-label flow-node-section-label-out">
+                      <Database className="flow-node-section-icon" aria-hidden="true" />
+                      <strong>Your data footprint</strong>
+                    </div>
+                    {footprint.map((key) => (
+                      <div key={key} className="flow-node-overview-item">
+                        <Sparkles className="flow-node-overview-item-icon" aria-hidden="true" />
+                        <span>
+                          <strong>{footprintLabels[key]}: </strong>
+                          {flowResult[key].fields.map((f) => FIELD_LABELS[f] ?? f).join(', ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
             )}
           </div>

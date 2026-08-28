@@ -167,6 +167,10 @@ const RegistrationSurvey: React.FC = () => {
           ...(data.diningFrequency && data.diningFrequency !== REFUSED_TO_SAY ? ['dining_frequency'] : [])
         ],
         // Store actual user input data at top level (UserChoices compatible)
+        surveyName: data.name,
+        surveyBodyParts: data.bodyParts,
+        surveyLocations: data.locations,
+        surveyGoals: data.goals,
         surveyHeight: data.height,
         surveyWeight: data.weight,
         surveyOccupation: data.occupation,

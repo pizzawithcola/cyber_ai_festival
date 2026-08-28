@@ -6,6 +6,7 @@ import {
   loadDataShadowsChoices,
   type DataShadowsChoices,
 } from './dataShadowsSession'
+import { useClickSound } from '../../hooks/useClickSound'
 import './DataShadows.css'
 
 /**
@@ -35,6 +36,9 @@ const SURVEY_ITEMS = [
 
 function RevealContent() {
   const navigate = useNavigate()
+  // 全部按钮点击播放咔嚓按键音
+  useClickSound()
+
   const choicesRef = useRef<DataShadowsChoices | null>(null)
   if (choicesRef.current === null) {
     choicesRef.current = loadDataShadowsChoices()

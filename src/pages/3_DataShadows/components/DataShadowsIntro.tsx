@@ -4,24 +4,44 @@ interface DataShadowsIntroProps {
   onComplete: () => void
 }
 
-const INTRO_LINES = [
+const INTRO_LINES: { label: string; line: React.ReactNode }[] = [
   {
     label: 'What People Do',
-    line: '81% of people accept terms without reading them.',
+    line: (
+      <>
+        <span className="data-shadows-intro-highlight">81%</span> of people accept terms they never read — the fine print is long, boring, and the boxes are{' '}
+        <span className="data-shadows-intro-highlight">already ticked</span>.
+      </>
+    ),
   },
   {
     label: 'What Can Happen',
-    line: 'Your health, location, and identity data can be shared, leaked, profiled, and reused.',
+    line: (
+      <>
+        Your <span className="data-shadows-intro-highlight">face</span>, <span className="data-shadows-intro-highlight">voice</span>, even your{' '}
+        <span className="data-shadows-intro-highlight">relationship status</span> — collected, analyzed, and sold without a second thought.
+      </>
+    ),
   },
   {
     label: 'Real Consequences',
-    line: 'BetterHelp paid $7.8M, and 23andMe said attackers reached data tied to about 7M profiles.',
+    line: (
+      <>
+        <span className="data-shadows-intro-highlight">$7.8M</span> — BetterHelp was fined for selling users' private therapy answers.
+        <br />
+        <span className="data-shadows-intro-highlight">7M profiles</span> — 23andMe breached: DNA and health data leaked.
+      </>
+    ),
   },
   {
     label: 'What This Round Asks',
-    line: 'Slow down, notice the defaults, and see what convenience is quietly asking you to give away.',
+    line: (
+      <>
+        Every toggle is a choice. <span className="data-shadows-intro-highlight">Read before you tap</span> — see how much you're really willing to give away.
+      </>
+    ),
   },
-] as const
+]
 
 const INTRO_FADE_MS = 6500
 const INTRO_STEP_MS = 7500

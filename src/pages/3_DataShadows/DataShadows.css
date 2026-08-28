@@ -718,14 +718,14 @@
 
 .data-shadows-start-gate-steps {
   width: min(640px, 100%);
-  margin-top: clamp(14px, 1.8dvh, 20px);
+  margin-top: clamp(17px, 2.2dvh, 25px);
   text-align: left;
 }
 
 .data-shadows-start-gate-steps-label {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: #67e8f9;
-  font-size: clamp(10px, 1dvh, 12px);
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -734,19 +734,19 @@
 .data-shadows-start-gate-steps-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 20px;
 }
 
 .data-shadows-start-gate-step {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12.5px;
 }
 
 .data-shadows-start-gate-step-number {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -754,13 +754,13 @@
   border: 1px solid rgba(103, 232, 249, 0.34);
   background: rgba(34, 211, 238, 0.08);
   color: #a5f3fc;
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 900;
   letter-spacing: 0.06em;
 }
 
 .data-shadows-start-gate-step-title {
-  font-size: clamp(13px, 1.4dvh, 15px);
+  font-size: 18px;
   color: rgba(241, 245, 249, 0.92);
   letter-spacing: 0.02em;
 }

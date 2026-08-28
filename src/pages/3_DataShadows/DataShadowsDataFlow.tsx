@@ -6,6 +6,7 @@ import {
   loadDataShadowsChoices,
   type DataShadowsChoices,
 } from './dataShadowsSession'
+import { useClickSound } from '../../hooks/useClickSound'
 import './DataShadows.css'
 
 /**
@@ -15,6 +16,9 @@ import './DataShadows.css'
  */
 function DataFlowContent() {
   const navigate = useNavigate()
+  // 全部按钮点击播放咔嚓按键音
+  useClickSound()
+
   const choicesRef = useRef<DataShadowsChoices | null>(null)
   if (choicesRef.current === null) {
     choicesRef.current = loadDataShadowsChoices()
@@ -62,6 +66,10 @@ function DataFlowContent() {
 
   const surveyData: SurveyData = useMemo(
     () => ({
+      name: typeof choices?.surveyName === 'string' ? choices.surveyName : undefined,
+      bodyParts: Array.isArray(choices?.surveyBodyParts) ? choices.surveyBodyParts : undefined,
+      locations: Array.isArray(choices?.surveyLocations) ? choices.surveyLocations : undefined,
+      goals: Array.isArray(choices?.surveyGoals) ? choices.surveyGoals : undefined,
       height: typeof choices?.surveyHeight === 'number' ? choices.surveyHeight : undefined,
       weight: typeof choices?.surveyWeight === 'number' ? choices.surveyWeight : undefined,
       occupation: typeof choices?.surveyOccupation === 'string' ? choices.surveyOccupation : undefined,
@@ -78,7 +86,7 @@ function DataFlowContent() {
 
   if (!choices) return null
 
-  const scoreColor = privacyScore >= 40 ? '#4ade80' : '#fbbf24'
+  const scoreColor = privacyScore >= 45 ? '#4ade80' : '#fbbf24'
 
   return (
     <div

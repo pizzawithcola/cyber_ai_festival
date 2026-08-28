@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { setStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
@@ -259,6 +259,15 @@ const LoginPage: React.FC = () => {
   const gameRoute = game ? GAME_ROUTES[game] || '/' : '/';
   const flickerDuration = useMemo(() => 1 + Math.random() * 1, []);
 
+  // 竖屏检测：Data Shadow / Retail 等竖屏游戏在竖屏时保持纵向布局，但限制整体宽度为 800px
+  const [isPortrait, setIsPortrait] = useState(() => window.innerHeight > window.innerWidth);
+
+  useEffect(() => {
+    const updatePortrait = () => setIsPortrait(window.innerHeight > window.innerWidth);
+    window.addEventListener('resize', updatePortrait);
+    return () => window.removeEventListener('resize', updatePortrait);
+  }, []);
+
   const handleLogin = async () => {
     if (!loginEmail || !loginFirstname) {
       setSnack({ open: true, message: 'Please fill in all fields.', severity: 'warning' });
@@ -357,9 +366,10 @@ const LoginPage: React.FC = () => {
       <Box
         sx={{
           width: '100%',
-          maxWidth: 1000,
+          maxWidth: isPortrait ? 600 : 1000,
           display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
+          // 竖屏强制纵向布局（否则宽 >900px 时 md 断点切左右布局，600px 容器被 SCREEN 独占 → 表单消失）
+          flexDirection: isPortrait ? 'column' : { xs: 'column', md: 'row' },
           backgroundColor: '#0a0a1a',
           border: `3px solid #2a2a4a`,
           borderRadius: '12px',
@@ -371,13 +381,13 @@ const LoginPage: React.FC = () => {
         {/* === LEFT SIDE: SCREEN === */}
         <Box
           sx={{
-            flex: { md: '0 0 600px' },
+            flex: isPortrait ? undefined : { md: '0 0 600px' },
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
             p: 2.5,
-            borderRight: { md: `3px solid #2a2a4a` },
-            borderBottom: { xs: `3px solid #2a2a4a`, md: 'none' },
+            borderRight: isPortrait ? 'none' : { md: `3px solid #2a2a4a` },
+            borderBottom: isPortrait ? `3px solid #2a2a4a` : { xs: `3px solid #2a2a4a`, md: 'none' },
           }}
         >
           {/* Marquee header */}
@@ -493,7 +503,7 @@ const LoginPage: React.FC = () => {
         {/* === RIGHT SIDE: CONTROL PANEL === */}
         <Box
           sx={{
-            flex: { md: '1 1 auto' },
+            flex: isPortrait ? undefined : { md: '1 1 auto' },
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
