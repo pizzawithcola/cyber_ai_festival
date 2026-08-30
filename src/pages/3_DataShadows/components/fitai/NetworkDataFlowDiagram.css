@@ -123,6 +123,50 @@
   align-items: center;
 }
 
+/* 图例：位于节点图顶部（Overview 下方），从父页面移入 */
+.network-diagram-legend {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(8, 20, 36, 0.72);
+  border: 1px solid rgba(103, 232, 249, 0.18);
+  backdrop-filter: blur(4px);
+}
+
+.network-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(226, 232, 240, 0.86);
+  letter-spacing: 0.06em;
+}
+
+.network-legend-swatch-active {
+  width: 22px;
+  height: 3px;
+  background: #22d3ee;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.7);
+  border-radius: 2px;
+}
+
+.network-legend-swatch-blocked {
+  width: 22px;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0 5px, transparent 5px 9px);
+  border-radius: 2px;
+}
+
 .network-diagram-reset {
   min-height: 34px;
   padding: 0 14px;
@@ -346,7 +390,10 @@
 }
 
 .data-shadows-diagram-only-layout .network-data-flow-diagram {
-  height: 100%;
+  /* flex 子项填充（父 reveal-diagram 为 flex column），替代 height:100% ——
+     百分比高度在 flex item 父级上会解析为 auto，导致内部 grid 的 fr 行高失效 */
+  flex: 1 1 0%;
+  height: auto;
   min-height: 0;
   padding: clamp(10px, 1.5vw, 16px);
   gap: clamp(8px, 1vw, 12px);
@@ -376,10 +423,20 @@
 }
 
 .data-shadows-diagram-only-layout .network-data-flow-body {
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  /* 需求：Overview / node 解释块在上（25%，最小 350px、最大 450px），node 图在下，纵向从上往下排列 */
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(clamp(350px, 25%, 450px), auto) minmax(0, 1fr);
+  grid-template-areas:
+    "info"
+    "visual";
   gap: clamp(8px, 1.2vw, 14px);
   min-height: 0;
   overflow: hidden;
+}
+
+.data-shadows-diagram-only-layout .network-visual-panel {
+  grid-area: visual;
+  min-height: 0;
 }
 
 .data-shadows-diagram-only-layout .network-diagram-container {
@@ -388,6 +445,7 @@
 }
 
 .data-shadows-diagram-only-layout .data-flow-info-strip {
+  grid-area: info;
   max-height: none;
   overflow: hidden;
   gap: 8px;
@@ -445,7 +503,7 @@
   grid-template-areas:
     "info"
     "visual";
-  grid-template-rows: minmax(0, 0.65fr) minmax(0, 2.35fr);
+  grid-template-rows: minmax(clamp(350px, 25%, 450px), auto) minmax(0, 1fr);
   gap: clamp(8px, 1.2vh, 12px);
   min-height: 0;
 }
@@ -566,6 +624,12 @@
   max-height: 100%;
 }
 
+/* Overview 卡片同样撑满 info 区（否则高度只等于内容高度，视觉上明显偏小） */
+.data-shadows-diagram-only-layout .flow-node-detail-placeholder {
+  height: 100%;
+  max-height: 100%;
+}
+
 .data-shadows-diagram-only-layout .data-flow-leaderboard-button,
 .data-shadows-diagram-only-layout .data-flow-retry-button {
   padding: 10px 12px;
@@ -612,6 +676,29 @@
 .data-flow-retry-button:hover {
   border-color: rgba(148, 163, 184, 0.4);
   color: rgba(226, 232, 240, 0.75);
+}
+
+/* 右上角操作按钮：Next / Try Again（紧凑尺寸，位于 hero 右上角） */
+.data-flow-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.data-flow-hero-actions .data-flow-leaderboard-button,
+.data-flow-hero-actions .data-flow-retry-button {
+  width: auto;
+  min-width: 96px;
+  margin: 0;
+  /* 高度与中间分数徽章取中间值（~40px） */
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  font-size: 13px;
+  align-self: auto;
+  box-sizing: border-box;
 }
 
 .flow-node-detail {
@@ -1052,7 +1139,8 @@
   }
 
   .data-shadows-diagram-only-layout .network-data-flow-body {
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    /* 纵向布局（info 上 visual 下）：覆盖旧左右分栏的两列残留，保持单列 */
+    grid-template-columns: 1fr;
     overflow: hidden;
   }
 
@@ -1149,8 +1237,8 @@
   }
 
   .data-shadows-diagram-only-layout:not(.data-shadows-diagram-only-portrait) .network-data-flow-body {
+    /* 窄屏也保持纵向：不再覆盖基础规则的 rows（clamp(350px,25%,450px) 拉伸布局） */
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) minmax(116px, 28vh);
     gap: 8px;
     overflow: hidden;
   }

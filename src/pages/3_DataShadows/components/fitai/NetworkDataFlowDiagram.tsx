@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Activity, ArrowRightLeft, Database, ShieldAlert, Sparkles } from 'lucide-react'
 import {
   determineDataFlow,
@@ -514,7 +513,6 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   surveyData,
   overridePrivacyScore,
 }) => {
-  const navigate = useNavigate()
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [nodePositionOverrides, setNodePositionOverrides] = useState<Record<string, { x: number; y: number }>>({})
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
@@ -574,17 +572,19 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
   const privacyScore = overridePrivacyScore !== undefined ? overridePrivacyScore : computedScore
 
   // Calculate node positions in pixels
-  // 初始位置固定在 DIAGRAM_HEIGHT（840）坐标——不随 viewBox 拉伸而改变布局；
-  // viewBox 的额外高度只作为节点的可拖动活动空间。
+  // 节点群与上下边框固定 24px 间距；中间内容区高度 = viewBoxH - 48，随窗口变化拉伸：
+  //   600px 容器高 → 内容区 552px；800px → 752px（y% 均匀映射到 [24, H-24]）
+  const VERTICAL_GUTTER = 24
+  const contentHeight = Math.max(1, diagramViewBoxH - VERTICAL_GUTTER * 2)
   const nodesWithPixels = useMemo(() => {
     return NODE_POSITIONS.map((node) => ({
       ...node,
       x: nodePositionOverrides[node.id]?.x ?? node.x,
       y: nodePositionOverrides[node.id]?.y ?? node.y,
       px: ((nodePositionOverrides[node.id]?.x ?? node.x) / 100) * DIAGRAM_WIDTH,
-      py: ((nodePositionOverrides[node.id]?.y ?? node.y) / 100) * DIAGRAM_HEIGHT,
+      py: ((nodePositionOverrides[node.id]?.y ?? node.y) / 100) * contentHeight + VERTICAL_GUTTER,
     }))
-  }, [nodePositionOverrides])
+  }, [nodePositionOverrides, contentHeight])
 
   const hasMovedNodes = Object.keys(nodePositionOverrides).length > 0
   const showAttentionState = selectedNodeId === null
@@ -606,14 +606,14 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
     const viewBoxX = ((event.clientX - rect.left - offsetX) / contentW) * viewBoxW
     const viewBoxY = ((event.clientY - rect.top - offsetY) / contentH) * viewBoxH
 
-    // y 百分比统一用 DIAGRAM_HEIGHT（840）坐标系（与节点 py 计算一致）；
-    // 上限跟随 viewBox 扩展高度 → 竖屏下活动范围随 viewBox 增大
-    const maxYPercent = (diagramViewBoxH / DIAGRAM_HEIGHT) * 100 - 3
-
+    // y 百分比相对内容区（[24, H-24]），与节点 py 计算一致 → 拖拽 1:1 跟手；
+    // clamp 上限 97%（预留节点半径余量，防节点拖出 viewBox）
     return {
       // 放宽 clamp：允许拖到接近边缘（仅预留节点半径余量，防节点拖出 viewBox 丢失）
       x: Number(Math.min(98, Math.max(2, (viewBoxX / viewBoxW) * 100)).toFixed(1)),
-      y: Number(Math.min(maxYPercent, Math.max(3, (viewBoxY / DIAGRAM_HEIGHT) * 100)).toFixed(1)),
+      y: Number(
+        Math.min(97, Math.max(3, ((viewBoxY - VERTICAL_GUTTER) / contentHeight) * 100)).toFixed(1)
+      ),
     }
   }
 
@@ -832,7 +832,7 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
     )
     const gutter = 10
     const clampX = (x: number) => Math.min(Math.max(gutter, x), DIAGRAM_WIDTH - gutter)
-    const clampY = (y: number) => Math.min(Math.max(gutter + 12, y), DIAGRAM_HEIGHT - gutter - 12)
+    const clampY = (y: number) => Math.min(Math.max(gutter + 12, y), diagramViewBoxH - gutter - 12)
     const nodeSpecificLayout: Record<string, { x: number; y: number; textAnchor: 'start' | 'middle' | 'end' }> = {
       ai: {
         x: node.px,
@@ -940,6 +940,19 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
               Restore Default Layout
             </button>
           </div>
+
+          {/* 图例：位于节点图正上方（Overview 下方） */}
+          <div className="network-diagram-legend">
+            <span className="network-legend-item">
+              <span className="network-legend-swatch-active" />
+              Data flowing out
+            </span>
+            <span className="network-legend-item">
+              <span className="network-legend-swatch-blocked" />
+              Blocked by your choices
+            </span>
+          </div>
+
           <div className="network-diagram-container" ref={diagramContainerRef}>
             <div className="network-diagram-stage">
               <svg
@@ -1206,21 +1219,6 @@ export const NetworkDataFlowDiagram: React.FC<NetworkDataFlowDiagramProps> = ({
             </div>
             )}
           </div>
-
-          <button
-            type="button"
-            className="data-flow-leaderboard-button"
-            onClick={() => navigate('/ranking/game/datashadows')}
-          >
-            Next
-          </button>
-          <button
-            type="button"
-            className="data-flow-retry-button"
-            onClick={() => navigate('/datashadows')}
-          >
-            Try Again
-          </button>
         </section>
       </div>
     </div>

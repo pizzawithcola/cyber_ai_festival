@@ -99,16 +99,16 @@ function DataFlowContent() {
         }
       `}</style>
 
-      {/* 顶部：标题 + 分数 */}
+      {/* 顶部：标题（左）+ 分数（中）+ 操作按钮（右上） */}
       <div
         className="data-shadows-reveal-hero"
         style={{
           position: 'relative',
           zIndex: 2,
           flexShrink: 0,
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
           alignItems: 'center',
-          justifyContent: 'space-between',
           gap: 16,
           padding: '16px 20px 10px',
           animation: visible ? 'dsFlowFadeUp 0.5s ease-out both' : 'none',
@@ -121,6 +121,7 @@ function DataFlowContent() {
             alignItems: 'flex-start',
             gap: 4,
             minWidth: 0,
+            justifySelf: 'start',
           }}
         >
           <div
@@ -149,11 +150,15 @@ function DataFlowContent() {
 
         <div
           style={{
-            flexShrink: 0,
+            justifySelf: 'center',
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            padding: '10px 16px',
+            // 高度与右侧按钮严格一致（40px，含边框），内容垂直居中
+            height: 40,
+            minHeight: 40,
+            padding: '0 16px',
+            boxSizing: 'border-box',
             borderRadius: 10,
             border: '1px solid rgba(244, 114, 182, 0.42)',
             background: 'rgba(244, 114, 182, 0.1)',
@@ -173,35 +178,27 @@ function DataFlowContent() {
             {privacyScore}
           </span>
         </div>
+
+        {/* 右上角：Try Again（左） / Next（右） */}
+        <div className="data-flow-hero-actions" style={{ justifySelf: 'end' }}>
+          <button
+            type="button"
+            className="data-flow-retry-button"
+            onClick={() => navigate('/datashadows')}
+          >
+            Try Again
+          </button>
+          <button
+            type="button"
+            className="data-flow-leaderboard-button"
+            onClick={() => navigate('/ranking/game/datashadows')}
+          >
+            Next
+          </button>
+        </div>
       </div>
 
-      {/* 图例一行 — 3 秒理解图 */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 2,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 18,
-          padding: '2px 16px 8px',
-          flexWrap: 'wrap',
-          opacity: visible ? 1 : 0,
-          transition: 'opacity 0.5s ease-out',
-        }}
-      >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: '12px', fontWeight: 700, color: 'rgba(226, 232, 240, 0.86)', letterSpacing: '0.06em' }}>
-          <span style={{ width: 22, height: 3, background: '#22d3ee', boxShadow: '0 0 8px rgba(34, 211, 238, 0.7)', borderRadius: 2 }} />
-          Data flowing out
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: '12px', fontWeight: 700, color: 'rgba(226, 232, 240, 0.72)', letterSpacing: '0.06em' }}>
-          <span style={{ width: 22, height: 3, background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.45) 0 5px, transparent 5px 9px)', borderRadius: 2 }} />
-          Blocked by your choices
-        </span>
-      </div>
-
-      {/* 数据流图（由 NetworkDataFlowDiagram 内部左右分栏实现） */}
+      {/* 数据流图（由 NetworkDataFlowDiagram 内部实现：Overview 在上、节点图在下） */}
       <div
         className="data-shadows-reveal-diagram"
         style={{
@@ -209,6 +206,10 @@ function DataFlowContent() {
           zIndex: 1,
           flex: 1,
           minHeight: 0,
+          // flex 容器：让子元素（NetworkDataFlowDiagram）用 flex:1 填充高度，
+          // 避免 height:100% 百分比在 flex item 父级上解析失败导致内部 fr 行高失效
+          display: 'flex',
+          flexDirection: 'column',
           opacity: visible ? 1 : 0,
           transition: 'opacity 0.6s ease-out',
         }}
