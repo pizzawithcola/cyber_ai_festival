@@ -151,8 +151,9 @@ const RegistrationSurvey: React.FC = () => {
         privacyOptionsScore: typeof userChoices?.privacyOptionsScore === 'number' ? userChoices.privacyOptionsScore : 0,
         totalTermsScore: typeof userChoices?.totalTermsScore === 'number' ? userChoices.totalTermsScore : 0,
         privacySettings: userChoices?.privacySettings as Record<string, boolean> | undefined,
-        // 教育卡片：读完全部 4 张 = +10
-        educationCardsScore: userChoices?.educationCardsRead === 4 ? 10 : 0,
+        // 教育卡片：Intro 的 4 张教育卡为必经自动播放流程，所有玩家均已完成阅读 → 恒得 10 分
+        // （注意：educationCardsRead 是 App 首页 FeatureCards 的展开记录，与 Intro 教育卡片无关，不能作为计分依据）
+        educationCardsScore: 10,
         // 问卷
         surveyScore,
         skippedOptionalQuestions,
@@ -346,14 +347,15 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 1: Basic Info */}
         {currentStep === 1 && (
           <QuestionCard
-            required
-            title="What's your name?"
-            description="Help us personalize your experience"
+            title="Basic Information"
             hint="Use your name for personalized coaching"
             dataCollection="Name stored for profile identification and personalized marketing"
             isCompleted={!!data.name}
           >
             <div style={{ marginBottom: '20px' }}>
+              <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                Name <span style={{ color: '#dc2626' }}>*</span>
+              </label>
               <input
                 type="text"
                 placeholder="Enter your name"
@@ -376,7 +378,7 @@ const RegistrationSurvey: React.FC = () => {
             {/* Date of Birth - iOS 风格日/月/年分段选择 */}
             <div style={{ marginTop: '20px' }}>
               <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
-                Date of Birth
+                Optional: Date of Birth
               </label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <select
@@ -415,7 +417,7 @@ const RegistrationSurvey: React.FC = () => {
             {/* Marital Status - 直接显示 */}
             <div style={{ marginTop: '20px' }}>
               <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
-                Marital Status
+                Optional: Marital Status
               </label>
               <select
                 value={data.maritalStatus || ''}
@@ -453,7 +455,7 @@ const RegistrationSurvey: React.FC = () => {
 
             <div style={{ marginTop: '20px' }}>
               <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 12px' }}>
-                Select Avatar
+                Optional: Select Avatar
               </p>
               <div style={{
                 display: 'grid',
@@ -491,13 +493,14 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 2: Body Data */}
         {currentStep === 2 && (
           <QuestionCard
-            required
-            title="Which areas to improve?"
-            description="Select the body parts you want to focus on"
+            title="Body Data"
             hint="You can select multiple areas"
             dataCollection="Body part preferences tracked for AI workout recommendations and marketing profiling"
             isCompleted={(data.bodyParts?.length || 0) > 0}
           >
+            <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+              Areas to Improve <span style={{ color: '#dc2626' }}>*</span>
+            </label>
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
@@ -543,7 +546,7 @@ const RegistrationSurvey: React.FC = () => {
                 marginBottom: '16px'
               }}>
                 <div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px', color: '#1f2937' }}>
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>
                     Optional: Body Measurements
                   </p>
                   <p style={{ fontSize: '11px', color: '#6b7280', margin: 0 }}>
@@ -651,9 +654,7 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 3: Lifestyle - Workout duration */}
         {currentStep === 3 && (
           <QuestionCard
-            required
-            title="How much time do you usually spend on a workout?"
-            description="This helps us shape realistic coaching intensity and daily exercise recommendations."
+            title="Your Lifecycle"
             hint="Workout duration gives FitAI a quick read on your routine and recovery rhythm."
             dataCollection="Workout duration data used for recommendation timing, engagement analysis, and behavioral profiling"
             isCompleted={data.workoutMinutes !== undefined}
@@ -662,8 +663,8 @@ const RegistrationSurvey: React.FC = () => {
               <div style={{
                 marginBottom: '16px'
               }}>
-                <label style={{ fontSize: '14px', fontWeight: 600, color: '#1f2937', marginBottom: '8px', display: 'block' }}>
-                  How many minutes do you spend on your workout each day?
+                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                  Time Spent <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <div style={{
                   fontSize: '32px',
@@ -721,8 +722,8 @@ const RegistrationSurvey: React.FC = () => {
 
             {/* Dining Out Frequency - 直接显示 */}
             <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#1f2937', marginBottom: '8px', display: 'block' }}>
-                How often do you eat out or order takeaway?
+              <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                Optional: How often do you eat out or order takeaway?
               </label>
               <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 12px' }}>
                 Helps us tailor realistic nutrition guidance around your routine
@@ -734,8 +735,8 @@ const RegistrationSurvey: React.FC = () => {
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #3b82f6',
-                  background: 'rgba(59,130,246,0.05)',
+                  border: '1px solid #d1d5db',
+                  background: '#f9fafb',
                   color: '#1f2937',
                   fontSize: '14px',
                   boxSizing: 'border-box',
@@ -743,7 +744,7 @@ const RegistrationSurvey: React.FC = () => {
                   appearance: 'none',
                   WebkitAppearance: 'none',
                   MozAppearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 12px center',
                   backgroundSize: '16px'
@@ -770,7 +771,7 @@ const RegistrationSurvey: React.FC = () => {
                 marginBottom: '16px'
               }}>
                 <div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px', color: '#1f2937' }}>
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>
                     Optional: What is your occupation?
                   </p>
                   <p style={{ fontSize: '11px', color: '#6b7280', margin: 0 }}>
@@ -815,8 +816,8 @@ const RegistrationSurvey: React.FC = () => {
                         width: '100%',
                         padding: '12px',
                         borderRadius: '10px',
-                        border: '1px solid #f59e0b',
-                        background: 'rgba(245,158,11,0.05)',
+                        border: '1px solid #d1d5db',
+                        background: '#f9fafb',
                         color: '#1f2937',
                         fontSize: '14px',
                         boxSizing: 'border-box',
@@ -824,7 +825,7 @@ const RegistrationSurvey: React.FC = () => {
                         appearance: 'none',
                         WebkitAppearance: 'none',
                         MozAppearance: 'none',
-                        backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                        backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
                         backgroundRepeat: 'no-repeat',
                         backgroundPosition: 'right 12px center',
                         backgroundSize: '16px'
@@ -864,8 +865,8 @@ const RegistrationSurvey: React.FC = () => {
 
             {/* Income Level - 直接显示 */}
             <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: '#1f2937', marginBottom: '8px', display: 'block' }}>
-                What is your annual income range?
+              <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                Optional: What is your annual income range?
               </label>
               <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 12px' }}>
                 Helps us recommend the right premium plan tier for you
@@ -877,8 +878,8 @@ const RegistrationSurvey: React.FC = () => {
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #3b82f6',
-                  background: 'rgba(59,130,246,0.05)',
+                  border: '1px solid #d1d5db',
+                  background: '#f9fafb',
                   color: '#1f2937',
                   fontSize: '14px',
                   boxSizing: 'border-box',
@@ -886,7 +887,7 @@ const RegistrationSurvey: React.FC = () => {
                   appearance: 'none',
                   WebkitAppearance: 'none',
                   MozAppearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                  backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 12px center',
                   backgroundSize: '16px'
@@ -909,13 +910,14 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 4: Exercise Locations */}
         {currentStep === 4 && (
           <QuestionCard
-            required
-            title="Where do you usually exercise?"
-            description="Select your typical exercise locations"
+            title="Exercise Routine"
             hint="Multiple selections help with location-based recommendations"
             dataCollection="Location data collected for geolocation tracking and local marketing partnerships"
             isCompleted={(data.locations?.length || 0) > 0}
           >
+            <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+              Exercise <span style={{ color: '#dc2626' }}>*</span>
+            </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
               {locations.map((loc) => (
                 <button
@@ -962,7 +964,7 @@ const RegistrationSurvey: React.FC = () => {
                 marginBottom: '16px'
               }}>
                 <div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px', color: '#1f2937' }}>
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>
                     Optional: Home Address
                   </p>
                   <p style={{ fontSize: '11px', color: '#6b7280', margin: 0 }}>
@@ -1076,13 +1078,14 @@ const RegistrationSurvey: React.FC = () => {
         {/* Step 5: Goals */}
         {currentStep === 5 && (
           <QuestionCard
-            required
-            title="What are your main goals?"
-            description="Select all that apply to your fitness journey"
+            title="Your Personal Goals"
             hint="Your goals will personalize your AI coaching"
             dataCollection="Goal preferences used for psychological profiling, AI personalization, and targeted marketing"
             isCompleted={(data.goals?.length || 0) > 0}
           >
+            <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+              Main Goals <span style={{ color: '#dc2626' }}>*</span>
+            </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
               {goalOptions.map((goal) => (
                 <button

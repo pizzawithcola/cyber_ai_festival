@@ -2,22 +2,18 @@ import React from 'react'
 
 interface QuestionCardProps {
   title: string
-  description: string
   children: React.ReactNode
   hint: string
   dataCollection: string
   isCompleted: boolean
-  required?: boolean
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
   title,
-  description,
   children,
   hint,
   dataCollection,
-  isCompleted,
-  required
+  isCompleted
 }) => {
   return (
     <div style={{
@@ -26,41 +22,23 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       display: 'flex',
       flexDirection: 'column'
     }}>
-      {/* Question Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 800,
-          color: '#111827',
-          margin: '0 0 8px',
-          lineHeight: '1.2'
-        }}>
-          {title}
-          {required && (
-            <span style={{ color: '#dc2626', marginLeft: 4, fontWeight: 700 }}>*</span>
-          )}
-        </h2>
-        <p style={{
-          fontSize: '14px',
-          color: '#6b7280',
-          margin: 0,
-          lineHeight: '1.5'
-        }}>
-          {description}
-        </p>
-      </div>
+      {/* 页面小标题 — 最上面 */}
+      <h2 style={{
+        fontSize: '18px',
+        fontWeight: 700,
+        color: '#111827',
+        margin: '0 0 12px',
+        lineHeight: '1.2'
+      }}>
+        {title}
+      </h2>
 
-      {/* Input Area */}
-      <div style={{ flex: 1, marginBottom: '20px' }}>
-        {children}
-      </div>
-
-      {/* Hint Text */}
+      {/* Hint Text — 放在第一个问题上方 */}
       {hint && (
         <div style={{
           fontSize: '12px',
           color: '#4b5563',
-          marginBottom: '12px',
+          marginBottom: '16px',
           padding: '12px',
           background: '#f8fafc',
           borderRadius: '8px',
@@ -69,6 +47,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           💡 {hint}
         </div>
       )}
+
+      {/* Input Area */}
+      <div style={{ flex: 1, marginBottom: '20px' }}>
+        {children}
+      </div>
 
       {/* Data Collection Notice - Privacy Dark Pattern */}
       <div style={{
