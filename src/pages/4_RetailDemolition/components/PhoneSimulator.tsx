@@ -17,7 +17,6 @@ interface PhoneSimulatorProps {
   messages: Message[];
   isSearching: boolean;
   activeSite: Retailer | null;
-  automationStep: string | null;
   notifications: Array<{ id: number; title: string; body: string }>;
   selectedProduct: string;
   setNotifications: React.Dispatch<React.SetStateAction<Array<{ id: number; title: string; body: string }>>>;
@@ -46,20 +45,28 @@ interface PhoneSimulatorProps {
   // Agent 两关：1 = 安全关（RTX 4090），2 = 中招关（AirPods Pro）
   agentRound: 1 | 2;
 
+  // Agent Checkout 流程
+  agentCheckoutOpen: boolean;
+  agentPendingSite: Retailer | null;
+  agentOrderSuccessAt: number | null;
+  agentOrderStopped: boolean;
+
   // Actions
   onBillingComplete: (firstName: string, lastName: string, card: SavedCard, address: SavedAddress) => void;
   onManualProductSelect: (product: Product, retailerName: string) => void;
   onManualAddToCart: (product: Product, retailer: Retailer) => void;
   onManualConfirmPurchase: () => void;
   onFoundInjection: () => void;
+  onManualFlag: (product: Product, retailer: Retailer) => void;
+  manualFlaggedProduct: string | null;
   onTransitionToAgent: () => void;
   onProductSearch: (name: string) => void;
   onRetailerClick: (site: Retailer) => void;
-  onAgentConfirm: () => void;
-  onAgentConfirmCancel: () => void;
-  onBackToAgentChat: () => void;
-  onInspectMaliciousSite: (site: Retailer) => void;
-  onQuizAnswer: (answer: string) => void;
+  onAgentCheckout: (site: Retailer, productName: string) => void;
+  onAgentCheckoutContinue: () => void;
+  onAgentCheckoutCancel: () => void;
+  onAgentStopOrder: (productName: string, site: Retailer, price: string) => void;
+  onQuizAnswer: (qIndex: number, answer: string) => void;
   onStartQuiz: () => void;
   onQuizFinished: () => void;
   onSubmitScore: () => Promise<void>;
@@ -71,18 +78,29 @@ interface PhoneSimulatorProps {
   chatBottomRef: React.RefObject<HTMLDivElement | null>;
 }
 
+// 可疑商家的差异化破绽：每家只暴露部分红旗，其余保持中性，避免一眼看穿
+const SUSPICIOUS_REVEALS: Record<string, string[]> = {
+  'MegaSaver Outlet': ['http', 'complaints', 'return'],
+  'StreetTech Direct': ['domain', 'contact', 'urgency'],
+  'TechArena Direct': ['return'],
+};
+
 const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
   const {
-    gameState, messages, isSearching, activeSite, automationStep, notifications,
+    gameState, messages, isSearching, notifications,
     selectedProduct, setNotifications,
     billingCard, billingAddress, billingFirstName, billingLastName,
     manualProduct, manualRetailerName, cart, injectionFound,
+    manualFlaggedProduct,
     browsedCount, browseQuestComplete, browseQuestTarget,
-    agentConfirmProduct, agentConfirmRetailer, agentMaliciousDone, agentIncidentNotificationsDone,
+    agentMaliciousDone, agentIncidentNotificationsDone,
+    agentCheckoutOpen, agentPendingSite, agentOrderStopped,
     onManualProductSelect, onManualAddToCart,
     onManualConfirmPurchase, onFoundInjection, onTransitionToAgent,
-    onProductSearch, onRetailerClick, onAgentConfirm, onAgentConfirmCancel,
-    onBackToAgentChat, onQuizAnswer, onQuizFinished,
+    onProductSearch, onRetailerClick,
+    onAgentCheckout, onAgentCheckoutContinue, onAgentCheckoutCancel,
+    onAgentStopOrder,
+    onQuizAnswer, onQuizFinished,
     onSubmitScore, isSubmittingScore, submitError, score,
     chatBottomRef, onStartQuiz,
   } = props;
@@ -182,6 +200,8 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
           injectionFound={injectionFound}
           canCheckout={browseQuestComplete}
           browseProgress={{ current: browsedCount, target: browseQuestTarget }}
+          onFlagListing={props.onManualFlag}
+          flagged={manualFlaggedProduct === manualProduct?.name}
         />
       );
     }
@@ -274,6 +294,128 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                       {renderRetailerCards(m.productName, m.round)}
                     </div>
                   )}
+                  {m.productSummary && (
+                    <div className="mt-4 space-y-2">
+                      <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2.5">
+                        {(() => {
+                          const p = PREDEFINED_PRODUCTS.find(x => x.name === m.productSummary!.productName);
+                          const site = m.productSummary!.site;
+                          const name = m.productSummary!.productName;
+                          const price = site.prices[name];
+                          const fake = site.fakeOriginalPrices?.[name];
+                          // 可疑商家差异化破绽：每个只暴露部分红旗，其余保持中性，避免一眼看穿
+                          const reveals: string[] = SUSPICIOUS_REVEALS[site.name] ?? [];
+                          const reveal = (k: string) => reveals.includes(k);
+                          return (
+                            <>
+                              {/* 产品 + 商家头 */}
+                              <div className="flex items-center gap-3">
+                                {p && <img src={p.image} alt={p.name} className="w-14 h-14 object-contain rounded-lg bg-white border border-slate-200 p-1" />}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-black text-slate-900 text-[14px]">{name} <span className="text-[10px] text-slate-400 font-normal">Condition: New</span></div>
+                                  <div className="text-[11px] text-slate-500 truncate">
+                                    {site.url} • {site.protocol === 'https' ? 'HTTPS' : (reveal('http') ? 'HTTP (not secure)' : site.protocol)}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-[11px] font-black" style={{ color: site.theme }}>{site.logo} {site.name}</span>
+                                    {site.isVerified && (
+                                      <span className="text-[9px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">✓ VERIFIED</span>
+                                    )}
+                                    {!site.isVerified && (
+                                      <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">• NEW SELLER</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              {/* 价格 + 划线原价 */}
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-mono text-indigo-600 font-black text-[18px]">{price}</span>
+                                {fake && <span className="text-[11px] text-slate-400 line-through">{fake}</span>}
+                                {fake && <span className="text-[10px] font-bold text-red-500">Today's deal</span>}
+                              </div>
+                              {/* Sold by + Payment */}
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-slate-500">Sold by</span>
+                                <span className="font-bold text-slate-800">{site.name}</span>
+                              </div>
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-slate-500">Payment</span>
+                                <span className="font-bold text-slate-800">{billingCard ? `${billingCard.type === 'mastercard' ? 'Mastercard' : 'Visa'} •••• ${billingCard.number.slice(-4)}` : 'Visa / Mastercard'}</span>
+                              </div>
+                              {/* 评分 + 评论数 */}
+                              <div className="flex items-center gap-1.5 text-[12px]">
+                                <Star size={12} className="text-amber-400 fill-amber-400" />
+                                <span className="font-bold text-slate-800">{site.rating}</span>
+                                <span className="text-slate-400">({site.reviewCount.toLocaleString()} reviews)</span>
+                                {site.urgencyText && reveal('urgency') && <span className="ml-auto text-[10px] font-bold text-red-500">{site.urgencyText}</span>}
+                              </div>
+                              {/* 配送 */}
+                              <div className="flex justify-between text-[12px]">
+                                <span className="text-slate-500">Delivery</span>
+                                <span className="font-bold text-slate-800">{site.shippingLabel} ({site.shippingDays} day{site.shippingDays > 1 ? 's' : ''})</span>
+                              </div>
+                              {/* Returns / Support */}
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-slate-500">Returns</span>
+                                <span className={`font-bold ${site.hasReturnPolicy || !reveal('return') ? 'text-slate-800' : 'text-red-600'}`}>
+                                  {site.hasReturnPolicy ? '30-day returns' : (reveal('return') ? 'No returns policy' : '—')}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-slate-500">Support</span>
+                                <span className={`font-bold ${site.hasContactInfo || !reveal('contact') ? 'text-slate-800' : 'text-red-600'}`}>
+                                  {site.hasContactInfo ? 'Email + phone' : (reveal('contact') ? 'No contact info' : '—')}
+                                </span>
+                              </div>
+                              {/* 差异化可疑信号 */}
+                              {reveal('http') && <div className="text-[11px] font-bold text-red-600">Connection is not secure</div>}
+                              {reveal('domain') && site.domainAgeDays !== undefined && (
+                                <div className="text-[11px] font-bold text-red-600">Domain age: {site.domainAgeDays} days</div>
+                              )}
+                              {reveal('complaints') && site.complaintCount !== undefined && (
+                                <div className="text-[11px] font-bold text-red-600">{site.complaintCount} complaints reported</div>
+                              )}
+                              {/* 买家评论 */}
+                              <div className="border-t border-slate-200 pt-2 space-y-2">
+                                {site.reviews.slice(0, 2).map(r => (
+                                  <div key={r.author} className="text-[11px]">
+                                    <div className="font-bold text-slate-700 flex items-center gap-1">
+                                      <span className="text-amber-500">{'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)}</span>
+                                      {r.title}
+                                    </div>
+                                    <div className="text-slate-500 leading-snug">{r.text}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <button
+                        onClick={() => onAgentCheckout(m.productSummary!.site, m.productSummary!.productName)}
+                        className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-md active:scale-95 transition-transform"
+                      >
+                        Checkout
+                      </button>
+                    </div>
+                  )}
+                  {m.orderSuccess && !agentOrderStopped && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => onAgentStopOrder(m.orderSuccess!.productName, m.orderSuccess!.site, m.orderSuccess!.price)}
+                        className="w-full py-3 bg-white text-red-600 border-2 border-red-500 rounded-xl font-bold shadow-md active:scale-95 transition-transform"
+                      >
+                        STOP ORDER
+                      </button>
+                    </div>
+                  )}
+                  {m.orderStopped && (
+                    <div className={`mt-3 text-[11px] font-bold rounded-lg px-3 py-2 ${m.orderStopped.points > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-slate-500 bg-slate-100'}`}>
+                      {m.orderStopped.points > 0
+                        ? '🛑 Order stopped — the fraudulent charge was blocked and refunded.'
+                        : '🛑 Order stopped — the transaction was cancelled.'}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -295,6 +437,49 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
             )}
             <div ref={chatBottomRef} />
           </div>
+
+          {/* AI Auto-Fill Checkout 弹窗 */}
+          {agentCheckoutOpen && agentPendingSite && (
+            <div className="absolute inset-0 bg-slate-900/50 z-[200] flex items-end justify-center p-4">
+              <div className="bg-white w-full rounded-2xl shadow-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-black text-slate-900">AI Auto-Fill Checkout</h3>
+                  <div className="text-[10px] px-2 py-1 bg-indigo-100 text-indigo-700 rounded font-bold">AGENT CHECKOUT</div>
+                </div>
+                <div className="text-[12px] space-y-1.5 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-slate-500">Payment</span>
+                    <span className="font-bold text-slate-800 text-right">{billingCard ? `${billingCard.type === 'mastercard' ? 'Mastercard' : 'Visa'} •••• ${billingCard.number.slice(-4)}` : 'Saved card'}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-slate-500">Billing</span>
+                    <span className="font-bold text-slate-800 text-right">{billingAddress ? `${billingAddress.street}, ${billingAddress.city}` : 'Saved address'}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-slate-500">Shipping</span>
+                    <span className="font-bold text-slate-800">Same as billing</span>
+                  </div>
+                  <div className="flex justify-between gap-3 border-t border-slate-200 pt-1.5 mt-1.5">
+                    <span className="text-slate-500">Total</span>
+                    <span className="font-black text-indigo-600">{agentPendingSite.prices[selectedProduct]}</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-400">The agent auto-filled these fields from your saved profile.</p>
+                <button
+                  onClick={onAgentCheckoutContinue}
+                  className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-md active:scale-95 transition-transform"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={onAgentCheckoutCancel}
+                  className="w-full py-2.5 text-slate-500 text-[12px] font-bold active:scale-95 transition-transform"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Chatbox with dropup prompt picker */}
           <div className="p-3 bg-white border-t shrink-0 relative" ref={dropupRef}>
@@ -338,58 +523,11 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
       );
     }
 
-    // ── Agent Browse (automation overlay) — uses ManualProductDetail look ──
-    if (gameState === 'agent-browse' && activeSite) {
-      const productObj = PREDEFINED_PRODUCTS.find(p => p.name === selectedProduct);
-      return (
-        <div className="flex-1 flex flex-col relative overflow-hidden">
-          {productObj ? (
-            <ManualProductDetail
-              product={productObj}
-              retailerName={activeSite.name}
-              onBack={onBackToAgentChat}
-              onAddToCart={() => { /* disabled in agent-browse */ }}
-              onFoundInjection={onFoundInjection}
-              injectionFound={props.injectionFound}
-            />
-          ) : null}
-
-          {/* Automation overlay */}
-          {automationStep && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-8">
-              <div className="bg-white w-full rounded-3xl p-8 flex flex-col items-center gap-6 shadow-2xl">
-                <Loader2 className="text-indigo-600 animate-spin" size={32} />
-                <p className="text-indigo-600 text-[13px] font-bold">{automationStep}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // ── Agent Confirmation (human-in-the-loop) ──
-    if (gameState === 'agent-confirmation' && agentConfirmProduct && agentConfirmRetailer && billingCard && billingAddress) {
-      return (
-        <CheckoutConfirmation
-          product={agentConfirmProduct}
-          retailer={agentConfirmRetailer}
-          card={billingCard}
-          address={billingAddress}
-          firstName={billingFirstName}
-          lastName={billingLastName}
-          mode="agent"
-          onConfirm={onAgentConfirm}
-          onCancel={onAgentConfirmCancel}
-        />
-      );
-    }
-
     // ── Quiz ──
     if (gameState === 'quiz') {
       return (
         <QuizComponent
           onAnswer={onQuizAnswer}
-          quizAnswers={[]}
           onFinished={onQuizFinished}
         />
       );
@@ -446,10 +584,8 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
       <>
         {roundRetailers.map((site) => {
           const baseClass = 'w-full p-3 rounded-xl flex items-center justify-between transition-all group text-left';
-          const styleClass =
-            cardRound === 2
-              ? 'bg-amber-50 border-2 border-amber-400 hover:bg-amber-100 ring-2 ring-amber-300/50'
-              : 'bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200';
+          // 卡片外观统一：安全/可疑商家视觉完全一致，避免一眼看穿
+          const styleClass = 'bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200';
 
           return (
             <button
@@ -478,9 +614,6 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                 <div>
                   <div className="font-bold text-slate-900 flex items-center gap-1.5">
                     {site.name}
-                    {cardRound === 2 && (
-                      <span className="text-[9px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">BEST PRICE</span>
-                    )}
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-500 flex-wrap">
                     <span className="font-mono text-indigo-600 font-bold">{site.prices[cardProduct]}</span>

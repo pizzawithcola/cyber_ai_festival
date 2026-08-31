@@ -8,6 +8,8 @@ import ArcadePanel from './ui/ArcadePanel';
 interface HintPanelProps {
   hint: HintContent | null;
   children?: React.ReactNode; // for rendering summary content
+  // 递增信号：值变化时面板抖动一次（选错商品提醒）
+  shakeSignal?: number;
 }
 
 const ICON_MAP = {
@@ -26,9 +28,17 @@ const ICON_COLOR: Record<string, string> = {
   shield: ARCADE_COLORS.yellow,
 };
 
-const HintPanel: React.FC<HintPanelProps> = ({ hint, children }) => {
+const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) => {
   const [visible, setVisible] = useState(false);
   const [currentHint, setCurrentHint] = useState<HintContent | null>(null);
+  const [shaking, setShaking] = useState(false);
+
+  useEffect(() => {
+    if (!shakeSignal) return;
+    setShaking(true);
+    const t = setTimeout(() => setShaking(false), 600);
+    return () => clearTimeout(t);
+  }, [shakeSignal]);
 
   useEffect(() => {
     if (hint) {
@@ -54,7 +64,7 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children }) => {
         visible || children
           ? 'opacity-100 translate-x-0 portrait:translate-y-0'
           : 'opacity-0 translate-x-4 portrait:translate-x-0 portrait:-translate-y-4'
-      }`}
+      } ${shaking ? 'animate-hint-shake' : ''}`}
     >
       {/* Hint card */}
       {currentHint && currentHint.body && !children && (

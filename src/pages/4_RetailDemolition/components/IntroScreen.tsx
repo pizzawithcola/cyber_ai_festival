@@ -118,7 +118,15 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onStart }) => {
           color="yellow"
           variant="filled"
           size="lg"
-          onClick={isLast ? onStart : () => setSlide(s => s + 1)}
+          onClick={() => {
+            if (isLast) {
+              // 教育引导完成：标记供游戏页计分（Education Cards +20）
+              sessionStorage.setItem('retail_edu_done', '1');
+              onStart();
+            } else {
+              setSlide(s => s + 1);
+            }
+          }}
           endIcon={<ChevronRight size={18} />}
           animation={isLast ? 'pulse' : 'none'}
         >

@@ -88,7 +88,7 @@ const RetailDemolitionGame = () => {
             style={{ bottom: '100%', marginBottom: 32 }}
           >
             <div className="max-h-[20vh] overflow-y-auto">
-              <HintPanel hint={currentHint} />
+              <HintPanel hint={currentHint} shakeSignal={game.hintShakeTick} />
             </div>
           </div>
 
@@ -102,7 +102,6 @@ const RetailDemolitionGame = () => {
         messages={game.messages}
         isSearching={game.isSearching}
         activeSite={game.activeSite}
-        automationStep={game.automationStep}
         notifications={game.notifications}
         selectedProduct={game.selectedProduct}
         setNotifications={game.setNotifications}
@@ -123,18 +122,24 @@ const RetailDemolitionGame = () => {
         agentMaliciousDone={game.agentMaliciousDone}
         agentIncidentNotificationsDone={game.agentIncidentNotificationsDone}
         agentRound={game.agentRound}
+        agentCheckoutOpen={game.agentCheckoutOpen}
+        agentPendingSite={game.agentPendingSite}
+        agentOrderSuccessAt={game.agentOrderSuccessAt}
+        agentOrderStopped={game.agentOrderStopped}
         onBillingComplete={game.handleBillingComplete}
         onManualProductSelect={game.handleManualProductSelect}
         onManualAddToCart={game.handleManualAddToCart}
         onManualConfirmPurchase={game.handleManualConfirmPurchase}
         onFoundInjection={game.handleFoundInjection}
+        onManualFlag={game.handleManualFlag}
+        manualFlaggedProduct={game.manualFlaggedProduct}
         onTransitionToAgent={game.handleTransitionToAgent}
-        onProductSearch={game.startSearch}
+        onProductSearch={game.handleProductSearch}
         onRetailerClick={game.handleRetailerClick}
-        onAgentConfirm={game.handleAgentConfirm}
-        onAgentConfirmCancel={game.handleAgentConfirmCancel}
-        onBackToAgentChat={game.handleBackToAgentChat}
-        onInspectMaliciousSite={game.handleInspectMaliciousSite}
+        onAgentCheckout={game.handleAgentCheckout}
+        onAgentCheckoutContinue={game.handleAgentCheckoutContinue}
+        onAgentCheckoutCancel={game.handleAgentCheckoutCancel}
+        onAgentStopOrder={game.handleAgentStopOrder}
         onQuizAnswer={game.handleQuizAnswer}
         onStartQuiz={game.handleStartQuiz}
         onQuizFinished={game.handleQuizFinished}

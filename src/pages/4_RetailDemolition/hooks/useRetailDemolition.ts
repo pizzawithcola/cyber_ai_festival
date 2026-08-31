@@ -1,7 +1,7 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import { RETAILERS, RANKINGS, HINT_CONTENT } from '../constants/gameData';
 import type { Product, Retailer, SavedCard, SavedAddress, HintContent } from '../constants/gameData';
-import { playApplePaySuccessSound } from '../utils/notificationSound';
+import { playApplePaySuccessSound, playErrorSound } from '../utils/notificationSound';
 
 // ── Game States ──
 export type GameState =
@@ -31,6 +31,12 @@ export interface Message {
   productName?: string;
   // 该消息的关卡（决定卡片过滤：1 = 安全商家，2 = 恶意商家）
   round?: 1 | 2;
+  // 商品总结气泡：底部显示 Checkout 按钮
+  productSummary?: { productName: string; site: Retailer };
+  // 交易成功气泡：底部显示截停按钮（紧急撤回）
+  orderSuccess?: { productName: string; site: Retailer; price: string; round: 1 | 2 };
+  // 截停结果气泡
+  orderStopped?: { productName: string; site: Retailer; elapsed: number; points: number };
 }
 
 export const BROWSE_QUEST_TARGET = 1;
@@ -72,6 +78,7 @@ export const useRetailDemolition = () => {
   // ── Manual Mode State ──
   const [manualProduct, setManualProduct] = useState<Product | null>(null);
   const [manualRetailerName, setManualRetailerName] = useState('');
+  const [manualFlaggedProduct, setManualFlaggedProduct] = useState<string | null>(null); // 已标记可疑的商品名
   const [cart, setCart] = useState<CartItem[]>([]);
   const [manualCheckoutDone, setManualCheckoutDone] = useState(false);
   const [manualStepCount, setManualStepCount] = useState(0);
@@ -86,7 +93,6 @@ export const useRetailDemolition = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [activeSite, setActiveSite] = useState<Retailer | null>(null);
-  const [automationStep, setAutomationStep] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: number; title: string; body: string }>>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [agentConfirmProduct] = useState<Product | null>(null);
@@ -94,9 +100,24 @@ export const useRetailDemolition = () => {
   // Agent 两关：1 = 安全关（买 RTX 4090），2 = 中招关（买 AirPods Pro）
   const [agentRound, setAgentRound] = useState<1 | 2>(1);
 
-  // ── Scoring ──
-  const [score, setScore] = useState(100);
-  const [scoreEvents, setScoreEvents] = useState<ScoreEvent[]>([]);
+  // ── Agent Checkout 流程状态（对话内完成，不跳全屏）──
+  const [agentCheckoutOpen, setAgentCheckoutOpen] = useState(false); // AI 自动填充弹窗
+  const [agentPendingSite, setAgentPendingSite] = useState<Retailer | null>(null); // 弹窗确认后待 Confirm 的商家
+  const [agentOrderSuccessAt, setAgentOrderSuccessAt] = useState<number | null>(null); // 交易成功时刻（截停计分起点，不显示计时）
+  const [agentOrderStopped, setAgentOrderStopped] = useState(false); // 是否已截停
+  const [hintShakeTick, setHintShakeTick] = useState(0); // 选错商品时递增，触发 HintPanel 抖动
+
+  // ── Scoring（加分制，总分 100 = Edu 20 + Manual 30 + Agent 30 + Quiz 20）──
+  const [score, setScore] = useState(() =>
+    typeof window !== 'undefined' && sessionStorage.getItem('retail_edu_done') === '1' ? 20 : 0
+  );
+  const [scoreEvents, setScoreEvents] = useState<ScoreEvent[]>(() => {
+    // 教育引导完成（IntroScreen 读完 3 slides）→ Education Cards +20
+    if (typeof window !== 'undefined' && sessionStorage.getItem('retail_edu_done') === '1') {
+      return [{ change: 20, reason: 'education_cards_complete', meta: {}, timestamp: Date.now() }];
+    }
+    return [];
+  });
   const updateScore = (change: number) => {
     setScore(prev => Math.max(0, Math.min(100, prev + change)));
   };
@@ -112,7 +133,7 @@ export const useRetailDemolition = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [, setQuizAnswers] = useState<string[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
-  const [hasBeenPromptedForManual, setHasBeenPromptedForManual] = useState(false);
+  const [, setHasBeenPromptedForManual] = useState(false);
   const [agentSafePurchaseDone, setAgentSafePurchaseDone] = useState(false);
   const [agentMaliciousDone, setAgentMaliciousDone] = useState(false);
   const [agentIncidentNotificationsDone, setAgentIncidentNotificationsDone] = useState(false);
@@ -246,6 +267,9 @@ export const useRetailDemolition = () => {
     setManualCheckoutDone(true);
     setGameState('manual-confirmation');
 
+    // 手动购买成功 → Manual Shopping 块 +20
+    applyScoreChange(20, 'manual_purchase_success', {});
+
     // 购买成功：先播 Apple Pay 支付成功音，随后短信通知到达时由 PhoneSimulator 播短信提示音
     playApplePaySuccessSound();
 
@@ -259,6 +283,14 @@ export const useRetailDemolition = () => {
 
   const handleFoundInjection = () => {
     setInjectionFound(true);
+  };
+
+  // 手动购物：标记可疑商品（危险商家识别正确 +10；安全商家误报不加分）
+  const handleManualFlag = (product: Product, retailer: Retailer) => {
+    setManualFlaggedProduct(product.name);
+    if (retailer.isMalicious) {
+      applyScoreChange(10, 'flagged_malicious_listing', { siteName: retailer.name, productName: product.name });
+    }
   };
 
   const handleTransitionToAgent = () => {
@@ -314,83 +346,134 @@ export const useRetailDemolition = () => {
       timestamp: Date.now(),
     }]);
 
-    // Scoring (only for non-educational agentic choices)
-    if (!isEducational) {
-      if (site.isMalicious) {
-        applyScoreChange(-30, 'selected_malicious_site', { siteName: site.name });
-        if (timeTaken >= 5 && timeTaken < 12) {
-          applyScoreChange(-5, 'slow_malicious_decision', { siteName: site.name, timeTaken });
-        } else if (timeTaken >= 12) {
-          applyScoreChange(-10, 'very_slow_malicious_decision', { siteName: site.name, timeTaken });
-        }
-      }
-      if (timeTaken < 3) {
-        applyScoreChange(-10, 'too_fast_decision', { siteName: site.name, timeTaken });
-      }
-    } else {
-      setExplorationMaliciousFree(false);
-    }
-
     setActiveSite(site);
-    setGameState('agent-browse');
-    runAutomationSequence(site);
+    // 不跳转：留在对话，agent 气泡总结商品 + Checkout 按钮
+    setMessages(prev => [...prev, {
+      role: 'bot',
+      text: `Here's what I found at ${site.name}:`,
+      productSummary: { productName: selectedProduct, site },
+    }]);
   };
 
-  const runAutomationSequence = (site: Retailer) => {
-    const steps = [
-      "Reading the website content...",
-      "Identifying product details...",
-      "Calculating final cost...",
-      "Filling out shipping and payment...",
-    ];
+  // ── Agent Checkout 流程（对话内完成，不跳全屏）──
+  const handleAgentCheckout = (_site: Retailer, _productName: string) => {
+    setAgentPendingSite(_site);
+    setAgentCheckoutOpen(true);
+  };
 
-    steps.forEach((step, i) => {
-      setTimeout(() => {
-        setAutomationStep(step);
-
-        if (i === steps.length - 1) {
+  const handleAgentCheckoutContinue = () => {
+    const site = agentPendingSite;
+    setAgentCheckoutOpen(false);
+    setAgentPendingSite(null);
+    if (!site) return;
+    // 弹窗即确认页：直接进入交易处理（无中间确认气泡）
+    const productName = selectedProduct;
+    const price = site.prices[productName] || '$0';
+    setMessages(prev => [...prev, {
+      role: 'bot',
+      text: `Processing your payment with ${site.name}...`,
+    }]);
+    setTimeout(() => {
+      playApplePaySuccessSound();
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        text: `✅ Transaction successful! You paid ${price} at ${site.name}.`,
+        orderSuccess: { productName, site, price, round: agentRound },
+      }]);
+      setAgentOrderSuccessAt(Date.now());
+      setAgentOrderStopped(false);
+      if (agentRound === 1) {
+        // Round 1：支付成功 → 订单短信确认，不截停则 4.5s 后自动进入第二关
+        pushSMS("Order Confirmed", `Your ${productName} from ${site.name} (${price}) is on the way.`, 2500);
+        setTimeout(() => {
+          setAgentRound(2);
           setTimeout(() => {
-            setAutomationStep(null);
-            if (agentRound === 1) {
-              // ── Round 1（安全）：下单成功 → 提示进入第二关，由用户再次选择 AirPods Pro ──
-              playApplePaySuccessSound();
-              setMessages(prev => [...prev, {
-                role: 'bot',
-                text: `Transaction successful! Purchased ${AGENT_ROUND_PRODUCTS[1]} from ${site.name} for ${site.prices[AGENT_ROUND_PRODUCTS[1]]}.`,
-              }]);
-              setGameState('agent-chat');
-              setAgentRound(2);
-              setTimeout(() => {
-                setMessages(prev => [...prev, {
-                  role: 'bot',
-                  text: `Round 2: Now buy the ${AGENT_ROUND_PRODUCTS[2]} — select it from the suggestions below.`,
-                }]);
-              }, 800);
-            } else {
-              // ── Round 2（中招）：无论选谁都被劫持 ──
-              setAgentMaliciousDone(true);
-              setHasBeenPromptedForManual(true);
+            setMessages(prev => [...prev, {
+              role: 'bot',
+              text: `Round 2: Now buy the ${AGENT_ROUND_PRODUCTS[2]} — select it from the suggestions below.`,
+            }]);
+          }, 600);
+        }, 4500);
+      } else {
+        // Round 2：交易完成 → 异地登录短信出现后开始截停计时（用户收到短信才行动）
+        setTimeout(() => {
+          setAgentMaliciousDone(true);
+          setHasBeenPromptedForManual(true);
+          // 异地登录短信 = 截停计时起点
+          setAgentOrderSuccessAt(Date.now());
+          pushSMS("Security Alert", "New login detected on Bank of America: St. Petersburg, RU", 0);
+          pushSMS("Bank Alert", "Your account has been charged $12,450.00 at 'Asset-Recovery-Global'", 2500);
+        }, 2500);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: 'bot',
+            text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to malware hidden in the website. Check the hint panel for next steps.",
+          }]);
+          setAgentIncidentNotificationsDone(true);
+        }, 10000);
+      }
+    }, 1600);
+  };
 
-              const actualPrice = site.prices[selectedProduct] || '$0';
-              setMessages(prev => [...prev, { role: 'bot', text: `Order confirmed at ${site.name}. Total charged: ${actualPrice}.` }]);
-              setGameState('agent-chat');
+  const handleAgentCheckoutCancel = () => {
+    setAgentCheckoutOpen(false);
+    setAgentPendingSite(null);
+    setMessages(prev => [...prev, {
+      role: 'bot',
+      text: 'Checkout cancelled. Feel free to pick another retailer or product.',
+    }]);
+  };
 
-              pushSMS("Order Confirmed", `Your item from ${site.name} has been processed (${actualPrice}).`, 500);
-              pushSMS("Security Alert", "New login detected on Bank of America: St. Petersburg, RU", 3000);
-              pushSMS("Bank Alert", "Your account has been charged $12,450.00 at 'Asset-Recovery-Global'", 5000);
+  const handleAgentStopOrder = (productName: string, site: Retailer, price: string) => {
+    const elapsed = (Date.now() - (agentOrderSuccessAt ?? Date.now())) / 1000;
+    setAgentOrderStopped(true);
+    setAgentOrderSuccessAt(null);
+    if (agentRound === 1) {
+      // Round 1 安全交易截停：不涉及计分
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        text: `🛑 Order stopped! The transaction was cancelled before it was processed — no charge at ${site.name}.`,
+        orderStopped: { productName, site, elapsed, points: 0 },
+      }]);
+      setTimeout(() => {
+        setAgentRound(2);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: 'bot',
+            text: `Round 2: Now buy the ${AGENT_ROUND_PRODUCTS[2]} — select it from the suggestions below.`,
+          }]);
+        }, 600);
+      }, 1000);
+    } else {
+      // Round 2 紧急撤回：1s 内 +30，每慢 1s -5，最低 0（分数只在结算页展示）
+      const points = Math.max(0, Math.round(30 - Math.max(0, elapsed - 1) * 5));
+      if (points > 0) {
+        applyScoreChange(points, 'emergency_stop', { siteName: site.name, elapsed, points });
+      }
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        text: `🛑 Order stopped! The fraudulent charge was blocked and refunded.`,
+        orderStopped: { productName, site, elapsed, points },
+      }]);
+      setAgentMaliciousDone(true);
+      setHasBeenPromptedForManual(true);
+      pushSMS("Security Alert", `We blocked a suspicious charge of ${price} at ${site.name}.`, 800);
+    }
+  };
 
-              setTimeout(() => {
-                setMessages(prev => [...prev, {
-                  role: 'bot',
-                  text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to malware hidden in the website. Check the hint panel for next steps.",
-                }]);
-                setAgentIncidentNotificationsDone(true);
-              }, 7000);
-            }
-          }, 1500);
-        }
-      }, (i + 1) * 1200);
-    });
+  // 选错商品：报错音 + HintPanel 抖动 + 阻塞（直到选对本轮商品）
+  const handleProductSearch = (productName: string) => {
+    const expected = AGENT_ROUND_PRODUCTS[agentRound];
+    if (productName !== expected) {
+      playErrorSound();
+      setHintShakeTick(t => t + 1);
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        text: `Hold on — we're supposed to buy the ${expected} this round. Please select ${expected} from the suggestions below.`,
+      }]);
+      return;
+    }
+    startSearch(productName, `Find me the best deal on ${productName}`, agentRound);
   };
 
   const handleAgentConfirm = () => {
@@ -460,28 +543,20 @@ export const useRetailDemolition = () => {
     setGameState('agent-browse');
   };
 
-  // ── Quiz ──
-  const handleQuizAnswer = (answer: string) => {
+  // ── Quiz（两题）──
+  const handleQuizAnswer = (qIndex: number, answer: string) => {
     setQuizAnswers(prev => [...prev, answer]);
 
-    // Penalty for skipping post-incident inspection (never viewed page source on a malicious site)
-    if (hasBeenPromptedForManual && !injectionFound) {
-      applyScoreChange(-10, 'skipped_inspection', {});
-    }
-
-    // Quiz scoring (matches SCORING_SCHEMA.md)
-    if (answer === 'all') {
-      applyScoreChange(0, 'quiz_all_correct', { answer });
-    } else if (answer === 'attacker') {
-      applyScoreChange(-5, 'quiz_answer_attacker', { answer });
-    } else if (answer === 'developer') {
-      applyScoreChange(-10, 'quiz_answer_developer', { answer });
-    } else if (answer === 'platform') {
-      applyScoreChange(-10, 'quiz_answer_platform', { answer });
-    } else if (answer === 'user') {
-      applyScoreChange(-15, 'quiz_answer_user', { answer });
+    if (qIndex === 0) {
+      // Q1: Who bears primary responsibility?（正确 = all）→ +10
+      if (answer === 'all') {
+        applyScoreChange(10, 'quiz_correct_1', { answer });
+      }
     } else {
-      applyScoreChange(-20, 'quiz_answer_unknown', { answer });
+      // Q2: 收到欺诈警报后如何应对？（正确 = contact_bank）→ +10
+      if (answer === 'contact_bank') {
+        applyScoreChange(10, 'quiz_correct_2', { answer });
+      }
     }
   };
 
@@ -509,7 +584,6 @@ export const useRetailDemolition = () => {
     messages,
     isSearching,
     activeSite,
-    automationStep,
     notifications,
     setNotifications,
     selectedProduct,
@@ -518,6 +592,13 @@ export const useRetailDemolition = () => {
     showQuiz,
     setShowQuiz,
     decisions,
+
+    // Agent Checkout 流程
+    agentCheckoutOpen,
+    agentPendingSite,
+    agentOrderSuccessAt,
+    agentOrderStopped,
+    hintShakeTick,
 
     // Billing
     billingFirstName,
@@ -532,6 +613,7 @@ export const useRetailDemolition = () => {
     manualCheckoutDone,
     manualStepCount,
     injectionFound,
+    manualFlaggedProduct,
     browsedCount,
     browseQuestComplete,
     browseQuestTarget: BROWSE_QUEST_TARGET,
@@ -554,11 +636,17 @@ export const useRetailDemolition = () => {
     handleManualAddToCart,
     handleManualConfirmPurchase,
     handleFoundInjection,
+    handleManualFlag,
     handleTransitionToAgent,
     startSearch,
     handleRetailerClick,
     handleAgentConfirm,
     handleAgentConfirmCancel,
+    handleAgentCheckout,
+    handleAgentCheckoutContinue,
+    handleAgentCheckoutCancel,
+    handleAgentStopOrder,
+    handleProductSearch,
     handleBackToAgentChat,
     handleInspectMaliciousSite,
     handleQuizAnswer,

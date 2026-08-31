@@ -12,6 +12,9 @@ interface ManualProductDetailProps {
   injectionFound: boolean;
   canCheckout?: boolean;
   browseProgress?: { current: number; target: number };
+  // 标记可疑按钮
+  onFlagListing?: (product: Product, retailer: Retailer) => void;
+  flagged?: boolean;
 }
 
 const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
@@ -23,6 +26,8 @@ const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
   injectionFound,
   canCheckout = true,
   browseProgress,
+  onFlagListing,
+  flagged = false,
 }) => {
   const [showSource, setShowSource] = useState(false);
   const retailer = RETAILERS.find(r => r.name === retailerName)!;
@@ -166,6 +171,22 @@ const ManualProductDetail: React.FC<ManualProductDetailProps> = ({
             </div>
           )}
           {canCheckout && <div className="mb-2" />}
+
+          {/* Flag as suspicious */}
+          {onFlagListing && (
+            flagged ? (
+              <div className="mb-4 flex items-center gap-2 text-xs font-bold text-green-700 bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
+                <ShieldCheck size={14} /> Thanks for flagging — we've notified our security team.
+              </div>
+            ) : (
+              <button
+                onClick={() => onFlagListing(product, retailer)}
+                className="w-full py-2.5 bg-white border border-slate-300 text-slate-600 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:border-amber-400 hover:text-amber-600 transition-colors mb-4"
+              >
+                <AlertTriangle size={14} /> Flag this listing as suspicious
+              </button>
+            )
+          )}
 
           {/* Reviews */}
           <div className="mb-4">
