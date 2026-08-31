@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Table,
@@ -179,6 +179,7 @@ const AdminPage: React.FC = () => {
   // ─── Auth State ──────────────────────────────────────────────────────────────
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [loginEmail, setLoginEmail] = useState('');
   const [loginName, setLoginName] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
@@ -248,8 +249,12 @@ const AdminPage: React.FC = () => {
       const data = await res.json();
       setAdminToken(data.token);
       setIsAuthenticated(true);
-      // 登录成功后直接进入游戏控制台（start a new room）
-      navigate('/final/admin');
+      // 登录后去向：从 Showdown 控制台回跳（/admin?redirect=/final/admin）→ 回控制台；
+      // 主页 Dashboard 直接进入 → 留在本管理页（Personnel / Rooms / API）
+      const redirectTo = new URLSearchParams(location.search).get('redirect');
+      if (redirectTo) {
+        navigate(redirectTo);
+      }
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : 'Login failed');
     } finally {

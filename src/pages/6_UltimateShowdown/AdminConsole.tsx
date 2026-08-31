@@ -389,10 +389,10 @@ const AdminConsole: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [snack, setSnack] = useState<SnackState>({ open: false, message: '', severity: 'success' });
 
-  // Auth check
+  // Auth check：无 token 跳回登录页，并携带 redirect 让登录后自动回到控制台
   useEffect(() => {
     const token = getAdminToken();
-    if (!token) { navigate('/admin'); return; }
+    if (!token) { navigate('/admin?redirect=/final/admin'); return; }
   }, [navigate]);
 
   // ─── BGM playback（三段音乐按阶段切换，仅 Admin 端播放）──────────────────
