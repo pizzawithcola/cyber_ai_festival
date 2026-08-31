@@ -12,7 +12,7 @@ interface RankingEntry {
   user_id: number;
   firstname: string;
   lastname: string;
-  email: string;
+  nickname?: string;
   region: string;
   score: number;
 }

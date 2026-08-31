@@ -172,7 +172,7 @@ const API_ENDPOINTS = [
 ];
 
 interface ApiStatus { name: string; status: 'idle' | 'loading' | 'normal' | 'error'; latency?: number; error?: string; }
-interface UserScore  { id: number; firstname: string; lastname: string; email: string; region: string; role: string; game1_score: number; game2_score: number; game3_score: number; game4_score: number; game5_score: number; total_score: number; }
+interface UserScore  { id: number; firstname: string; lastname: string; nickname?: string; region: string; role: string; game1_score: number; game2_score: number; game3_score: number; game4_score: number; game5_score: number; total_score: number; }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const AdminPage: React.FC = () => {
@@ -180,8 +180,8 @@ const AdminPage: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginName, setLoginName] = useState('');
+  const [loginNickname, setLoginNickname] = useState('');
+  const [loginName, setLoginName]       = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -197,7 +197,7 @@ const AdminPage: React.FC = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [editingUser, setEditingUser]     = useState<UserScore | null>(null);
   const [formData, setFormData]           = useState<Omit<UserScore, 'id' | 'total_score'>>({
-    firstname: '', lastname: '', email: '', region: 'United States', role: 'player',
+    firstname: '', lastname: '', region: 'United States', role: 'player',
     game1_score: 0, game2_score: 0, game3_score: 0, game4_score: 0, game5_score: 0,
   });
   const [order, setOrder]         = useState<'asc' | 'desc'>('asc');
@@ -231,7 +231,7 @@ const AdminPage: React.FC = () => {
 
   // ─── Handle Admin Login ─────────────────────────────────────────────────────
   const handleAdminLogin = async () => {
-    if (!loginEmail || !loginName) {
+    if (!loginNickname || !loginName) {
       setLoginError('Please fill in all fields');
       return;
     }
@@ -240,7 +240,7 @@ const AdminPage: React.FC = () => {
     try {
       const res = await apiFetch('/users/admin-login', {
         method: 'POST',
-        body: JSON.stringify({ email: loginEmail, firstname: loginName }),
+        body: JSON.stringify({ nickname: loginNickname, firstname: loginName }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -346,14 +346,14 @@ const AdminPage: React.FC = () => {
           {/* Login Form */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              label="EMAIL"
-              type="email"
+              label="ADMIN NICKNAME"
               fullWidth
               size="small"
-              value={loginEmail}
-              onChange={e => setLoginEmail(e.target.value)}
+              value={loginNickname}
+              onChange={e => setLoginNickname(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
               sx={sfInputSx}
+              placeholder="admin@admin.com"
             />
             <TextField
               label="FIRST NAME"
@@ -407,17 +407,15 @@ const AdminPage: React.FC = () => {
   const handleSelectUser        = (id: number) => setSelectedUsers(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
   const handleSelectAll         = () => selectedUsers.length === paginatedUsers.length ? setSelectedUsers([]) : setSelectedUsers(paginatedUsers.map(u => u.id));
 
-  const handleAddClick    = () => { setFormData({ firstname: '', lastname: '', email: '', region: 'United States', role: 'player', game1_score: 0, game2_score: 0, game3_score: 0, game4_score: 0, game5_score: 0 }); setOpenAddDialog(true); };
+  const handleAddClick    = () => { setFormData({ firstname: '', lastname: '', region: 'United States', role: 'player', game1_score: 0, game2_score: 0, game3_score: 0, game4_score: 0, game5_score: 0 }); setOpenAddDialog(true); };
   const handleDeleteClick = () => { if (!selectedUsers.length) { setSnackbar({ open: true, message: 'Select at least one user', severity: 'error' }); return; } setOpenDeleteDialog(true); };
-  const handleEditOpen    = (u: UserScore) => { setEditingUser(u); setFormData({ firstname: u.firstname, lastname: u.lastname, email: u.email, region: u.region, role: u.role || 'player', game1_score: u.game1_score, game2_score: u.game2_score, game3_score: u.game3_score, game4_score: u.game4_score, game5_score: u.game5_score }); setOpenEditDialog(true); };
+  const handleEditOpen    = (u: UserScore) => { setEditingUser(u); setFormData({ firstname: u.firstname, lastname: u.lastname, region: u.region, role: u.role || 'player', game1_score: u.game1_score, game2_score: u.game2_score, game3_score: u.game3_score, game4_score: u.game4_score, game5_score: u.game5_score }); setOpenEditDialog(true); };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; setFormData(p => ({ ...p, [name]: name.includes('_score') ? parseFloat(value) || 0 : value })); };
   const calcTotal         = (d: Omit<UserScore, 'id' | 'total_score'>) => d.game1_score + d.game2_score + d.game3_score + d.game4_score + d.game5_score;
 
   const validateForm = () => {
     if (!formData.firstname.trim())           { setSnackbar({ open: true, message: 'First name required', severity: 'error' }); return false; }
     if (!formData.lastname.trim())            { setSnackbar({ open: true, message: 'Last name required',  severity: 'error' }); return false; }
-    if (!formData.email.trim())               { setSnackbar({ open: true, message: 'Email required',      severity: 'error' }); return false; }
-    if (!/\S+@\S+\.\S+/.test(formData.email)){ setSnackbar({ open: true, message: 'Email invalid',        severity: 'error' }); return false; }
     const scores = [formData.game1_score, formData.game2_score, formData.game3_score, formData.game4_score, formData.game5_score];
     if (scores.some(s => isNaN(s) || s < 0 || s > 100)) { setSnackbar({ open: true, message: 'Scores must be 0–100', severity: 'error' }); return false; }
     return true;
@@ -440,7 +438,7 @@ const AdminPage: React.FC = () => {
   const handleEditSubmit = async () => {
     if (!validateForm() || !editingUser) return;
     try {
-      const ur = await apiFetch(`/users/${editingUser.id}`,  { method: 'PUT', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, email: formData.email, region: formData.region, role: formData.role }) });
+      const ur = await apiFetch(`/users/${editingUser.id}`,  { method: 'PUT', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, region: formData.region, role: formData.role }) });
       if (!ur.ok) throw new Error(`User update ${ur.status}`);
       const sr = await apiFetch(`/scores/${editingUser.id}`, { method: 'PUT', body: JSON.stringify({ game1_score: formData.game1_score, game2_score: formData.game2_score, game3_score: formData.game3_score, game4_score: formData.game4_score, game5_score: formData.game5_score }) });
       if (!sr.ok) throw new Error(`Score update ${sr.status}`);
@@ -453,7 +451,7 @@ const AdminPage: React.FC = () => {
   const handleAddSubmit = async () => {
     if (!validateForm()) return;
     try {
-      const ur = await apiFetch('/users', { method: 'POST', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, email: formData.email, region: formData.region, role: formData.role }) });
+      const ur = await apiFetch('/users', { method: 'POST', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, region: formData.region, role: formData.role }) });
       if (!ur.ok) throw new Error(`Create ${ur.status}`);
       const newUser = await ur.json();
       const sr = await apiFetch(`/scores/${newUser.id}`, { method: 'PUT', body: JSON.stringify({ game1_score: formData.game1_score, game2_score: formData.game2_score, game3_score: formData.game3_score, game4_score: formData.game4_score, game5_score: formData.game5_score }) });
@@ -502,7 +500,7 @@ const AdminPage: React.FC = () => {
     ? (a: UserScore, b: UserScore) => desc(a, b, ob as keyof UserScore)
     : (a: UserScore, b: UserScore) => -desc(a, b, ob as keyof UserScore);
 
-  const filteredUsers  = users.filter(u => { const s = searchTerm.toLowerCase(); return u.firstname.toLowerCase().includes(s) || u.lastname.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || u.region.toLowerCase().includes(s); });
+  const filteredUsers  = users.filter(u => { const s = searchTerm.toLowerCase(); return (u.nickname || '').toLowerCase().includes(s) || u.firstname.toLowerCase().includes(s) || u.lastname.toLowerCase().includes(s) || u.region.toLowerCase().includes(s); });
   const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   const sortedUsers    = [...paginatedUsers].sort(cmp(order, orderBy));
   const uniqueCountries = new Set(users.map(u => u.region).filter(Boolean)).size;
@@ -533,10 +531,6 @@ const AdminPage: React.FC = () => {
           <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>LAST NAME</Box>
           <TextField name="lastname" fullWidth variant="outlined" value={formData.lastname} onChange={handleInputChange} sx={sfInputSx} />
         </Box>
-      </Box>
-      <Box>
-        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>EMAIL ADDRESS</Box>
-        <TextField name="email" fullWidth variant="outlined" value={formData.email} onChange={handleInputChange} sx={sfInputSx} />
       </Box>
       <Box>
         <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.15em', color: accent, mb: 0.75 }}>REGION</Box>
@@ -707,7 +701,7 @@ const AdminPage: React.FC = () => {
                     sx={{ color: `${SF.cyan}40`, '&.Mui-checked': { color: SF.cyan }, '&.MuiCheckbox-indeterminate': { color: SF.cyan }, p: 0 }}
                   />
                 </TableCell>
-                {[['FIRST NAME','firstname'],['LAST NAME','lastname'],['EMAIL','email'],['REGION','region'],['ROLE','role'],['G1/AH','game1_score'],['G2/DS','game2_score'],['G3/RD','game3_score'],['G4/FA','game4_score'],['G5/FS','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
+                {[['NICKNAME','nickname'],['FIRST NAME','firstname'],['LAST NAME','lastname'],['REGION','region'],['ROLE','role'],['G1/AH','game1_score'],['G2/DS','game2_score'],['G3/RD','game3_score'],['G4/FA','game4_score'],['G5/FS','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
                   <TableCell key={field} sx={thSx}>
                     <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
                       sx={{ fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
@@ -725,7 +719,7 @@ const AdminPage: React.FC = () => {
                     <Checkbox size="small" checked={selectedUsers.includes(u.id)} onClick={e => { e.stopPropagation(); handleSelectUser(u.id); }}
                       sx={{ color: `${SF.cyan}30`, '&.Mui-checked': { color: SF.cyan }, p: 0 }} />
                   </TableCell>
-                  {[u.firstname, u.lastname, u.email, u.region].map((val, i) => (
+                  {[u.nickname || '—', u.firstname, u.lastname, u.region].map((val, i) => (
                     <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.92rem', color: `${SF.white}85`, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
                   ))}
                   <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: u.role === 'admin' ? SF.lime : SF.dim, textAlign: 'center' }}>{u.role?.toUpperCase() || 'PLAYER'}</TableCell>

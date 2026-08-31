@@ -91,7 +91,7 @@ const RegisterPage: React.FC = () => {
 
   const [firstname, setFirstname] = useState('');
   const [lastname, setLastname] = useState('');
-  const [email, setEmail] = useState('');
+  const [regNickname, setRegNickname] = useState('');
   const [country, setCountry] = useState('');
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState<SnackState>({ open: false, message: '', severity: 'success' });
@@ -100,7 +100,7 @@ const RegisterPage: React.FC = () => {
   const [registered, setRegistered] = useState(false);
 
   const handleRegisterClick = () => {
-    if (!firstname || !lastname || !email || !country) {
+    if (!firstname || !lastname || !country) {
       setSnack({ open: true, message: 'Please fill in all fields.', severity: 'warning' });
       return;
     }
@@ -108,7 +108,7 @@ const RegisterPage: React.FC = () => {
   };
 
   const handleRegister = async () => {
-    if (!firstname || !lastname || !email || !country) {
+    if (!firstname || !lastname || !country) {
       setSnack({ open: true, message: 'Please fill in all fields.', severity: 'warning' });
       return;
     }
@@ -116,12 +116,14 @@ const RegisterPage: React.FC = () => {
     try {
       const res = await apiFetch('/users/', {
         method: 'POST',
-        body: JSON.stringify({ firstname, lastname, email, region: country }),
+        body: JSON.stringify({ firstname, lastname, region: country }),
       });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || 'Registration failed');
       }
+      const reg = await res.json();
+      setRegNickname(reg?.nickname || '');
       setDisclaimerOpen(false);
       setRegistered(true);
     } catch (err) {
@@ -207,16 +209,19 @@ const RegisterPage: React.FC = () => {
               See you at the event!
             </ArcadeTypography>
 
-            <Box sx={{
-              p: 2, mb: 3,
-              border: `1px solid ${color}20`,
-              borderRadius: '4px',
-              backgroundColor: '#050510',
-            }}>
-              <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}50`, fontSize: '0.6rem', lineHeight: 1.9 }}>
-                Keep your email handy — you will need it to sign in on the day of the event.
-              </ArcadeTypography>
-            </Box>
+            {regNickname && (
+              <Box sx={{ p: 2.5, mb: 3, border: `2px solid ${color}60`, borderRadius: '8px', backgroundColor: `${color}08`, boxShadow: `0 0 20px ${color}30` }}>
+                <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}60`, fontSize: '0.65rem', letterSpacing: '0.2em', mb: 1 }}>
+                  YOUR NICKNAME
+                </ArcadeTypography>
+                <ArcadeTypography arcadeSize="lg" component="p" sx={{ color, fontSize: '1.6rem', letterSpacing: '0.05em', mb: 2, textShadow: `0 0 16px ${color}70` }}>
+                  {regNickname}
+                </ArcadeTypography>
+                <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}50`, fontSize: '0.6rem', lineHeight: 1.9 }}>
+                  Take a screenshot! You will use this nickname to log in at the event.
+                </ArcadeTypography>
+              </Box>
+            )}
 
           </Box>
         </Box>
@@ -440,12 +445,6 @@ const RegisterPage: React.FC = () => {
                   value={lastname} onChange={e => setLastname(e.target.value)} sx={tfSx}
                 />
               </Box>
-              <TextField
-                label='EMAIL' type='email' fullWidth size='small'
-                value={email} onChange={e => setEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleRegister()}
-                sx={tfSx}
-              />
               <TextField
                 label='COUNTRY' select fullWidth size='small'
                 value={country} onChange={e => setCountry(e.target.value)}

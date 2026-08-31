@@ -125,14 +125,14 @@ const JoinScreen: React.FC<{
 
 // ─── Login Screen (Step 2: Login with existing account or register) ──────────
 const LoginScreen: React.FC<{
-  onLogin: (email: string, name: string) => void;
-  onRegister: (firstname: string, lastname: string, email: string, country: string) => void;
+  onLogin: (nickname: string) => void;
+  onRegister: (firstname: string, lastname: string, country: string) => void;
   loading: boolean;
   error: string;
 }> = ({ onLogin, onRegister, loading, error }) => {
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
+  const [nickname, setNickname] = useState('');
   const [isRegister, setIsRegister] = useState(false);
+  const [regFirstname, setRegFirstname] = useState('');
   const [regLastname, setRegLastname] = useState('');
   const [regCountry, setRegCountry] = useState('');
 
@@ -164,23 +164,14 @@ const LoginScreen: React.FC<{
       {!isRegister ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
-            label="EMAIL"
-            type="email"
+            label="NICKNAME"
             fullWidth
             size="small"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && email && name && onLogin(email, name)}
+            value={nickname}
+            onChange={e => setNickname(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && nickname.trim() && onLogin(nickname)}
             sx={tfSx}
-          />
-          <TextField
-            label="PLAYER NAME"
-            fullWidth
-            size="small"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && email && name && onLogin(email, name)}
-            sx={tfSx}
+            placeholder="e.g. JamieL_001"
           />
           {error && (
             <Box sx={{ color: ARCADE_COLORS.red, fontFamily: '"Courier New", monospace', fontSize: '0.7rem' }}>
@@ -192,8 +183,8 @@ const LoginScreen: React.FC<{
             variant="filled"
             size="md"
             glowing
-            onClick={() => onLogin(email, name)}
-            disabled={loading || !email || !name}
+            onClick={() => onLogin(nickname)}
+            disabled={loading || !nickname.trim()}
             sx={{ width: '100%' }}
           >
             {loading ? 'LOGGING IN...' : 'LOGIN & JOIN'}
@@ -215,10 +206,9 @@ const LoginScreen: React.FC<{
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', gap: 1.5 }}>
-            <TextField label="FIRST NAME" fullWidth size="small" value={name} onChange={e => setName(e.target.value)} sx={tfSx} />
+            <TextField label="FIRST NAME" fullWidth size="small" value={regFirstname} onChange={e => setRegFirstname(e.target.value)} sx={tfSx} />
             <TextField label="LAST NAME" fullWidth size="small" value={regLastname} onChange={e => setRegLastname(e.target.value)} sx={tfSx} />
           </Box>
-          <TextField label="EMAIL" type="email" fullWidth size="small" value={email} onChange={e => setEmail(e.target.value)} sx={tfSx} />
           <TextField
             label="COUNTRY"
             select
@@ -266,8 +256,8 @@ const LoginScreen: React.FC<{
             variant="filled"
             size="md"
             glowing
-            onClick={() => onRegister(name, regLastname, email, regCountry)}
-            disabled={loading || !name || !regLastname || !email || !regCountry}
+            onClick={() => onRegister(regFirstname, regLastname, regCountry)}
+            disabled={loading || !regFirstname || !regLastname || !regCountry}
             sx={{ width: '100%' }}
           >
             {loading ? 'REGISTERING...' : 'REGISTER & JOIN'}
@@ -861,13 +851,13 @@ const UltimateShowdown: React.FC = () => {
   };
 
   // Step 2: Login with existing account → then join room
-  const handleLogin = async (email: string, playerName: string) => {
+  const handleLogin = async (nickname: string) => {
     setLoginLoading(true);
     setLoginError('');
     try {
       const res = await apiFetch('/users/login', {
         method: 'POST',
-        body: JSON.stringify({ email, firstname: playerName }),
+        body: JSON.stringify({ nickname }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -875,8 +865,9 @@ const UltimateShowdown: React.FC = () => {
       }
       const userData = await res.json();
       const userId = userData?.id;
-      const firstname = userData?.firstname ?? userData?.first_name ?? playerName;
+      const firstname = userData?.firstname ?? userData?.first_name;
       const lastname = userData?.lastname ?? userData?.last_name;
+      const userNickname = userData?.nickname;
       const region = userData?.region ?? userData?.country;
       const countryCode =
         region && region.length === 2
@@ -884,7 +875,7 @@ const UltimateShowdown: React.FC = () => {
           : region
             ? COUNTRY_NAME_TO_CODE[region]
             : undefined;
-      setStoredUser({ id: userId, firstname, lastname, countryCode });
+      setStoredUser({ id: userId, firstname, lastname, nickname: userNickname, countryCode });
       if (roomCode) {
         await handleJoinRoom(roomCode, userId, firstname);
       }
@@ -896,13 +887,13 @@ const UltimateShowdown: React.FC = () => {
   };
 
   // Register new account → then join room
-  const handleRegister = async (firstname: string, lastname: string, email: string, country: string) => {
+  const handleRegister = async (firstname: string, lastname: string, country: string) => {
     setLoginLoading(true);
     setLoginError('');
     try {
       const res = await apiFetch('/users/', {
         method: 'POST',
-        body: JSON.stringify({ firstname, lastname, email, region: country }),
+        body: JSON.stringify({ firstname, lastname, region: country }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -910,7 +901,7 @@ const UltimateShowdown: React.FC = () => {
       }
       const userData = await res.json();
       const userId = userData?.id;
-      setStoredUser({ id: userId, firstname, lastname });
+      setStoredUser({ id: userId, firstname, lastname, nickname: userData?.nickname });
       if (roomCode) {
         await handleJoinRoom(roomCode, userId, firstname);
       }

@@ -247,11 +247,9 @@ const LoginPage: React.FC = () => {
   useClickSound();
 
   const [isRegister, setIsRegister] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginFirstname, setLoginFirstname] = useState('');
+  const [loginNickname, setLoginNickname] = useState('');
   const [regFirstname, setRegFirstname] = useState('');
   const [regLastname, setRegLastname] = useState('');
-  const [regEmail, setRegEmail] = useState('');
   const [regCountry, setRegCountry] = useState('');
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState<SnackState>({ open: false, message: '', severity: 'success' });
@@ -271,15 +269,15 @@ const LoginPage: React.FC = () => {
   }, []);
 
   const handleLogin = async () => {
-    if (!loginEmail || !loginFirstname) {
-      setSnack({ open: true, message: 'Please fill in all fields.', severity: 'warning' });
+    if (!loginNickname.trim()) {
+      setSnack({ open: true, message: 'Please enter your nickname.', severity: 'warning' });
       return;
     }
     setLoading(true);
     try {
       const res = await apiFetch('/users/login', {
         method: 'POST',
-        body: JSON.stringify({ email: loginEmail, firstname: loginFirstname }),
+        body: JSON.stringify({ nickname: loginNickname }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -287,8 +285,9 @@ const LoginPage: React.FC = () => {
       }
       const user = await res.json();
       const userId = user?.id;
-      const firstname = user?.firstname ?? user?.first_name ?? loginFirstname;
+      const firstname = user?.firstname ?? user?.first_name;
       const lastname = user?.lastname ?? user?.last_name;
+      const nickname = user?.nickname;
       const region = user?.region ?? user?.country;
       const countryCode =
         region && region.length === 2
@@ -296,7 +295,7 @@ const LoginPage: React.FC = () => {
           : region
             ? COUNTRY_NAME_TO_CODE[region]
             : undefined;
-      if (firstname) setStoredUser({ id: userId, firstname, lastname, countryCode });
+      if (firstname) setStoredUser({ id: userId, firstname, lastname, nickname, countryCode });
       navigate(gameRoute);
     } catch (err) {
       setSnack({ open: true, message: String(err instanceof Error ? err.message : err), severity: 'error' });
@@ -310,7 +309,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleRegister = async () => {
-    if (!regFirstname || !regLastname || !regEmail || !regCountry) {
+    if (!regFirstname || !regLastname || !regCountry) {
       setSnack({ open: true, message: 'Please fill in all fields.', severity: 'warning' });
       return;
     }
@@ -321,7 +320,6 @@ const LoginPage: React.FC = () => {
         body: JSON.stringify({
           firstname: regFirstname,
           lastname: regLastname,
-          email: regEmail,
           region: regCountry,
         }),
       });
@@ -329,14 +327,20 @@ const LoginPage: React.FC = () => {
         const err = await res.json();
         throw new Error(err.detail || 'Registration failed');
       }
+      const registered = await res.json();
+      const newNickname = registered?.nickname;
       setDisclaimerOpen(false);
-      setSnack({ open: true, message: 'Registration successful! Please log in.', severity: 'success' });
+      setSnack({
+        open: true,
+        message: newNickname
+          ? `Registration successful! Your nickname is ${newNickname}. Take a screenshot — you will need it to log in!`
+          : 'Registration successful! Please log in.',
+        severity: 'success',
+      });
       setIsRegister(false);
-      setLoginEmail(regEmail);
-      setLoginFirstname(regFirstname);
+      if (newNickname) setLoginNickname(newNickname);
       setRegFirstname('');
       setRegLastname('');
-      setRegEmail('');
       setRegCountry('');
     } catch (err) {
       setSnack({ open: true, message: String(err instanceof Error ? err.message : err), severity: 'error' });
@@ -600,23 +604,14 @@ const LoginPage: React.FC = () => {
             {!isRegister ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <TextField
-                  label='EMAIL'
-                  type='email'
+                  label='NICKNAME'
                   fullWidth
                   size='small'
-                  value={loginEmail}
-                  onChange={e => setLoginEmail(e.target.value)}
+                  value={loginNickname}
+                  onChange={e => setLoginNickname(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleLogin()}
                   sx={tfSx}
-                />
-                <TextField
-                  label='PLAYER NAME'
-                  fullWidth
-                  size='small'
-                  value={loginFirstname}
-                  onChange={e => setLoginFirstname(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                  sx={tfSx}
+                  placeholder='e.g. JamieL_001'
                 />
                 <ArcadeButton
                   color={theme.colorKey}
@@ -668,15 +663,6 @@ const LoginPage: React.FC = () => {
                     sx={tfSx}
                   />
                 </Box>
-                <TextField
-                  label='EMAIL'
-                  type='email'
-                  fullWidth
-                  size='small'
-                  value={regEmail}
-                  onChange={e => setRegEmail(e.target.value)}
-                  sx={tfSx}
-                />
                 <TextField
                   label='COUNTRY'
                   select

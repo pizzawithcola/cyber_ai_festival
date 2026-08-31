@@ -5,6 +5,7 @@ export interface StoredUser {
   id?: number;
   firstname: string;
   lastname?: string;
+  nickname?: string;
   countryCode?: string;
   role?: string;
 }
