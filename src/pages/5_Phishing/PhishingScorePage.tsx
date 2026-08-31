@@ -12,6 +12,7 @@ import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import Header from '../../components/common/Header';
 import { ArcadeButton, ArcadeTypography } from '../../components/ui';
 import { ARCADE_COLORS } from '../../theme/theme';
+import { useClickSound } from '../../hooks/useClickSound';
 
 const CATEGORY_LABELS: Record<string, { label: string; maxScore: number }> = {
   '1': { label: 'Personalization', maxScore: 20 },
@@ -28,6 +29,7 @@ function getScoreColor(ratio: number) {
 }
 
 const PhishingScorePage: React.FC = () => {
+  useClickSound();
   const location = useLocation();
   const navigate = useNavigate();
   const [attemptCount, setAttemptCount] = useState(() => {

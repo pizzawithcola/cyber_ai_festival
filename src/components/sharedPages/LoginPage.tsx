@@ -205,7 +205,6 @@ const ScreenEffect: React.FC<{ effect: string; color: string }> = ({ effect, col
 
 // --- Routes ---
 const GAME_ROUTES: Record<string, string> = {
-  deepfake: '/deepfake',
   hallucinate: '/hallucinate',
   datashadows: '/datashadows',
   retaildemolition: '/retaildemolition',

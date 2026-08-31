@@ -15,6 +15,7 @@ import { ARCADE_FONT, READABLE_FONT, TITLE_FONT } from './hallucinateUi';
 import { clearStoredUser, getStoredUser } from '../../utils/userStorage';
 import { apiFetch } from '../../services/api';
 import { ArcadeButton } from '../../components/ui';
+import { useClickSound } from '../../hooks/useClickSound';
 
 /** =========================================================
  *  MAIN PAGE
@@ -47,6 +48,7 @@ const wrapTerminalText = (text = '', maxChars = 44) => {
 // typing helpers removed — intro now shows immediately without typewriter timings
 
 const Hallucinate: React.FC = () => {
+  useClickSound();
   const navigate = useNavigate();
   const [showAnimatedIntro, setShowAnimatedIntro] = useState(true);
   const [currentIntroTextIndex, setCurrentIntroTextIndex] = useState(0);

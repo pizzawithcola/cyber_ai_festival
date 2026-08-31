@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 import { ArcadeButton, ArcadeTypography } from '../../components/ui';
 import { ARCADE_COLORS } from '../../theme/theme';
+import { useClickSound } from '../../hooks/useClickSound';
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
@@ -26,6 +27,7 @@ const targets = [
 ];
 
 const PhishingEducationPage: React.FC = () => {
+  useClickSound();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<'education' | 'brief'>('education');
   const [currentTextIndex, setCurrentTextIndex] = useState(0);

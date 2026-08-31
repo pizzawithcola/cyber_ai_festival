@@ -9,6 +9,7 @@ import { getAdminToken } from '../../utils/userStorage';
 import { useGameWebSocket } from '../../hooks/useGameWebSocket';
 import type { QuestionData, ResultData, LeaderboardEntry, PlayerEntry } from '../../hooks/useGameWebSocket';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
+import { useClickSound } from '../../hooks/useClickSound';
 
 // ─── Animations ───────────────────────────────────────────────────────────────
 const fadeIn = keyframes`
@@ -383,6 +384,7 @@ const FinishedView: React.FC<{ leaderboard: LeaderboardEntry[]; onNewGame: () =>
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const AdminConsole: React.FC = () => {
+  useClickSound();
   const navigate = useNavigate();
   const { state, connect, disconnect, startGame, pauseGame, resumeGame, isConnected } = useGameWebSocket();
   const [roomCode, setRoomCode] = useState<string>('');

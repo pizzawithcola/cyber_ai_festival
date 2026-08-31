@@ -7,10 +7,11 @@ import PhishingTarget from './PhishingTarget';
 import PhishingMailSpace from './PhishingMailSpace';
 import { targets, missions } from './phishingData';
 import { ARCADE_COLORS } from '../../theme/theme';
+import { useClickSound } from '../../hooks/useClickSound';
 
 
 const PhishingPanel: React.FC = () => {
-
+  useClickSound();
   const [levelIndex, setLevelIndex] = useState(0);
 
   const handleSwitch = useCallback(() => {

@@ -15,6 +15,7 @@ import { getStoredUser, setStoredUser } from '../../utils/userStorage';
 import { apiFetch } from '../../services/api';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 import { COUNTRIES } from '../../components/common/Countries';
+import { useClickSound } from '../../hooks/useClickSound';
 
 // ─── Animations ───────────────────────────────────────────────────────────────
 const fadeIn = keyframes`
@@ -784,6 +785,7 @@ const FinishedView: React.FC<{ leaderboard: LeaderboardEntry[] }> = ({ leaderboa
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const UltimateShowdown: React.FC = () => {
+  useClickSound();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { state, connect, disconnect, submitAnswer, isConnected } = useGameWebSocket();
