@@ -43,6 +43,8 @@ interface PhoneSimulatorProps {
   agentSafePurchaseDone: boolean;
   agentMaliciousDone: boolean;
   agentIncidentNotificationsDone: boolean;
+  // Agent 两关：1 = 安全关（RTX 4090），2 = 中招关（AirPods Pro）
+  agentRound: 1 | 2;
 
   // Actions
   onBillingComplete: (firstName: string, lastName: string, card: SavedCard, address: SavedAddress) => void;
@@ -80,7 +82,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
     onManualProductSelect, onManualAddToCart,
     onManualConfirmPurchase, onFoundInjection, onTransitionToAgent,
     onProductSearch, onRetailerClick, onAgentConfirm, onAgentConfirmCancel,
-    onBackToAgentChat, onInspectMaliciousSite, onQuizAnswer, onQuizFinished,
+    onBackToAgentChat, onQuizAnswer, onQuizFinished,
     onSubmitScore, isSubmittingScore, submitError, score,
     chatBottomRef, onStartQuiz,
   } = props;
@@ -225,7 +227,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
             onClick={onTransitionToAgent}
             className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-transform"
           >
-            Try Agent Mode Next
+            Try Agent Mode
           </button>
         </div>
       );
@@ -269,7 +271,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                   {m.role === 'user' ? renderUserMessageText(m.text) : m.text}
                   {m.showRetailers && (
                     <div className="mt-4 space-y-2">
-                      {renderRetailerCards()}
+                      {renderRetailerCards(m.productName, m.round)}
                     </div>
                   )}
                 </div>
@@ -430,97 +432,29 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
     return null;
   };
 
-  const renderRetailerCards = () => {
-    const { agentSafePurchaseDone } = props;
-    const productObj = PREDEFINED_PRODUCTS.find(p => p.name === selectedProduct);
-    // After a safe purchase, only malicious retailers are clickable (educational nudge)
-    const forceMaliciousOnly = agentSafePurchaseDone && !agentMaliciousDone;
-    // After the breach, only the malicious retailer is clickable for inspection
-    const postIncidentInspect = agentMaliciousDone && !injectionFound;
-    // After the breach AND inspection, all cards are inert (already learned the lesson)
-    const postIncidentDone = agentMaliciousDone && injectionFound;
-
-    const unverified = RETAILERS.filter(r => !r.isVerified);
-    const verified = RETAILERS.filter(r => r.isVerified);
-
-    const bestPriceUnverified = unverified.reduce<Retailer | null>((best, curr) => {
-      if (!best) return curr;
-      return (curr.priceValues[selectedProduct] ?? 0) < (best.priceValues[selectedProduct] ?? 0) ? curr : best;
-    }, null);
-
-    const fastestVerified = verified.reduce<Retailer | null>((best, curr) => {
-      if (!best) return curr;
-      return (curr.shippingDays ?? Infinity) < (best.shippingDays ?? Infinity) ? curr : best;
-    }, null);
-
-    const usedNames = new Set<string>();
-    if (bestPriceUnverified) usedNames.add(bestPriceUnverified.name);
-    if (fastestVerified) usedNames.add(fastestVerified.name);
-
-    const orderedRetailers = [
-      ...(bestPriceUnverified ? [bestPriceUnverified] : []),
-      ...(fastestVerified ? [fastestVerified] : []),
-      ...RETAILERS.filter(r => !usedNames.has(r.name)),
-    ];
+  const renderRetailerCards = (productName?: string, round?: 1 | 2) => {
+    // 用该消息绑定的产品名与关卡（历史消息各自绑定，避免后续产品/关卡变化时旧卡片错乱）
+    const cardProduct = productName ?? selectedProduct;
+    const cardRound = round ?? props.agentRound;
+    // 第一关只显示安全商家（选谁都成功）；第二关只显示恶意商家（选谁都中招）
+    const roundRetailers = cardRound === 1
+      ? RETAILERS.filter(r => r.isVerified)
+      : RETAILERS.filter(r => r.isMalicious);
+    const productObj = PREDEFINED_PRODUCTS.find(p => p.name === cardProduct);
 
     return (
       <>
-        {forceMaliciousOnly && (
-          <div className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-1">
-            Now try an unverified seller to see what can go wrong.
-          </div>
-        )}
-        {postIncidentInspect && (
-          <div className="text-[11px] text-red-700 bg-red-50 border border-red-300 rounded-lg px-3 py-2 mb-1 font-bold">
-            Click the malicious retailer below to investigate the attack.
-          </div>
-        )}
-        {orderedRetailers.map((site) => {
-          // Determine click handler and disabled state per phase
-          let disabled = false;
-          let handler: (() => void) | undefined = () => onRetailerClick(site);
-          let stylingMode: 'normal' | 'highlightMalicious' | 'inspect' | 'inert' = 'normal';
-
-          if (postIncidentDone) {
-            // Already inspected — all cards inert
-            disabled = true;
-            handler = undefined;
-            stylingMode = 'inert';
-          } else if (postIncidentInspect) {
-            // After breach, before inspection — only malicious clickable, routed to inspect handler
-            if (site.isMalicious) {
-              handler = () => onInspectMaliciousSite(site);
-              stylingMode = 'inspect';
-            } else {
-              disabled = true;
-              handler = undefined;
-              stylingMode = 'inert';
-            }
-          } else if (forceMaliciousOnly) {
-            if (site.isMalicious) {
-              stylingMode = 'highlightMalicious';
-            } else {
-              disabled = true;
-              handler = undefined;
-              stylingMode = 'inert';
-            }
-          }
-
+        {roundRetailers.map((site) => {
           const baseClass = 'w-full p-3 rounded-xl flex items-center justify-between transition-all group text-left';
           const styleClass =
-            stylingMode === 'inert'
-              ? 'bg-slate-100 border border-slate-100 opacity-40 cursor-not-allowed'
-              : stylingMode === 'highlightMalicious'
-                ? 'bg-amber-50 border-2 border-amber-400 hover:bg-amber-100 ring-2 ring-amber-300/50'
-                : stylingMode === 'inspect'
-                  ? 'bg-red-50 border-2 border-red-400 hover:bg-red-100 ring-2 ring-red-300/50 animate-pulse'
-                  : 'bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200';
+            cardRound === 2
+              ? 'bg-amber-50 border-2 border-amber-400 hover:bg-amber-100 ring-2 ring-amber-300/50'
+              : 'bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200';
 
           return (
             <button
               key={site.name}
-              onClick={handler}
-              disabled={disabled}
+              onClick={() => onRetailerClick(site)}
               className={`${baseClass} ${styleClass}`}
             >
               <div className="flex items-center gap-3">
@@ -544,12 +478,12 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                 <div>
                   <div className="font-bold text-slate-900 flex items-center gap-1.5">
                     {site.name}
-                    {stylingMode === 'inspect' && (
-                      <span className="text-[9px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">INVESTIGATE</span>
+                    {cardRound === 2 && (
+                      <span className="text-[9px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">BEST PRICE</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-500 flex-wrap">
-                    <span className="font-mono text-indigo-600 font-bold">{site.prices[selectedProduct]}</span>
+                    <span className="font-mono text-indigo-600 font-bold">{site.prices[cardProduct]}</span>
                     <span>•</span>
                     <span>{site.shippingLabel}</span>
                     {!site.isVerified && (
@@ -567,7 +501,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                   </div>
                 </div>
               </div>
-              <ChevronRight size={16} className={`text-slate-300 ${!disabled ? 'group-hover:text-indigo-400' : ''}`} />
+              <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-400" />
             </button>
           );
         })}

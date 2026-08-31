@@ -31,7 +31,7 @@ const ManualStorefront: React.FC<ManualStorefrontProps> = ({ onSelectProduct }) 
       {/* Header */}
       <div className="p-4 bg-white border-b shadow-sm shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-lg font-black text-slate-900">ShopAI Market</h1>
+          <h1 className="text-[2rem] font-black text-slate-900">ShopAI Market</h1>
         </div>
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

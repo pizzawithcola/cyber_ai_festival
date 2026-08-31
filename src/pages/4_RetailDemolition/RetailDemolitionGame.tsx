@@ -122,6 +122,7 @@ const RetailDemolitionGame = () => {
         agentSafePurchaseDone={game.agentSafePurchaseDone}
         agentMaliciousDone={game.agentMaliciousDone}
         agentIncidentNotificationsDone={game.agentIncidentNotificationsDone}
+        agentRound={game.agentRound}
         onBillingComplete={game.handleBillingComplete}
         onManualProductSelect={game.handleManualProductSelect}
         onManualAddToCart={game.handleManualAddToCart}

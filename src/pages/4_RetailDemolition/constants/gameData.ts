@@ -295,7 +295,7 @@ export const HINT_CONTENT: Record<string, HintContent> = {
   'manual-storefront': {
     title: 'Manual Shopping Mode',
     body: 'Browse freely! You\'re shopping manually — every click is a decision you control. Take your time to explore different products and sellers.',
-    nextStep: 'Tap any product to view details.',
+    nextStep: 'Complete a normal purchase — pick a product, review it, and check out as you normally would.',
     icon: 'info',
   },
 
@@ -353,6 +353,22 @@ export const HINT_CONTENT: Record<string, HintContent> = {
     body: 'You\'ll now use an AI shopping agent that browses, compares, and checks out — all automatically. Select a product and watch the agent work.',
     nextStep: 'Pick a product from the dropdown to begin.',
     icon: 'info',
+  },
+
+  // Agent Round 1 — 引导用户自己选择 RTX 4090
+  'agent-round1-guide': {
+    title: 'Round 1: Buy the RTX 4090',
+    body: 'Pick the RTX 4090 from the suggestions below — the agent will find you the best deal. Choose any retailer; this round should go smoothly.',
+    nextStep: 'Select RTX 4090 from the prompt list.',
+    icon: 'info',
+  },
+
+  // Agent Round 2 — 引导用户自己选择 AirPods Pro
+  'agent-round2-guide': {
+    title: 'Round 2: Buy the AirPods Pro',
+    body: 'Now select the AirPods Pro from the suggestions below. Watch closely — this round may not go as smoothly as the first.',
+    nextStep: 'Select AirPods Pro from the prompt list.',
+    icon: 'warning',
   },
 
   // Agent — scanning

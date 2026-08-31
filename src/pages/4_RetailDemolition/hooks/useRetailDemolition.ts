@@ -1,6 +1,7 @@
 import { useState, useRef, useLayoutEffect } from 'react';
-import { PREDEFINED_PRODUCTS, RETAILERS, RANKINGS, HINT_CONTENT } from '../constants/gameData';
+import { RETAILERS, RANKINGS, HINT_CONTENT } from '../constants/gameData';
 import type { Product, Retailer, SavedCard, SavedAddress, HintContent } from '../constants/gameData';
+import { playApplePaySuccessSound } from '../utils/notificationSound';
 
 // ── Game States ──
 export type GameState =
@@ -26,9 +27,19 @@ export interface Message {
   role: 'user' | 'bot';
   text: string;
   showRetailers?: boolean;
+  // 该消息展示的商家卡片对应的产品名（历史消息各自绑定，避免后续产品变化时旧卡片错乱）
+  productName?: string;
+  // 该消息的关卡（决定卡片过滤：1 = 安全商家，2 = 恶意商家）
+  round?: 1 | 2;
 }
 
-export const BROWSE_QUEST_TARGET = 2;
+export const BROWSE_QUEST_TARGET = 1;
+
+// Agent Mode 两关：第一关引导买 RTX 4090（安全，不会中招）；第二关引导买 AirPods Pro（必中招）
+export const AGENT_ROUND_PRODUCTS: Record<1 | 2, string> = {
+  1: 'RTX 4090',
+  2: 'AirPods Pro',
+};
 
 export interface ScoreEvent {
   change: number;
@@ -78,8 +89,10 @@ export const useRetailDemolition = () => {
   const [automationStep, setAutomationStep] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: number; title: string; body: string }>>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
-  const [agentConfirmProduct, setAgentConfirmProduct] = useState<Product | null>(null);
-  const [agentConfirmRetailer, setAgentConfirmRetailer] = useState<Retailer | null>(null);
+  const [agentConfirmProduct] = useState<Product | null>(null);
+  const [agentConfirmRetailer] = useState<Retailer | null>(null);
+  // Agent 两关：1 = 安全关（买 RTX 4090），2 = 中招关（买 AirPods Pro）
+  const [agentRound, setAgentRound] = useState<1 | 2>(1);
 
   // ── Scoring ──
   const [score, setScore] = useState(100);
@@ -103,7 +116,7 @@ export const useRetailDemolition = () => {
   const [agentSafePurchaseDone, setAgentSafePurchaseDone] = useState(false);
   const [agentMaliciousDone, setAgentMaliciousDone] = useState(false);
   const [agentIncidentNotificationsDone, setAgentIncidentNotificationsDone] = useState(false);
-  const [agentConfirmStartTime, setAgentConfirmStartTime] = useState(0);
+  const [agentConfirmStartTime] = useState(0);
   const [explorationMaliciousFree, setExplorationMaliciousFree] = useState(false);
 
   // ── Refs ──
@@ -125,7 +138,7 @@ export const useRetailDemolition = () => {
   // ── Hint Logic ──
   const withQuestProgress = (hint: HintContent): HintContent => {
     if (browseQuestComplete) return hint;
-    const tag = `[Quest ${browsedCount}/${BROWSE_QUEST_TARGET}] Browse at least ${BROWSE_QUEST_TARGET} different products before checking out.`;
+    const tag = `[Purchase ${browsedCount}/${BROWSE_QUEST_TARGET}] Buy any item using Manual Mode.`;
     return {
       ...hint,
       nextStep: hint.nextStep ? `${tag} ${hint.nextStep}` : tag,
@@ -177,7 +190,8 @@ export const useRetailDemolition = () => {
         if (messages.length > 0 && messages[messages.length - 1].showRetailers) {
           return HINT_CONTENT['agent-retailers'];
         }
-        return HINT_CONTENT['transition'];
+        // 两关引导：用户根据提示自行选择要买的产品
+        return agentRound === 1 ? HINT_CONTENT['agent-round1-guide'] : HINT_CONTENT['agent-round2-guide'];
       case 'agent-browse':
         // Post-incident inspection: user navigated back to malicious site to investigate
         if (agentMaliciousDone && !injectionFound) {
@@ -232,6 +246,9 @@ export const useRetailDemolition = () => {
     setManualCheckoutDone(true);
     setGameState('manual-confirmation');
 
+    // 购买成功：先播 Apple Pay 支付成功音，随后短信通知到达时由 PhoneSimulator 播短信提示音
+    playApplePaySuccessSound();
+
     // Purchase notification (same style as agent mode)
     if (cart.length > 0) {
       const item = cart[0];
@@ -246,18 +263,18 @@ export const useRetailDemolition = () => {
 
   const handleTransitionToAgent = () => {
     setGameState('transition');
-    // Small delay then show agent chat
+    // Small delay then show agent chat — 不自动搜索，由用户在下方 prompt 里自行选择要买的产品
     setTimeout(() => {
       setGameState('agent-chat');
       setMessages([{
         role: 'bot',
-        text: 'Welcome to ShopAI Agent Mode. Select a product below and I\'ll find you the best deal automatically.',
+        text: 'Welcome to ShopAI Agent Mode. Pick a product from the suggestions below and I\'ll find you the best deal automatically.',
       }]);
     }, 1500);
   };
 
   // ── Agent Mode Actions ──
-  const startSearch = (productName: string, promptText?: string) => {
+  const startSearch = (productName: string, promptText?: string, round: 1 | 2 = agentRound) => {
     setSelectedProduct(productName);
     setMessages(prev => [...prev, {
       role: 'user',
@@ -268,10 +285,16 @@ export const useRetailDemolition = () => {
 
     setTimeout(() => {
       setIsSearching(false);
+      // 按关卡过滤选项：第一关只给安全商家，第二关只给恶意商家（必中招）
+      const retailers = round === 1
+        ? RETAILERS.filter(r => r.isVerified)
+        : RETAILERS.filter(r => r.isMalicious);
       setMessages(prev => [...prev, {
         role: 'bot',
-        text: `I scanned 12 retailers across the web and found ${RETAILERS.length} selling ${productName}. I've ranked them by price and delivery speed. Which retailer should I proceed with?`,
+        text: `I scanned 12 retailers across the web and found ${retailers.length} selling ${productName}. I've ranked them by price and delivery speed. Which retailer should I proceed with?`,
         showRetailers: true,
+        productName,
+        round,
       }]);
     }, 1500);
   };
@@ -328,13 +351,41 @@ export const useRetailDemolition = () => {
         if (i === steps.length - 1) {
           setTimeout(() => {
             setAutomationStep(null);
-            // Show human-in-the-loop confirmation
-            const product = PREDEFINED_PRODUCTS.find(p => p.name === selectedProduct);
-            if (product) {
-              setAgentConfirmProduct(product);
-              setAgentConfirmRetailer(site);
-              setAgentConfirmStartTime(Date.now());
-              setGameState('agent-confirmation');
+            if (agentRound === 1) {
+              // ── Round 1（安全）：下单成功 → 提示进入第二关，由用户再次选择 AirPods Pro ──
+              playApplePaySuccessSound();
+              setMessages(prev => [...prev, {
+                role: 'bot',
+                text: `Transaction successful! Purchased ${AGENT_ROUND_PRODUCTS[1]} from ${site.name} for ${site.prices[AGENT_ROUND_PRODUCTS[1]]}.`,
+              }]);
+              setGameState('agent-chat');
+              setAgentRound(2);
+              setTimeout(() => {
+                setMessages(prev => [...prev, {
+                  role: 'bot',
+                  text: `Round 2: Now buy the ${AGENT_ROUND_PRODUCTS[2]} — select it from the suggestions below.`,
+                }]);
+              }, 800);
+            } else {
+              // ── Round 2（中招）：无论选谁都被劫持 ──
+              setAgentMaliciousDone(true);
+              setHasBeenPromptedForManual(true);
+
+              const actualPrice = site.prices[selectedProduct] || '$0';
+              setMessages(prev => [...prev, { role: 'bot', text: `Order confirmed at ${site.name}. Total charged: ${actualPrice}.` }]);
+              setGameState('agent-chat');
+
+              pushSMS("Order Confirmed", `Your item from ${site.name} has been processed (${actualPrice}).`, 500);
+              pushSMS("Security Alert", "New login detected on Bank of America: St. Petersburg, RU", 3000);
+              pushSMS("Bank Alert", "Your account has been charged $12,450.00 at 'Asset-Recovery-Global'", 5000);
+
+              setTimeout(() => {
+                setMessages(prev => [...prev, {
+                  role: 'bot',
+                  text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to malware hidden in the website. Check the hint panel for next steps.",
+                }]);
+                setAgentIncidentNotificationsDone(true);
+              }, 7000);
             }
           }, 1500);
         }
@@ -375,6 +426,8 @@ export const useRetailDemolition = () => {
     } else {
       const actualPrice = site.prices[selectedProduct] || '$0';
       setMessages(prev => [...prev, { role: 'bot', text: `Transaction successful! Purchased from ${site.name} for ${actualPrice}.` }]);
+      // 安全购买成功：先播 Apple Pay 支付成功音，SMS 到达时播短信提示音
+      playApplePaySuccessSound();
       pushSMS("Order Confirmed", `Your item from ${site.name} (${actualPrice}) is on the way.`, 1000);
 
       setAgentSafePurchaseDone(true);
@@ -489,6 +542,8 @@ export const useRetailDemolition = () => {
     agentSafePurchaseDone,
     agentMaliciousDone,
     agentIncidentNotificationsDone,
+    // Agent 两关
+    agentRound,
 
     // Refs
     chatBottomRef,
