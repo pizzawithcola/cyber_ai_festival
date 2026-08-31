@@ -12,12 +12,14 @@ export const useClickSound = (): void => {
     // 即使按钮内部调用了 stopPropagation（如 DataShadows Intro 的 Prev/Next）也能收到
     const handler = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null
-      // 覆盖：原生 button、checkbox/switch toggle（含其包裹 label）、MUI Switch（role="switch"）
+      // 覆盖：原生 button、checkbox/switch toggle（含其包裹 label）、MUI Switch（role="switch"）、
+      // 带 role="button" 的可点击容器（如 HomePage 的卡片/入口 Box）
       if (
         target?.closest('button') ||
         target?.closest('input[type="checkbox"]') ||
         target?.closest('label:has(input[type="checkbox"])') ||
-        target?.closest('[role="switch"]')
+        target?.closest('[role="switch"]') ||
+        target?.closest('[role="button"]')
       ) {
         playClickSound()
       }

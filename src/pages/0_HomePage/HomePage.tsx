@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArcadeTypography, LightSign } from '../../components/ui';
 import { BrainCircuit, ScanEye, Store, Fish, Trophy } from 'lucide-react';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
+import { useClickSound } from '../../hooks/useClickSound';
 import pkg from '../../../package.json';
 
 interface HomePageProps {
@@ -123,6 +124,8 @@ const IconBox = styled(Box, {
 
 const HomePage: React.FC<HomePageProps> = () => {
   const navigate = useNavigate();
+  // 主页所有可点击入口（卡片/按钮容器）播放咔嚓按键音
+  useClickSound();
 
   const games = [
     {
@@ -308,6 +311,7 @@ const HomePage: React.FC<HomePageProps> = () => {
                 key={game.id}
                 accentColor={game.color}
                 elevation={0}
+                role="button"
                 onClick={() => handleGameClick(game.id)}
                 sx={{ animationDelay: `${index * 0.15}s` }}
               >
@@ -351,6 +355,7 @@ const HomePage: React.FC<HomePageProps> = () => {
 
           {/* Ultimate Showdown Button */}
           <Box
+            role="button"
             onClick={() => navigate('/final')}
             sx={{
               mt: 3,
@@ -449,6 +454,7 @@ const HomePage: React.FC<HomePageProps> = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, pb: 2.5, pt: 1 }}>
           {/* Dashboard Button - Left */}
           <Box
+            role="button"
             onClick={() => navigate('/admin')}
             sx={{
               px: 2,
@@ -515,6 +521,7 @@ const HomePage: React.FC<HomePageProps> = () => {
 
           {/* Leaderboard Button - Right */}
           <Box
+            role="button"
             onClick={() => navigate('/leaderboard')}
             sx={{
               px: 2,
