@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import IntroScreen from './components/IntroScreen';
 import ArcadeBackground from './components/ui/ArcadeBackground';
+import { useClickSound } from '../../hooks/useClickSound';
 
 /**
  * RetailDemolition — 叙事入口页（/retaildemolition）
@@ -10,6 +11,8 @@ import ArcadeBackground from './components/ui/ArcadeBackground';
  */
 const RetailDemolition = () => {
   const navigate = useNavigate();
+  // 本页所有按钮播放咔嚓按键音
+  useClickSound();
   const [hasVerifiedSession, setHasVerifiedSession] = useState(false);
 
   useEffect(() => {

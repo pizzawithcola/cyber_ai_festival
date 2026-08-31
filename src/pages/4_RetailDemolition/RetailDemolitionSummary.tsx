@@ -5,6 +5,7 @@ import { submitGameScoreMax } from '../../services/scoreSubmission';
 import GameSummary from './components/GameSummary';
 import ArcadeBackground from './components/ui/ArcadeBackground';
 import { loadRetailResult, clearRetailResult } from './retailSession';
+import { useClickSound } from '../../hooks/useClickSound';
 
 /**
  * RetailDemolitionSummary — 总结页（/retaildemolition/summary）
@@ -12,6 +13,8 @@ import { loadRetailResult, clearRetailResult } from './retailSession';
  */
 const RetailDemolitionSummary = () => {
   const navigate = useNavigate();
+  // 本页所有按钮播放咔嚓按键音
+  useClickSound();
   const [hasVerifiedSession, setHasVerifiedSession] = useState(false);
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);

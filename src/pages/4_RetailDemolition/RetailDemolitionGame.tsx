@@ -6,6 +6,7 @@ import HintPanel from './components/HintPanel';
 import { useRetailDemolition } from './hooks/useRetailDemolition';
 import ArcadeBackground from './components/ui/ArcadeBackground';
 import { saveRetailResult } from './retailSession';
+import { useClickSound } from '../../hooks/useClickSound';
 
 /**
  * RetailDemolitionGame — 手机游戏主体页（/retaildemolition/game）
@@ -14,22 +15,27 @@ import { saveRetailResult } from './retailSession';
  */
 const RetailDemolitionGame = () => {
   const navigate = useNavigate();
+  // 本页所有按钮播放咔嚓按键音
+  useClickSound();
   const [hasVerifiedSession, setHasVerifiedSession] = useState(false);
   const [phoneScale, setPhoneScale] = useState(1);
 
   const game = useRetailDemolition();
 
-  // 手机壳自适应缩放（基于视口：手机占左侧约 70% 宽度，高度自适应）
+  // 手机壳自适应缩放（手机在视口水平+垂直居中；提示框锚定在手机顶部上方 32px、宽度与手机一致）
   useEffect(() => {
     const PHONE_W = 375;
     const PHONE_H = 780;
     const PAGE_PADDING_X = 8 * 2; // 外层 px-2
     const GAP = 12; // 外层 gap-3
+    const HINT_MAX_H = 0.2; // 提示框最大高度（vh 比例）
+    const HINT_GAP = 32; // 提示框与手机顶部间距
     const calc = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const phoneAreaW = (vw - PAGE_PADDING_X - GAP) * 0.6;
-      const phoneAreaH = vh - 24;
+      const hintSpace = vh * HINT_MAX_H + HINT_GAP + 24; // 顶部提示空间（提示高 + 32px 间距 + 边距）
+      const phoneAreaW = vw - PAGE_PADDING_X - GAP;
+      const phoneAreaH = vh - hintSpace;
       const scaleByW = phoneAreaW / PHONE_W;
       const scaleByH = phoneAreaH / PHONE_H;
       setPhoneScale(Math.min(scaleByW, scaleByH, 1.25));
@@ -67,15 +73,30 @@ const RetailDemolitionGame = () => {
   if (!hasVerifiedSession) return null;
 
   return (
-    <div className="relative flex h-screen w-full text-slate-300 font-sans overflow-hidden items-center justify-center gap-3 px-2">
+    <div className="relative flex h-screen w-full text-slate-300 font-sans overflow-hidden px-2">
       <ArcadeBackground />
 
-      {/* 手机（左侧，约 60% 宽度，高度自适应缩放） */}
-      <div className="flex-[6] flex items-center justify-center min-w-0 shrink-0">
-        <div style={{ width: 375 * phoneScale, height: 780 * phoneScale }}>
-          <div style={{ transform: `scale(${phoneScale})`, transformOrigin: 'top left' }}>
+      {/* 手机 + 提示框：以手机几何中心为锚点，绝对定位钉在视口正中（不依赖 flex 亚像素计算） */}
+      <div
+        className="absolute left-1/2 top-1/2"
+        style={{ transform: 'translate(-50%, -50%)' }}
+      >
+        <div className="relative" style={{ width: 375 * phoneScale, height: 780 * phoneScale }}>
+          {/* 提示框：锚定在手机顶部上方 32px，宽度 = 手机宽度（left/right 拉伸），水平居中 */}
+          <div
+            className="absolute left-0 right-0 z-[3] [&>div]:w-full [&>div]:max-w-none"
+            style={{ bottom: '100%', marginBottom: 32 }}
+          >
+            <div className="max-h-[20vh] overflow-y-auto">
+              <HintPanel hint={currentHint} />
+            </div>
+          </div>
+
+          {/* 手机本体：transform 容器固定 375×780（= 手机壳布局尺寸，手机壳在内部自然重合无偏移）；
+              top-left 缩放的视觉尺寸正好 = 绑定容器尺寸、从绑定容器左上开始 → 视觉中心 = 容器中心 */}
+          <div style={{ transform: `scale(${phoneScale})`, transformOrigin: 'top left', width: 375, height: 780 }}>
             <PhoneSimulator
-        gameState={game.gameState}
+            gameState={game.gameState}
         isAgentic={game.isAgentic}
         setIsAgentic={game.setIsAgentic}
         messages={game.messages}
@@ -125,11 +146,6 @@ const RetailDemolitionGame = () => {
       />
           </div>
         </div>
-      </div>
-
-      {/* 提示面板（右侧，约 40% 宽度） */}
-      <div className="flex-[4] flex items-center justify-center min-w-0 shrink-0 h-full">
-        <HintPanel hint={currentHint} />
       </div>
     </div>
   );

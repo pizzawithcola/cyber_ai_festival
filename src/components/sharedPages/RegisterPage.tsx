@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { ArcadeButton, ArcadeTypography } from '../ui';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
+import { useClickSound } from '../../hooks/useClickSound';
 
 const color = ARCADE_COLORS.cyan;
 
@@ -84,6 +85,8 @@ type SnackState = { open: boolean; message: string; severity: 'success' | 'error
 
 // --- Main Component ---
 const RegisterPage: React.FC = () => {
+  // 注册页所有按钮播放咔嚓按键音
+  useClickSound();
   const navigate = useNavigate();
 
   const [firstname, setFirstname] = useState('');

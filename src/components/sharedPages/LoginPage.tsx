@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { ArcadeButton, ArcadeTypography } from '../ui';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
+import { useClickSound } from '../../hooks/useClickSound';
 
 // --- Game theme configurations ---
 interface GameTheme {
@@ -243,6 +244,8 @@ const getTextFieldSx = (color: string) => ({
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { game } = useParams<{ game: string }>();
+  // 登录页所有按钮播放咔嚓按键音
+  useClickSound();
 
   const [isRegister, setIsRegister] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
