@@ -326,10 +326,10 @@ const QuestionBankDialog: React.FC<QuestionBankDialogProps> = ({ open, onClose }
                 </TableRow>
               </TableHead>
               <TableBody>
-                {questions.map((q) => (
+                {questions.map((q, index) => (
                   <TableRow key={q.id} sx={{ '&:hover': { backgroundColor: `${SF.lime}06` } }}>
                     <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}90`, borderBottom: `1px solid ${SF.lime}40` }}>
-                      #{q.id}
+                      #{index + 1}
                     </TableCell>
                     <TableCell sx={{ fontFamily: SF.fontBody, fontSize: '0.9rem', color: SF.white, maxWidth: 320, borderBottom: `1px solid ${SF.lime}40` }}>
                       {q.text}
