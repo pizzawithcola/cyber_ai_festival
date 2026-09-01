@@ -51,7 +51,7 @@ const BGM_SOURCES: Record<string, string> = {
 };
 
 // ─── Idle View ────────────────────────────────────────────────────────────────
-const IdleView: React.FC<{ onCreateRoom: () => void; creating: boolean }> = ({ onCreateRoom, creating }) => (
+const IdleView: React.FC<{ onCreateRoom: () => void; creating: boolean; onManageQuestions: () => void }> = ({ onCreateRoom, creating, onManageQuestions }) => (
   <Box sx={{ textAlign: 'center', animation: `${fadeIn} 0.5s ease` }}>
     <Box sx={{ mb: 4 }}>
       <Box sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '1.2rem', color: ARCADE_COLORS.orange, textShadow: `0 0 20px ${ARCADE_COLORS.orange}60`, letterSpacing: '0.1em' }}>
@@ -64,6 +64,11 @@ const IdleView: React.FC<{ onCreateRoom: () => void; creating: boolean }> = ({ o
     <ArcadeButton color="orange" variant="filled" size="md" glowing onClick={onCreateRoom} disabled={creating}>
       {creating ? 'CREATING...' : '+ START NEW GAME'}
     </ArcadeButton>
+    <Box sx={{ mt: 1.5 }}>
+      <ArcadeButton color="cyan" variant="outline" size="sm" onClick={onManageQuestions}>
+        MANAGE QUESTION BANK
+      </ArcadeButton>
+    </Box>
   </Box>
 );
 
@@ -538,7 +543,13 @@ const AdminConsole: React.FC = () => {
 
       {/* Content */}
       <Box sx={{ width: '100%', maxWidth: 900, display: 'flex', justifyContent: 'center' }}>
-        {view === 'idle' && <IdleView onCreateRoom={handleCreateRoom} creating={creating} />}
+        {view === 'idle' && (
+          <IdleView
+            onCreateRoom={handleCreateRoom}
+            creating={creating}
+            onManageQuestions={() => navigate('/final/questions')}
+          />
+        )}
         {view === 'lobby' && (
           <LobbyView roomCode={roomCode} playerCount={state.playerCount} players={state.players} onStart={handleStartGame} isConnected={isConnected} />
         )}
