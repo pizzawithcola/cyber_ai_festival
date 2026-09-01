@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -22,9 +21,8 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Add, Edit, Delete, Refresh } from '@mui/icons-material';
+import { Add, Edit, Delete, Refresh, Quiz } from '@mui/icons-material';
 import { apiFetch } from '../../services/api';
-import { GRID_COLOR } from '../../theme/theme';
 import { useClickSound } from '../../hooks/useClickSound';
 
 // ─── Sci-Fi Design Tokens (consistent with AdminPage) ─────────────────────────
@@ -150,8 +148,10 @@ const OPTION_KEYS: Array<keyof Pick<Question, 'option_a' | 'option_b' | 'option_
 
 const correctColor = (opt: string, correct: string) => (opt === correct ? SF.lime : SF.white);
 
-const QuestionBankAdmin: React.FC = () => {
-  const navigate = useNavigate();
+/**
+ * Question bank management panel — embedded in the Admin Panel's "FINAL ROOMS" tab.
+ */
+const QuestionBankPanel: React.FC = () => {
   useClickSound();
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -262,122 +262,100 @@ const QuestionBankAdmin: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        minHeight: '100vh',
-        backgroundColor: SF.bg,
-        backgroundImage: `
-          linear-gradient(90deg, ${GRID_COLOR} 1px, transparent 1px),
-          linear-gradient(180deg, ${GRID_COLOR} 1px, transparent 1px)
-        `,
-        backgroundSize: '40px 40px',
-        p: 3,
-        boxSizing: 'border-box',
-      }}
-    >
-      <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pb: 2, mb: 3, borderBottom: `1px solid ${SF.cyan}25` }}>
-          <Box sx={{ width: 4, height: 20, backgroundColor: SF.cyan, boxShadow: `0 0 10px ${SF.cyan}` }} />
-          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1rem', fontWeight: 700, letterSpacing: '0.2em', color: SF.cyan, textTransform: 'uppercase' }}>
+    <Box sx={{ ...hudPanel(SF.lime), borderRadius: '4px', overflow: 'hidden', mb: 4 }}>
+      {/* Panel header */}
+      <Box sx={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        px: 3, py: 2.5,
+        borderBottom: `1px solid ${SF.lime}20`,
+        backgroundColor: `${SF.lime}08`,
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Quiz sx={{ fontSize: 18, color: SF.lime }} />
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.lime }}>
             QUESTION BANK
           </Box>
-          <Box
-            onClick={() => navigate('/final/admin')}
-            sx={{ ml: 'auto', cursor: 'pointer', fontFamily: SF.fontMono, fontSize: '0.7rem', color: `${SF.white}40`, '&:hover': { color: SF.red }, transition: 'color 0.2s' }}
-          >
-            ← GAME CONSOLE
+          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>
+            ({questions.length})
           </Box>
         </Box>
-
-        {/* Toolbar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-          <SFButton color={SF.lime} variant="filled" onClick={openCreate} startIcon={<Add />}>
-            ADD QUESTION
-          </SFButton>
-          <SFButton color={SF.cyan} onClick={() => loadQuestions()} startIcon={<Refresh />}>
-            REFRESH
-          </SFButton>
-          <Typography sx={{ ml: 'auto', fontFamily: SF.fontMono, fontSize: '0.7rem', color: `${SF.white}50` }}>
-            {loading ? 'LOADING...' : `${questions.length} QUESTIONS IN BANK`}
-          </Typography>
-        </Box>
-
-        {/* Table */}
-        <Box sx={{ ...hudPanel(SF.cyan), overflow: 'hidden' }}>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 10 }}>
-              <CircularProgress size={28} sx={{ color: SF.cyan }} />
-            </Box>
-          ) : questions.length === 0 ? (
-            <Box sx={{ py: 10, textAlign: 'center' }}>
-              <Typography sx={{ fontFamily: SF.fontBody, color: `${SF.white}50` }}>No questions yet. Add your first one!</Typography>
-            </Box>
-          ) : (
-            <TableContainer sx={{ maxHeight: '65vh', backgroundColor: 'transparent' }}>
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    {['ID', 'QUESTION', 'OPTIONS', 'ANSWER', 'SCORE', 'TIME', 'CATEGORY', 'ACTIONS'].map((h) => (
-                      <TableCell
-                        key={h}
-                        sx={{
-                          fontFamily: SF.fontTitle, fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.15em',
-                          color: SF.cyan, backgroundColor: SF.panelAlt, borderBottom: `1px solid ${SF.cyan}30`,
-                        }}
-                      >
-                        {h}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {questions.map((q) => (
-                    <TableRow key={q.id} sx={{ '&:hover': { backgroundColor: `${SF.cyan}08` } }}>
-                      <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: SF.dim, borderBottom: `1px solid ${SF.border}40` }}>
-                        #{q.id}
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white, maxWidth: 320, borderBottom: `1px solid ${SF.border}40` }}>
-                        {q.text}
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.65rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.border}40` }}>
-                        {['A', 'B', 'C', 'D'].map((opt) => (
-                          <Box key={opt} sx={{ color: correctColor(opt, q.correct_option) }}>
-                            <b>{opt}.</b> {q[`option_${opt.toLowerCase()}` as keyof Question]}
-                          </Box>
-                        ))}
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', color: SF.lime, borderBottom: `1px solid ${SF.border}40` }}>
-                        {q.correct_option}
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.75rem', color: SF.yellow, borderBottom: `1px solid ${SF.border}40` }}>
-                        {q.score}
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.border}40` }}>
-                        {q.time_limit}s
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.65rem', color: `${SF.white}50`, borderBottom: `1px solid ${SF.border}40` }}>
-                        {q.category}
-                      </TableCell>
-                      <TableCell sx={{ borderBottom: `1px solid ${SF.border}40` }}>
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <SFButton color={SF.cyan} onClick={() => openEdit(q)} startIcon={<Edit />}>EDIT</SFButton>
-                          <SFButton color={SF.red} onClick={() => setDeleteTarget(q)} startIcon={<Delete />}>DEL</SFButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <SFButton color={SF.lime} variant="filled" onClick={openCreate} startIcon={<Add />}>ADD QUESTION</SFButton>
+          <SFButton color={SF.cyan} onClick={() => loadQuestions()} startIcon={<Refresh />}>REFRESH</SFButton>
         </Box>
       </Box>
 
+      {/* Panel body */}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={28} sx={{ color: SF.lime }} />
+        </Box>
+      ) : questions.length === 0 ? (
+        <Box sx={{ py: 8, textAlign: 'center' }}>
+          <Typography sx={{ fontFamily: SF.fontBody, color: `${SF.white}50` }}>No questions yet. Add your first one!</Typography>
+        </Box>
+      ) : (
+        <TableContainer sx={{ maxHeight: '50vh' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                {['ID', 'QUESTION', 'OPTIONS', 'ANSWER', 'SCORE', 'TIME', 'CATEGORY', 'ACTIONS'].map((h) => (
+                  <TableCell
+                    key={h}
+                    sx={{
+                      fontFamily: SF.fontTitle, fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.15em',
+                      color: SF.lime, backgroundColor: SF.panelAlt, borderBottom: `1px solid ${SF.lime}30`,
+                    }}
+                  >
+                    {h}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {questions.map((q) => (
+                <TableRow key={q.id} sx={{ '&:hover': { backgroundColor: `${SF.lime}06` } }}>
+                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: SF.dim, borderBottom: `1px solid ${SF.border}40` }}>
+                    #{q.id}
+                  </TableCell>
+                  <TableCell sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white, maxWidth: 320, borderBottom: `1px solid ${SF.border}40` }}>
+                    {q.text}
+                  </TableCell>
+                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.65rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.border}40` }}>
+                    {['A', 'B', 'C', 'D'].map((opt) => (
+                      <Box key={opt} sx={{ color: correctColor(opt, q.correct_option) }}>
+                        <b>{opt}.</b> {q[`option_${opt.toLowerCase()}` as keyof Question]}
+                      </Box>
+                    ))}
+                  </TableCell>
+                  <TableCell sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', color: SF.lime, borderBottom: `1px solid ${SF.border}40` }}>
+                    {q.correct_option}
+                  </TableCell>
+                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.75rem', color: SF.yellow, borderBottom: `1px solid ${SF.border}40` }}>
+                    {q.score}
+                  </TableCell>
+                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.border}40` }}>
+                    {q.time_limit}s
+                  </TableCell>
+                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.65rem', color: `${SF.white}50`, borderBottom: `1px solid ${SF.border}40` }}>
+                    {q.category}
+                  </TableCell>
+                  <TableCell sx={{ borderBottom: `1px solid ${SF.border}40` }}>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <SFButton color={SF.cyan} onClick={() => openEdit(q)} startIcon={<Edit />}>EDIT</SFButton>
+                      <SFButton color={SF.red} onClick={() => setDeleteTarget(q)} startIcon={<Delete />}>DEL</SFButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundColor: SF.panel, border: `1px solid ${SF.cyan}40`, backgroundImage: 'none' } }}>
-        <DialogTitle sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.cyan, textTransform: 'uppercase' }}>
+      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundColor: SF.panel, border: `1px solid ${SF.lime}40`, backgroundImage: 'none' } }}>
+        <DialogTitle sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.lime, textTransform: 'uppercase' }}>
           {editingId === null ? '+ ADD QUESTION' : `EDIT QUESTION #${editingId}`}
         </DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 2 }}>
@@ -485,4 +463,4 @@ const QuestionBankAdmin: React.FC = () => {
   );
 };
 
-export default QuestionBankAdmin;
+export default QuestionBankPanel;

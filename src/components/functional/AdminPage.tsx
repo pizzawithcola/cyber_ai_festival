@@ -32,6 +32,7 @@ import { getAdminToken, setAdminToken, clearAdminToken } from '../../utils/userS
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
 import { API_URL } from '../../services/api';
+import QuestionBankPanel from './QuestionBankPanel';
 
 // ─── Sci-Fi Design Tokens ─────────────────────────────────────────────────────
 const SF = {
@@ -619,9 +620,6 @@ const AdminPage: React.FC = () => {
             <SFButton color={SF.cyan} variant="outline" onClick={() => navigate('/')}>
               HOME
             </SFButton>
-            <SFButton color={SF.lime} variant="outline" onClick={() => navigate('/final/questions')}>
-              QUESTION BANK
-            </SFButton>
             <SFButton color={SF.red} variant="outline" onClick={handleLogout}>
               LOGOUT
             </SFButton>
@@ -999,6 +997,9 @@ const AdminPage: React.FC = () => {
         />
       </Box>
       )}
+
+      {/* ── Question Bank Panel (embedded in Final Rooms tab) ── */}
+      {activeTab === 'rooms' && <QuestionBankPanel />}
 
       {/* ── Delete Dialog ── */}
       <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} PaperProps={{ sx: dlgPaper(SF.red) }}>
