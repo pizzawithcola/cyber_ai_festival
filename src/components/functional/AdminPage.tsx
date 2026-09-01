@@ -619,6 +619,9 @@ const AdminPage: React.FC = () => {
             <SFButton color={SF.cyan} variant="outline" onClick={() => navigate('/')}>
               HOME
             </SFButton>
+            <SFButton color={SF.lime} variant="outline" onClick={() => navigate('/final/questions')}>
+              QUESTION BANK
+            </SFButton>
             <SFButton color={SF.red} variant="outline" onClick={handleLogout}>
               LOGOUT
             </SFButton>
