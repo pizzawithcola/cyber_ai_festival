@@ -33,6 +33,7 @@ import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
 import { API_URL } from '../../services/api';
 import QuestionBankDialog from './QuestionBankDialog';
+import { GAME_CATEGORIES, loadBalance, saveBalance, DEFAULT_BALANCE, type BalanceConfig } from '../../pages/6_UltimateShowdown/gameCategories';
 
 // ─── Sci-Fi Design Tokens ─────────────────────────────────────────────────────
 const SF = {
@@ -222,6 +223,8 @@ const AdminPage: React.FC = () => {
   const [roomsPage, setRoomsPage] = useState(0);
   const [roomsRowsPerPage, setRoomsRowsPerPage] = useState(10);
   const [questionBankOpen, setQuestionBankOpen] = useState(false);
+  const [balanceOpen, setBalanceOpen] = useState(false);
+  const [balanceForm, setBalanceForm] = useState<BalanceConfig>(() => loadBalance() ?? DEFAULT_BALANCE);
 
   // ─── Check token on mount ───────────────────────────────────────────────────
   useEffect(() => {
@@ -653,8 +656,8 @@ const AdminPage: React.FC = () => {
             },
           }}
         >
-          <ToggleButton value="personnel">PERSONNEL</ToggleButton>
-          <ToggleButton value="rooms">FINAL ROOMS</ToggleButton>
+          <ToggleButton value="personnel">Players</ToggleButton>
+          <ToggleButton value="rooms">Ultimate Rooms</ToggleButton>
           <ToggleButton value="api">API DIAGNOSTICS</ToggleButton>
         </ToggleButtonGroup>
       </Box>
@@ -706,7 +709,7 @@ const AdminPage: React.FC = () => {
                 {[['NICKNAME','nickname'],['FIRST NAME','firstname'],['LAST NAME','lastname'],['REGION','region'],['ROLE','role'],['G1/AH','game1_score'],['G2/DS','game2_score'],['G3/RD','game3_score'],['G4/FA','game4_score'],['G5/FS','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
                   <TableCell key={field} sx={thSx}>
                     <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
-                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
+                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
                       {label}
                     </TableSortLabel>
                   </TableCell>
@@ -722,13 +725,13 @@ const AdminPage: React.FC = () => {
                       sx={{ color: `${SF.cyan}30`, '&.Mui-checked': { color: SF.cyan }, p: 0 }} />
                   </TableCell>
                   {[u.nickname || '—', u.firstname, u.lastname, u.region].map((val, i) => (
-                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.92rem', color: `${SF.white}85`, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
+                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.9rem', color: `${SF.white}85`, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
                   ))}
                   <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: u.role === 'admin' ? SF.lime : SF.dim, textAlign: 'center' }}>{u.role?.toUpperCase() || 'PLAYER'}</TableCell>
                   {[u.game1_score, u.game2_score, u.game3_score, u.game4_score, u.game5_score].map((s, i) => (
-                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.92rem', color: scoreColor(s), textAlign: 'center' }}>{s.toFixed(1)}</TableCell>
+                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.9rem', color: scoreColor(s), textAlign: 'center' }}>{s.toFixed(1)}</TableCell>
                   ))}
-                  <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.82rem', fontWeight: 700, color: scoreColor(u.total_score, 500), textAlign: 'center' }}>
+                  <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, color: scoreColor(u.total_score, 500), textAlign: 'center' }}>
                     {u.total_score.toFixed(1)}
                   </TableCell>
                 </TableRow>
@@ -760,7 +763,7 @@ const AdminPage: React.FC = () => {
               <TableHead>
                 <TableRow>
                   {['SIG','ENDPOINT','METHOD','PATH','LATENCY','STATUS'].map(h => (
-                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.cyan}25`, fontFamily: SF.fontTitle, fontSize: '0.72rem', letterSpacing: '0.1em', color: `${SF.white}85` }}>{h}</TableCell>
+                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.cyan}25`, fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.1em', color: `${SF.white}85` }}>{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHead>
@@ -773,14 +776,14 @@ const AdminPage: React.FC = () => {
                       <TableCell sx={tdSx}>
                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dot, boxShadow: s.status !== 'idle' ? `0 0 8px ${dot}` : 'none', transition: 'all 0.3s' }} />
                       </TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.92rem', color: `${SF.white}80` }}>{ep.name}</TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.9rem', color: `${SF.white}80` }}>{ep.name}</TableCell>
                       <TableCell sx={tdSx}>
                         <Box component="span" sx={{ px: 1, py: 0.2, fontFamily: SF.fontTitle, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', backgroundColor: ep.method === 'GET' ? `${SF.cyan}15` : `${SF.lime}15`, color: ep.method === 'GET' ? SF.cyan : SF.lime, border: `1px solid ${ep.method === 'GET' ? SF.cyan : SF.lime}30` }}>
                           {ep.method}
                         </Box>
                       </TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: SF.dim }}>{ep.path}</TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.88rem', color: SF.cyan, textAlign: 'right' }}>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.9rem', color: SF.dim }}>{ep.path}</TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.9rem', color: SF.cyan, textAlign: 'right' }}>
                         {s.latency !== undefined ? `${s.latency}ms` : '—'}
                       </TableCell>
                       <TableCell sx={tdSx}>
@@ -811,7 +814,7 @@ const AdminPage: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Castle sx={{ fontSize: 18, color: SF.cyan }} />
             <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.cyan }}>
-              FINAL ROOMS
+              ULTIMATE ROOMS
             </Box>
             <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>
               ({rooms.length})
@@ -826,6 +829,13 @@ const AdminPage: React.FC = () => {
               QUESTION BANK
             </SFButton>
             <SFButton
+              color={SF.yellow}
+              variant="outline"
+              onClick={() => { setBalanceForm(loadBalance() ?? DEFAULT_BALANCE); setBalanceOpen(true); }}
+            >
+              BALANCE
+            </SFButton>
+            <SFButton
               color={SF.cyan}
               variant="outline"
               onClick={() => navigate('/final/admin')}
@@ -836,14 +846,14 @@ const AdminPage: React.FC = () => {
         </Box>
 
         <TableContainer>
-          <Table>
+          <Table sx={{ tableLayout: 'fixed' }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>ROOM CODE</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>STATUS</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>PLAYERS</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, textAlign: 'right' }}>CREATED</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, textAlign: 'center', width: 100 }}>ACTIONS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, width: 150 }}>ROOM CODE</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, width: 170 }}>STATUS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>PLAYERS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, width: 240 }}>CREATED</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, width: 110 }}>ACTIONS</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -890,7 +900,7 @@ const AdminPage: React.FC = () => {
                             boxShadow: `0 0 6px ${statusColor}`,
                           }} />
                           <Box sx={{
-                            fontFamily: SF.fontBody, fontSize: '0.82rem',
+                            fontFamily: SF.fontBody, fontSize: '0.8rem',
                             letterSpacing: '0.08em', textTransform: 'uppercase',
                             color: statusColor,
                           }}>
@@ -905,7 +915,7 @@ const AdminPage: React.FC = () => {
                       </TableCell>
 
                       {/* Players */}
-                      <TableCell sx={{ ...tdSx, maxWidth: 360 }}>
+                      <TableCell sx={{ ...tdSx }}>
                         {room.players.length > 0 ? (
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                             {room.players.map((p, i) => {
@@ -937,8 +947,8 @@ const AdminPage: React.FC = () => {
                       </TableCell>
 
                       {/* Created */}
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: `${SF.white}85`, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        {room.created_at ? new Date(room.created_at).toLocaleTimeString() : '—'}
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: `${SF.white}85`, whiteSpace: 'nowrap' }}>
+                        {room.created_at ? new Date(room.created_at).toLocaleString() : '—'}
                       </TableCell>
 
                       {/* Actions */}
@@ -1051,6 +1061,53 @@ const AdminPage: React.FC = () => {
 
       {/* ── Question Bank Dialog (opened from Final Rooms section) ── */}
       <QuestionBankDialog open={questionBankOpen} onClose={() => setQuestionBankOpen(false)} />
+
+      {/* ── Game Balance Dialog (per-category question counts) ── */}
+      <Dialog open={balanceOpen} onClose={() => setBalanceOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundColor: SF.panel, border: `1px solid ${SF.yellow}40`, backgroundImage: 'none' } }}>
+        <DialogTitle sx={{ borderBottom: `1px solid ${SF.yellow}25`, py: 2, px: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.2em', color: SF.yellow, textTransform: 'uppercase' }}>
+              GAME BALANCE
+            </Box>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: SF.dim }}>questions per category</Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2, pb: 1, px: 3 }}>
+          {GAME_CATEGORIES.map((c) => (
+            <Box key={c.key} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
+              <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.9rem', color: SF.white }}>{c.label}</Box>
+              <TextField
+                type="number"
+                size="small"
+                value={balanceForm[c.key]}
+                onChange={(e) => setBalanceForm((p) => ({ ...p, [c.key]: Math.max(0, Number(e.target.value) || 0) }))}
+                inputProps={{ min: 0, max: 5, style: { fontFamily: SF.fontMono, textAlign: 'center' } }}
+                sx={{ width: 90, ...sfInputSx }}
+              />
+            </Box>
+          ))}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderTop: `1px solid ${SF.border}40`, mt: 1 }}>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.8rem', color: SF.dim }}>TOTAL</Box>
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1rem', fontWeight: 700, color: SF.yellow }}>
+              {Object.values(balanceForm).reduce((a, b) => a + b, 0)}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1.5 }}>
+          <SFButton color={SF.dim} onClick={() => setBalanceOpen(false)}>CANCEL</SFButton>
+          <SFButton
+            color={SF.yellow}
+            variant="filled"
+            onClick={() => {
+              saveBalance(balanceForm);
+              setBalanceOpen(false);
+              setSnackbar({ open: true, message: 'Game balance saved!', severity: 'success' });
+            }}
+          >
+            SAVE BALANCE
+          </SFButton>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Snackbar ── */}
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>

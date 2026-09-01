@@ -6,6 +6,7 @@ import { ArcadeButton } from '../../components/ui';
 import QRCode from '../../components/functional/QRCode';
 import { apiFetch } from '../../services/api';
 import { getAdminToken } from '../../utils/userStorage';
+import { loadBalance } from './gameCategories';
 import { useGameWebSocket } from '../../hooks/useGameWebSocket';
 import type { QuestionData, ResultData, LeaderboardEntry, PlayerEntry } from '../../hooks/useGameWebSocket';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
@@ -470,7 +471,12 @@ const AdminConsole: React.FC = () => {
   const handleCreateRoom = async () => {
     setCreating(true);
     try {
-      const res = await apiFetch('/rooms/', { method: 'POST', body: JSON.stringify({ question_count: 10 }) });
+      // Use the admin-configured per-category balance (if set in the admin panel)
+      const balance = loadBalance();
+      const body = balance
+        ? { question_count: 10, balance }
+        : { question_count: 10 };
+      const res = await apiFetch('/rooms/', { method: 'POST', body: JSON.stringify(body) });
       if (!res.ok) throw new Error('Failed to create room');
       const data = await res.json();
       setRoomCode(data.room_code);
