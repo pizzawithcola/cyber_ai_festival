@@ -110,8 +110,8 @@ const JoinScreen: React.FC<{
         onClick={onHostLogin}
         sx={{
           mt: 1.5, cursor: 'pointer',
-          fontFamily: '"Courier New", monospace', fontSize: '0.55rem',
-          color: `${ARCADE_COLORS.white}25`,
+          fontFamily: '"Courier New", monospace', fontSize: '0.675rem',
+          color: '#aaaaaa',
           letterSpacing: '0.15em',
           '&:hover': { color: ARCADE_COLORS.cyan },
           transition: 'color 0.2s',
@@ -933,8 +933,8 @@ const UltimateShowdown: React.FC = () => {
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <Box sx={pageBg}>
-      {/* Header strip */}
-      <Box sx={{ width: '100%', maxWidth: 900, mb: 3 }}>
+      {/* Header strip (full width) */}
+      <Box sx={{ width: '100%', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pb: 2, borderBottom: `1px solid ${ARCADE_COLORS.orange}25` }}>
           <Box sx={{ width: 4, height: 20, backgroundColor: ARCADE_COLORS.orange, boxShadow: `0 0 10px ${ARCADE_COLORS.orange}` }} />
           <Box sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.8rem', color: ARCADE_COLORS.orange, letterSpacing: '0.15em', textShadow: `0 0 15px ${ARCADE_COLORS.orange}60` }}>
