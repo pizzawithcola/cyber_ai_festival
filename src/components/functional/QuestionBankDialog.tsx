@@ -328,32 +328,32 @@ const QuestionBankDialog: React.FC<QuestionBankDialogProps> = ({ open, onClose }
               <TableBody>
                 {questions.map((q) => (
                   <TableRow key={q.id} sx={{ '&:hover': { backgroundColor: `${SF.lime}06` } }}>
-                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}90`, borderBottom: `2px solid #eeeeee` }}>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}90`, borderBottom: `1px solid ${SF.lime}40` }}>
                       #{q.id}
                     </TableCell>
-                    <TableCell sx={{ fontFamily: SF.fontBody, fontSize: '0.9rem', color: SF.white, maxWidth: 320, borderBottom: `2px solid #eeeeee` }}>
+                    <TableCell sx={{ fontFamily: SF.fontBody, fontSize: '0.9rem', color: SF.white, maxWidth: 320, borderBottom: `1px solid ${SF.lime}40` }}>
                       {q.text}
                     </TableCell>
-                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}70`, borderBottom: `2px solid #eeeeee` }}>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.lime}40` }}>
                       {['A', 'B', 'C', 'D'].map((opt) => (
                         <Box key={opt} sx={{ color: correctColor(opt, q.correct_option) }}>
                           <b>{opt}.</b> {q[`option_${opt.toLowerCase()}` as keyof Question]}
                         </Box>
                       ))}
                     </TableCell>
-                    <TableCell sx={{ fontFamily: SF.fontTitle, fontSize: '0.9rem', color: SF.lime, borderBottom: `2px solid #eeeeee` }}>
+                    <TableCell sx={{ fontFamily: SF.fontTitle, fontSize: '0.9rem', color: SF.lime, borderBottom: `1px solid ${SF.lime}40` }}>
                       {q.correct_option}
                     </TableCell>
-                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: SF.yellow, borderBottom: `2px solid #eeeeee` }}>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: SF.yellow, borderBottom: `1px solid ${SF.lime}40` }}>
                       {q.score}
                     </TableCell>
-                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}90`, borderBottom: `2px solid #eeeeee` }}>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}90`, borderBottom: `1px solid ${SF.lime}40` }}>
                       {q.time_limit}s
                     </TableCell>
-                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}90`, borderBottom: `2px solid #eeeeee` }}>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.9rem', color: `${SF.white}90`, borderBottom: `1px solid ${SF.lime}40` }}>
                       {q.category}
                     </TableCell>
-                    <TableCell sx={{ borderBottom: `2px solid #eeeeee` }}>
+                    <TableCell sx={{ borderBottom: `1px solid ${SF.lime}40` }}>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
                         <SFButton color={SF.cyan} onClick={() => openEdit(q)} startIcon={<Edit />}>EDIT</SFButton>
                         <SFButton color={SF.red} onClick={() => setDeleteTarget(q)} startIcon={<Delete />}>DEL</SFButton>
