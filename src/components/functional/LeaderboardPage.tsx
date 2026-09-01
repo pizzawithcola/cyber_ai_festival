@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, keyframes } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
@@ -32,6 +32,9 @@ const SCORE_TYPES = [
   { key: 'game5', label: 'FINAL' },
 ];
 
+// Auto-rotation interval for the leaderboard display (ms)
+const ROTATION_INTERVAL_MS = 5000;
+
 // Each game has its own theme color
 const SCORE_TYPE_COLORS: Record<string, string> = {
   total: ARCADE_COLORS.cyan,
@@ -47,9 +50,13 @@ const scanlineAnim = keyframes`
   100% { top: 110%; }
 `;
 
-const countryCodeToFlag = (code: string) => {
+const countryCodeToFlag = (code: string | null | undefined): string => {
+  // Guard against missing/empty region (backend `region` can be null)
+  if (!code) return '🌐';
   const country = COUNTRIES.find((c) => c.name === code);
   const countryCode = country ? country.code : code;
+  // Only convert valid 2-letter country codes; fallback for unknown values
+  if (countryCode.length !== 2) return '🌐';
   return countryCode
     .toUpperCase()
     .split('')
@@ -66,36 +73,76 @@ const getRankDisplay = (rank: number) => {
 
 const LeaderboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [rankingData, setRankingData] = useState<RankingData | null>(null);
+  const [rankingCache, setRankingCache] = useState<Record<string, RankingData | null>>({});
   const [loading, setLoading] = useState(true);
   const [scoreType, setScoreType] = useState('total');
+  const [rotationEnabled, setRotationEnabled] = useState(true);
+  const rotationTimerRef = useRef<number | null>(null);
   const user = getStoredUser();
 
   // Dynamic theme color based on selected game
   const themeColor = SCORE_TYPE_COLORS[scoreType] || ARCADE_COLORS.cyan;
+
+  // Auto-rotate through score types every 5s while enabled
+  useEffect(() => {
+    if (!rotationEnabled) return;
+    rotationTimerRef.current = window.setInterval(() => {
+      setScoreType((prev) => {
+        const idx = SCORE_TYPES.findIndex((t) => t.key === prev);
+        const next = SCORE_TYPES[(idx + 1) % SCORE_TYPES.length];
+        return next.key;
+      });
+    }, ROTATION_INTERVAL_MS);
+    return () => {
+      if (rotationTimerRef.current !== null) {
+        window.clearInterval(rotationTimerRef.current);
+        rotationTimerRef.current = null;
+      }
+    };
+  }, [rotationEnabled]);
 
   const pulseGlow = keyframes`
     0%, 100% { box-shadow: 0 0 8px ${themeColor}30; }
     50% { box-shadow: 0 0 16px ${themeColor}60; }
   `;
 
+  // Fetch ALL score types once and cache them — rotation just switches views, no reload
   useEffect(() => {
-    const fetchRankings = async () => {
+    let cancelled = false;
+
+    const fetchAllRankings = async () => {
       try {
-        setLoading(true);
-        // Fetch more than 10 to find current user's rank
-        const response = await apiFetch(`/rankings/${scoreType}?limit=50`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data: RankingData = await response.json();
-        setRankingData(data);
+        const entries = await Promise.all(
+          SCORE_TYPES.map(async (t) => {
+            try {
+              // Fetch more than 10 to find current user's rank
+              const response = await apiFetch(`/rankings/${t.key}?limit=50`);
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              const data: RankingData = await response.json();
+              return [t.key, data] as const;
+            } catch (err) {
+              console.error(`Failed to fetch rankings (${t.key}):`, err);
+              return [t.key, null] as const;
+            }
+          })
+        );
+        if (cancelled) return;
+        setRankingCache(Object.fromEntries(entries));
       } catch (err) {
         console.error('Failed to fetch rankings:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchRankings();
-  }, [scoreType]);
+
+    fetchAllRankings();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Read current type from cache — no refetch when scoreType changes
+  const rankingData = rankingCache[scoreType] ?? null;
 
   // Determine what to display
   const top10 = rankingData?.rankings.slice(0, 10) || [];
@@ -133,11 +180,72 @@ const LeaderboardPage: React.FC = () => {
         },
       }}
     >
-      {/* Title */}
-      <Box sx={{ textAlign: 'center', mt: 4, mb: 3 }}>
+      {/* Title + compact auto-rotate toggle */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 4, mb: 3, flexWrap: 'wrap' }}>
         <ArcadeTypography font="pressstart2p" sx={{ color: themeColor, fontSize: '1.1rem' }}>
-          HIGH SCORES
+          LEADERBOARD
         </ArcadeTypography>
+        <Box
+          role="switch"
+          aria-checked={rotationEnabled}
+          title={rotationEnabled ? 'Auto rotate: ON' : 'Auto rotate: OFF'}
+          tabIndex={0}
+          onClick={() => setRotationEnabled((v) => !v)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setRotationEnabled((v) => !v);
+            }
+          }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            cursor: 'pointer',
+            userSelect: 'none',
+            p: 0.5,
+            border: `1px solid ${rotationEnabled ? themeColor : `${ARCADE_COLORS.white}25`}`,
+            backgroundColor: rotationEnabled ? `${themeColor}12` : 'transparent',
+            boxShadow: rotationEnabled ? `0 0 10px ${themeColor}35` : 'none',
+            borderRadius: 0,
+            transition: 'all 0.25s ease',
+            '&:hover': { borderColor: themeColor },
+            '&:focus-visible': { outline: `2px solid ${themeColor}`, outlineOffset: 2 },
+          }}
+        >
+          {/* Switch track */}
+          <Box
+            sx={{
+              width: 30,
+              height: 14,
+              borderRadius: 7,
+              border: `1px solid ${rotationEnabled ? themeColor : `${ARCADE_COLORS.white}25`}`,
+              backgroundColor: 'rgba(0, 0, 0, 0.45)',
+              position: 'relative',
+            }}
+          >
+            {/* Switch knob */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 1,
+                left: rotationEnabled ? 15 : 1,
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                backgroundColor: rotationEnabled ? themeColor : `${ARCADE_COLORS.white}40`,
+                boxShadow: rotationEnabled ? `0 0 6px ${themeColor}` : 'none',
+                transition: 'left 0.2s ease, background-color 0.2s ease',
+              }}
+            />
+          </Box>
+          {/* Label: show AUTO only when rotation is ON */}
+          {rotationEnabled && (
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.45rem', color: themeColor }}>
+              AUTO
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       {/* Game Selector */}
