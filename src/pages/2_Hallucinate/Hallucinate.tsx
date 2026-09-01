@@ -686,7 +686,7 @@ const Hallucinate: React.FC = () => {
                             boxShadow: '0 0 14px rgba(255, 191, 77, 0.08)',
                           }}
                         >
-                          Mission I  AI Hallucination
+                          Mission I  Hallucinate & Watch Me Detonate
                         </Typography>
                         <Typography
                           variant="h4"

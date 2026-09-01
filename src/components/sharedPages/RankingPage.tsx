@@ -32,7 +32,7 @@ const GAME_TO_SCORE_TYPE: Record<string, string> = {
 };
 
 const SCORE_TYPE_LABELS: Record<string, string> = {
-  game1: 'AI HALLUCINATION',
+  game1: 'Hallucinate & Watch Me Detonate',
   game2: 'DATA SHADOWS',
   game3: 'RETAIL DEMOLITION',
   game4: 'PHISHING ATTACK',

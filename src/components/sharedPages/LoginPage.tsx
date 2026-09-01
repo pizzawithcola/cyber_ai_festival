@@ -27,7 +27,7 @@ interface GameTheme {
 
 const GAME_THEMES: Record<string, GameTheme> = {
   hallucinate: {
-    title: 'AI HALLUCINATION',
+    title: 'Hallucinate & Watch Me Detonate',
     subtitle: 'CAN YOU TELL WHAT IS REAL?',
     color: ARCADE_COLORS.magenta,
     colorKey: 'magenta',

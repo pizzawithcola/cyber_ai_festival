@@ -130,7 +130,7 @@ const HomePage: React.FC<HomePageProps> = () => {
   const games = [
     {
       id: 'hallucinate',
-      title: 'AI HALLUCINATION',
+      title: 'Hallucinate & Watch Me Detonate',
       description: 'Spot the lies AI tells',
       icon: <BrainCircuit size={30} strokeWidth={1.5} />,
       color: ARCADE_COLORS.magenta,
