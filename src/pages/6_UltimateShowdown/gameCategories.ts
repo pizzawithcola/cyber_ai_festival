@@ -1,10 +1,11 @@
 // Shared category definitions for the Ultimate Showdown game balance.
+// Categories mirror the curated quiz doc: 4 theme categories + general AI + bonus.
 export const GAME_CATEGORIES = [
-  { key: 'hallucinate', label: 'AI Hallucination' },
-  { key: 'datashadows', label: 'Data Shadows' },
-  { key: 'retaildemolition', label: 'Retail Demolition' },
-  { key: 'phishing', label: 'Phishing' },
   { key: 'ai', label: 'AI General' },
+  { key: 'hallucination', label: 'Hallucination' },
+  { key: 'data', label: 'Data' },
+  { key: 'agent', label: 'Agent' },
+  { key: 'phishing', label: 'Phishing' },
   { key: 'bonus', label: 'Bonus (Hard)' },
 ] as const;
 
@@ -16,11 +17,11 @@ export const BALANCE_STORAGE_KEY = 'cyber_ai_ultimate_balance';
 export type BalanceConfig = Record<GameCategoryKey, number>;
 
 export const DEFAULT_BALANCE: BalanceConfig = {
-  hallucinate: 2,
-  datashadows: 2,
-  retaildemolition: 2,
-  phishing: 2,
   ai: 1,
+  hallucination: 2,
+  data: 2,
+  agent: 2,
+  phishing: 2,
   bonus: 1,
 };
 
@@ -30,11 +31,11 @@ export function loadBalance(): BalanceConfig | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<BalanceConfig>;
     return {
-      hallucinate: Number(parsed.hallucinate) || 0,
-      datashadows: Number(parsed.datashadows) || 0,
-      retaildemolition: Number(parsed.retaildemolition) || 0,
-      phishing: Number(parsed.phishing) || 0,
       ai: Number(parsed.ai) || 0,
+      hallucination: Number(parsed.hallucination) || 0,
+      data: Number(parsed.data) || 0,
+      agent: Number(parsed.agent) || 0,
+      phishing: Number(parsed.phishing) || 0,
       bonus: Number(parsed.bonus) || 0,
     };
   } catch {
