@@ -24,11 +24,12 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # API base must point to the BACKEND (ALB), NOT the frontend CloudFront.
-          # Prefer the GitHub secret VITE_API_URL; fallback to the backend ALB.
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://cyber-ai-festival-alb-2006617150.ap-south-1.elb.amazonaws.com' }}
+          # Same-origin setup: CloudFront serves the SPA AND proxies API paths
+          # (/users/*, /scores/*, /rooms/*, /rankings/*, /llm/*, /questions/*, ...)
+          # to the backend ALB. Keep VITE_API_URL = the CloudFront domain.
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://d24umo4oysfx97.cloudfront.net' }}
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
-          VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'ws://cyber-ai-festival-alb-2006617150.ap-south-1.elb.amazonaws.com' }}
+          VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'wss://d24umo4oysfx97.cloudfront.net' }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

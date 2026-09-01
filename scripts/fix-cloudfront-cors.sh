@@ -31,7 +31,7 @@ with open('$CONFIG_FILE') as f:
     config = json.load(f)
 
 changes = 0
-api_paths = {'/users/*','/scores/*','/rankings/*','/llm/*','/rooms/*','/ws/*','/health'}
+api_paths = {'/users/*','/scores/*','/rankings/*','/llm/*','/rooms/*','/questions/*','/ws/*','/health'}
 cors_hdrs = ['Origin', 'Access-Control-Request-Method', 'Access-Control-Request-Headers']
 
 def fix_behavior(b, label):
