@@ -42,19 +42,6 @@ const SF = {
   fontMono: '"Courier New", monospace',
 };
 
-const hudPanel = (color = SF.cyan) => ({
-  backgroundColor: SF.panel,
-  border: `1px solid ${color}30`,
-  position: 'relative' as const,
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    height: '1px',
-    background: `linear-gradient(90deg, transparent, ${color}80, transparent)`,
-  },
-});
-
 const SFButton: React.FC<{
   color?: string;
   onClick?: () => void;
@@ -148,15 +135,21 @@ const OPTION_KEYS: Array<keyof Pick<Question, 'option_a' | 'option_b' | 'option_
 
 const correctColor = (opt: string, correct: string) => (opt === correct ? SF.lime : SF.white);
 
+interface QuestionBankDialogProps {
+  open: boolean;
+  onClose: () => void;
+}
+
 /**
- * Question bank management panel — embedded in the Admin Panel's "FINAL ROOMS" tab.
+ * Question bank management — a floating long dialog listing all questions.
+ * Opened from the "QUESTION BANK" button in the Admin Panel's Final Rooms section.
  */
-const QuestionBankPanel: React.FC = () => {
+const QuestionBankDialog: React.FC<QuestionBankDialogProps> = ({ open, onClose }) => {
   useClickSound();
 
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -180,14 +173,15 @@ const QuestionBankPanel: React.FC = () => {
     }
   }, []);
 
+  // Load fresh data every time the dialog opens
   useEffect(() => {
-    loadQuestions();
-  }, [loadQuestions]);
+    if (open) loadQuestions();
+  }, [open, loadQuestions]);
 
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
   const openEdit = (q: Question) => {
@@ -203,7 +197,7 @@ const QuestionBankPanel: React.FC = () => {
       category: q.category ?? 'general',
       score: q.score,
     });
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
   const setField = (field: string, value: string | number) => {
@@ -234,7 +228,7 @@ const QuestionBankPanel: React.FC = () => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         setSnack({ open: true, message: 'Question updated!', severity: 'success' });
       }
-      setDialogOpen(false);
+      setFormOpen(false);
       await loadQuestions();
     } catch (err) {
       console.error('Failed to save question:', err);
@@ -262,99 +256,113 @@ const QuestionBankPanel: React.FC = () => {
   };
 
   return (
-    <Box sx={{ ...hudPanel(SF.lime), borderRadius: '4px', overflow: 'hidden', mb: 4 }}>
-      {/* Panel header */}
-      <Box sx={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        px: 3, py: 2.5,
-        borderBottom: `1px solid ${SF.lime}20`,
-        backgroundColor: `${SF.lime}08`,
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Quiz sx={{ fontSize: 18, color: SF.lime }} />
-          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.lime }}>
-            QUESTION BANK
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: SF.panel,
+          border: `1px solid ${SF.lime}40`,
+          backgroundImage: 'none',
+          height: '88vh',
+        },
+      }}
+    >
+      {/* Header */}
+      <DialogTitle sx={{ borderBottom: `1px solid ${SF.lime}25`, py: 2, px: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Quiz sx={{ fontSize: 20, color: SF.lime }} />
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.2em', color: SF.lime, textTransform: 'uppercase' }}>
+              QUESTION BANK
+            </Box>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>({questions.length})</Box>
           </Box>
-          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.85rem', color: SF.dim }}>
-            ({questions.length})
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <SFButton color={SF.lime} variant="filled" onClick={openCreate} startIcon={<Add />}>ADD QUESTION</SFButton>
+            <SFButton color={SF.cyan} onClick={() => loadQuestions()} startIcon={<Refresh />}>REFRESH</SFButton>
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <SFButton color={SF.lime} variant="filled" onClick={openCreate} startIcon={<Add />}>ADD QUESTION</SFButton>
-          <SFButton color={SF.cyan} onClick={() => loadQuestions()} startIcon={<Refresh />}>REFRESH</SFButton>
-        </Box>
-      </Box>
+      </DialogTitle>
 
-      {/* Panel body */}
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
-          <CircularProgress size={28} sx={{ color: SF.lime }} />
-        </Box>
-      ) : questions.length === 0 ? (
-        <Box sx={{ py: 8, textAlign: 'center' }}>
-          <Typography sx={{ fontFamily: SF.fontBody, color: `${SF.white}50` }}>No questions yet. Add your first one!</Typography>
-        </Box>
-      ) : (
-        <TableContainer sx={{ maxHeight: '50vh' }}>
-          <Table size="small" stickyHeader>
-            <TableHead>
-              <TableRow>
-                {['ID', 'QUESTION', 'OPTIONS', 'ANSWER', 'SCORE', 'TIME', 'CATEGORY', 'ACTIONS'].map((h) => (
-                  <TableCell
-                    key={h}
-                    sx={{
-                      fontFamily: SF.fontTitle, fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.15em',
-                      color: SF.lime, backgroundColor: SF.panelAlt, borderBottom: `1px solid ${SF.lime}30`,
-                    }}
-                  >
-                    {h}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {questions.map((q) => (
-                <TableRow key={q.id} sx={{ '&:hover': { backgroundColor: `${SF.lime}06` } }}>
-                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: SF.dim, borderBottom: `1px solid ${SF.border}40` }}>
-                    #{q.id}
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white, maxWidth: 320, borderBottom: `1px solid ${SF.border}40` }}>
-                    {q.text}
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.65rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.border}40` }}>
-                    {['A', 'B', 'C', 'D'].map((opt) => (
-                      <Box key={opt} sx={{ color: correctColor(opt, q.correct_option) }}>
-                        <b>{opt}.</b> {q[`option_${opt.toLowerCase()}` as keyof Question]}
-                      </Box>
-                    ))}
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', color: SF.lime, borderBottom: `1px solid ${SF.border}40` }}>
-                    {q.correct_option}
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.75rem', color: SF.yellow, borderBottom: `1px solid ${SF.border}40` }}>
-                    {q.score}
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.border}40` }}>
-                    {q.time_limit}s
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.65rem', color: `${SF.white}50`, borderBottom: `1px solid ${SF.border}40` }}>
-                    {q.category}
-                  </TableCell>
-                  <TableCell sx={{ borderBottom: `1px solid ${SF.border}40` }}>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      <SFButton color={SF.cyan} onClick={() => openEdit(q)} startIcon={<Edit />}>EDIT</SFButton>
-                      <SFButton color={SF.red} onClick={() => setDeleteTarget(q)} startIcon={<Delete />}>DEL</SFButton>
-                    </Box>
-                  </TableCell>
+      {/* Scrollable body: all questions */}
+      <DialogContent sx={{ p: 0, overflow: 'auto' }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 12 }}>
+            <CircularProgress size={28} sx={{ color: SF.lime }} />
+          </Box>
+        ) : questions.length === 0 ? (
+          <Box sx={{ py: 12, textAlign: 'center' }}>
+            <Typography sx={{ fontFamily: SF.fontBody, color: `${SF.white}50` }}>No questions yet. Add your first one!</Typography>
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  {['ID', 'QUESTION', 'OPTIONS', 'ANSWER', 'SCORE', 'TIME', 'CATEGORY', 'ACTIONS'].map((h) => (
+                    <TableCell
+                      key={h}
+                      sx={{
+                        fontFamily: SF.fontTitle, fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.15em',
+                        color: SF.lime, backgroundColor: SF.panelAlt, borderBottom: `1px solid ${SF.lime}30`,
+                      }}
+                    >
+                      {h}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+              </TableHead>
+              <TableBody>
+                {questions.map((q) => (
+                  <TableRow key={q.id} sx={{ '&:hover': { backgroundColor: `${SF.lime}06` } }}>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: SF.dim, borderBottom: `1px solid ${SF.border}40` }}>
+                      #{q.id}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white, maxWidth: 320, borderBottom: `1px solid ${SF.border}40` }}>
+                      {q.text}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.65rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.border}40` }}>
+                      {['A', 'B', 'C', 'D'].map((opt) => (
+                        <Box key={opt} sx={{ color: correctColor(opt, q.correct_option) }}>
+                          <b>{opt}.</b> {q[`option_${opt.toLowerCase()}` as keyof Question]}
+                        </Box>
+                      ))}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', color: SF.lime, borderBottom: `1px solid ${SF.border}40` }}>
+                      {q.correct_option}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.75rem', color: SF.yellow, borderBottom: `1px solid ${SF.border}40` }}>
+                      {q.score}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: `${SF.white}70`, borderBottom: `1px solid ${SF.border}40` }}>
+                      {q.time_limit}s
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: SF.fontMono, fontSize: '0.65rem', color: `${SF.white}50`, borderBottom: `1px solid ${SF.border}40` }}>
+                      {q.category}
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: `1px solid ${SF.border}40` }}>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <SFButton color={SF.cyan} onClick={() => openEdit(q)} startIcon={<Edit />}>EDIT</SFButton>
+                        <SFButton color={SF.red} onClick={() => setDeleteTarget(q)} startIcon={<Delete />}>DEL</SFButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </DialogContent>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundColor: SF.panel, border: `1px solid ${SF.lime}40`, backgroundImage: 'none' } }}>
+      <DialogActions sx={{ px: 3, py: 1.5, borderTop: `1px solid ${SF.lime}15`, backgroundColor: SF.panelAlt }}>
+        <SFButton color={SF.dim} onClick={onClose}>CLOSE</SFButton>
+      </DialogActions>
+
+      {/* Create/Edit nested dialog */}
+      <Dialog open={formOpen} onClose={() => !saving && setFormOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundColor: SF.panel, border: `1px solid ${SF.lime}40`, backgroundImage: 'none' } }}>
         <DialogTitle sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.lime, textTransform: 'uppercase' }}>
           {editingId === null ? '+ ADD QUESTION' : `EDIT QUESTION #${editingId}`}
         </DialogTitle>
@@ -426,14 +434,14 @@ const QuestionBankPanel: React.FC = () => {
           />
         </DialogContent>
         <DialogActions sx={{ p: 2, pt: 0, gap: 1 }}>
-          <SFButton color={SF.red} onClick={() => setDialogOpen(false)} disabled={saving}>CANCEL</SFButton>
+          <SFButton color={SF.red} onClick={() => setFormOpen(false)} disabled={saving}>CANCEL</SFButton>
           <SFButton color={SF.lime} variant="filled" onClick={handleSave} disabled={saving}>
             {saving ? 'SAVING...' : 'SAVE'}
           </SFButton>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirm Dialog */}
+      {/* Delete confirm nested dialog */}
       <Dialog open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} maxWidth="xs" fullWidth PaperProps={{ sx: { backgroundColor: SF.panel, border: `1px solid ${SF.red}40`, backgroundImage: 'none' } }}>
         <DialogTitle sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', color: SF.red, textTransform: 'uppercase' }}>
           DELETE QUESTION?
@@ -459,8 +467,8 @@ const QuestionBankPanel: React.FC = () => {
           {snack.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Dialog>
   );
 };
 
-export default QuestionBankPanel;
+export default QuestionBankDialog;

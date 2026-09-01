@@ -32,7 +32,7 @@ import { getAdminToken, setAdminToken, clearAdminToken } from '../../utils/userS
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
 import { API_URL } from '../../services/api';
-import QuestionBankPanel from './QuestionBankPanel';
+import QuestionBankDialog from './QuestionBankDialog';
 
 // ─── Sci-Fi Design Tokens ─────────────────────────────────────────────────────
 const SF = {
@@ -221,6 +221,7 @@ const AdminPage: React.FC = () => {
   const [roomsLoading, setRoomsLoading] = useState(false);
   const [roomsPage, setRoomsPage] = useState(0);
   const [roomsRowsPerPage, setRoomsRowsPerPage] = useState(10);
+  const [questionBankOpen, setQuestionBankOpen] = useState(false);
 
   // ─── Check token on mount ───────────────────────────────────────────────────
   useEffect(() => {
@@ -816,13 +817,22 @@ const AdminPage: React.FC = () => {
               ({rooms.length})
             </Box>
           </Box>
-          <SFButton
-            color={SF.cyan}
-            variant="outline"
-            onClick={() => navigate('/final/admin')}
-          >
-            OPEN CONSOLE
-          </SFButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SFButton
+              color={SF.lime}
+              variant="outline"
+              onClick={() => setQuestionBankOpen(true)}
+            >
+              QUESTION BANK
+            </SFButton>
+            <SFButton
+              color={SF.cyan}
+              variant="outline"
+              onClick={() => navigate('/final/admin')}
+            >
+              OPEN CONSOLE
+            </SFButton>
+          </Box>
         </Box>
 
         <TableContainer>
@@ -998,9 +1008,6 @@ const AdminPage: React.FC = () => {
       </Box>
       )}
 
-      {/* ── Question Bank Panel (embedded in Final Rooms tab) ── */}
-      {activeTab === 'rooms' && <QuestionBankPanel />}
-
       {/* ── Delete Dialog ── */}
       <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} PaperProps={{ sx: dlgPaper(SF.red) }}>
         <DialogTitle sx={{ borderBottom: `1px solid ${SF.red}25`, py: 2, px: 3 }}>
@@ -1041,6 +1048,9 @@ const AdminPage: React.FC = () => {
           <SFButton color={SF.lime} variant="filled" onClick={handleAddSubmit}>CREATE RECORD</SFButton>
         </DialogActions>
       </Dialog>
+
+      {/* ── Question Bank Dialog (opened from Final Rooms section) ── */}
+      <QuestionBankDialog open={questionBankOpen} onClose={() => setQuestionBankOpen(false)} />
 
       {/* ── Snackbar ── */}
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
