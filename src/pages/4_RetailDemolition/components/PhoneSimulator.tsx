@@ -78,10 +78,13 @@ interface PhoneSimulatorProps {
   chatBottomRef: React.RefObject<HTMLDivElement | null>;
 }
 
-// 可疑商家的差异化破绽：每家只暴露部分红旗，其余保持中性，避免一眼看穿
+// 可疑商家的差异化破绽：每家只暴露 1-2 个红旗，其余保持中性，避免一眼看穿
 const SUSPICIOUS_REVEALS: Record<string, string[]> = {
-  'MegaSaver Outlet': ['http', 'complaints', 'return'],
-  'StreetTech Direct': ['domain', 'contact', 'urgency'],
+  // 最高调：价格诱饵（Best Price）+ 超低评价量 + 无退货 → 两个明显破绽
+  'MegaSaver Outlet': ['http', 'complaints'],
+  // 中等：新域名 + 无联系方式
+  'StreetTech Direct': ['domain', 'contact'],
+  // 最微妙：看起来全正常（https/联系方式齐全/高评分），仅无退货政策 → 唯一破绽
   'TechArena Direct': ['return'],
 };
 
@@ -119,6 +122,18 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
       lastNotificationId.current = newest.id;
       playNotificationSound();
     }
+  }, [notifications]);
+
+  // SMS 自动消失：显示 7.4s 后切换向上滑出动画，0.6s 动画结束后（8s 时）由 hook 移除该条。
+  const [leavingNotifId, setLeavingNotifId] = useState<number | null>(null);
+  useEffect(() => {
+    const newest = notifications[0];
+    if (!newest) return;
+    const t = setTimeout(() => {
+      // 只对当前显示的最新通知触发离开动画（旧的触发会被新通知 effect 清理）
+      setLeavingNotifId(newest.id);
+    }, 7400);
+    return () => clearTimeout(t);
   }, [notifications]);
 
   // Live clock for the phone status bar — synced on every user interaction.
@@ -619,7 +634,8 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                     <span className="font-mono text-indigo-600 font-bold">{site.prices[cardProduct]}</span>
                     <span>•</span>
                     <span>{site.shippingLabel}</span>
-                    {!site.isVerified && (
+                    {/* 不统一打上 Best Price：只有有 fakeOriginalPrices 的商家才显示低价线索（差异化，避免一眼看穿） */}
+                    {site.fakeOriginalPrices?.[cardProduct] && (
                       <><span>•</span><span className="text-red-500 font-bold">Best Price</span></>
                     )}
                     {site.isVerified && (
@@ -661,8 +677,9 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
           <div className="absolute top-14 inset-x-3 z-[110] pointer-events-none">
             {notifications.length > 0 && (() => {
               const n = notifications[0];
+              const leaving = n.id === leavingNotifId;
               return (
-                <div key={n.id} className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl p-4 border border-slate-200 pointer-events-auto animate-in slide-in-from-top duration-500">
+                <div key={n.id} className={`bg-white/95 backdrop-blur-md shadow-xl rounded-2xl p-4 border border-slate-200 pointer-events-auto ${leaving ? 'animate-out slide-out-to-top ease-in duration-600' : 'animate-in slide-in-from-top ease-out duration-500'}`}>
                   <div className="flex justify-between items-center mb-1">
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white"><Smartphone size={10} /></div>

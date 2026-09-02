@@ -148,6 +148,10 @@ export const useRetailDemolition = () => {
     setTimeout(() => {
       const id = Math.random();
       setNotifications(prev => [{ id, title, body }, ...prev]);
+      // 8 秒后自动消失（配合向上滑出动画）
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, 8000);
     }, delay);
   };
 

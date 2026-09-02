@@ -17,14 +17,14 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
   const [currentHint, setCurrentHint] = useState<HintContent | null>(null);
   const [shaking, setShaking] = useState(false);
 
-  // Render a task label, bolding the target item with a glowing "breathing" effect.
-  const renderTask = (task: string, taskItem?: string): React.ReactNode => {
-    if (!taskItem) return task;
-    const idx = task.indexOf(taskItem);
-    if (idx === -1) return task;
+  // Highlight the target item name inside a piece of text with a glowing "breathing" effect.
+  const renderWithGlow = (text: string, taskItem?: string): React.ReactNode => {
+    if (!taskItem) return text;
+    const idx = text.indexOf(taskItem);
+    if (idx === -1) return text;
     return (
       <>
-        {task.slice(0, idx)}
+        {text.slice(0, idx)}
         <span
           style={{
             fontWeight: 700,
@@ -33,9 +33,9 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
             animation: 'hintTaskBreath 2.2s ease-in-out infinite',
           }}
         >
-          {task.slice(idx, idx + taskItem.length)}
+          {text.slice(idx, idx + taskItem.length)}
         </span>
-        {task.slice(idx + taskItem.length)}
+        {text.slice(idx + taskItem.length)}
         <style>{`
           @keyframes hintTaskBreath {
             0%, 100% { opacity: 1; text-shadow: 0 0 6px ${ARCADE_COLORS.yellow}, 0 0 14px ${ARCADE_COLORS.yellow}; }
@@ -106,7 +106,7 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
                 font="pressstart2p"
                 sx={{ display: 'block', mb: 1, fontSize: '0.6rem', lineHeight: 1.5 }}
               >
-                {currentHint.task ? renderTask(currentHint.task, currentHint.taskItem) : '▶ NEXT STEP'}
+                {currentHint.task || '▶ NEXT STEP'}
               </ArcadeTypography>
               <ArcadeTypography
                 arcadeColor="white"
@@ -115,7 +115,7 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
                 glow={false}
                 sx={{ display: 'block', fontSize: '0.9rem', lineHeight: 1.5 }}
               >
-                {currentHint.nextStep}
+                {renderWithGlow(currentHint.nextStep, currentHint.taskItem)}
               </ArcadeTypography>
             </div>
           )}
