@@ -94,7 +94,7 @@ const QuizComponent = ({ onAnswer, onFinished }: QuizComponentProps) => {
           <button
             key={option.id}
             onClick={() => handleSelect(option.id)}
-            className={`w-full text-left p-4 rounded-xl border-2 text-sm transition-all ${
+            className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${
               selectedOptionId
                 ? 'border-2 border-slate-300 opacity-60'
                 : 'border-2 border-slate-300 hover:border-indigo-600'
@@ -102,7 +102,7 @@ const QuizComponent = ({ onAnswer, onFinished }: QuizComponentProps) => {
             disabled={!!selectedOptionId}
           >
             <div className="font-bold text-slate-900">{option.text}</div>
-            <div className="text-xs text-slate-500 mt-1">{option.desc}</div>
+            <div className="text-[10px] text-slate-500 mt-1">{option.desc}</div>
           </button>
         ))}
       </div>
