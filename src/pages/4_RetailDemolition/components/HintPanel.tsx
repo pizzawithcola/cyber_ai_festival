@@ -70,15 +70,8 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
       {currentHint && currentHint.body && !children && (
         <ArcadePanel accent="yellow" sx={{ mb: 2, p: 3 }}>
           <div className="flex items-center gap-3 mb-4">
-            <div
-              className="w-12 h-12 flex items-center justify-center shrink-0"
-              style={{
-                border: `2px solid ${iconColor}`,
-                color: iconColor,
-                boxShadow: `0 0 12px ${iconColor}60, inset 0 0 12px ${iconColor}20`,
-              }}
-            >
-              <IconComp size={22} />
+            <div className="w-6 h-6 flex items-center justify-center shrink-0" style={{ color: iconColor }}>
+              <IconComp size={24} />
             </div>
             <ArcadeTypography
               arcadeColor="yellow"
@@ -89,15 +82,6 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
               {currentHint.title}
             </ArcadeTypography>
           </div>
-          <ArcadeTypography
-            arcadeColor="white"
-            arcadeSize="sm"
-            font="electrolize"
-            glow={false}
-            sx={{ display: 'block', fontSize: '0.95rem', lineHeight: 1.55, letterSpacing: '0.3px', mb: 2.5 }}
-          >
-            {currentHint.body}
-          </ArcadeTypography>
           {currentHint.nextStep && (
             <div
               style={{
