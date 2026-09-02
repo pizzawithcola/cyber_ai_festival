@@ -107,7 +107,7 @@ export const useRetailDemolition = () => {
   const [agentOrderStopped, setAgentOrderStopped] = useState(false); // 是否已截停
   const [hintShakeTick, setHintShakeTick] = useState(0); // 选错商品时递增，触发 HintPanel 抖动
 
-  // ── Scoring（加分制，总分 100 = Edu 20 + Manual 30 + Agent 30 + Quiz 20）──
+  // ── Scoring（加分制，理论最大 110，总分 cap 100 = Edu 20 + Manual 40(30+10bonus) + Agent 30 + Quiz 20）──
   const [score, setScore] = useState(() =>
     typeof window !== 'undefined' && sessionStorage.getItem('retail_edu_done') === '1' ? 20 : 0
   );
@@ -285,8 +285,8 @@ export const useRetailDemolition = () => {
     setManualCheckoutDone(true);
     setGameState('manual-confirmation');
 
-    // 手动购买成功 → Manual Shopping 块 +20
-    applyScoreChange(20, 'manual_purchase_success', {});
+    // 手动购买成功 → Manual Shopping 块 +30
+    applyScoreChange(30, 'manual_purchase_success', {});
 
     // 购买成功：先播 Apple Pay 支付成功音，随后短信通知到达时由 PhoneSimulator 播短信提示音
     playApplePaySuccessSound();

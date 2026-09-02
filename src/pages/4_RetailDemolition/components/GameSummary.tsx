@@ -58,8 +58,8 @@ const GameSummary: React.FC<GameSummaryProps> = ({ score, scoreEvents }) => {
         earned: sumOf(['manual_purchase_success', 'flagged_malicious_listing']),
         max: 30,
         items: [
-          { label: 'Purchase an item successfully', earned: purchase, max: 20 },
-          { label: 'Correctly reported a suspicious item', earned: flagCorrect, max: 10 },
+          { label: 'Purchase an item successfully', earned: purchase, max: 30 },
+          { label: 'Bonus: correctly reported a suspicious item', earned: flagCorrect, max: 10 },
         ],
       },
       {
