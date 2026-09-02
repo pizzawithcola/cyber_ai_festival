@@ -77,10 +77,10 @@ const RetailDemolitionGame = () => {
       <ArcadeBackground />
 
       {/* 手机 + 提示框：以手机几何中心为锚点，绝对定位钉在视口正中（不依赖 flex 亚像素计算）；
-          整体下移 10vh，为上方提示框多留一点空间 */}
+          整体下移 5vh，为上方提示框多留一点空间 */}
       <div
         className="absolute left-1/2 top-1/2"
-        style={{ transform: 'translate(-50%, calc(-50% + 10vh))' }}
+        style={{ transform: 'translate(-50%, calc(-50% + 5vh))' }}
       >
         <div className="relative" style={{ width: 375 * phoneScale, height: 780 * phoneScale }}>
           {/* 提示框：锚定在手机顶部上方 32px，宽度 = 手机宽度（left/right 拉伸），水平居中 */}

@@ -305,6 +305,8 @@ export interface HintContent {
   title: string;
   body: string;
   nextStep?: string;
+  // Task label shown in place of "NEXT STEP" (e.g. "Task 1: Buy any Product with Manual Mode (0/1)")
+  task?: string;
   icon?: 'info' | 'warning' | 'success' | 'education' | 'shield';
 }
 
@@ -468,14 +470,6 @@ export const HINT_CONTENT: Record<string, HintContent> = {
     title: 'ATTACK CONFIRMED',
     body: 'You just saw the malware — invisible HTML telling the agent to wire money to a Russian account. The agent treated it as authoritative instructions because it can\'t distinguish embedded text from real commands. This is the core vulnerability of agentic AI today.',
     nextStep: 'Click "Start Incident Analysis" to reflect on what happened.',
-    icon: 'education',
-  },
-
-  // Prompt discovery (after incident)
-  'prompt-discovery': {
-    title: 'The Attack Revealed',
-    body: 'This is what the agent "read" on that website — hidden malware that overrode its original task. The text is invisible to humans but parsed by AI agents.',
-    nextStep: 'Continue to the security quiz.',
     icon: 'education',
   },
 

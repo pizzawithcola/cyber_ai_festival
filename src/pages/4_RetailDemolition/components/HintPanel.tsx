@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Info, AlertTriangle, CheckCircle, BookOpen, Shield } from 'lucide-react';
+import { Info } from 'lucide-react';
 import type { HintContent } from '../constants/gameData';
 import { ArcadeTypography } from '../../../components/ui';
 import { ARCADE_COLORS } from '../../../theme/theme';
@@ -11,22 +11,6 @@ interface HintPanelProps {
   // 递增信号：值变化时面板抖动一次（选错商品提醒）
   shakeSignal?: number;
 }
-
-const ICON_MAP = {
-  info: Info,
-  warning: AlertTriangle,
-  success: CheckCircle,
-  education: BookOpen,
-  shield: Shield,
-};
-
-const ICON_COLOR: Record<string, string> = {
-  info: ARCADE_COLORS.yellow,
-  warning: ARCADE_COLORS.red,
-  success: ARCADE_COLORS.lime,
-  education: ARCADE_COLORS.yellow,
-  shield: ARCADE_COLORS.yellow,
-};
 
 const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) => {
   const [visible, setVisible] = useState(false);
@@ -51,12 +35,9 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
     } else {
       setVisible(false);
     }
-  }, [hint?.title, hint?.body, hint?.nextStep, hint]);
+  }, [hint?.title, hint?.body, hint?.nextStep, hint?.task, hint]);
 
   if (!currentHint && !children) return null;
-
-  const IconComp = currentHint?.icon ? ICON_MAP[currentHint.icon] : Info;
-  const iconColor = currentHint?.icon ? ICON_COLOR[currentHint.icon] : ARCADE_COLORS.yellow;
 
   return (
     <div
@@ -70,8 +51,8 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
       {currentHint && currentHint.body && !children && (
         <ArcadePanel accent="yellow" sx={{ mb: 2, p: 3 }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-6 h-6 flex items-center justify-center shrink-0" style={{ color: iconColor }}>
-              <IconComp size={24} />
+            <div className="w-6 h-6 flex items-center justify-center shrink-0" style={{ color: ARCADE_COLORS.yellow }}>
+              <Info size={24} />
             </div>
             <ArcadeTypography
               arcadeColor="yellow"
@@ -96,7 +77,7 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
                 font="pressstart2p"
                 sx={{ display: 'block', mb: 1, fontSize: '0.6rem' }}
               >
-                ▶ NEXT STEP
+                {currentHint.task || '▶ NEXT STEP'}
               </ArcadeTypography>
               <ArcadeTypography
                 arcadeColor="white"

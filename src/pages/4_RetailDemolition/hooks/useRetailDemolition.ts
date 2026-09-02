@@ -157,76 +157,85 @@ export const useRetailDemolition = () => {
   };
 
   // ── Hint Logic ──
-  const withQuestProgress = (hint: HintContent): HintContent => {
-    if (browseQuestComplete) return hint;
-    const tag = `[Purchase ${browsedCount}/${BROWSE_QUEST_TARGET}] Buy any item using Manual Mode.`;
-    return {
-      ...hint,
-      nextStep: hint.nextStep ? `${tag} ${hint.nextStep}` : tag,
-    };
-  };
+  // Wrap a hint with its stage title + task label (replaces the old "[Purchase x/y]" prefix).
+  const withStage = (hint: HintContent, title: string, task?: string): HintContent => ({
+    ...hint,
+    title,
+    task,
+  });
+
+  const taskLabel = (name: string, done: boolean): string => `${name} (${done ? 1 : 0}/1)`;
+  const manualTask = (done: boolean) => taskLabel('Task 1: Buy any Product with Manual Mode', done);
+  const agentTask2 = (done: boolean) => taskLabel('Task 2: Buy RTX 4090 with Agent Mode', done);
+  const agentTask3 = (done: boolean) => taskLabel('Task 3: Buy Airpods Pro with Agent Mode', done);
 
   const getHint = (): HintContent | null => {
     switch (gameState) {
       case 'intro':
         return null;
       case 'billing':
-        return HINT_CONTENT['billing'];
+        return withStage(HINT_CONTENT['billing'], 'Set up Your Account');
       case 'manual-storefront':
-        return withQuestProgress(HINT_CONTENT['manual-storefront']);
+        return withStage(HINT_CONTENT['manual-storefront'], 'Manual Shopping Mode', manualTask(browseQuestComplete));
       case 'manual-product': {
         const retailer = RETAILERS.find(r => r.name === manualRetailerName);
         if (injectionFound && retailer?.isMalicious) {
-          return withQuestProgress(HINT_CONTENT['manual-found-injection']);
+          return withStage(HINT_CONTENT['manual-found-injection'], 'Manual Shopping Mode', manualTask(browseQuestComplete));
         }
         const base = retailer?.isMalicious
           ? HINT_CONTENT['manual-product-suspicious']
           : HINT_CONTENT['manual-product-safe'];
-        return withQuestProgress(base);
+        return withStage(base, 'Manual Shopping Mode', manualTask(browseQuestComplete));
       }
       case 'manual-checkout': {
         const checkoutRetailer = cart.length > 0 ? cart[0].retailer : null;
-        if (checkoutRetailer?.isMalicious) return HINT_CONTENT['manual-checkout-blocked'];
-        return HINT_CONTENT['manual-checkout'];
+        if (checkoutRetailer?.isMalicious) {
+          return withStage(HINT_CONTENT['manual-checkout-blocked'], 'Manual Shopping Mode', manualTask(browseQuestComplete));
+        }
+        return withStage(HINT_CONTENT['manual-checkout'], 'Manual Shopping Mode', manualTask(browseQuestComplete));
       }
       case 'manual-confirmation':
-        return HINT_CONTENT['manual-confirmation'];
+        return withStage(HINT_CONTENT['manual-confirmation'], 'Manual Shopping Mode', manualTask(true));
       case 'transition':
-        return HINT_CONTENT['transition'];
+        return withStage(HINT_CONTENT['transition'], 'Agent Mode', agentTask2(false));
       case 'agent-chat':
         // Incident takes priority — always show breach hint after a malicious purchase,
         // regardless of whether injection was found earlier
         if (agentMaliciousDone && injectionFound) {
-          return HINT_CONTENT['agent-incident-investigated'];
+          return withStage(HINT_CONTENT['agent-incident-investigated'], 'Agent Mode', agentTask3(true));
         }
         if (agentMaliciousDone) {
-          return HINT_CONTENT['agent-incident'];
+          return withStage(HINT_CONTENT['agent-incident'], 'Agent Mode', agentTask3(true));
         }
         if (agentSafePurchaseDone) {
-          return HINT_CONTENT['agent-safe-complete'];
+          return withStage(HINT_CONTENT['agent-safe-complete'], 'Agent Mode', agentTask2(true));
         }
-        if (isSearching) return HINT_CONTENT['agent-scanning'];
+        if (isSearching) {
+          return withStage(HINT_CONTENT['agent-scanning'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false));
+        }
         // Only show "agent-retailers" hint if the LAST bot message shows retailers
         // (i.e. agent just presented options and is awaiting selection)
         if (messages.length > 0 && messages[messages.length - 1].showRetailers) {
-          return HINT_CONTENT['agent-retailers'];
+          return withStage(HINT_CONTENT['agent-retailers'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false));
         }
         // 两关引导：用户根据提示自行选择要买的产品
-        return agentRound === 1 ? HINT_CONTENT['agent-round1-guide'] : HINT_CONTENT['agent-round2-guide'];
+        return agentRound === 1
+          ? withStage(HINT_CONTENT['agent-round1-guide'], 'Agent Mode', agentTask2(false))
+          : withStage(HINT_CONTENT['agent-round2-guide'], 'Agent Mode', agentTask3(false));
       case 'agent-browse':
         // Post-incident inspection: user navigated back to malicious site to investigate
         if (agentMaliciousDone && !injectionFound) {
-          return HINT_CONTENT['agent-inspect-site'];
+          return withStage(HINT_CONTENT['agent-inspect-site'], 'Agent Mode', agentTask3(true));
         }
-        return HINT_CONTENT['agent-automating'];
+        return withStage(HINT_CONTENT['agent-automating'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false));
       case 'agent-confirmation':
         // After a safe purchase, on a malicious confirmation, switch to educational hint
         if (agentSafePurchaseDone && agentConfirmRetailer?.isMalicious) {
-          return HINT_CONTENT['agent-confirmation-educational'];
+          return withStage(HINT_CONTENT['agent-confirmation-educational'], 'Agent Mode', agentTask3(false));
         }
-        return HINT_CONTENT['agent-confirmation'];
+        return withStage(HINT_CONTENT['agent-confirmation'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false));
       case 'quiz':
-        return HINT_CONTENT['quiz'];
+        return withStage(HINT_CONTENT['quiz'], 'Agent Mode', agentTask3(true));
       case 'summary':
         return HINT_CONTENT['summary'];
       default:
