@@ -165,9 +165,9 @@ export const useRetailDemolition = () => {
   });
 
   const taskLabel = (name: string, done: boolean): string => `${name} (${done ? 1 : 0}/1)`;
-  const manualTask = (done: boolean) => taskLabel('Task 1: Buy any Product with Manual Mode', done);
-  const agentTask2 = (done: boolean) => taskLabel('Task 2: Buy RTX 4090 with Agent Mode', done);
-  const agentTask3 = (done: boolean) => taskLabel('Task 3: Buy Airpods Pro with Agent Mode', done);
+  const manualTask = (done: boolean) => taskLabel('Task 1: Buy any Product', done);
+  const agentTask2 = (done: boolean) => taskLabel('Task 2: Buy RTX 4090', done);
+  const agentTask3 = (done: boolean) => taskLabel('Task 3: Buy Airpods Pro', done);
 
   const getHint = (): HintContent | null => {
     switch (gameState) {
