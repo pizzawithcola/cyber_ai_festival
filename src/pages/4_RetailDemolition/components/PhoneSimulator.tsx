@@ -414,11 +414,11 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                       </button>
                     </div>
                   )}
-                  {m.orderSuccess && !agentOrderStopped && (
-                    <div className="mt-4">
+                  {m.orderSuccess && !agentOrderStopped && m.orderSuccess.round === 2 && (
+                    <div className="mt-3">
                       <button
                         onClick={() => onAgentStopOrder(m.orderSuccess!.productName, m.orderSuccess!.site, m.orderSuccess!.price)}
-                        className="w-full py-3 bg-white text-red-600 border-2 border-red-500 rounded-xl font-bold shadow-md active:scale-95 transition-transform"
+                        className="w-full py-1.5 bg-slate-50 text-red-400 border border-red-200 rounded-lg text-[11px] font-semibold opacity-80 active:scale-95 transition-transform"
                       >
                         STOP ORDER
                       </button>

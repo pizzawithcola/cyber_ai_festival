@@ -397,7 +397,8 @@ export const useRetailDemolition = () => {
       setAgentOrderSuccessAt(Date.now());
       setAgentOrderStopped(false);
       if (agentRound === 1) {
-        // Round 1：支付成功 → 订单短信确认，不截停则 4.5s 后自动进入第二关
+        // Round 1：支付成功 → 订单短信确认。Round 2 气泡紧随成功气泡弹出（短延时），
+        // 避免玩家在等待窗口盯着 STOP ORDER 按钮误触（Round 1 无需截停）。
         pushSMS("Order Confirmed", `Your ${productName} from ${site.name} (${price}) is on the way.`, 2500);
         setTimeout(() => {
           setAgentRound(2);
@@ -406,8 +407,8 @@ export const useRetailDemolition = () => {
               role: 'bot',
               text: `Round 2: Now buy the ${AGENT_ROUND_PRODUCTS[2]} — select it from the suggestions below.`,
             }]);
-          }, 600);
-        }, 4500);
+          }, 350);
+        }, 600);
       } else {
         // Round 2：交易完成 → 异地登录短信出现后开始截停计时（用户收到短信才行动）
         setTimeout(() => {
