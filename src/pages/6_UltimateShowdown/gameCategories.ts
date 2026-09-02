@@ -16,13 +16,14 @@ export const BALANCE_STORAGE_KEY = 'cyber_ai_ultimate_balance';
 
 export type BalanceConfig = Record<GameCategoryKey, number>;
 
+// Default per-game draw = 12 questions total (5 normal categories x2 + bonus x2).
 export const DEFAULT_BALANCE: BalanceConfig = {
-  ai: 1,
+  ai: 2,
   hallucination: 2,
   data: 2,
   agent: 2,
   phishing: 2,
-  bonus: 1,
+  bonus: 2,
 };
 
 export function loadBalance(): BalanceConfig | null {

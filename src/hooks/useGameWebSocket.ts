@@ -23,6 +23,8 @@ export interface QuestionData {
   text: string;
   options: OptionItem[];
   time_limit: number;
+  score?: number;
+  multiplier?: number;
 }
 
 export interface ResultData {

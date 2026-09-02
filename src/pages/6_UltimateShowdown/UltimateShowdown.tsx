@@ -388,8 +388,19 @@ const QuestionView: React.FC<{
     <Box sx={{ width: '100%', maxWidth: 860 }}>
       {/* Top bar */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.75rem', color: `${ARCADE_COLORS.white}50` }}>
-          Q {question.number} / {question.total}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.75rem', color: `${ARCADE_COLORS.white}50` }}>
+            Q {question.number} / {question.total}
+          </Box>
+          {question.multiplier && question.multiplier > 1 && (
+            <Box sx={{
+              fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', px: 1.5, py: 0.5,
+              color: '#050510', backgroundColor: ARCADE_COLORS.yellow,
+              borderRadius: '4px', boxShadow: `0 0 12px ${ARCADE_COLORS.yellow}70`,
+            }}>
+              ×{question.multiplier} BONUS
+            </Box>
+          )}
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{
