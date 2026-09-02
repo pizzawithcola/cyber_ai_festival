@@ -142,6 +142,10 @@ export const useRetailDemolition = () => {
 
   // ── Refs ──
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  // 截停状态镜像（供 8 秒超时定时器回调判断是否已截停，避免闭包捕获旧值）
+  const agentStoppedRef = useRef(false);
+  // Round 2 异地登录后的 8 秒"资金被盗"定时器句柄（截停成功后清除）
+  const compromiseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Utilities ──
   const pushSMS = (title: string, body: string, delay = 0) => {
@@ -416,14 +420,24 @@ export const useRetailDemolition = () => {
           setHasBeenPromptedForManual(true);
           // 异地登录短信 = 截停计时起点
           setAgentOrderSuccessAt(Date.now());
+          agentStoppedRef.current = false;
           pushSMS("Security Alert", "New login detected on Bank of America: St. Petersburg, RU", 0);
           pushSMS("Bank Alert", "Your account has been charged $12,450.00 at 'Asset-Recovery-Global'", 2500);
-          // 异地登录 8 秒后仍无截停反馈 → 账户被黑气泡 + 跳 Quiz
-          setTimeout(() => {
-            setMessages(prev => [...prev, {
-              role: 'bot',
-              text: "⚠️ Your account has been compromised! Unauthorized transactions detected. This happened because the agent was hijacked by malware hidden on the website.",
-            }]);
+          // 异地登录 8 秒后仍未截停 → 资金被盗气泡 + 跳 Quiz；若已截停则显示"还好你截停了"
+          compromiseTimerRef.current = setTimeout(() => {
+            if (agentStoppedRef.current) {
+              // 已成功截停 → 正面结局
+              setMessages(prev => [...prev, {
+                role: 'bot',
+                text: "✅ Good thing you stopped it in time! Your money was protected. The agent was still hijacked by hidden malware — staying alert saved your account.",
+              }]);
+            } else {
+              // 未截停 → 资金已被盗取
+              setMessages(prev => [...prev, {
+                role: 'bot',
+                text: "⚠️ Your account has been compromised and the money was taken. The hidden malware hijacked your agent and drained your bank account.",
+              }]);
+            }
             setAgentIncidentNotificationsDone(true);
           }, 8000);
         }, 2500);
@@ -476,7 +490,20 @@ export const useRetailDemolition = () => {
       }]);
       setAgentMaliciousDone(true);
       setHasBeenPromptedForManual(true);
+      // 已截停 → 8 秒定时器改判为正面结局；清除定时器并立刻提示
+      agentStoppedRef.current = true;
+      if (compromiseTimerRef.current) {
+        clearTimeout(compromiseTimerRef.current);
+        compromiseTimerRef.current = null;
+      }
       pushSMS("Order Stopped", `✅ Order stopped — the ${price} fraudulent charge at ${site.name} was blocked and refunded.`, 800);
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          role: 'bot',
+          text: "✅ Nice save — you stopped it before the money left your account. Your quick reaction protected your funds from the hidden malware.",
+        }]);
+        setAgentIncidentNotificationsDone(true);
+      }, 1200);
     }
   };
 
@@ -518,11 +545,11 @@ export const useRetailDemolition = () => {
       pushSMS("Security Alert", "New login detected on Bank of America: St. Petersburg, RU", 3000);
       pushSMS("Bank Alert", "Your account has been charged $12,450.00 at 'Asset-Recovery-Global'", 5000);
 
-      // Security Alert（3000ms）后 8 秒无反馈 → 账户被黑气泡 + 跳 Quiz
+      // Security Alert（3000ms）后 8 秒 → 资金已被盗取气泡 + 跳 Quiz
       setTimeout(() => {
         setMessages(prev => [...prev, {
           role: 'bot',
-          text: "⚠️ Your account has been compromised! Unauthorized transactions detected. This happened because the agent was hijacked by malware hidden on the website.",
+          text: "⚠️ Your account has been compromised and the money was taken. The hidden malware hijacked your agent and drained your bank account.",
         }]);
         setAgentIncidentNotificationsDone(true);
       }, 11000);
