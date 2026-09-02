@@ -17,6 +17,35 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
   const [currentHint, setCurrentHint] = useState<HintContent | null>(null);
   const [shaking, setShaking] = useState(false);
 
+  // Render a task label, bolding the target item with a glowing "breathing" effect.
+  const renderTask = (task: string, taskItem?: string): React.ReactNode => {
+    if (!taskItem) return task;
+    const idx = task.indexOf(taskItem);
+    if (idx === -1) return task;
+    return (
+      <>
+        {task.slice(0, idx)}
+        <span
+          style={{
+            fontWeight: 700,
+            color: '#fff8e0',
+            textShadow: `0 0 6px ${ARCADE_COLORS.yellow}, 0 0 14px ${ARCADE_COLORS.yellow}`,
+            animation: 'hintTaskBreath 2.2s ease-in-out infinite',
+          }}
+        >
+          {task.slice(idx, idx + taskItem.length)}
+        </span>
+        {task.slice(idx + taskItem.length)}
+        <style>{`
+          @keyframes hintTaskBreath {
+            0%, 100% { opacity: 1; text-shadow: 0 0 6px ${ARCADE_COLORS.yellow}, 0 0 14px ${ARCADE_COLORS.yellow}; }
+            50% { opacity: 0.55; text-shadow: 0 0 2px ${ARCADE_COLORS.yellow}88, 0 0 6px ${ARCADE_COLORS.yellow}88; }
+          }
+        `}</style>
+      </>
+    );
+  };
+
   useEffect(() => {
     if (!shakeSignal) return;
     setShaking(true);
@@ -75,9 +104,9 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
                 arcadeColor="yellow"
                 arcadeSize="xs"
                 font="pressstart2p"
-                sx={{ display: 'block', mb: 1, fontSize: '0.6rem' }}
+                sx={{ display: 'block', mb: 1, fontSize: '0.6rem', lineHeight: 1.5 }}
               >
-                {currentHint.task || '▶ NEXT STEP'}
+                {currentHint.task ? renderTask(currentHint.task, currentHint.taskItem) : '▶ NEXT STEP'}
               </ArcadeTypography>
               <ArcadeTypography
                 arcadeColor="white"

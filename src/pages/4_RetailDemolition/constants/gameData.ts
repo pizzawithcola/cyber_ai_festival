@@ -305,8 +305,10 @@ export interface HintContent {
   title: string;
   body: string;
   nextStep?: string;
-  // Task label shown in place of "NEXT STEP" (e.g. "Task 1: Buy any Product with Manual Mode (0/1)")
+  // Task label shown in place of "NEXT STEP" (e.g. "Task 1: Buy any Product (0/1)")
   task?: string;
+  // The item name inside the task label — rendered bold with a glowing breath effect
+  taskItem?: string;
   icon?: 'info' | 'warning' | 'success' | 'education' | 'shield';
 }
 

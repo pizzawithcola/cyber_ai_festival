@@ -158,10 +158,11 @@ export const useRetailDemolition = () => {
 
   // ── Hint Logic ──
   // Wrap a hint with its stage title + task label (replaces the old "[Purchase x/y]" prefix).
-  const withStage = (hint: HintContent, title: string, task?: string): HintContent => ({
+  const withStage = (hint: HintContent, title: string, task?: string, taskItem?: string): HintContent => ({
     ...hint,
     title,
     task,
+    ...(taskItem ? { taskItem } : {}),
   });
 
   const taskLabel = (name: string, done: boolean): string => `${name} (${done ? 1 : 0}/1)`;
@@ -176,66 +177,66 @@ export const useRetailDemolition = () => {
       case 'billing':
         return withStage(HINT_CONTENT['billing'], 'Set up Your Account');
       case 'manual-storefront':
-        return withStage(HINT_CONTENT['manual-storefront'], 'Manual Shopping Mode', manualTask(browseQuestComplete));
+        return withStage(HINT_CONTENT['manual-storefront'], 'Manual Shopping Mode', manualTask(browseQuestComplete), 'any Product');
       case 'manual-product': {
         const retailer = RETAILERS.find(r => r.name === manualRetailerName);
         if (injectionFound && retailer?.isMalicious) {
-          return withStage(HINT_CONTENT['manual-found-injection'], 'Manual Shopping Mode', manualTask(browseQuestComplete));
+          return withStage(HINT_CONTENT['manual-found-injection'], 'Manual Shopping Mode', manualTask(browseQuestComplete), 'any Product');
         }
         const base = retailer?.isMalicious
           ? HINT_CONTENT['manual-product-suspicious']
           : HINT_CONTENT['manual-product-safe'];
-        return withStage(base, 'Manual Shopping Mode', manualTask(browseQuestComplete));
+        return withStage(base, 'Manual Shopping Mode', manualTask(browseQuestComplete), 'any Product');
       }
       case 'manual-checkout': {
         const checkoutRetailer = cart.length > 0 ? cart[0].retailer : null;
         if (checkoutRetailer?.isMalicious) {
-          return withStage(HINT_CONTENT['manual-checkout-blocked'], 'Manual Shopping Mode', manualTask(browseQuestComplete));
+          return withStage(HINT_CONTENT['manual-checkout-blocked'], 'Manual Shopping Mode', manualTask(browseQuestComplete), 'any Product');
         }
-        return withStage(HINT_CONTENT['manual-checkout'], 'Manual Shopping Mode', manualTask(browseQuestComplete));
+        return withStage(HINT_CONTENT['manual-checkout'], 'Manual Shopping Mode', manualTask(browseQuestComplete), 'any Product');
       }
       case 'manual-confirmation':
-        return withStage(HINT_CONTENT['manual-confirmation'], 'Manual Shopping Mode', manualTask(true));
+        return withStage(HINT_CONTENT['manual-confirmation'], 'Manual Shopping Mode', manualTask(true), 'any Product');
       case 'transition':
-        return withStage(HINT_CONTENT['transition'], 'Agent Mode', agentTask2(false));
+        return withStage(HINT_CONTENT['transition'], 'Agent Mode', agentTask2(false), 'RTX 4090');
       case 'agent-chat':
         // Incident takes priority — always show breach hint after a malicious purchase,
         // regardless of whether injection was found earlier
         if (agentMaliciousDone && injectionFound) {
-          return withStage(HINT_CONTENT['agent-incident-investigated'], 'Agent Mode', agentTask3(true));
+          return withStage(HINT_CONTENT['agent-incident-investigated'], 'Agent Mode', agentTask3(true), 'Airpods Pro');
         }
         if (agentMaliciousDone) {
-          return withStage(HINT_CONTENT['agent-incident'], 'Agent Mode', agentTask3(true));
+          return withStage(HINT_CONTENT['agent-incident'], 'Agent Mode', agentTask3(true), 'Airpods Pro');
         }
         if (agentSafePurchaseDone) {
-          return withStage(HINT_CONTENT['agent-safe-complete'], 'Agent Mode', agentTask2(true));
+          return withStage(HINT_CONTENT['agent-safe-complete'], 'Agent Mode', agentTask2(true), 'RTX 4090');
         }
         if (isSearching) {
-          return withStage(HINT_CONTENT['agent-scanning'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false));
+          return withStage(HINT_CONTENT['agent-scanning'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false), agentRound === 1 ? 'RTX 4090' : 'Airpods Pro');
         }
         // Only show "agent-retailers" hint if the LAST bot message shows retailers
         // (i.e. agent just presented options and is awaiting selection)
         if (messages.length > 0 && messages[messages.length - 1].showRetailers) {
-          return withStage(HINT_CONTENT['agent-retailers'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false));
+          return withStage(HINT_CONTENT['agent-retailers'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false), agentRound === 1 ? 'RTX 4090' : 'Airpods Pro');
         }
         // 两关引导：用户根据提示自行选择要买的产品
         return agentRound === 1
-          ? withStage(HINT_CONTENT['agent-round1-guide'], 'Agent Mode', agentTask2(false))
-          : withStage(HINT_CONTENT['agent-round2-guide'], 'Agent Mode', agentTask3(false));
+          ? withStage(HINT_CONTENT['agent-round1-guide'], 'Agent Mode', agentTask2(false), 'RTX 4090')
+          : withStage(HINT_CONTENT['agent-round2-guide'], 'Agent Mode', agentTask3(false), 'Airpods Pro');
       case 'agent-browse':
         // Post-incident inspection: user navigated back to malicious site to investigate
         if (agentMaliciousDone && !injectionFound) {
-          return withStage(HINT_CONTENT['agent-inspect-site'], 'Agent Mode', agentTask3(true));
+          return withStage(HINT_CONTENT['agent-inspect-site'], 'Agent Mode', agentTask3(true), 'Airpods Pro');
         }
-        return withStage(HINT_CONTENT['agent-automating'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false));
+        return withStage(HINT_CONTENT['agent-automating'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false), agentRound === 1 ? 'RTX 4090' : 'Airpods Pro');
       case 'agent-confirmation':
         // After a safe purchase, on a malicious confirmation, switch to educational hint
         if (agentSafePurchaseDone && agentConfirmRetailer?.isMalicious) {
-          return withStage(HINT_CONTENT['agent-confirmation-educational'], 'Agent Mode', agentTask3(false));
+          return withStage(HINT_CONTENT['agent-confirmation-educational'], 'Agent Mode', agentTask3(false), 'Airpods Pro');
         }
-        return withStage(HINT_CONTENT['agent-confirmation'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false));
+        return withStage(HINT_CONTENT['agent-confirmation'], 'Agent Mode', agentRound === 1 ? agentTask2(false) : agentTask3(false), agentRound === 1 ? 'RTX 4090' : 'Airpods Pro');
       case 'quiz':
-        return withStage(HINT_CONTENT['quiz'], 'Agent Mode', agentTask3(true));
+        return withStage(HINT_CONTENT['quiz'], 'Agent Mode', agentTask3(true), 'Airpods Pro');
       case 'summary':
         return HINT_CONTENT['summary'];
       default:
