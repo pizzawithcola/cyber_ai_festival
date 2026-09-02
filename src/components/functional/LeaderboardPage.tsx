@@ -26,7 +26,7 @@ interface RankingData {
 const SCORE_TYPES = [
   { key: 'total', label: 'TOTAL' },
   { key: 'game1', label: 'HALLUCINATE' },
-  { key: 'game2', label: 'DATA SHADOWS' },
+  { key: 'game2', label: 'DATA' },
   { key: 'game3', label: 'RETAIL' },
   { key: 'game4', label: 'PHISHING' },
   { key: 'game5', label: 'FINAL' },
@@ -79,6 +79,20 @@ const LeaderboardPage: React.FC = () => {
   const [rotationEnabled, setRotationEnabled] = useState(true);
   const rotationTimerRef = useRef<number | null>(null);
   const user = getStoredUser();
+
+  // Landscape + short viewport → split the top-10 into two columns so no vertical scroll is needed
+  const [twoColumns, setTwoColumns] = useState(false);
+  useEffect(() => {
+    const compute = () => {
+      const isLandscape = window.innerWidth > window.innerHeight;
+      // Rough estimate: header/toggles ~220px + ~34px/row * 10 rows ≈ 560px needed
+      const tooShort = window.innerHeight < 580;
+      setTwoColumns(isLandscape && tooShort);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
 
   // Dynamic theme color based on selected game
   const themeColor = SCORE_TYPE_COLORS[scoreType] || ARCADE_COLORS.cyan;
@@ -249,17 +263,17 @@ const LeaderboardPage: React.FC = () => {
       </Box>
 
       {/* Game Selector */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 1, mb: 4, px: 2 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0.95, mb: 4, px: 2, transform: 'scale(0.95)' }}>
         {SCORE_TYPES.map((type) => (
           <Box
             key={type.key}
             onClick={() => setScoreType(type.key)}
             sx={{
-              px: 2,
-              py: 0.75,
+              px: 1.9,
+              py: 0.71,
               cursor: 'pointer',
               fontFamily: '"Electrolize", sans-serif',
-              fontSize: '0.75rem',
+              fontSize: '0.71rem',
               fontWeight: 600,
               letterSpacing: '1px',
               border: `1px solid ${scoreType === type.key ? themeColor : `${ARCADE_COLORS.white}30`}`,
@@ -282,63 +296,41 @@ const LeaderboardPage: React.FC = () => {
       <Box
         sx={{
           width: '100%',
-          maxWidth: 700,
+          maxWidth: twoColumns ? 1200 : 700,
           px: 2,
           pb: 4,
         }}
       >
         <Box
           sx={{
-            border: `2px solid ${themeColor}40`,
-            backgroundColor: 'rgba(5, 5, 20, 0.95)',
-            animation: `${pulseGlow} 3s ease-in-out infinite`,
-            position: 'relative',
-            overflow: 'hidden',
-            /* Inner scanlines */
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              inset: 0,
-              background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${themeColor}03 2px, ${themeColor}03 4px)`,
-              pointerEvents: 'none',
-            },
+            display: 'flex',
+            gap: twoColumns ? 3 : 0,
+            flexDirection: twoColumns ? 'row' : 'column',
+            alignItems: twoColumns ? 'flex-start' : 'stretch',
           }}
         >
-          {/* Table Header */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr 60px 90px',
-              px: 2,
-              py: 1.5,
-              borderBottom: `1px solid ${themeColor}30`,
-              backgroundColor: `${themeColor}08`,
-            }}
-          >
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>
-              RANK
-            </Typography>
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>
-              NAME
-            </Typography>
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'center' }}>
-              REG
-            </Typography>
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'right' }}>
-              SCORE
-            </Typography>
-          </Box>
+          {/* Column renderer: renders header + N rows in one bordered panel */}
+          {(() => {
+            const renderColumn = (columnEntries: RankingEntry[]) => {
+              const columnHeader = (
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '70px 1fr 60px 90px',
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: `1px solid ${themeColor}30`,
+                    backgroundColor: `${themeColor}08`,
+                  }}
+                >
+                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>RANK</Typography>
+                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>NAME</Typography>
+                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'center' }}>REG</Typography>
+                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'right' }}>SCORE</Typography>
+                </Box>
+              );
 
-          {/* Rows */}
-          {loading ? (
-            <Box sx={{ py: 6, textAlign: 'center' }}>
-              <ArcadeTypography font="electrolize" sx={{ color: themeColor, fontSize: '0.9rem' }}>
-                {'> LOADING...'}
-              </ArcadeTypography>
-            </Box>
-          ) : top10.length > 0 ? (
-            <>
-              {top10.map((entry) => {
+              const columnRows = columnEntries.map((entry) => {
                 const rankInfo = getRankDisplay(entry.rank);
                 const isCurrentUser = entry.user_id === currentUserId;
                 return (
@@ -353,15 +345,13 @@ const LeaderboardPage: React.FC = () => {
                       backgroundColor: isCurrentUser ? `${themeColor}12` : 'transparent',
                       position: 'relative',
                       zIndex: 1,
-                      '&:hover': {
-                        backgroundColor: `${themeColor}08`,
-                      },
+                      '&:hover': { backgroundColor: `${themeColor}08` },
                     }}
                   >
                     <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: rankInfo.color, alignSelf: 'center' }}>
                       {rankInfo.text}
                     </Typography>
-                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: isCurrentUser ? themeColor : ARCADE_COLORS.white, fontWeight: isCurrentUser ? 700 : 400, alignSelf: 'center' }}>
+                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: isCurrentUser ? themeColor : ARCADE_COLORS.white, fontWeight: isCurrentUser ? 700 : 400, alignSelf: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {entry.firstname} {entry.lastname} {isCurrentUser ? '◄' : ''}
                     </Typography>
                     <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
@@ -372,48 +362,115 @@ const LeaderboardPage: React.FC = () => {
                     </Typography>
                   </Box>
                 );
-              })}
+              });
 
-              {/* If user is NOT in top 10, show separator and user's rank */}
-              {!userInTop10 && userEntry && (
+              return (
+                <Box
+                  sx={{
+                    flex: twoColumns ? 1 : 'none',
+                    width: twoColumns ? '50%' : '100%',
+                    border: `2px solid ${themeColor}40`,
+                    backgroundColor: 'rgba(5, 5, 20, 0.95)',
+                    animation: `${pulseGlow} 3s ease-in-out infinite`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      inset: 0,
+                      background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${themeColor}03 2px, ${themeColor}03 4px)`,
+                      pointerEvents: 'none',
+                    },
+                  }}
+                >
+                  {columnHeader}
+                  {columnRows}
+                </Box>
+              );
+            };
+
+            if (loading) {
+              return (
+                <Box sx={{ py: 6, textAlign: 'center', width: '100%', border: `2px solid ${themeColor}40`, backgroundColor: 'rgba(5, 5, 20, 0.95)', animation: `${pulseGlow} 3s ease-in-out infinite`, position: 'relative' }}>
+                  <ArcadeTypography font="electrolize" sx={{ color: themeColor, fontSize: '0.9rem' }}>
+                    {'> LOADING...'}
+                  </ArcadeTypography>
+                </Box>
+              );
+            }
+
+            if (top10.length === 0) {
+              return (
+                <Box sx={{ py: 6, textAlign: 'center', width: '100%', border: `2px solid ${themeColor}40`, backgroundColor: 'rgba(5, 5, 20, 0.95)', position: 'relative' }}>
+                  <Typography sx={{ fontFamily: '"Electrolize", sans-serif', color: `${ARCADE_COLORS.white}60` }}>
+                    No rankings available yet.
+                  </Typography>
+                </Box>
+              );
+            }
+
+            if (twoColumns) {
+              // Split 1-10 into two columns of 5
+              return (
                 <>
-                  <Box sx={{ py: 1, textAlign: 'center', borderBottom: `1px solid ${GRID_COLOR}` }}>
-                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '4px' }}>
-                      {'· · ·'}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '70px 1fr 60px 90px',
-                      px: 2,
-                      py: 1.25,
-                      backgroundColor: `${themeColor}12`,
-                      position: 'relative',
-                      zIndex: 1,
-                    }}
-                  >
-                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: themeColor, alignSelf: 'center' }}>
-                      {getRankDisplay(userEntry.rank).text}
-                    </Typography>
-                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: themeColor, fontWeight: 700, alignSelf: 'center' }}>
-                      {userEntry.firstname} {userEntry.lastname} ◄
-                    </Typography>
-                    <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
-                      {countryCodeToFlag(userEntry.region)}
-                    </Typography>
-                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: themeColor, textAlign: 'right', alignSelf: 'center' }}>
-                      {userEntry.score.toFixed(1)}
-                    </Typography>
-                  </Box>
+                  {renderColumn(top10.slice(0, 5))}
+                  {renderColumn(top10.slice(5, 10))}
                 </>
-              )}
-            </>
-          ) : (
-            <Box sx={{ py: 6, textAlign: 'center' }}>
-              <Typography sx={{ fontFamily: '"Electrolize", sans-serif', color: `${ARCADE_COLORS.white}60` }}>
-                No rankings available yet.
-              </Typography>
+              );
+            }
+
+            // Single column: full 10 + optional user rank row
+            return renderColumn(top10);
+          })()}
+
+          {/* If user is NOT in top 10 (single-column mode), show separator + user rank */}
+          {!twoColumns && !userInTop10 && userEntry && top10.length > 0 && (
+            <Box
+              sx={{
+                width: '100%',
+                border: `2px solid ${themeColor}40`,
+                backgroundColor: 'rgba(5, 5, 20, 0.95)',
+                animation: `${pulseGlow} 3s ease-in-out infinite`,
+                position: 'relative',
+                overflow: 'hidden',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${themeColor}03 2px, ${themeColor}03 4px)`,
+                  pointerEvents: 'none',
+                },
+              }}
+            >
+              <Box sx={{ py: 1, textAlign: 'center', borderBottom: `1px solid ${GRID_COLOR}` }}>
+                <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '4px' }}>
+                  {'· · ·'}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '70px 1fr 60px 90px',
+                  px: 2,
+                  py: 1.25,
+                  backgroundColor: `${themeColor}12`,
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
+                <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: themeColor, alignSelf: 'center' }}>
+                  {getRankDisplay(userEntry.rank).text}
+                </Typography>
+                <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: themeColor, fontWeight: 700, alignSelf: 'center' }}>
+                  {userEntry.firstname} {userEntry.lastname} ◄
+                </Typography>
+                <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
+                  {countryCodeToFlag(userEntry.region)}
+                </Typography>
+                <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: themeColor, textAlign: 'right', alignSelf: 'center' }}>
+                  {userEntry.score.toFixed(1)}
+                </Typography>
+              </Box>
             </Box>
           )}
         </Box>
