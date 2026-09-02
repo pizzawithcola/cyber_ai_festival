@@ -33,6 +33,7 @@ import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
 import { API_URL } from '../../services/api';
 import QuestionBankDialog from './QuestionBankDialog';
+import ScoringSystem from './ScoringSystem';
 import { GAME_CATEGORIES, loadBalance, saveBalance, DEFAULT_BALANCE, type BalanceConfig } from '../../pages/6_UltimateShowdown/gameCategories';
 
 // ─── Sci-Fi Design Tokens ─────────────────────────────────────────────────────
@@ -207,7 +208,7 @@ const AdminPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [apiStatuses, setApiStatuses] = useState<ApiStatus[]>(API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'idle' as const })));
   const [isTestingApis, setIsTestingApis] = useState(false);
-  const [activeTab, setActiveTab] = useState<'personnel' | 'rooms' | 'api'>('personnel');
+  const [activeTab, setActiveTab] = useState<'personnel' | 'rooms' | 'scoring' | 'api'>('personnel');
 
   // ─── Final Rooms state ──────────────────────────────────────────────────────
   interface RoomPlayer {
@@ -658,6 +659,7 @@ const AdminPage: React.FC = () => {
         >
           <ToggleButton value="personnel">Players</ToggleButton>
           <ToggleButton value="rooms">Ultimate Rooms</ToggleButton>
+          <ToggleButton value="scoring">Scoring System</ToggleButton>
           <ToggleButton value="api">API DIAGNOSTICS</ToggleButton>
         </ToggleButtonGroup>
       </Box>
@@ -746,6 +748,14 @@ const AdminPage: React.FC = () => {
             '& .MuiTablePagination-displayedRows': { fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.dim },
             '& .MuiIconButton-root': { color: SF.dim, '&:not(.Mui-disabled):hover': { color: SF.cyan } },
           }} />
+      </Box>
+      )}
+
+      {/* ── Scoring System ── */}
+      {activeTab === 'scoring' && (
+      <Box sx={{ mb: 4 }}>
+        <SFSectionHeader label="Scoring System" color={SF.yellow} />
+        <ScoringSystem />
       </Box>
       )}
 
