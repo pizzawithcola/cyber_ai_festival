@@ -506,7 +506,11 @@ const AdminPage: React.FC = () => {
     ? (a: UserScore, b: UserScore) => desc(a, b, ob as keyof UserScore)
     : (a: UserScore, b: UserScore) => -desc(a, b, ob as keyof UserScore);
 
-  const filteredUsers  = users.filter(u => { const s = searchTerm.toLowerCase(); return (u.nickname || '').toLowerCase().includes(s) || u.firstname.toLowerCase().includes(s) || u.lastname.toLowerCase().includes(s) || u.region.toLowerCase().includes(s); });
+  const filteredUsers  = users.filter(u => {
+    const s = searchTerm.toLowerCase();
+    return [u.nickname, u.firstname, u.lastname, u.region]
+      .some(field => (field || '').toLowerCase().includes(s));
+  });
   const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   const sortedUsers    = [...paginatedUsers].sort(cmp(order, orderBy));
   const uniqueCountries = new Set(users.map(u => u.region).filter(Boolean)).size;
