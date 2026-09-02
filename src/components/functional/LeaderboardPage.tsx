@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Typography, keyframes } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
@@ -80,19 +80,61 @@ const LeaderboardPage: React.FC = () => {
   const rotationTimerRef = useRef<number | null>(null);
   const user = getStoredUser();
 
-  // Landscape + short viewport → split the top-10 into two columns so no vertical scroll is needed
+  // Two-column layout when (landscape) AND (the top-10 list, rendered as ONE column,
+  // would overflow the scroll container — i.e. exactly when a vertical scrollbar appears).
+  // No fixed-height guess: we measure the real single-column list height via a hidden
+  // measurement copy, so any content/font/row change stays accurate.
   const [twoColumns, setTwoColumns] = useState(false);
-  useEffect(() => {
-    const compute = () => {
-      const isLandscape = window.innerWidth > window.innerHeight;
-      // Rough estimate: header/toggles ~220px + ~34px/row * 10 rows ≈ 560px needed
-      const tooShort = window.innerHeight < 580;
-      setTwoColumns(isLandscape && tooShort);
-    };
-    compute();
-    window.addEventListener('resize', compute);
-    return () => window.removeEventListener('resize', compute);
+  const scrollRootRef = useRef<HTMLDivElement | null>(null);
+  const listBoxRef = useRef<HTMLDivElement | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+
+  const computeColumns = useCallback(() => {
+    const root = scrollRootRef.current;
+    const measureEl = measureRef.current;
+    const listBox = listBoxRef.current;
+    if (!root || !measureEl || !listBox) return;
+    // Single-column list height measured from the hidden copy (stable, layout-free).
+    const singleListH = measureEl.offsetHeight;
+    // Where the list starts inside the scroll container (root is `position:relative`,
+    // so it is listBox's offsetParent; unaffected by twoColumns).
+    const listTop = listBox.offsetTop;
+    // Fixed space BELOW the list (leaderboard container bottom padding + BACK button).
+    // back.offsetTop always sits right after the list container, so this value is the
+    // same in both layouts — a true constant that doesn't depend on twoColumns.
+    const flowChildren = (Array.from(root.children) as HTMLElement[]).filter((el) => {
+      const cs = getComputedStyle(el);
+      return cs.position !== 'fixed' && cs.visibility !== 'hidden';
+    });
+    const backEl = flowChildren[flowChildren.length - 1];
+    const belowGap = backEl
+      ? backEl.offsetTop - (listTop + listBox.offsetHeight) + backEl.offsetHeight
+      : 0;
+    // Total vertical space a SINGLE column needs (fixed content above + list + below).
+    const singleColumnNeed = listTop + singleListH + belowGap;
+    const wouldOverflow = singleColumnNeed > root.clientHeight + 4; // a vertical scrollbar would appear
+    const isLandscape = window.innerWidth > window.innerHeight;
+    setTwoColumns(isLandscape && wouldOverflow);
   }, []);
+
+  useEffect(() => {
+    computeColumns();
+    const onResize = () => computeColumns();
+    window.addEventListener('resize', onResize);
+    const ro = new ResizeObserver(() => computeColumns());
+    const root = scrollRootRef.current;
+    if (root) ro.observe(root);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      ro.disconnect();
+    };
+  }, [computeColumns]);
+
+  // After rankings load/change, the hidden measure (and rows) change too — re-evaluate next frame.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => computeColumns());
+    return () => cancelAnimationFrame(raf);
+  }, [rankingCache, loading, computeColumns]);
 
   // Dynamic theme color based on selected game
   const themeColor = SCORE_TYPE_COLORS[scoreType] || ARCADE_COLORS.cyan;
@@ -164,8 +206,141 @@ const LeaderboardPage: React.FC = () => {
   const userInTop10 = top10.some((e) => e.user_id === currentUserId);
   const userEntry = rankingData?.rankings.find((e) => e.user_id === currentUserId);
 
+  // Renders a bordered panel: column header + the given rows. Used for the main
+  // list, for each two-column half, and for the hidden single-column measure.
+  const renderColumn = (columnEntries: RankingEntry[]) => {
+    const columnHeader = (
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '70px 1fr 60px 90px',
+          px: 2,
+          py: 1.5,
+          borderBottom: `1px solid ${themeColor}30`,
+          backgroundColor: `${themeColor}08`,
+        }}
+      >
+        <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>RANK</Typography>
+        <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>NAME</Typography>
+        <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'center' }}>REG</Typography>
+        <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'right' }}>SCORE</Typography>
+      </Box>
+    );
+
+    const columnRows = columnEntries.map((entry) => {
+      const rankInfo = getRankDisplay(entry.rank);
+      const isCurrentUser = entry.user_id === currentUserId;
+      return (
+        <Box
+          key={entry.user_id}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '70px 1fr 60px 90px',
+            px: 2,
+            py: 1.25,
+            borderBottom: `1px solid ${GRID_COLOR}`,
+            backgroundColor: isCurrentUser ? `${themeColor}12` : 'transparent',
+            position: 'relative',
+            zIndex: 1,
+            '&:hover': { backgroundColor: `${themeColor}08` },
+          }}
+        >
+          <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: rankInfo.color, alignSelf: 'center' }}>
+            {rankInfo.text}
+          </Typography>
+          <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: isCurrentUser ? themeColor : ARCADE_COLORS.white, fontWeight: isCurrentUser ? 700 : 400, alignSelf: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {entry.firstname} {entry.lastname} {isCurrentUser ? '◄' : ''}
+          </Typography>
+          <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
+            {countryCodeToFlag(entry.region)}
+          </Typography>
+          <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: rankInfo.color, textAlign: 'right', alignSelf: 'center' }}>
+            {entry.score.toFixed(1)}
+          </Typography>
+        </Box>
+      );
+    });
+
+    return (
+      <Box
+        sx={{
+          flex: twoColumns ? 1 : 'none',
+          width: twoColumns ? '50%' : '100%',
+          border: `2px solid ${themeColor}40`,
+          backgroundColor: 'rgba(5, 5, 20, 0.95)',
+          animation: `${pulseGlow} 3s ease-in-out infinite`,
+          position: 'relative',
+          overflow: 'hidden',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${themeColor}03 2px, ${themeColor}03 4px)`,
+            pointerEvents: 'none',
+          },
+        }}
+      >
+        {columnHeader}
+        {columnRows}
+      </Box>
+    );
+  };
+
+  // Separator + current-user row (shown under the list in single-column mode when
+  // the user is outside top-10; also included in the hidden single-column measure).
+  const renderUserRankBlock = (entry: RankingEntry) => (
+    <Box
+      sx={{
+        width: '100%',
+        border: `2px solid ${themeColor}40`,
+        backgroundColor: 'rgba(5, 5, 20, 0.95)',
+        animation: `${pulseGlow} 3s ease-in-out infinite`,
+        position: 'relative',
+        overflow: 'hidden',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${themeColor}03 2px, ${themeColor}03 4px)`,
+          pointerEvents: 'none',
+        },
+      }}
+    >
+      <Box sx={{ py: 1, textAlign: 'center', borderBottom: `1px solid ${GRID_COLOR}` }}>
+        <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '4px' }}>
+          {'· · ·'}
+        </Typography>
+      </Box>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '70px 1fr 60px 90px',
+          px: 2,
+          py: 1.25,
+          backgroundColor: `${themeColor}12`,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: themeColor, alignSelf: 'center' }}>
+          {getRankDisplay(entry.rank).text}
+        </Typography>
+        <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: themeColor, fontWeight: 700, alignSelf: 'center' }}>
+          {entry.firstname} {entry.lastname} ◄
+        </Typography>
+        <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
+          {countryCodeToFlag(entry.region)}
+        </Typography>
+        <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: themeColor, textAlign: 'right', alignSelf: 'center' }}>
+          {entry.score.toFixed(1)}
+        </Typography>
+      </Box>
+    </Box>
+  );
+
   return (
     <Box
+      ref={scrollRootRef}
       sx={{
         width: '100%',
         height: '100%',
@@ -302,6 +477,7 @@ const LeaderboardPage: React.FC = () => {
         }}
       >
         <Box
+          ref={listBoxRef}
           sx={{
             display: 'flex',
             gap: twoColumns ? 3 : 0,
@@ -309,86 +485,7 @@ const LeaderboardPage: React.FC = () => {
             alignItems: twoColumns ? 'flex-start' : 'stretch',
           }}
         >
-          {/* Column renderer: renders header + N rows in one bordered panel */}
           {(() => {
-            const renderColumn = (columnEntries: RankingEntry[]) => {
-              const columnHeader = (
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: '70px 1fr 60px 90px',
-                    px: 2,
-                    py: 1.5,
-                    borderBottom: `1px solid ${themeColor}30`,
-                    backgroundColor: `${themeColor}08`,
-                  }}
-                >
-                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>RANK</Typography>
-                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor }}>NAME</Typography>
-                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'center' }}>REG</Typography>
-                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', color: themeColor, textAlign: 'right' }}>SCORE</Typography>
-                </Box>
-              );
-
-              const columnRows = columnEntries.map((entry) => {
-                const rankInfo = getRankDisplay(entry.rank);
-                const isCurrentUser = entry.user_id === currentUserId;
-                return (
-                  <Box
-                    key={entry.user_id}
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '70px 1fr 60px 90px',
-                      px: 2,
-                      py: 1.25,
-                      borderBottom: `1px solid ${GRID_COLOR}`,
-                      backgroundColor: isCurrentUser ? `${themeColor}12` : 'transparent',
-                      position: 'relative',
-                      zIndex: 1,
-                      '&:hover': { backgroundColor: `${themeColor}08` },
-                    }}
-                  >
-                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: rankInfo.color, alignSelf: 'center' }}>
-                      {rankInfo.text}
-                    </Typography>
-                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: isCurrentUser ? themeColor : ARCADE_COLORS.white, fontWeight: isCurrentUser ? 700 : 400, alignSelf: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {entry.firstname} {entry.lastname} {isCurrentUser ? '◄' : ''}
-                    </Typography>
-                    <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
-                      {countryCodeToFlag(entry.region)}
-                    </Typography>
-                    <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: rankInfo.color, textAlign: 'right', alignSelf: 'center' }}>
-                      {entry.score.toFixed(1)}
-                    </Typography>
-                  </Box>
-                );
-              });
-
-              return (
-                <Box
-                  sx={{
-                    flex: twoColumns ? 1 : 'none',
-                    width: twoColumns ? '50%' : '100%',
-                    border: `2px solid ${themeColor}40`,
-                    backgroundColor: 'rgba(5, 5, 20, 0.95)',
-                    animation: `${pulseGlow} 3s ease-in-out infinite`,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&::after': {
-                      content: '""',
-                      position: 'absolute',
-                      inset: 0,
-                      background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${themeColor}03 2px, ${themeColor}03 4px)`,
-                      pointerEvents: 'none',
-                    },
-                  }}
-                >
-                  {columnHeader}
-                  {columnRows}
-                </Box>
-              );
-            };
-
             if (loading) {
               return (
                 <Box sx={{ py: 6, textAlign: 'center', width: '100%', border: `2px solid ${themeColor}40`, backgroundColor: 'rgba(5, 5, 20, 0.95)', animation: `${pulseGlow} 3s ease-in-out infinite`, position: 'relative' }}>
@@ -424,55 +521,7 @@ const LeaderboardPage: React.FC = () => {
           })()}
 
           {/* If user is NOT in top 10 (single-column mode), show separator + user rank */}
-          {!twoColumns && !userInTop10 && userEntry && top10.length > 0 && (
-            <Box
-              sx={{
-                width: '100%',
-                border: `2px solid ${themeColor}40`,
-                backgroundColor: 'rgba(5, 5, 20, 0.95)',
-                animation: `${pulseGlow} 3s ease-in-out infinite`,
-                position: 'relative',
-                overflow: 'hidden',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  inset: 0,
-                  background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${themeColor}03 2px, ${themeColor}03 4px)`,
-                  pointerEvents: 'none',
-                },
-              }}
-            >
-              <Box sx={{ py: 1, textAlign: 'center', borderBottom: `1px solid ${GRID_COLOR}` }}>
-                <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '4px' }}>
-                  {'· · ·'}
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: '70px 1fr 60px 90px',
-                  px: 2,
-                  py: 1.25,
-                  backgroundColor: `${themeColor}12`,
-                  position: 'relative',
-                  zIndex: 1,
-                }}
-              >
-                <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: themeColor, alignSelf: 'center' }}>
-                  {getRankDisplay(userEntry.rank).text}
-                </Typography>
-                <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: themeColor, fontWeight: 700, alignSelf: 'center' }}>
-                  {userEntry.firstname} {userEntry.lastname} ◄
-                </Typography>
-                <Typography sx={{ fontSize: '1.2rem', textAlign: 'center', alignSelf: 'center' }}>
-                  {countryCodeToFlag(userEntry.region)}
-                </Typography>
-                <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.95rem', fontWeight: 700, color: themeColor, textAlign: 'right', alignSelf: 'center' }}>
-                  {userEntry.score.toFixed(1)}
-                </Typography>
-              </Box>
-            </Box>
-          )}
+          {!twoColumns && !userInTop10 && userEntry && top10.length > 0 && renderUserRankBlock(userEntry)}
         </Box>
       </Box>
 
@@ -500,6 +549,27 @@ const LeaderboardPage: React.FC = () => {
           BACK TO HOME
         </ArcadeButton>
       </Box>
+
+      {/* Hidden single-column measure: decides two-column layout from REAL overflow
+          (would a vertical scrollbar appear?) instead of a fixed height guess.
+          Rendered offscreen — it takes no layout/scroll space. */}
+      {!loading && top10.length > 0 && (
+        <Box
+          ref={measureRef}
+          aria-hidden
+          sx={{
+            position: 'fixed',
+            left: -99999,
+            top: 0,
+            visibility: 'hidden',
+            pointerEvents: 'none',
+            zIndex: -1,
+          }}
+        >
+          {renderColumn(top10)}
+          {!userInTop10 && userEntry && renderUserRankBlock(userEntry)}
+        </Box>
+      )}
     </Box>
   );
 };
