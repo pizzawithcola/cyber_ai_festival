@@ -148,10 +148,10 @@ export const useRetailDemolition = () => {
     setTimeout(() => {
       const id = Math.random();
       setNotifications(prev => [{ id, title, body }, ...prev]);
-      // 8 秒后自动消失（配合向上滑出动画）
+      // 5 秒后自动消失（配合向上滑出动画）
       setTimeout(() => {
         setNotifications(prev => prev.filter(n => n.id !== id));
-      }, 8000);
+      }, 5000);
     }, delay);
   };
 
@@ -418,14 +418,15 @@ export const useRetailDemolition = () => {
           setAgentOrderSuccessAt(Date.now());
           pushSMS("Security Alert", "New login detected on Bank of America: St. Petersburg, RU", 0);
           pushSMS("Bank Alert", "Your account has been charged $12,450.00 at 'Asset-Recovery-Global'", 2500);
+          // 异地登录 8 秒后仍无截停反馈 → 账户被黑气泡 + 跳 Quiz
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: 'bot',
+              text: "⚠️ Your account has been compromised! Unauthorized transactions detected. This happened because the agent was hijacked by malware hidden on the website.",
+            }]);
+            setAgentIncidentNotificationsDone(true);
+          }, 8000);
         }, 2500);
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            role: 'bot',
-            text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to malware hidden in the website. Check the hint panel for next steps.",
-          }]);
-          setAgentIncidentNotificationsDone(true);
-        }, 10000);
       }
     }, 1600);
   };
@@ -444,12 +445,13 @@ export const useRetailDemolition = () => {
     setAgentOrderStopped(true);
     setAgentOrderSuccessAt(null);
     if (agentRound === 1) {
-      // Round 1 安全交易截停：不涉及计分
+      // Round 1 安全交易截停：不涉及计分，但发截停确认短信
       setMessages(prev => [...prev, {
         role: 'bot',
         text: `🛑 Order stopped! The transaction was cancelled before it was processed — no charge at ${site.name}.`,
         orderStopped: { productName, site, elapsed, points: 0 },
       }]);
+      pushSMS("Order Stopped", `Your order at ${site.name} was cancelled before payment — no charge was made.`, 800);
       setTimeout(() => {
         setAgentRound(2);
         setTimeout(() => {
@@ -460,8 +462,10 @@ export const useRetailDemolition = () => {
         }, 600);
       }, 1000);
     } else {
-      // Round 2 紧急撤回：1s 内 +30，每慢 1s -5，最低 0（分数只在结算页展示）
-      const points = Math.max(0, Math.round(30 - Math.max(0, elapsed - 1) * 5));
+      // Round 2 紧急撤回：异地登录后 2 秒内截停 = 满分 30；
+      // 之后每 200ms 扣 1 分（≈每秒 5 分），向下取整，直到扣完为 0。
+      // 例：2.2s → 29，2.4s → 28，3s → 25，8s → 0。
+      const points = Math.max(0, 30 - Math.floor(Math.max(0, elapsed - 2) / 0.2));
       if (points > 0) {
         applyScoreChange(points, 'emergency_stop', { siteName: site.name, elapsed, points });
       }
@@ -472,7 +476,7 @@ export const useRetailDemolition = () => {
       }]);
       setAgentMaliciousDone(true);
       setHasBeenPromptedForManual(true);
-      pushSMS("Security Alert", `We blocked a suspicious charge of ${price} at ${site.name}.`, 800);
+      pushSMS("Order Stopped", `✅ Order stopped — the ${price} fraudulent charge at ${site.name} was blocked and refunded.`, 800);
     }
   };
 
@@ -514,13 +518,14 @@ export const useRetailDemolition = () => {
       pushSMS("Security Alert", "New login detected on Bank of America: St. Petersburg, RU", 3000);
       pushSMS("Bank Alert", "Your account has been charged $12,450.00 at 'Asset-Recovery-Global'", 5000);
 
+      // Security Alert（3000ms）后 8 秒无反馈 → 账户被黑气泡 + 跳 Quiz
       setTimeout(() => {
         setMessages(prev => [...prev, {
           role: 'bot',
-          text: "⚠️ System Warning: Unauthorized transactions detected in your linked bank account. This happened due to malware hidden in the website. Check the hint panel for next steps.",
+          text: "⚠️ Your account has been compromised! Unauthorized transactions detected. This happened because the agent was hijacked by malware hidden on the website.",
         }]);
         setAgentIncidentNotificationsDone(true);
-      }, 7000);
+      }, 11000);
     } else {
       const actualPrice = site.prices[selectedProduct] || '$0';
       setMessages(prev => [...prev, { role: 'bot', text: `Transaction successful! Purchased from ${site.name} for ${actualPrice}.` }]);

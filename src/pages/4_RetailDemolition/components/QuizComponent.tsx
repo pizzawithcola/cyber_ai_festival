@@ -110,14 +110,25 @@ const QuizComponent = ({ onAnswer, onFinished }: QuizComponentProps) => {
       {selectedOptionId && (
         <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10 px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm">
-            <div className="text-[11px] font-bold text-slate-700 mb-2">
-              {selectedOptionId === 'all' || selectedOptionId === 'contact_bank'
-                ? 'Why this answer is correct'
-                : 'Why this answer is not fully correct'}
-            </div>
-            <div className="text-[11px] text-slate-600 leading-relaxed mb-4">
-              {question.feedback[selectedOptionId]}
-            </div>
+            {(() => {
+              const isCorrect = selectedOptionId === 'all' || selectedOptionId === 'contact_bank';
+              return (
+                <>
+                  <div className={`text-[11px] font-black mb-2 uppercase tracking-wide flex items-center gap-1.5 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                    <span
+                      className="inline-flex items-center justify-center w-4 h-4 rounded-full text-white text-[9px]"
+                      style={{ backgroundColor: isCorrect ? '#16a34a' : '#dc2626' }}
+                    >
+                      {isCorrect ? '✓' : '✗'}
+                    </span>
+                    {isCorrect ? 'Correct!' : 'Not quite...'}
+                  </div>
+                  <div className="text-[11px] text-slate-600 leading-relaxed mb-4">
+                    {question.feedback[selectedOptionId]}
+                  </div>
+                </>
+              );
+            })()}
             <button
               type="button"
               onClick={handleNext}

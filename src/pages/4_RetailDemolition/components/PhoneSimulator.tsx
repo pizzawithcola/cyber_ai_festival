@@ -124,7 +124,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
     }
   }, [notifications]);
 
-  // SMS 自动消失：显示 7.4s 后切换向上滑出动画，0.6s 动画结束后（8s 时）由 hook 移除该条。
+  // SMS 自动消失：显示 4.4s 后切换向上滑出动画，0.6s 动画结束后（5s 时）由 hook 移除该条。
   const [leavingNotifId, setLeavingNotifId] = useState<number | null>(null);
   useEffect(() => {
     const newest = notifications[0];
@@ -132,7 +132,7 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
     const t = setTimeout(() => {
       // 只对当前显示的最新通知触发离开动画（旧的触发会被新通知 effect 清理）
       setLeavingNotifId(newest.id);
-    }, 7400);
+    }, 4400);
     return () => clearTimeout(t);
   }, [notifications]);
 
@@ -414,11 +414,11 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                       </button>
                     </div>
                   )}
-                  {m.orderSuccess && !agentOrderStopped && m.orderSuccess.round === 2 && (
+                  {m.orderSuccess && !agentOrderStopped && (
                     <div className="mt-3">
                       <button
                         onClick={() => onAgentStopOrder(m.orderSuccess!.productName, m.orderSuccess!.site, m.orderSuccess!.price)}
-                        className="w-full py-1.5 bg-slate-50 text-red-400 border border-red-200 rounded-lg text-[11px] font-semibold opacity-80 active:scale-95 transition-transform"
+                        className="w-full py-2 bg-white text-red-600 border-2 border-red-500 rounded-xl text-xs font-black tracking-wider shadow-sm active:scale-95 transition-colors hover:bg-red-500 hover:text-white hover:shadow-md"
                       >
                         STOP ORDER
                       </button>
@@ -439,15 +439,20 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
                 <Loader2 size={14} className="animate-spin text-indigo-600" /> Scanning web...
               </div>
             )}
-            {/* Post-incident: guide to quiz */}
+            {/* Post-incident: guide to quiz — bot bubble with action button */}
             {agentMaliciousDone && agentIncidentNotificationsDone && (
               <div className="flex justify-start">
-                <button
-                  onClick={onStartQuiz}
-                  className="px-6 py-3 bg-red-600 text-white rounded-2xl font-bold flex items-center gap-2 shadow-md"
-                >
-                  Start Incident Analysis <ChevronRight size={14} />
-                </button>
+                <div className="max-w-[92%] p-4 rounded-2xl bg-white border border-red-200 text-slate-800 shadow-sm rounded-tl-none space-y-3">
+                  <div className="text-[12px] leading-relaxed">
+                    You can now review what happened and test what you learned.
+                  </div>
+                  <button
+                    onClick={onStartQuiz}
+                    className="w-full py-2.5 bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 text-[12px] shadow-md active:scale-95 transition-transform hover:bg-red-700"
+                  >
+                    Start Incident Analysis <ChevronRight size={14} />
+                  </button>
+                </div>
               </div>
             )}
             <div ref={chatBottomRef} />
