@@ -44,6 +44,10 @@ const cardSx = {
 
 type SnackState = { open: boolean; message: string; severity: 'success' | 'error' | 'warning' };
 
+// sessionStorage key that remembers the live room across Admin-console refreshes,
+// so the admin can reconnect (and server replays current state) instead of desyncing.
+const ADMIN_ROOM_KEY = 'ultimate_admin_room_code';
+
 // ─── BGM 曲目映射（仅 Admin 端播放）──────────────────────────────────────
 const BGM_SOURCES: Record<string, string> = {
   lobby: '/audio/final_wait_room.mp3', // 等待室
@@ -409,6 +413,19 @@ const AdminConsole: React.FC = () => {
     if (!token) { navigate('/admin?redirect=/final/admin'); return; }
   }, [navigate]);
 
+  // 刷新后恢复仍在进行中的房间：重新连上 admin WS，服务器会重放当前状态快照
+  const didRestoreRef = useRef(false);
+  useEffect(() => {
+    if (!getAdminToken()) return;
+    if (didRestoreRef.current) return;
+    const saved = sessionStorage.getItem(ADMIN_ROOM_KEY);
+    if (saved) {
+      didRestoreRef.current = true;
+      setRoomCode(saved);
+      connect(saved, 1, 'admin');
+    }
+  }, [connect, navigate]);
+
   // ─── BGM playback（三段音乐按阶段切换，仅 Admin 端播放）──────────────────
   const bgmRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
@@ -491,6 +508,7 @@ const AdminConsole: React.FC = () => {
       if (!res.ok) throw new Error('Failed to create room');
       const data = await res.json();
       setRoomCode(data.room_code);
+      sessionStorage.setItem(ADMIN_ROOM_KEY, data.room_code);
       connect(data.room_code, 1, 'admin'); // admin user_id=1
     } catch {
       setSnack({ open: true, message: 'Failed to create room', severity: 'error' });
@@ -520,6 +538,7 @@ const AdminConsole: React.FC = () => {
   const handleNewGame = () => {
     disconnect();
     setRoomCode('');
+    sessionStorage.removeItem(ADMIN_ROOM_KEY);
   };
 
   // Determine view
@@ -546,7 +565,7 @@ const AdminConsole: React.FC = () => {
           <Box sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.8rem', color: ARCADE_COLORS.orange, letterSpacing: '0.15em', textShadow: `0 0 15px ${ARCADE_COLORS.orange}60` }}>
             GAME CONSOLE
           </Box>
-          <Box onClick={() => { disconnect(); navigate('/admin'); }} sx={{ ml: 'auto', cursor: 'pointer', fontFamily: '"Courier New", monospace', fontSize: '0.7rem', color: `${ARCADE_COLORS.white}40`, '&:hover': { color: ARCADE_COLORS.red }, transition: 'color 0.2s' }}>
+          <Box onClick={() => { disconnect(); sessionStorage.removeItem(ADMIN_ROOM_KEY); navigate('/admin'); }} sx={{ ml: 'auto', cursor: 'pointer', fontFamily: '"Courier New", monospace', fontSize: '0.7rem', color: `${ARCADE_COLORS.white}40`, '&:hover': { color: ARCADE_COLORS.red }, transition: 'color 0.2s' }}>
             ← DASHBOARD
           </Box>
           {roomCode && <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', color: `${ARCADE_COLORS.white}30` }}>Room: {roomCode}</Box>}

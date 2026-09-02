@@ -75,6 +75,12 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const roleRef = useRef<'admin' | 'player'>('player');
+  // Auto-reconnect state: remember the last room so we can transparently rejoin
+  // after a blip / refresh-driven close, resuming via the server's state replay.
+  const lastConnRef = useRef<{ roomCode: string; userId: number; role: 'admin' | 'player' } | null>(null);
+  const shouldReconnectRef = useRef(false);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptsRef = useRef(0);
   const [isConnected, setIsConnected] = useState(false);
 
   const [state, setState] = useState<GameState>({
@@ -203,10 +209,29 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
     }
   }, []);
 
-  const connect = useCallback((roomCode: string, userId: number, role: 'admin' | 'player') => {
-    // Close existing connection
+  const clearHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+  }, []);
+
+  // Stable reference to the latest "open socket" implementation. Kept in a ref so
+  // event callbacks can schedule reconnects without circular useCallback deps.
+  const openRef = useRef<(roomCode: string, userId: number, role: 'admin' | 'player') => void>(() => {});
+
+  const cancelReconnect = useCallback(() => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  }, []);
+
+  const openImpl = useCallback((roomCode: string, userId: number, role: 'admin' | 'player') => {
+    // Close any existing socket first
     if (wsRef.current) {
-      wsRef.current.close();
+      try { wsRef.current.close(); } catch { /* noop */ }
+      wsRef.current = null;
     }
 
     roleRef.current = role;
@@ -221,9 +246,11 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
 
     ws.onopen = () => {
       setIsConnected(true);
+      reconnectAttemptsRef.current = 0;
       console.log(`[GameWS] Connected as ${role} to room ${roomCode}`);
 
       // Heartbeat: send ping every 30s to keep connection alive through ALB/CloudFront
+      clearHeartbeat();
       heartbeatRef.current = setInterval(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: 'ping' }));
@@ -237,11 +264,22 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
 
     ws.onclose = () => {
       setIsConnected(false);
+      clearHeartbeat();
       console.log('[GameWS] Disconnected');
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
-        heartbeatRef.current = null;
-      }
+      // Auto-reconnect with exponential backoff unless disconnect() was called
+      const last = lastConnRef.current;
+      if (!last || !shouldReconnectRef.current) return;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
+      reconnectAttemptsRef.current += 1;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = setTimeout(() => {
+        reconnectTimerRef.current = null;
+        if (shouldReconnectRef.current && lastConnRef.current) {
+          const l = lastConnRef.current;
+          console.log(`[GameWS] Reconnecting to room ${l.roomCode} as ${l.role} (attempt ${reconnectAttemptsRef.current})`);
+          openRef.current(l.roomCode, l.userId, l.role);
+        }
+      }, delay);
     };
 
     ws.onerror = (err) => {
@@ -249,20 +287,33 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
     };
 
     wsRef.current = ws;
-  }, [handleMessage]);
+  }, [handleMessage, clearHeartbeat]);
+
+  // Keep openRef pointing at the latest implementation (refs must not be written during render)
+  useEffect(() => {
+    openRef.current = openImpl;
+  }, [openImpl]);
+
+  const connect = useCallback((roomCode: string, userId: number, role: 'admin' | 'player') => {
+    lastConnRef.current = { roomCode, userId, role };
+    shouldReconnectRef.current = true;
+    reconnectAttemptsRef.current = 0;
+    cancelReconnect();
+    openRef.current(roomCode, userId, role);
+  }, [cancelReconnect]);
 
   const disconnect = useCallback(() => {
-    if (heartbeatRef.current) {
-      clearInterval(heartbeatRef.current);
-      heartbeatRef.current = null;
-    }
+    // Stop any scheduled reconnect and disable future auto-reconnects
+    shouldReconnectRef.current = false;
+    cancelReconnect();
+    clearHeartbeat();
     if (wsRef.current) {
-      wsRef.current.close();
+      try { wsRef.current.close(); } catch { /* noop */ }
       wsRef.current = null;
     }
     setIsConnected(false);
     setState(prev => ({ ...prev, phase: 'idle' }));
-  }, []);
+  }, [cancelReconnect, clearHeartbeat]);
 
   const send = useCallback((msg: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -286,17 +337,21 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
     send({ type: 'resume' });
   }, [send]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount — also stops any pending auto-reconnect
   useEffect(() => {
     return () => {
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
+      shouldReconnectRef.current = false;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
       }
+      clearHeartbeat();
       if (wsRef.current) {
-        wsRef.current.close();
+        try { wsRef.current.close(); } catch { /* noop */ }
+        wsRef.current = null;
       }
     };
-  }, []);
+  }, [clearHeartbeat]);
 
   return {
     state,
