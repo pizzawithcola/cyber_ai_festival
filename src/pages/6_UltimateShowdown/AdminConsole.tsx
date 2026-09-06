@@ -6,7 +6,7 @@ import { ArcadeButton } from '../../components/ui';
 import QRCode from '../../components/functional/QRCode';
 import { apiFetch } from '../../services/api';
 import { getAdminToken } from '../../utils/userStorage';
-import { loadBalance } from './gameCategories';
+import { loadBalance, DEFAULT_BALANCE, BALANCE_TOTAL } from './gameCategories';
 import { useGameWebSocket } from '../../hooks/useGameWebSocket';
 import type { QuestionData, ResultData, LeaderboardEntry, PlayerEntry } from '../../hooks/useGameWebSocket';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
@@ -499,11 +499,10 @@ const AdminConsole: React.FC = () => {
   const handleCreateRoom = async () => {
     setCreating(true);
     try {
-      // Use the admin-configured per-category balance (if set in the admin panel)
-      const balance = loadBalance();
-      const body = balance
-        ? { question_count: 12, balance }
-        : { question_count: 12 };
+      // Use the admin-configured per-category balance; default to the 7-question
+      // layout (5 theme ×1 + bonus ×2) when the admin never customized it.
+      const balance = loadBalance() ?? DEFAULT_BALANCE;
+      const body = { question_count: BALANCE_TOTAL, balance };
       const res = await apiFetch('/rooms/', { method: 'POST', body: JSON.stringify(body) });
       if (!res.ok) throw new Error('Failed to create room');
       const data = await res.json();
@@ -515,7 +514,7 @@ const AdminConsole: React.FC = () => {
     } finally { setCreating(false); }
   };
 
-  const handleStartGame = () => { startGame(12); };
+  const handleStartGame = () => { startGame(BALANCE_TOTAL); };
   const handlePause = async () => {
     try {
       await apiFetch(`/rooms/${roomCode}/pause`, { method: 'POST' });

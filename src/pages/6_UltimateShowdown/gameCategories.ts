@@ -11,20 +11,28 @@ export const GAME_CATEGORIES = [
 
 export type GameCategoryKey = (typeof GAME_CATEGORIES)[number]['key'];
 
-// localStorage key holding the admin-configured per-category balance
-export const BALANCE_STORAGE_KEY = 'cyber_ai_ultimate_balance';
+// localStorage key holding the admin-configured per-category balance.
+// v2: balance layout changed to the 7-question structure (5 theme ×1 + bonus ×2).
+export const BALANCE_STORAGE_KEY = 'cyber_ai_ultimate_balance_v2';
 
 export type BalanceConfig = Record<GameCategoryKey, number>;
 
-// Default per-game draw = 12 questions total (5 normal categories x2 + bonus x2).
+// Default per-game draw = 7 questions: each of the 5 theme categories gets 1
+// question + 2 bonus. Bonus are forced to the LAST two questions (x2, then x3).
 export const DEFAULT_BALANCE: BalanceConfig = {
-  ai: 2,
-  hallucination: 2,
-  data: 2,
-  agent: 2,
-  phishing: 2,
+  ai: 1,
+  hallucination: 1,
+  data: 1,
+  agent: 1,
+  phishing: 1,
   bonus: 2,
 };
+
+// Total questions drawn when using the default balance.
+export const BALANCE_TOTAL = (Object.keys(DEFAULT_BALANCE) as GameCategoryKey[]).reduce(
+  (sum, key) => sum + DEFAULT_BALANCE[key],
+  0,
+);
 
 export function loadBalance(): BalanceConfig | null {
   try {
