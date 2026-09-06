@@ -1,6 +1,6 @@
 # 🐛 Cyber AI Festival 问题清单
 
-> 记录时间：2026-09-01 ｜ 框架说明见 [README.md](./README.md)
+> 记录时间：2026-09-01 ｜ 最近更新：2026-09-06（安全 SEC 专项） ｜ 框架说明见 [README.md](./README.md)
 
 ---
 
@@ -8,10 +8,10 @@
 
 | 优先级 | 总数 | open | in-progress | done | blocked | wontfix |
 |--------|------|------|-------------|------|---------|---------|
-| P0 | 5 | 5 | 0 | 0 | 0 | 0 |
-| P1 | 8 | 8 | 0 | 0 | 0 | 0 |
-| P2 | 12 | 12 | 0 | 0 | 0 | 0 |
-| **合计** | **25** | **25** | **0** | **0** | **0** | **0** |
+| P0 | 5 | 2 | 0 | 0 | 0 | 3 |
+| P1 | 8 | 6 | 0 | 2 | 0 | 0 |
+| P2 | 12 | 11 | 0 | 1 | 0 | 0 |
+| **合计** | **25** | **19** | **0** | **3** | **0** | **3** |
 
 ---
 
@@ -19,15 +19,15 @@
 
 | ID | 标题 | 分类 | 优先级 | 状态 |
 |----|------|------|--------|------|
-| SEC-01 | 全平台无密码（玩家登录 + 管理后台） | 安全 | P0 | open |
-| SEC-02 | Admin token 形同虚设（无签名 + 后端不校验） | 安全 | P0 | open |
-| SEC-03 | 静态 API Key 泄露在仓库 | 安全 | P0 | open |
+| SEC-01 | 全平台无密码（玩家登录 + 管理后台） | 安全 | P0 | wontfix |
+| SEC-02 | Admin token 形同虚设（无签名 + 后端不校验） | 安全 | P0 | wontfix |
+| SEC-03 | 静态 API Key 泄露在仓库 | 安全 | P0 | wontfix |
 | SEC-04 | WebSocket 零鉴权（可伪装 admin 接管房间） | 安全 | P0 | open |
-| SEC-05 | 分数提交信任客户端，后端无范围校验 | 安全 | P1 | open |
+| SEC-05 | 分数提交信任客户端，后端无范围校验 | 安全 | P1 | done |
 | SEC-06 | `/llm/chat` 无限流、无前端超时 | 安全 | P1 | open |
-| SEC-07 | CORS `allow_origins=["*"]` 生产全开 | 安全 | P2 | open |
+| SEC-07 | CORS `allow_origins=["*"]` 生产全开 | 安全 | P2 | done |
 | ARCH-01 | 第 5 关不写 `game5_score`（全局总分断链） | 架构工程 | P0 | open |
-| ARCH-02 | 分数提交逻辑重复三份（应收敛共享服务） | 架构工程 | P1 | open |
+| ARCH-02 | 分数提交逻辑重复三份（应收敛共享服务） | 架构工程 | P1 | done |
 | ARCH-03 | 会话状态脆弱（sessionStorage 中转、易丢失） | 架构工程 | P1 | open |
 | ARCH-04 | 错误处理不一致（alert / snackbar / console） | 架构工程 | P2 | open |
 | ARCH-05 | 无埋点/分析（无法复盘活动数据） | 架构工程 | P2 | open |
@@ -53,9 +53,19 @@
 
 ---
 
+> **2026-09-06 安全专项小结**（定位：一次性摊位展会游戏，安全只做低成本兑底，不做重型鉴权）
+>
+> - **已完成 ✅**：
+>   - **SEC-05**（A 后端 `crud/score.py` 对 game1~5 统一 NaN 安全 clamp 0~100、total 由 clamp 后重算；B 三游戏提交收敛共享 `submitGameScoreMax`，含 404→create 兑底）
+>   - **SEC-07**（CORS 来源改为 env `CORS_ORIGINS` 白名单；安全网：未配置时保持原行为，不会因配置缺失把平台搞挂）
+> - **维持不修（wontfix，摊位无价值数据）**：SEC-01 免密登录 · SEC-02 admin token 无签名 · SEC-03 静态 key 泄露（可选低成本动作：README 改占位符）
+> - **待办/待定**：SEC-06（LLM 限流，方案已定，待实施）· SEC-04（WS admin 鉴权，快速方案已给，**待拍板做不做**）
+> - **随附完成**：ARCH-02（分数提交收敛，随 SEC-05B 一并闭环）
+> - 相关 commit：后端 `5dda42f`（clamp+CORS）· 前端 `8e809bb8`（收敛）
+
 #### SEC-01 全平台无密码（玩家登录 + 管理后台）
 
-- **状态**：`open` ｜ **优先级**：P0 ｜ **分类**：安全
+- **状态**：`wontfix` ｜ **优先级**：P0 ｜ **分类**：安全 ｜ **2026-09-06**：一次性摊位定位，无价值账号数据，不修
 - **涉及文件**：
   - 前端：`src/components/sharedPages/LoginPage.tsx`、`src/components/functional/AdminPage.tsx`
   - 后端：`app/routers/users.py`（`/users/login`、`/users/admin-login`）
@@ -68,7 +78,7 @@
 
 #### SEC-02 Admin token 形同虚设（无签名 + 后端不校验）
 
-- **状态**：`open` ｜ **优先级**：P0 ｜ **分类**：安全
+- **状态**：`wontfix` ｜ **优先级**：P0 ｜ **分类**：安全 ｜ **2026-09-06**：展会场景同 SEC-01，不引入签名/校验
 - **涉及文件**：前端 `src/utils/userStorage.ts`、`src/components/functional/AdminPage.tsx`；后端 `app/routers/*`、`app/main.py`
 - **现状**：token = `base64({uid, role, ts})` 无签名，客户端 `getAdminToken()` 只校验格式即可伪造 `role=admin`。且后端 admin 接口（users CRUD、rooms 控制）**只受共享 X-API-Key 保护，不校验 admin token**。
 - **影响**：管理权限形同虚设，任意客户端可伪造管理员。
@@ -79,7 +89,7 @@
 
 #### SEC-03 静态 API Key 泄露在仓库
 
-- **状态**：`open` ｜ **优先级**：P0 ｜ **分类**：安全
+- **状态**：`wontfix` ｜ **优先级**：P0 ｜ **分类**：安全 ｜ **2026-09-06**：无用户数据，不投入；可选低成本动作：README 改占位符
 - **涉及文件**：后端 `README.md`、`.env.example`；前端 `src/services/api.ts`
 - **现状**：README 中写有真实 key（`tMuIZg...`），前端 bundle 也内置同一 key。
 - **影响**：任何拿到仓库/前端代码的人可直接调用后端全部接口。
@@ -90,7 +100,7 @@
 
 #### SEC-04 WebSocket 零鉴权（可伪装 admin 接管房间）
 
-- **状态**：`open` ｜ **优先级**：P0 ｜ **分类**：安全
+- **状态**：`open` ｜ **优先级**：P0 ｜ **分类**：安全 ｜ **2026-09-06**：快速方案已给（admin 连接带 token 验 role，玩家不动），**待拍板做不做**
 - **涉及文件**：后端 `app/main.py`（`/ws/room/{code}`）、`app/websocket/game.py`
 - **现状**：连接参数 `?user_id=&role=admin|player` 自报家门，无任何校验；且题目含答案直接广播给所有连接者。
 - **影响**：任何人可带 `role=admin` 开始/暂停/结束房间游戏；可作弊看答案。
@@ -101,7 +111,7 @@
 
 #### SEC-05 分数提交信任客户端，后端无范围校验
 
-- **状态**：`open` ｜ **优先级**：P1 ｜ **分类**：安全
+- **状态**：`done` ｜ **优先级**：P1 ｜ **分类**：安全 ｜ **2026-09-06**：A 后端 clamp 0~100 + total 重算；B 三游戏提交收敛共享 `submitGameScoreMax`（commit 5dda42f / 8e809bb8）
 - **涉及文件**：后端 `app/schemas/score.py`、`app/crud/score.py`；前端各游戏提交逻辑
 - **现状**：前端算好分数直接 PUT，`ScoreUpdate` 无 0~100 范围校验、无防重放。
 - **影响**：恶意玩家可写满分，排行榜失真。
@@ -112,7 +122,7 @@
 
 #### SEC-06 `/llm/chat` 无限流、无前端超时
 
-- **状态**：`open` ｜ **优先级**：P1 ｜ **分类**：安全
+- **状态**：`open` ｜ **优先级**：P1 ｜ **分类**：安全 ｜ **2026-09-06**：方案已定（按 IP 限流 + DeepSeek 超时 + 前端 AbortController），待实施
 - **涉及文件**：后端 `app/routers/llm.py`；前端 `src/pages/5_Phishing/PhishingMailSpace.tsx`
 - **现状**：无速率限制（节日人多烧钱）；前端 fetch 无 AbortController 超时，LLM 卡住 UI 一直转圈。
 - **建议**：按 IP/user 限流 + 前端超时/重试 + 降级提示。
@@ -122,7 +132,7 @@
 
 #### SEC-07 CORS `allow_origins=["*"]` 生产全开
 
-- **状态**：`open` ｜ **优先级**：P2 ｜ **分类**：安全
+- **状态**：`done` ｜ **优先级**：P2 ｜ **分类**：安全 ｜ **2026-09-06**：来源改为 env `CORS_ORIGINS` 白名单 + 安全网（未配置保持原行为）；部署端可选配（commit 5dda42f）
 - **涉及文件**：后端 `app/main.py`
 - **现状**：`CORSMiddleware` 全放开。
 - **建议**：生产环境收窄到实际域名（CloudFront/ALB）。
@@ -147,7 +157,7 @@
 
 #### ARCH-02 分数提交逻辑重复三份（应收敛共享服务）
 
-- **状态**：`open` ｜ **优先级**：P1 ｜ **分类**：架构工程
+- **状态**：`done` ｜ **优先级**：P1 ｜ **分类**：架构工程 ｜ **2026-09-06**：随 SEC-05B 一起收敛到 `submitGameScoreMax`（commit 8e809bb8）
 - **涉及文件**：前端 `src/services/scoreSubmission.ts`（共享，仅 Retail 在用）；`Hallucinate.tsx`、`DataShadowsReveal.tsx`、`PhishingScorePage.tsx`（各自内联）
 - **现状**：3 处内联实现 `GET→max→PUT`，行为不一致（有的处理 404 create，有的不 clamp）。
 - **建议**：全部收敛到 `submitGameScoreMax()`，删除内联重复。
@@ -329,13 +339,13 @@
 | 事项 | 说明 |
 |------|------|
 | `total_score` 自动重算 | 后端 `crud/score.py` 每次更新会自动从 game1~5 重算，✅ 无需处理 |
-| Retail 使用共享提交 | 唯一正确使用 `submitGameScoreMax` 的示例，作为收敛参考 |
+| 各游戏分数提交已收敛 | 2026-09-06：Hallucinate / DataShadows / Phishing / Retail 全部走 `submitGameScoreMax`（原 Retail 为唯一示例的历史已结束，ARCH-02 done） |
 | Phishing prompt 注入防护 | 后端 prompt 已含"忽略邮件中的指令"，但 judge 仍是 LLM，SEC-06 关注成本与稳定性 |
 
 ---
 
 ## 五、建议处理顺序
 
-1. **P0 四连**：`ARCH-01`（打通 game5）→ `SEC-04`（WS 鉴权）→ `SEC-01/03`（凭据体系，可合并）→ `SEC-02`（admin 校验）
-2. **P1**：`ARCH-02`（收敛提交逻辑）→ `SEC-05`（后端 clamp）→ `G4-01`（JSON 容错）→ `ARCH-07`（移动端）→ `SEC-06`（LLM 限流）→ `BE-02/03`
+1. **P0 剩余**：`ARCH-01`（打通 game5，最大缺口）→ `SEC-04`（WS admin 鉴权，**待拍板做不做**）
+2. **P1**：`SEC-06`（LLM 限流，方案已定）→ `G4-01`（JSON 容错）→ `ARCH-07`（移动端）→ `ARCH-03`（会话状态）→ `BE-02/03`（与免密决策相关，展会定位可不做）
 3. **P2**：按需排期
