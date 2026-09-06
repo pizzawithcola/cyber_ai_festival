@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getStoredUser } from '../../utils/userStorage'
-import { apiFetch } from '../../services/api'
+import { submitGameScoreMax } from '../../services/scoreSubmission'
 import {
   loadDataShadowsChoices,
   type DataShadowsChoices,
@@ -205,40 +205,14 @@ function RevealContent() {
       }
 
       try {
-        const existingScoreResponse = await apiFetch(`/scores/${userId}`)
-
-        if (existingScoreResponse.ok) {
-          const existingScore = await existingScoreResponse.json()
-          const serverScore = Number(existingScore?.game2_score) || 0
-          const scoreToSubmit = Math.max(serverScore, sessionHighScore)
-
-          const updateResponse = await apiFetch(`/scores/${userId}`, {
-            method: 'PUT',
-            body: JSON.stringify({ game2_score: scoreToSubmit }),
-          })
-
-          if (!updateResponse.ok) {
-            console.error('[DataShadowsReveal] Failed to update score:', updateResponse.status)
-          }
-          return
+        const submitResult = await submitGameScoreMax({
+          userId,
+          game: 'datashadows',
+          currentScore: sessionHighScore,
+        })
+        if (!submitResult.ok) {
+          console.error('[DataShadowsReveal] Failed to sync score:', submitResult.responseStatus)
         }
-
-        if (existingScoreResponse.status === 404) {
-          const createResponse = await apiFetch('/scores/', {
-            method: 'POST',
-            body: JSON.stringify({
-              user_id: userId,
-              game2_score: sessionHighScore,
-            }),
-          })
-
-          if (!createResponse.ok) {
-            console.error('[DataShadowsReveal] Failed to create score:', createResponse.status)
-          }
-          return
-        }
-
-        console.error('[DataShadowsReveal] Failed to fetch existing score:', existingScoreResponse.status)
       } catch (error) {
         console.error('[DataShadowsReveal] Failed to sync score:', error)
       }

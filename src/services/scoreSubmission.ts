@@ -67,10 +67,28 @@ export const submitGameScoreMax = async ({
   }
 
   const submittedScore = Math.max(serverScore, normalizeScore(currentScore))
-  const updateResponse = await apiFetch(`/scores/${userId}`, {
+
+  // Try to update (max). If the user has no score row yet, the backend returns
+  // 404 on PUT → create it instead (mirrors the old per-game inline fallback).
+  let updateResponse = await apiFetch(`/scores/${userId}`, {
     method: 'PUT',
     body: JSON.stringify({ [scoreField]: submittedScore }),
   })
+  if (!updateResponse.ok && updateResponse.status === 404) {
+    const createResponse = await apiFetch('/scores/', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, [scoreField]: submittedScore }),
+    })
+    if (createResponse.status === 409) {
+      // Race: another tab created the row meanwhile → retry the update
+      updateResponse = await apiFetch(`/scores/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ [scoreField]: submittedScore }),
+      })
+    } else {
+      updateResponse = createResponse
+    }
+  }
 
   return {
     ok: updateResponse.ok,

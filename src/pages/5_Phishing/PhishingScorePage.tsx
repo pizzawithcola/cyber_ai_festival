@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
-import { apiFetch } from '../../services/api';
+import { submitGameScoreMax } from '../../services/scoreSubmission';
 import {
   Box,
   Typography,
@@ -120,31 +120,9 @@ const PhishingScorePage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      // Get existing score from server
-      let serverScore = 0;
-      try {
-        const getUrl = `/scores/${userId}`;
-        const getResponse = await apiFetch(getUrl);
-        
-        if (getResponse.ok) {
-          const userData = await getResponse.json();
-          serverScore = Number(userData.game4_score) || 0;
-        }
-      } catch (err) {
-        console.log('[PhishingScorePage] Error fetching existing score:', err);
-      }
-      
       // Calculate the highest score from this session (current vs session high)
       const thisSessionHigh = Math.max(currentScore, sessionHighScore);
-      
-      // Determine what to submit: use the highest of server score and this session's high score
-      console.log('[PhishingScorePage] Score comparison:', {
-        currentScore,
-        sessionHighScore,
-        thisSessionHigh,
-        serverScore
-      });
-      
+
       // Update session high score if current is higher
       console.log('[PhishingScorePage] Before update:', { currentScore, sessionHighScore, willUpdate: currentScore > sessionHighScore });
       if (currentScore > sessionHighScore) {
@@ -153,24 +131,16 @@ const PhishingScorePage: React.FC = () => {
         console.log('[PhishingScorePage] Updated sessionStorage to:', currentScore);
       }
 
-      // Always submit the highest score from this session (even if same as server)
-      const scoreToSubmit = Math.max(serverScore, thisSessionHigh);
-      
-      // Submit to server
-      const url = `/scores/${userId}`;
-      const requestBody = {
-        game4_score: scoreToSubmit
-      };
-    
-      console.log('[PhishingScorePage] Submitting score:', scoreToSubmit);
-
-      const response = await apiFetch(url, {
-        method: 'PUT',
-        body: JSON.stringify(requestBody)
+      // Submit the highest score from this session via the shared max-submission helper
+      const submitResult = await submitGameScoreMax({
+        userId,
+        game: 'phishing',
+        currentScore: thisSessionHigh,
       });
+      console.log('[PhishingScorePage] Submitting score:', thisSessionHigh);
 
-      if (response.ok) {
-        console.log('[PhishingScorePage] Score submitted successfully!');
+      if (!submitResult.ok) {
+        console.error('[PhishingScorePage] Score submission failed:', submitResult.responseStatus);
       }
     } catch (err) {
       console.error('Error submitting score:', err);

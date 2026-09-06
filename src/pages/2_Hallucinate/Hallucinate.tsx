@@ -13,7 +13,7 @@ import { InteractiveScenarioChat } from './components/InteractiveScenarioChat';
 import { TrainingArena } from './components/TrainingArena';
 import { ARCADE_FONT, READABLE_FONT, TITLE_FONT } from './hallucinateUi';
 import { clearStoredUser, getStoredUser } from '../../utils/userStorage';
-import { apiFetch } from '../../services/api';
+import { submitGameScoreMax } from '../../services/scoreSubmission';
 import { ArcadeButton } from '../../components/ui';
 import { useClickSound } from '../../hooks/useClickSound';
 
@@ -434,27 +434,13 @@ const Hallucinate: React.FC = () => {
     }
 
     try {
-      let serverScore = 0;
-
-      try {
-        const getResponse = await apiFetch(`/scores/${userId}`);
-
-        if (getResponse.ok) {
-          const userData = await getResponse.json();
-          serverScore = Number(userData.game1_score) || 0;
-        }
-      } catch (err) {
-        console.error('[Hallucinate] Failed to fetch existing score:', err);
-      }
-
-      const scoreToSubmit = Math.max(serverScore, finalScore);
-      const updateResponse = await apiFetch(`/scores/${userId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ game1_score: scoreToSubmit }),
+      const submitResult = await submitGameScoreMax({
+        userId,
+        game: 'hallucinate',
+        currentScore: finalScore,
       });
-
-      if (!updateResponse.ok) {
-        console.error('[Hallucinate] Failed to submit score:', updateResponse.status);
+      if (!submitResult.ok) {
+        console.error('[Hallucinate] Failed to submit score:', submitResult.responseStatus);
       }
     } catch (err) {
       console.error('[Hallucinate] Error submitting score:', err);
