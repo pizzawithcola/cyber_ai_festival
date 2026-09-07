@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import PhoneSimulator from './components/PhoneSimulator';
@@ -7,6 +7,14 @@ import { useRetailDemolition } from './hooks/useRetailDemolition';
 import ArcadeBackground from './components/ui/ArcadeBackground';
 import { saveRetailResult } from './retailSession';
 import { useClickSound } from '../../hooks/useClickSound';
+
+/** 整体布局常量：顶部提示框 + 间距(1% 视口高) + 手机视为一个整体，整体占屏高 94% 且横纵居中 */
+const PHONE_W = 375;
+const PHONE_H = 780;
+const PAGE_PADDING_X = 8 * 2; // 外层 px-2
+const GAP_RATIO = 0.01; // 提示框与手机顶部间距 = 视口高的 1%（恒定 px，不随缩放）
+const HINT_MAX_H_UNSCALED = 220; // 提示内容未缩放高度上限（px，超出则滚动）
+const MAX_SCALE = 1.25;
 
 /**
  * RetailDemolitionGame — 手机游戏主体页（/retaildemolition/game）
@@ -19,31 +27,39 @@ const RetailDemolitionGame = () => {
   useClickSound();
   const [hasVerifiedSession, setHasVerifiedSession] = useState(false);
   const [phoneScale, setPhoneScale] = useState(1);
+  // 提示内容的未缩放设计高度（transform scale 不影响 offsetHeight → 与 scale 解耦）
+  const [hintH, setHintH] = useState(0);
+  const hintHRef = useRef(0);
+  const hintRef = useRef<HTMLDivElement | null>(null);
 
   const game = useRetailDemolition();
+  const currentHint = game.getHint();
 
-  // 手机壳自适应缩放（手机在视口水平+垂直居中；提示框锚定在手机顶部上方 32px、宽度与手机一致）
+  // 提示与手机分别以相同 scale 缩放；间距 = 1% 视口高（恒定，不随缩放）。
+  // 整体 = 提示视觉高 + 间距 + 手机视觉高 = 94% 视口高，几何中心由 CSS 钉在视口正中 → 横纵居中。
+  // 提示有 150ms 淡入延迟，故用多次延时测量兜底，避免用旧高度(0)预算导致重叠。
   useEffect(() => {
-    const PHONE_W = 375;
-    const PHONE_H = 780;
-    const PAGE_PADDING_X = 8 * 2; // 外层 px-2
-    const GAP = 12; // 外层 gap-3
-    const HINT_MAX_H = 0.2; // 提示框最大高度（vh 比例）
-    const HINT_GAP = 32; // 提示框与手机顶部间距
-    const calc = () => {
+    const measure = () => {
+      const h = hintRef.current ? hintRef.current.offsetHeight : 0;
+      if (h !== hintHRef.current) {
+        hintHRef.current = h;
+        setHintH(h);
+      }
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const hintSpace = vh * HINT_MAX_H + HINT_GAP + 24; // 顶部提示空间（提示高 + 32px 间距 + 边距）
-      const phoneAreaW = vw - PAGE_PADDING_X - GAP;
-      const phoneAreaH = vh - hintSpace;
-      const scaleByW = phoneAreaW / PHONE_W;
-      const scaleByH = phoneAreaH / PHONE_H;
-      setPhoneScale(Math.min(scaleByW, scaleByH, 1.25));
+      const gapPx = vh * GAP_RATIO; // 恒定间距（2% 视口高）
+      const scaleByH = (vh * 0.94 - gapPx) / (hintHRef.current + PHONE_H);
+      const scaleByW = (vw - PAGE_PADDING_X) / PHONE_W;
+      setPhoneScale(Math.max(0.1, Math.min(scaleByH, scaleByW, MAX_SCALE)));
     };
-    calc();
-    window.addEventListener('resize', calc);
-    return () => window.removeEventListener('resize', calc);
-  }, []);
+    measure();
+    const timers = [60, 180, 350, 650].map((ms) => window.setTimeout(measure, ms));
+    window.addEventListener('resize', measure);
+    return () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      window.removeEventListener('resize', measure);
+    };
+  }, [currentHint?.title, currentHint?.body, currentHint?.nextStep, currentHint?.task]);
 
   useEffect(() => {
     const storedUser = getStoredUser();
@@ -68,34 +84,45 @@ const RetailDemolitionGame = () => {
     navigate('/retaildemolition/summary', { replace: true });
   }, [game.gameState, game.score, game.decisions, game.scoreEvents, game.manualStepCount, navigate]);
 
-  const currentHint = game.getHint();
-
   if (!hasVerifiedSession) return null;
 
   return (
     <div className="relative flex h-screen w-full text-slate-300 font-sans overflow-hidden px-2">
       <ArcadeBackground />
 
-      {/* 手机 + 提示框：以手机几何中心为锚点，绝对定位钉在视口正中（不依赖 flex 亚像素计算）；
-          整体下移 5vh，为上方提示框多留一点空间 */}
+      {/* 整体（提示 + 间距 1%vh + 手机）：提示与手机同 scale 缩放，间距恒定 = 视口高 1%；
+          整体视觉高 = 94% 视口高，以整体几何中心钉在视口正中 → 横纵居中 */}
       <div
         className="absolute left-1/2 top-1/2"
-        style={{ transform: 'translate(-50%, calc(-50% + 5vh))' }}
+        style={{ transform: 'translate(-50%, -50%)' }}
       >
-        <div className="relative" style={{ width: 375 * phoneScale, height: 780 * phoneScale }}>
-          {/* 提示框：锚定在手机顶部上方 32px，宽度 = 手机宽度（left/right 拉伸），水平居中 */}
+        {/* 占位容器 = 整体视觉尺寸：宽 375×scale、高 = (提示设计高 + 手机高) × scale + 1%vh 间距 */}
+        <div
+          style={{
+            width: PHONE_W * phoneScale,
+            height: (hintH + PHONE_H) * phoneScale + window.innerHeight * GAP_RATIO,
+          }}
+        >
+          {/* 提示框：scale 子树（origin top-left）；offsetHeight 不受 transform 影响 → 高度预算 */}
           <div
-            className="absolute left-0 right-0 z-[3] [&>div]:w-full [&>div]:max-w-none"
-            style={{ bottom: '100%', marginBottom: 32 }}
+            ref={hintRef}
+            style={{ transform: `scale(${phoneScale})`, transformOrigin: 'top left', width: PHONE_W }}
           >
-            <div className="max-h-[20vh] overflow-y-auto">
+            <div className="overflow-y-auto" style={{ maxHeight: HINT_MAX_H_UNSCALED }}>
               <HintPanel hint={currentHint} shakeSignal={game.hintShakeTick} />
             </div>
           </div>
 
-          {/* 手机本体：transform 容器固定 375×780（= 手机壳布局尺寸，手机壳在内部自然重合无偏移）；
-              top-left 缩放的视觉尺寸正好 = 绑定容器尺寸、从绑定容器左上开始 → 视觉中心 = 容器中心 */}
-          <div style={{ transform: `scale(${phoneScale})`, transformOrigin: 'top left', width: 375, height: 780 }}>
+          {/* 手机：位于提示视觉高度下方 1%vh（恒定）处，同 scale 缩放 */}
+          <div
+            className="absolute left-0 z-[2]"
+            style={{
+              top: hintH * phoneScale + window.innerHeight * GAP_RATIO,
+              width: PHONE_W * phoneScale,
+              height: PHONE_H * phoneScale,
+            }}
+          >
+            <div style={{ transform: `scale(${phoneScale})`, transformOrigin: 'top left', width: PHONE_W, height: PHONE_H }}>
             <PhoneSimulator
             gameState={game.gameState}
         isAgentic={game.isAgentic}
@@ -151,6 +178,7 @@ const RetailDemolitionGame = () => {
         chatBottomRef={game.chatBottomRef}
         setGameState={game.setGameState}
       />
+            </div>
           </div>
         </div>
       </div>

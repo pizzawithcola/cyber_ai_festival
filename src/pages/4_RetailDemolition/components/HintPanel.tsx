@@ -76,18 +76,18 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
           : 'opacity-0 translate-x-4 portrait:translate-x-0 portrait:-translate-y-4'
       } ${shaking ? 'animate-hint-shake' : ''}`}
     >
-      {/* Hint card */}
+      {/* Hint card（radius 20px：比手机 48px 更收敛；内部框用同心圆角 5px） */}
       {currentHint && currentHint.body && !children && (
-        <ArcadePanel accent="yellow" sx={{ mb: 2, p: 3 }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-6 h-6 flex items-center justify-center shrink-0" style={{ color: ARCADE_COLORS.yellow }}>
-              <Info size={24} />
+        <ArcadePanel accent="yellow" radius={20} sx={{ mb: 1, p: 1.875 }}>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="w-5 h-5 flex items-center justify-center shrink-0" style={{ color: ARCADE_COLORS.yellow }}>
+              <Info size={16} />
             </div>
             <ArcadeTypography
               arcadeColor="yellow"
               arcadeSize="sm"
               font="pressstart2p"
-              sx={{ lineHeight: 1.4, fontSize: '0.78rem' }}
+              sx={{ lineHeight: 1.4, fontSize: '0.61875rem' }}
             >
               {currentHint.title}
             </ArcadeTypography>
@@ -97,14 +97,15 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
               style={{
                 border: `1px solid ${ARCADE_COLORS.yellow}50`,
                 background: `${ARCADE_COLORS.yellow}10`,
-                padding: '10px 14px',
+                padding: '5.625px 15px',
+                borderRadius: '16px', // 内框圆角
               }}
             >
               <ArcadeTypography
                 arcadeColor="yellow"
                 arcadeSize="xs"
                 font="pressstart2p"
-                sx={{ display: 'block', mb: 1, fontSize: '0.6rem', lineHeight: 1.5 }}
+                sx={{ display: 'block', mb: 0.25, fontSize: '0.55rem', lineHeight: 1.4 }}
               >
                 {currentHint.task || '▶ NEXT STEP'}
               </ArcadeTypography>
@@ -113,7 +114,7 @@ const HintPanel: React.FC<HintPanelProps> = ({ hint, children, shakeSignal }) =>
                 arcadeSize="sm"
                 font="electrolize"
                 glow={false}
-                sx={{ display: 'block', fontSize: '0.9rem', lineHeight: 1.5 }}
+                sx={{ display: 'block', fontSize: '0.6875rem', lineHeight: 1.4 }}
               >
                 {renderWithGlow(currentHint.nextStep, currentHint.taskItem)}
               </ArcadeTypography>
