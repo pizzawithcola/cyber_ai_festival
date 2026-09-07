@@ -795,6 +795,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Uniform page margin from the viewport edges (reveal + data-flow pages):
+     at least 24px, or 2% of the container width on wider screens. */
+  padding: max(24px, 2%);
+  box-sizing: border-box;
   background:
     linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
     linear-gradient(90deg, rgba(244, 114, 182, 0.05) 1px, transparent 1px),
@@ -824,7 +828,8 @@
 
 @media (max-width: 480px) {
   .data-shadows-reveal-page {
-    padding-top: env(safe-area-inset-top, 0px);
+    /* keep at least the 24px top margin, but respect notched-device safe areas */
+    padding-top: max(24px, env(safe-area-inset-top, 0px));
   }
 }
 
@@ -1070,4 +1075,12 @@
   grid-template-columns: 1fr;
   grid-template-rows: minmax(0, 1fr);
   padding: max(8px, min(20px, 2vh)) max(8px, min(16px, 2vw));
+}
+
+/* Data Flow page: keep the diagram cards aligned with the page title row.
+   The page root already adds the 16px side margins, so the diagram itself must
+   not add any horizontal padding — on any viewport (incl. small-screen media). */
+.data-shadows-reveal-page.data-shadows-diagram-only-layout .network-data-flow-diagram {
+  padding-left: 0;
+  padding-right: 0;
 }

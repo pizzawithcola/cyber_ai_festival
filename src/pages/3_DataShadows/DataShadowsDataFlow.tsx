@@ -110,7 +110,8 @@ function DataFlowContent() {
           gridTemplateColumns: '1fr auto 1fr',
           alignItems: 'center',
           gap: 16,
-          padding: '16px 20px 10px',
+          // top/left/right spacing comes from the page's 16px padding; keep a bottom gap
+          padding: '0 0 12px',
           animation: visible ? 'dsFlowFadeUp 0.5s ease-out both' : 'none',
         }}
       >

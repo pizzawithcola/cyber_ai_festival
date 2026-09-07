@@ -227,7 +227,8 @@ function RevealContent() {
       const el = contentRef.current
       if (!el) return
       const naturalHeight = el.scrollHeight
-      const viewportH = window.innerHeight
+      // Content sits inside the page's 16px top/bottom padding → subtract 32px
+      const viewportH = Math.max(0, window.innerHeight - 32)
       const rawScale = Math.min(1, viewportH / naturalHeight)
       const clamped = Math.max(0.68, rawScale)
       setContentScale(clamped)
@@ -323,14 +324,18 @@ function RevealContent() {
           className="data-shadows-reveal-hero"
           style={{
             position: 'relative',
-            zIndex: 2,
+            zIndex: 4,
             flexShrink: 0,
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 16,
-            padding: '16px 20px 14px',
+            // top/left/right spacing comes from the page padding; keep a bottom gap.
+            // Floating feel with a transparent background — just a soft drop shadow,
+            // no solid color block covering the content behind it.
+            padding: '0 0 14px',
+            boxShadow: '0 8px 18px rgba(0, 0, 0, 0.28)',
             animation: introStep >= 1 ? 'dsRevealGlitch 0.5s ease-out 1' : 'none',
           }}
         >
@@ -415,7 +420,8 @@ function RevealContent() {
           flexDirection: 'column',
           justifyContent: allowScroll ? 'flex-start' : 'center',
           gap: 12,
-          padding: '0 20px 96px',
+          // page already provides the 16px side margins; keep bottom room for the CTA
+          padding: '0 0 96px',
         }}
       >
         <div ref={cardsListRef} style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>

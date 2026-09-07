@@ -395,7 +395,9 @@
   flex: 1 1 0%;
   height: auto;
   min-height: 0;
-  padding: clamp(10px, 1.5vw, 16px);
+  /* Align cards with the page title row: the page provides the 16px side
+     margins, so this component adds no extra horizontal padding. */
+  padding: clamp(10px, 1.5vw, 16px) 0;
   gap: clamp(8px, 1vw, 12px);
 }
 
@@ -465,7 +467,7 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(8px, 1.2vh, 14px);
-  padding: clamp(8px, 1.4vh, 14px);
+  padding: clamp(8px, 1.4vh, 14px) 0;
 }
 
 .data-shadows-diagram-only-layout.data-shadows-diagram-only-portrait .data-flow-header {
