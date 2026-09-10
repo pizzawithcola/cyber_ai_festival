@@ -60,18 +60,18 @@ const PhishingScorePage: React.FC = () => {
   
   console.log('[PhishingScorePage] User ID from sessionStorage:', userId);
   
-  // Get current game5 score first
-  const currentGame5Score = state?.reply?.score_details?.['5']?.[0] || 0;
-  
-  // Session high score: get from sessionStorage, or use current score if none stored
+  // 本次尝试的总分（用于"无历史最高分"时的兜底；原实现误取 score_details['5'] 单项分）
+  const currentAttemptScore = state?.reply?.total_score || 0;
+
+  // Session high score: get from sessionStorage, or fall back to this attempt's total
   const getSessionHighScore = (): number => {
-    if (!userId) return currentGame5Score;
+    if (!userId) return currentAttemptScore;
     const stored = sessionStorage.getItem(`phishing_session_highscore_${userId}`);
-    console.log('[PhishingScorePage] Reading session high score:', { userId, stored, currentGame5Score });
+    console.log('[PhishingScorePage] Reading session high score:', { userId, stored, currentAttemptScore });
     const storedHigh = stored ? parseFloat(stored) : 0;
-    
-    // Return the stored high score if it exists, otherwise use current score
-    return storedHigh > 0 ? storedHigh : currentGame5Score;
+
+    // Return the stored high score if it exists, otherwise use this attempt's total
+    return storedHigh > 0 ? storedHigh : currentAttemptScore;
   };
   
   const [sessionHighScore] = useState(getSessionHighScore());

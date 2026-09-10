@@ -1,6 +1,6 @@
 # 🐛 Cyber AI Festival 问题清单
 
-> 记录时间：2026-09-01 ｜ 最近更新：2026-09-10（ARCH-10 TV 大屏 kiosk 视图落地） ｜ 框架说明见 [README.md](./README.md)
+> 记录时间：2026-09-01 ｜ 最近更新：2026-09-10（G4-01 钓鱼评分容错修复 + ARCH-10 TV 大屏视图） ｜ 框架说明见 [README.md](./README.md)
 
 ---
 
@@ -9,9 +9,9 @@
 | 优先级 | 总数 | open | in-progress | done | blocked | wontfix |
 |--------|------|------|-------------|------|---------|---------|
 | P0 | 5 | 1 | 0 | 1 | 0 | 3 |
-| P1 | 9 | 6 | 1 | 2 | 0 | 0 |
+| P1 | 9 | 5 | 1 | 3 | 0 | 0 |
 | P2 | 13 | 11 | 0 | 1 | 1 | 0 |
-| **合计** | **27** | **18** | **1** | **4** | **1** | **3** |
+| **合计** | **27** | **17** | **1** | **5** | **1** | **3** |
 
 ---
 
@@ -43,7 +43,7 @@
 | G1-01 | Hallucinate 计分内联重复、无 clamp、会话校验弱 | 各游戏 | P2 | open |
 | G2-01 | DataShadows `contentScale` 缩放 hack 适配脆弱 | 各游戏 | P2 | open |
 | G3-01 | RetailDemolition 负分/小数 clamp 场景需确认 | 各游戏 | P2 | open |
-| G4-01 | Phishing `JSON.parse(reply)` 遇非法 JSON 崩溃且无重试 | 各游戏 | P1 | open |
+| G4-01 | Phishing `JSON.parse(reply)` 遇非法 JSON 崩溃且无重试 | 各游戏 | P1 | done |
 | G4-02 | Phishing 计分页 sessionStorage 逻辑复杂（high/attempt/benchmark） | 各游戏 | P2 | open |
 | G5-01 | UltimateShowdown 完全依赖管理员主持（掉线即僵局） | 各游戏 | P2 | open |
 
@@ -330,11 +330,11 @@
 
 #### G4-01 Phishing `JSON.parse(reply)` 遇非法 JSON 崩溃且无重试
 
-- **状态**：`open` ｜ **优先级**：P1 ｜ **分类**：各游戏
+- **状态**：`done` ｜ **优先级**：P1 ｜ **分类**：各游戏 ｜ **2026-09-10** 修复完成
 - **涉及文件**：`src/pages/5_Phishing/PhishingMailSpace.tsx`
-- **现状**：LLM 返回非 JSON 时 `JSON.parse` 抛错 → catch 提示"发送失败"但邮件已提交，误导玩家；无重试。
-- **建议**：容错解析（提取 JSON 片段）+ 失败重试 + 明确提示。
-- **进展**：—
+- **现状（原）**：LLM 返回非 JSON 时 `JSON.parse` 抛错 → catch 提示"发送失败"但邮件已提交，误导玩家；无重试。
+- **修复**：新增模块级 `parseJudgeReply()`：① 容错解析（回复夹带前后缀文字时，截取首个 `{` → 末个 `}` 再解析）② 结构校验（必须有合法 `total_score` 与非空 `score_details`）③ 失败时用 error snackbar 明确提示 "Scoring service returned an invalid response. Please try again."，**停留原页、保留草稿**（草稿在解析前已写入 sessionStorage），不再崩溃/不再误导；用户重按 Send 即可重试。
+- **验证**：本地 1690 注入两种 mock 回复实测 —— 非法 JSON → 不跳转 + 报错提示 + 编辑器内容保留；带前后缀的合法 JSON → 正确解析并跳转评分页（总分 82.5 / 5 维分数与理由渲染正常）。
 
 ---
 
@@ -344,7 +344,7 @@
 - **涉及文件**：`src/pages/5_Phishing/PhishingScorePage.tsx`
 - **现状**：sessionHigh + attemptCount + is_benchmark 全堆在 sessionStorage，逻辑复杂易错。
 - **建议**：简化状态模型，benchmark 逻辑显式化。
-- **进展**：—
+- **进展**：**2026-09-10** 已修正其中一处语义错误 —— 无历史最高分时的兑底值原先误取 `score_details['5'][0]`（第 5 维"技术质量"单项分），已改为本次尝试总分（变量 `currentGame5Score` → `currentAttemptScore`）。该错误原先被 `max(current, sessionHigh)` 掩盖、不影响提交结果，属语义修正；状态模型简化仍待办。
 
 ---
 

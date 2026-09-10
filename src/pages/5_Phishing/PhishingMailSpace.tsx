@@ -72,6 +72,47 @@ turndown.addRule('coloredText', {
   },
 });
 
+interface JudgeReply {
+  total_score: number;
+  score_details: Record<string, [number, string]>;
+}
+
+/**
+ * 解析 LLM 评分返回（G4-01）：
+ * - 容错：允许回复里夹带前后缀文字（截取首个 { 到末个 } 再解析）
+ * - 校验：必须含合法 total_score 与非空 score_details，否则视为失败
+ * 返回 null 表示响应不可用，调用方应提示用户重试（草稿已存入 sessionStorage，不会丢失）。
+ */
+const parseJudgeReply = (reply: unknown): JudgeReply | null => {
+  const tryParse = (text: string): unknown => {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  };
+
+  let parsed: unknown = reply;
+  if (typeof reply === 'string') {
+    parsed = tryParse(reply);
+    if (!parsed) {
+      const start = reply.indexOf('{');
+      const end = reply.lastIndexOf('}');
+      if (start !== -1 && end > start) parsed = tryParse(reply.slice(start, end + 1));
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+
+  const candidate = parsed as { total_score?: unknown; score_details?: unknown };
+  const total = candidate.total_score;
+  if (typeof total !== 'number' || !Number.isFinite(total)) return null;
+
+  const details = candidate.score_details;
+  if (!details || typeof details !== 'object' || Object.keys(details).length === 0) return null;
+
+  return { total_score: total, score_details: details as Record<string, [number, string]> };
+};
+
 const StyledTextField = styled(TextField)(() => ({
   '& .MuiOutlinedInput-root': {
     backgroundColor: '#0d0d20',
@@ -109,7 +150,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'warning' }>({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'warning' | 'error' }>({ open: false, message: '', severity: 'success' });
     const [benchmarkDialogOpen, setBenchmarkDialogOpen] = useState(false);
   
     // Get current attempt count from sessionStorage
@@ -241,7 +282,16 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
       };
       sessionStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
 
-      const reply = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
+      const reply = parseJudgeReply(data.reply);
+      if (!reply) {
+        // 评分服务返回不可解析/字段缺失：不跳转、不清空草稿，提示用户重试
+        setSnackbar({
+          open: true,
+          message: 'Scoring service returned an invalid response. Please try again.',
+          severity: 'error',
+        });
+        return;
+      }
       
       // Get current attempt count from sessionStorage
       const attemptCount = parseInt(sessionStorage.getItem('phishing_attempt_count') || '0', 10);
