@@ -1,6 +1,6 @@
 # 🐛 Cyber AI Festival 问题清单
 
-> 记录时间：2026-09-01 ｜ 最近更新：2026-09-07（ARCH-01 game5 打通） ｜ 框架说明见 [README.md](./README.md)
+> 记录时间：2026-09-01 ｜ 最近更新：2026-09-10（ARCH-10 TV 大屏 kiosk 视图落地） ｜ 框架说明见 [README.md](./README.md)
 
 ---
 
@@ -9,9 +9,9 @@
 | 优先级 | 总数 | open | in-progress | done | blocked | wontfix |
 |--------|------|------|-------------|------|---------|---------|
 | P0 | 5 | 1 | 0 | 1 | 0 | 3 |
-| P1 | 8 | 6 | 0 | 2 | 0 | 0 |
-| P2 | 12 | 11 | 0 | 1 | 0 | 0 |
-| **合计** | **25** | **18** | **0** | **4** | **0** | **3** |
+| P1 | 9 | 6 | 1 | 2 | 0 | 0 |
+| P2 | 13 | 11 | 0 | 1 | 1 | 0 |
+| **合计** | **27** | **18** | **1** | **4** | **1** | **3** |
 
 ---
 
@@ -35,9 +35,11 @@
 | ARCH-07 | 响应式/移动端薄弱 | 架构工程 | P1 | open |
 | ARCH-08 | 无障碍缺失（焦点、键盘、对比度） | 架构工程 | P2 | open |
 | ARCH-09 | 死代码：`pages/1_DeepFake/` 空目录未接路由 | 架构工程 | P2 | open |
+| ARCH-10 | TV 大屏常驻展示（三星 Hospitality `/tv` kiosk 视图） | 架构工程 | P1 | in-progress |
 | BE-01 | 启动时自动迁移是 hack（原生 SQL 与 Alembic 混用） | 后端工程 | P2 | open |
 | BE-02 | `create_room` 硬编码 `admin_id=1` | 后端工程 | P1 | open |
 | BE-03 | admin 账号硬编码种子（`admin@admin.com` 无密码） | 后端工程 | P1 | open |
+| BE-04 | 注册后接入外部排队系统（POST participants，key/queue 待澄清） | 后端工程 | P2 | blocked |
 | G1-01 | Hallucinate 计分内联重复、无 clamp、会话校验弱 | 各游戏 | P2 | open |
 | G2-01 | DataShadows `contentScale` 缩放 hack 适配脆弱 | 各游戏 | P2 | open |
 | G3-01 | RetailDemolition 负分/小数 clamp 场景需确认 | 各游戏 | P2 | open |
@@ -236,6 +238,17 @@
 
 ---
 
+#### ARCH-10 TV 大屏常驻展示（三星 Hospitality `/tv` kiosk 视图）
+
+- **状态**：`in-progress` ｜ **优先级**：P1 ｜ **分类**：架构工程 ｜ **2026-09-10** 开始；方案见 [TV_DISPLAY_SETUP.md](./TV_DISPLAY_SETUP.md)
+- **背景**：会议室三星电视（`HG43AU800AUXUE`，Hospitality 机型）需**无人值守全天候**显示游戏 Leaderboard，无机顶盒，走电视自带系统的 Hospitality 模式。
+- **已完成（前端）**：新增 `/tv` 路由（`AppRoutes.tsx`）复用 `LeaderboardPage`；`LeaderboardPage` 新增 `kiosk` 属性；新增 `src/hooks/useKioskMode.ts`。kiosk 下：隐藏 BACK/自动轮播开关、Tab 不可点、`cursor:none`、满屏；**30s 轮询刷新**、失败保留旧数据、看门狗 2min 自愈、6h 硬重载。本地 `tsc`/`eslint` 通过，1920×1080 验证通过。
+- **待办（需现场）**：电视侧 `MUTE-1-1-9-OK` → Standalone → `H.Browser Mode ON` → `URL Launcher` 填入 `/tv` URL（**优先验证纯网页 URL 是否被接受**，否则走 wgt 跳板/签名或 HDMI 兜底）。
+- **涉及文件**：`src/components/functional/LeaderboardPage.tsx`、`src/routes/AppRoutes.tsx`、`src/hooks/useKioskMode.ts`
+- **进展**：前端已就绪，待部署后上电视实测。
+
+---
+
 ### ⚙️ 后端工程（BE）
 
 ---
@@ -267,6 +280,17 @@
 - **现状**：启动时自动创建 admin 账号，配合 SEC-01 无密码，等于任何可登。
 - **建议**：与 SEC-01 一并解决，改为初始化脚本显式设置凭据。
 - **进展**：—
+
+---
+
+#### BE-04 注册后接入外部排队系统（POST participants）
+
+- **状态**：`blocked` ｜ **优先级**：P2 ｜ **分类**：后端工程 ｜ **2026-09-08**：方案已记录，见 [QUEUE_INTEGRATION.md](./QUEUE_INTEGRATION.md)
+- **背景**：新用户 register 后由后端 POST 用户信息到外部排队系统自动入队（摊位大屏排队场景）。
+- **阻塞原因**：API key 鉴权通过但名下队列为空；文档示例 queueId `Qm9x4k2ptu8` POST 返回 404 `queue_not_found` → 需澄清 key↔queue 归属（换 key 或先建队列），以及 email 去重键方案。
+- **已确认契约**：`POST {BASE}/api/v1/queues/{queueId}/participants`，Header `X-API-Key`，body `email/name/externalId`，201 新增 / 200 已存在。
+- **涉及文件**：后端 `cyber_ai_festival_be` 注册流程（待实施）。
+- **进展**：连通性+鉴权已验（本地 VPN）；真实队列归属待澄清。
 
 ---
 
