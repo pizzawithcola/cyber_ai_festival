@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
 import { apiFetch } from '../../services/api';
+import { useKioskMode } from '../../hooks/useKioskMode';
 import { ArcadeButton, ArcadeTypography } from '../ui';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 
@@ -34,6 +35,9 @@ const SCORE_TYPES = [
 
 // Auto-rotation interval for the leaderboard display (ms)
 const ROTATION_INTERVAL_MS = 5000;
+
+// kiosk 模式下重新拉取榜单的间隔（ms）：保持大屏数据新鲜
+const KIOSK_REFRESH_INTERVAL_MS = 30000;
 
 // Each game has its own theme color
 const SCORE_TYPE_COLORS: Record<string, string> = {
@@ -71,12 +75,20 @@ const getRankDisplay = (rank: number) => {
   return { text: `${rank}TH`, color: `${ARCADE_COLORS.white}80` };
 };
 
-const LeaderboardPage: React.FC = () => {
+interface LeaderboardPageProps {
+  /** kiosk 大屏模式（三星电视 / URL Launcher 常驻显示）：隐藏交互控件与光标、自动刷新、看门狗自愈 */
+  kiosk?: boolean;
+}
+
+const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ kiosk = false }) => {
   const navigate = useNavigate();
   const [rankingCache, setRankingCache] = useState<Record<string, RankingData | null>>({});
   const [loading, setLoading] = useState(true);
   const [scoreType, setScoreType] = useState('total');
   const [rotationEnabled, setRotationEnabled] = useState(true);
+  // kiosk 自愈心跳：每次成功刷新数据后递增，喂给看门狗
+  const [dataHeartbeat, setDataHeartbeat] = useState(0);
+  const rankingCacheRef = useRef<Record<string, RankingData | null>>({});
   const rotationTimerRef = useRef<number | null>(null);
   const user = getStoredUser();
 
@@ -162,7 +174,9 @@ const LeaderboardPage: React.FC = () => {
     50% { box-shadow: 0 0 16px ${themeColor}60; }
   `;
 
-  // Fetch ALL score types once and cache them — rotation just switches views, no reload
+  // Fetch ALL score types and cache them — rotation just switches views, no reload.
+  // kiosk 模式下按 KIOSK_REFRESH_INTERVAL_MS 轮询保持数据新鲜；
+  // 单个类型拉取失败时保留上一次的数据，避免大屏被瞬时网络抖动清空。
   useEffect(() => {
     let cancelled = false;
 
@@ -178,12 +192,16 @@ const LeaderboardPage: React.FC = () => {
               return [t.key, data] as const;
             } catch (err) {
               console.error(`Failed to fetch rankings (${t.key}):`, err);
-              return [t.key, null] as const;
+              // 保留上一次成功的数据（若有），避免瞬时失败清空大屏
+              return [t.key, rankingCacheRef.current[t.key] ?? null] as const;
             }
           })
         );
         if (cancelled) return;
-        setRankingCache(Object.fromEntries(entries));
+        const next = Object.fromEntries(entries) as Record<string, RankingData | null>;
+        rankingCacheRef.current = next;
+        setRankingCache(next);
+        setDataHeartbeat((v) => v + 1);
       } catch (err) {
         console.error('Failed to fetch rankings:', err);
       } finally {
@@ -191,11 +209,18 @@ const LeaderboardPage: React.FC = () => {
       }
     };
 
-    fetchAllRankings();
+    void fetchAllRankings();
+    const pollTimer = kiosk
+      ? window.setInterval(() => void fetchAllRankings(), KIOSK_REFRESH_INTERVAL_MS)
+      : null;
     return () => {
       cancelled = true;
+      if (pollTimer !== null) window.clearInterval(pollTimer);
     };
-  }, []);
+  }, [kiosk]);
+
+  // kiosk 模式：全屏 / 防休眠 / 看门狗自愈 / 周期硬重载
+  useKioskMode({ enabled: kiosk, heartbeat: dataHeartbeat });
 
   // Read current type from cache — no refetch when scoreType changes
   const rankingData = rankingCache[scoreType] ?? null;
@@ -353,7 +378,9 @@ const LeaderboardPage: React.FC = () => {
           linear-gradient(180deg, ${GRID_COLOR} 1px, transparent 1px)
         `,
         backgroundSize: '40px 40px',
-        overflow: 'auto',
+        overflow: kiosk ? 'hidden' : 'auto',
+        cursor: kiosk ? 'none' : 'auto',
+        userSelect: kiosk ? 'none' : 'auto',
         position: 'relative',
         /* Scanline */
         '&::before': {
@@ -374,6 +401,7 @@ const LeaderboardPage: React.FC = () => {
         <ArcadeTypography font="pressstart2p" sx={{ color: themeColor, fontSize: '1.1rem' }}>
           LEADERBOARD
         </ArcadeTypography>
+        {!kiosk && (
         <Box
           role="switch"
           aria-checked={rotationEnabled}
@@ -435,6 +463,7 @@ const LeaderboardPage: React.FC = () => {
             </Typography>
           )}
         </Box>
+        )}
       </Box>
 
       {/* Game Selector */}
@@ -446,7 +475,8 @@ const LeaderboardPage: React.FC = () => {
             sx={{
               px: 1.9,
               py: 0.71,
-              cursor: 'pointer',
+              cursor: kiosk ? 'none' : 'pointer',
+              pointerEvents: kiosk ? 'none' : 'auto',
               fontFamily: '"Electrolize", sans-serif',
               fontSize: '0.71rem',
               fontWeight: 600,
@@ -525,7 +555,8 @@ const LeaderboardPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Back Button */}
+      {/* Back Button（kiosk 模式隐藏） */}
+      {!kiosk && (
       <Box sx={{ pb: 4 }}>
         <ArcadeButton
           color="white"
@@ -549,6 +580,7 @@ const LeaderboardPage: React.FC = () => {
           BACK TO HOME
         </ArcadeButton>
       </Box>
+      )}
 
       {/* Hidden single-column measure: decides two-column layout from REAL overflow
           (would a vertical scrollbar appear?) instead of a fixed height guess.

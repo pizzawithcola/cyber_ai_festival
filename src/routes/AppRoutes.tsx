@@ -45,6 +45,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/ranking" element={<RankingPage />} />
       <Route path="/ranking/game/:game" element={<RankingPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
+      {/* TV 大屏 kiosk 视图（三星电视 / URL Launcher 常驻显示）：复用排行榜，隐藏交互 */}
+      <Route path="/tv" element={<LeaderboardPage kiosk />} />
       <Route path="/design" element={<DesignPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/final" element={<UltimateShowdown />} />
