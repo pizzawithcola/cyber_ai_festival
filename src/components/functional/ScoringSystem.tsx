@@ -151,18 +151,17 @@ const GAMES: GameRules[] = [
   {
     key: 'phishing',
     name: 'PHISHING',
-    tagline: 'Rate phishing emails across 5 telltale categories',
+    tagline: 'Rate phishing emails across 4 persuasion dimensions',
     accent: SF.lime,
     total: '/100',
     blocks: [
       {
-        label: 'Detection Categories',
+        label: 'Scoring Dimensions',
         items: [
-          { label: 'Personalization', points: 'max 20' },
-          { label: 'Persuasion & Urgency', points: 'max 20' },
-          { label: 'Sender Credibility', points: 'max 20' },
-          { label: 'Call to Action', points: 'max 20' },
-          { label: 'Technical Quality', points: 'max 20' },
+          { label: 'Personalization', points: 'max 25' },
+          { label: 'Persuasion', points: 'max 25' },
+          { label: 'Sender Credibility', points: 'max 25' },
+          { label: 'Call to Action', points: 'max 25' },
         ],
       },
     ],

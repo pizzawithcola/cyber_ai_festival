@@ -225,7 +225,7 @@ const PhishingScorePage: React.FC = () => {
           {/* Category Scores - 横向排列 */}
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, flexWrap: 'wrap' }}>
             {Object.entries(score_details).map(([key, [score, feedback]]) => {
-              const category = CATEGORY_LABELS[key] || { label: `Category ${key}`, maxScore: 20 };
+              const category = CATEGORY_LABELS[key] || { label: `Category ${key}`, maxScore: 25 };
               const ratio = score / category.maxScore;
 
               return (
