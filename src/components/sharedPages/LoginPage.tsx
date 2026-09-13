@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { setStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
+import { countryCodeToFlag } from '../../utils/countryFlag';
 import { apiFetch } from '../../services/api';
 import {
   Box,
@@ -210,14 +211,6 @@ const GAME_ROUTES: Record<string, string> = {
   retaildemolition: '/retaildemolition',
   phishing: '/phishing/edu',
 };
-
-function countryCodeToFlag(code: string) {
-  return code
-    .toUpperCase()
-    .split('')
-    .map(c => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-    .join('');
-}
 
 const COUNTRY_NAME_TO_CODE = Object.fromEntries(COUNTRIES.map(c => [c.name, c.code])) as Record<string, string>;
 

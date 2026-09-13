@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { COUNTRIES } from '../common/Countries';
+import { countryCodeToFlag } from '../../utils/countryFlag';
 import { apiFetch } from '../../services/api';
 import {
   Box,
@@ -76,10 +77,6 @@ const tfSx = {
   '& .MuiInputLabel-root.Mui-focused': { color },
   '& .MuiSelect-icon': { color: `${color}80` },
 };
-
-function countryCodeToFlag(code: string) {
-  return code.toUpperCase().split('').map(c => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65)).join('');
-}
 
 type SnackState = { open: boolean; message: string; severity: 'success' | 'error' | 'warning' };
 

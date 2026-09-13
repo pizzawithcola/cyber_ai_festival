@@ -15,6 +15,7 @@ import { getStoredUser, setStoredUser } from '../../utils/userStorage';
 import { apiFetch } from '../../services/api';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 import { COUNTRIES } from '../../components/common/Countries';
+import { countryCodeToFlag } from '../../utils/countryFlag';
 import { useClickSound } from '../../hooks/useClickSound';
 
 // ─── Animations ───────────────────────────────────────────────────────────────
@@ -47,9 +48,6 @@ const cardSx = {
   p: 3,
 };
 
-function countryCodeToFlag(code: string) {
-  return code.toUpperCase().split('').map(c => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65)).join('');
-}
 const COUNTRY_NAME_TO_CODE = Object.fromEntries(COUNTRIES.map(c => [c.name, c.code])) as Record<string, string>;
 
 // ─── Join Screen (Step 1: Enter room code) ───────────────────────────────────

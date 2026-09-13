@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, keyframes } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
-import { COUNTRIES } from '../common/Countries';
+import { countryCodeToFlag } from '../../utils/countryFlag';
 import { apiFetch } from '../../services/api';
 import { ArcadeButton, ArcadeTypography } from '../ui';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
@@ -54,16 +54,6 @@ const scanlineAnim = keyframes`
   0% { top: -10%; }
   100% { top: 110%; }
 `;
-
-const countryCodeToFlag = (code: string) => {
-  const country = COUNTRIES.find((c) => c.name === code);
-  const countryCode = country ? country.code : code;
-  return countryCode
-    .toUpperCase()
-    .split('')
-    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-    .join('');
-};
 
 const getRankDisplay = (rank: number) => {
   if (rank === 1) return { text: '1ST', color: '#FFD700' };

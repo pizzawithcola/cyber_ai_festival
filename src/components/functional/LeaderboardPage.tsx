@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Typography, keyframes } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
-import { COUNTRIES } from '../common/Countries';
+import { countryCodeToFlag } from '../../utils/countryFlag';
 import { apiFetch } from '../../services/api';
 import { useKioskMode } from '../../hooks/useKioskMode';
 import { ArcadeButton, ArcadeTypography } from '../ui';
@@ -53,20 +53,6 @@ const scanlineAnim = keyframes`
   0% { top: -10%; }
   100% { top: 110%; }
 `;
-
-const countryCodeToFlag = (code: string | null | undefined): string => {
-  // Guard against missing/empty region (backend `region` can be null)
-  if (!code) return '🌐';
-  const country = COUNTRIES.find((c) => c.name === code);
-  const countryCode = country ? country.code : code;
-  // Only convert valid 2-letter country codes; fallback for unknown values
-  if (countryCode.length !== 2) return '🌐';
-  return countryCode
-    .toUpperCase()
-    .split('')
-    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-    .join('');
-};
 
 const getRankDisplay = (rank: number) => {
   if (rank === 1) return { text: '1ST', color: '#FFD700' };
