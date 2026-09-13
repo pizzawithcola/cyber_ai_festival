@@ -15,11 +15,10 @@ import { ARCADE_COLORS } from '../../theme/theme';
 import { useClickSound } from '../../hooks/useClickSound';
 
 const CATEGORY_LABELS: Record<string, { label: string; maxScore: number }> = {
-  '1': { label: 'Personalization', maxScore: 20 },
-  '2': { label: 'Persuasion & Urgency', maxScore: 20 },
-  '3': { label: 'Sender Credibility', maxScore: 20 },
-  '4': { label: 'Call to Action', maxScore: 20 },
-  '5': { label: 'Technical Quality', maxScore: 20 },
+  '1': { label: 'Personalization', maxScore: 25 },
+  '2': { label: 'Persuasion & Urgency', maxScore: 25 },
+  '3': { label: 'Sender Credibility', maxScore: 25 },
+  '4': { label: 'Call to Action', maxScore: 25 },
 };
 
 function getScoreColor(ratio: number) {
