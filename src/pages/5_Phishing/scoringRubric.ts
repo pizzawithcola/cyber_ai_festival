@@ -6,11 +6,22 @@
  *
  * UI 只需消费这里的数据即可把「2.1=5」翻译成玩家看得懂的：
  * 「✅ 个性化称呼 +5」/「➖ 部分命中 +2.5」/「❌ 漏了 +0」。
+ *
+ * v2 设计原则：
+ * 1. 判「效果」不判「手法」——同一效果允许多种写法，只问有没有达成。
+ * 2. 每项带 tier：
+ *    - core        底线项，硬伤，必计分
+ *    - situational 情境项，任务本身不需要该手法时按 2.5 计（不因「没用这招」重罚）
+ *    - bonus       加分项，锦上添花，没做不额外扣分
+ * 3. 同一句话只计一次，避免重复给分。
  */
 
 export const ITEM_MAX = 5;
+
 export const DIMENSION_MAX = 25;
 export const TOTAL_MAX = 100;
+
+export type RubricTier = 'core' | 'situational' | 'bonus';
 
 export interface RubricItem {
   /** 与后端 prompt 中的编号一致，如 "2.1" */
@@ -19,6 +30,8 @@ export interface RubricItem {
   label: string;
   /** 一句话可操作建议（玩家知道"下次怎么拿这 5 分"） */
   hint: string;
+  /** 项级别：底线 / 情境 / 加分 */
+  tier: RubricTier;
 }
 
 export interface RubricDimension {
@@ -35,11 +48,11 @@ export const PHISHING_RUBRIC: RubricDimension[] = [
     label: 'Personalization',
     tagline: 'Make it feel written for them, not for anyone',
     items: [
-      { id: '1.1', label: 'Personalized greeting with their name', hint: 'Open with “Dear Alex,” instead of “Dear User”.' },
-      { id: '1.2', label: 'Mentions their position or department', hint: 'Name-drop “IT Security” or “Senior Security Analyst”.' },
-      { id: '1.3', label: 'References one of their hobbies', hint: 'Their profile lists penetration testing, travel photography…' },
-      { id: '1.4', label: 'Matches their personality', hint: 'Skeptical → cite technical detail. Eager to please → use authority.' },
-      { id: '1.5', label: 'Fits the mission scenario', hint: 'Stay inside the storyline given in the briefing.' },
+      { id: '1.1', tier: 'core', label: 'Uses their name in the greeting', hint: '“Hi Emily,” rather than “Dear User”.' },
+      { id: '1.2', tier: 'core', label: 'Grounded in their real role or business', hint: 'Show you know the work they own — “your client dashboard deck”, not just a job title.' },
+      { id: '1.3', tier: 'situational', label: 'Brings in their personal side for rapport', hint: 'Only for personal/prize missions — hobbies or interests from their profile.' },
+      { id: '1.4', tier: 'situational', label: 'Speaks to what this person cares about', hint: 'Skeptic → technical proof. Career-driven → visibility with leadership. Helpful → being useful.' },
+      { id: '1.5', tier: 'core', label: 'Scenario fits the mission briefing', hint: 'Stay inside the storyline and the mission title.' },
     ],
   },
   {
@@ -47,11 +60,11 @@ export const PHISHING_RUBRIC: RubricDimension[] = [
     label: 'Persuasion',
     tagline: 'Give them a reason to act now',
     items: [
-      { id: '2.1', label: 'Sets a clear deadline', hint: '“within 24 hours” / “before 3 PM” / “EOD”.' },
-      { id: '2.2', label: 'Uses loss or consequences', hint: 'Account lockout, data loss, legal action, suspension.' },
-      { id: '2.3', label: 'Cites authority or policy', hint: 'CISO, HR, supervisor, company policy, compliance.' },
-      { id: '2.4', label: 'Offers a reward hook', hint: 'Prize, gift card, bonus, exclusive offer.' },
-      { id: '2.5', label: 'Keeps one consistent emotional angle', hint: 'Pick a single feeling and carry it through.' },
+      { id: '2.1', tier: 'situational', label: 'Creates a sense that acting now matters', hint: 'A time window or closing opportunity. A bare “ASAP” is weak.' },
+      { id: '2.2', tier: 'situational', label: 'Makes the cost of not acting visible', hint: 'Lockout, data loss, missed deal, audit exposure — only if the scenario supports it.' },
+      { id: '2.3', tier: 'situational', label: 'Borrows authority they already respect', hint: 'Executive, IT/HR, policy, a client — or “your manager”. Any credible third party counts.' },
+      { id: '2.4', tier: 'bonus', label: 'Offers something positive in return', hint: 'Credit, visibility with leadership, reciprocity, a perk — anything they gain by complying.' },
+      { id: '2.5', tier: 'core', label: 'One consistent emotional angle throughout', hint: 'Pick a single feeling and carry it — don’t swing between threat and friendliness.' },
     ],
   },
   {
@@ -59,11 +72,11 @@ export const PHISHING_RUBRIC: RubricDimension[] = [
     label: 'Sender Credibility',
     tagline: 'Look like someone they already trust',
     items: [
-      { id: '3.1', label: 'Sender domain fits the mission', hint: 'Internal tasks → @acc.com; prize tasks → a plausible brand domain.' },
-      { id: '3.2', label: 'Signature includes a name', hint: 'Sign off as a person — not just “IT Team”.' },
-      { id: '3.3', label: 'Signature includes a title or department', hint: 'e.g. “VP of Finance” or “IT Security”.' },
-      { id: '3.4', label: 'Signature includes contact details', hint: 'Extension, phone, or email address.' },
-      { id: '3.5', label: 'Claimed identity matches the mission', hint: 'If the task says impersonate a manager, do exactly that.' },
+      { id: '3.1', tier: 'core', label: 'Sender domain fits the mission', hint: 'Internal tasks → @acc.com; prize tasks → a plausible brand domain.' },
+      { id: '3.2', tier: 'core', label: 'Signature is a person, not a team', hint: 'Sign off as a person — not just “IT Team”.' },
+      { id: '3.3', tier: 'core', label: 'Signature carries a title or department', hint: 'e.g. “Head of Financing USA” or “IT Security”.' },
+      { id: '3.4', tier: 'bonus', label: 'Adds verifiable-feeling detail', hint: 'Extension, office location, employee ID, or a meeting/ticket reference. Polish, not required.' },
+      { id: '3.5', tier: 'core', label: 'Claimed identity matches the mission', hint: 'If the task says impersonate a manager, do exactly that — and stay consistent.' },
     ],
   },
   {
@@ -71,11 +84,11 @@ export const PHISHING_RUBRIC: RubricDimension[] = [
     label: 'Call to Action',
     tagline: 'Make the next click obvious',
     items: [
-      { id: '4.1', label: 'Includes at least one link', hint: 'Give them something to click.' },
-      { id: '4.2', label: "Link matches the mission's target link", hint: 'Use exactly the URL given in your briefing.' },
-      { id: '4.3', label: 'Uses a clear action verb', hint: 'Reset, click, verify, upload, claim, download.' },
-      { id: '4.4', label: 'Guidance is clearly structured', hint: 'Numbered or bulleted steps.' },
-      { id: '4.5', label: 'Action is bound to a deadline', hint: '“Do this before 3 PM today.”' },
+      { id: '4.1', tier: 'core', label: 'Contains a clickable destination', hint: 'Give them something to click.' },
+      { id: '4.2', tier: 'core', label: "Destination matches the mission's target link", hint: 'Use exactly the URL given in your briefing.' },
+      { id: '4.3', tier: 'core', label: 'Uses an explicit action verb', hint: 'Send, share, upload, reset, verify, claim, download.' },
+      { id: '4.4', tier: 'situational', label: 'Steps are structured when there are several', hint: 'A one-step ask only needs a clear sentence; number the steps when there are 2+.' },
+      { id: '4.5', tier: 'bonus', label: 'Lowers the effort to comply', hint: 'Ready-made link, the exact folder, a pre-filled recipient — make doing it effortless.' },
     ],
   },
 ];

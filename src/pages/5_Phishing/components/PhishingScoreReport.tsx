@@ -194,6 +194,19 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
         </Box>
       </Panel>
 
+      {/* 图例：底线 / 情境 / 加分 */}
+      <Typography
+        sx={{
+          fontFamily: '"Electrolize", sans-serif',
+          fontSize: '0.72rem',
+          color: `${ARCADE_COLORS.white}55`,
+          textAlign: 'center',
+          mt: -0.5,
+        }}
+      >
+        CORE must be met · SITUATIONAL judged by this mission · BONUS is extra credit
+      </Typography>
+
       {itemDataMissing && (
         <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.78rem', color: `${ARCADE_COLORS.white}60`, textAlign: 'center' }}>
           Per-item verdicts weren’t included this round — showing dimension scores only.
