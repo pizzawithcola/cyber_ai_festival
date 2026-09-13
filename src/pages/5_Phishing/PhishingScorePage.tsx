@@ -3,29 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 import { submitGameScoreMax } from '../../services/scoreSubmission';
-import {
-  Box,
-  Typography,
-  LinearProgress,
-} from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import Header from '../../components/common/Header';
 import { ArcadeButton, ArcadeTypography } from '../../components/ui';
 import { ARCADE_COLORS } from '../../theme/theme';
 import { useClickSound } from '../../hooks/useClickSound';
-
-const CATEGORY_LABELS: Record<string, { label: string; maxScore: number }> = {
-  '1': { label: 'Personalization', maxScore: 25 },
-  '2': { label: 'Persuasion & Urgency', maxScore: 25 },
-  '3': { label: 'Sender Credibility', maxScore: 25 },
-  '4': { label: 'Call to Action', maxScore: 25 },
-};
-
-function getScoreColor(ratio: number) {
-  if (ratio >= 0.7) return '#4caf50';
-  if (ratio >= 0.4) return '#ff9800';
-  return '#f44336';
-}
+import { buildReport } from './scoringRubric';
+import PhishingScoreReport from './components/PhishingScoreReport';
 
 const PhishingScorePage: React.FC = () => {
   useClickSound();
@@ -88,10 +73,12 @@ const PhishingScorePage: React.FC = () => {
     );
   }
 
-  const { total_score, score_details } = state.reply;
-  const maxTotal = Object.values(CATEGORY_LABELS).reduce((sum, c) => sum + c.maxScore, 0);
-  const totalRatio = total_score / maxTotal;
   const user = getStoredUser();
+  // 组装玩家可读报告：4 维 × 5 条细则 + 总分（与明细自洽）
+  const report = buildReport(state.reply);
+  // 展示与提交用同一个数字，保证大屏/排行榜与玩家看到的完全一致
+  const total_score = report.total;
+  const itemDataMissing = report.dimensions.every((d) => d.verdicts.every((v) => v.score === undefined));
 
   const handleSubmitScoreAndNavigate = async () => {
     // Check if this is a benchmark attempt — skip score submission
@@ -178,102 +165,12 @@ const PhishingScorePage: React.FC = () => {
                 </ArcadeTypography>
               </Box>
             )}
-            {/* Total Score */}
-            <Box
-              sx={{
-                p: 4,
-                mb: 4,
-                textAlign: 'center',
-                border: `2px solid ${getScoreColor(totalRatio)}`,
-                backgroundColor: 'rgba(10, 10, 26, 0.95)',
-                borderRadius: 1,
-                boxShadow: `0 0 20px ${getScoreColor(totalRatio)}40`,
-              }}
-            >
-              <Typography variant='subtitle1' sx={{ color: `${ARCADE_COLORS.white}80`, mb: 1, fontFamily: '"Electrolize", sans-serif' }}>
-                TOTAL SCORE
-              </Typography>
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'baseline', 
-                gap: 1,
-                justifyContent: 'center'
-              }}>
-                <ArcadeTypography font="electrolize" arcadeSize="xl" sx={{ color: getScoreColor(totalRatio) }}>
-                  {total_score}
-                </ArcadeTypography>
-              </Box>
-              <Typography variant='subtitle2' sx={{ color: `${ARCADE_COLORS.white}60`, fontFamily: '"Electrolize", sans-serif' }}>
-                out of {maxTotal}
-              </Typography>
-              <LinearProgress
-                variant='determinate'
-                value={totalRatio * 100}
-                sx={{
-                  mt: 2,
-                  height: 10,
-                  borderRadius: 5,
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: getScoreColor(totalRatio),
-                    borderRadius: 5,
-                  },
-                }}
-              />
-            </Box>
-
-          {/* Category Scores - 横向排列 */}
-          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, flexWrap: 'wrap' }}>
-            {Object.entries(score_details).map(([key, [score, feedback]]) => {
-              const category = CATEGORY_LABELS[key] || { label: `Category ${key}`, maxScore: 25 };
-              const ratio = score / category.maxScore;
-
-              return (
-                <Box
-                  key={key}
-                  sx={{
-                    p: 2.5,
-                    flex: '1 1 0',
-                    minWidth: 180,
-                    border: `1px solid ${getScoreColor(ratio)}30`,
-                    backgroundColor: 'rgba(10, 10, 26, 0.9)',
-                    borderRadius: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: `0 0 8px ${getScoreColor(ratio)}15`,
-                  }}
-                >
-                  <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 0.5, color: ARCADE_COLORS.white, fontFamily: '"Electrolize", sans-serif' }}>
-                    {category.label}
-                  </Typography>
-                  <Typography
-                    variant='h5'
-                    sx={{ fontWeight: 700, color: getScoreColor(ratio), mb: 1, fontFamily: '"Electrolize", sans-serif' }}
-                  >
-                    {score} / {category.maxScore}
-                  </Typography>
-                  <LinearProgress
-                    variant='determinate'
-                    value={ratio * 100}
-                    sx={{
-                      mb: 1.5,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      '& .MuiLinearProgress-bar': {
-                        backgroundColor: getScoreColor(ratio),
-                        borderRadius: 3,
-                      },
-                    }}
-                  />
-                  <Typography variant='body2' sx={{ color: `${ARCADE_COLORS.white}90`, fontFamily: '"Electrolize", sans-serif', flex: 1 }}>
-                    {feedback}
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
-          
+            <PhishingScoreReport
+              total={total_score}
+              dimensions={report.dimensions}
+              focus={report.focus}
+              itemDataMissing={itemDataMissing}
+            />
           {/* Maximum attempts message */}
           {attemptCount >= 2 && (
             <Typography variant="body2" sx={{ mt: 2, mb: 4, color: `${ARCADE_COLORS.white}60`, textAlign: 'center', fontFamily: '"Electrolize", sans-serif' }}>

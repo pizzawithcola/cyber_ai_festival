@@ -75,6 +75,8 @@ turndown.addRule('coloredText', {
 interface JudgeReply {
   total_score: number;
   score_details: Record<string, [number, string]>;
+  /** 结构化逐项得分（新增：报告逐条展示用；兼容旧版缺失） */
+  item_scores?: Record<string, number>;
 }
 
 /**
@@ -103,14 +105,28 @@ const parseJudgeReply = (reply: unknown): JudgeReply | null => {
   }
   if (!parsed || typeof parsed !== 'object') return null;
 
-  const candidate = parsed as { total_score?: unknown; score_details?: unknown };
+  const candidate = parsed as { total_score?: unknown; score_details?: unknown; item_scores?: unknown };
   const total = candidate.total_score;
   if (typeof total !== 'number' || !Number.isFinite(total)) return null;
 
   const details = candidate.score_details;
   if (!details || typeof details !== 'object' || Object.keys(details).length === 0) return null;
 
-  return { total_score: total, score_details: details as Record<string, [number, string]> };
+  // 逐项得分（"1.1"~"4.5"）：仅接受合法键与有限数值
+  const rawItems = candidate.item_scores;
+  let itemScores: Record<string, number> | undefined;
+  if (rawItems && typeof rawItems === 'object') {
+    const entries = Object.entries(rawItems as Record<string, unknown>)
+      .map(([key, value]) => [key, Number(value)] as const)
+      .filter(([key, value]) => /^\d\.\d$/.test(key) && Number.isFinite(value));
+    if (entries.length > 0) itemScores = Object.fromEntries(entries);
+  }
+
+  return {
+    total_score: total,
+    score_details: details as Record<string, [number, string]>,
+    ...(itemScores ? { item_scores: itemScores } : {}),
+  };
 };
 
 const StyledTextField = styled(TextField)(() => ({
