@@ -63,7 +63,9 @@
 - **自动全屏**：进入后尝试 `requestFullscreen()`，并保留"任意按键再尝试"兜底（Tizen 浏览器可能需用户手势）
 - **自动刷新/自愈**：接口失败重试；`window.onerror` / 长时间无数据 → 定时 `location.reload()`
 - **防休眠**：`Wake Lock API`（若支持）＋ 心跳微动；本项目已有 MatrixRain 动态背景，天然减少静态风险
-- **URL**：`https://<CloudFront 域名>/tv`（**必须 HTTPS、公网可达**；CloudFront 同源代理 API 已具备）
+- **URL**：`https://<CloudFront 域名>/tv.html`（**必须 HTTPS、公网可达**；相对路径 `/rankings/*` 已由 CloudFront 转发到后端）
+  - `/tv.html` 是**电视专用静态页**（见第九节），专为老 Tizen 浏览器而做
+  - `/tv` 是 SPA 内的 kiosk 路由，**只适合现代浏览器**（平板/新电视/电脑），旧电视打开会白屏
 
 ---
 
@@ -73,7 +75,7 @@
 - [ ] 确认 H.Browser Solution 存在（Tizen ≥4 且菜单有该项）
 - [ ] `MUTE-1-1-9-OK` 进隐藏菜单 → Hospitality = Standalone
 - [ ] H.Browser Mode = ON（Vendor = OTHER）
-- [ ] URL Launcher Setting 填我们的 URL（先试纯 `/tv` URL）
+- [ ] URL Launcher Setting 填我们的 URL（**填 `/tv.html`，不是 `/tv`**）
 - [ ] Menu OSD OFF / Virtual Standby ON / 网络已连
 - [ ] 主菜单：Eco 全关、Auto Protection Time OFF、Anynet+ OFF、Sound Feedback OFF
 - [ ] 记录所有改动前的原值（便于回滚）
@@ -140,3 +142,40 @@
 - Uniguest / thecloudportal《Installation details - Samsung Tizen Hospitality TVs》（Standalone 菜单、Eco/屏保、Virtual Standby、URL Launcher、Cloning 步骤）
 - Nevron KB《Samsung Smart TV TIZEN Setup》（`MUTE-1-1-9-OK`、H.Browser Mode ON、Vendor=OTHER、URL Launcher Setting、隐藏码与 Tizen 版本检查）
 - VITEC ArtioView《Configure Samsung SmartTV models》（H.Browser / Apps Editable 常规流程）
+
+---
+
+## 九、电视专用静态页（方案 B，已实现）
+
+### 9.1 为什么需要它
+
+`HG43AU800AUXUE`（2021 AU8000 平台）是 **Tizen 6 ≈ Chromium 76**，而本项目的 SPA 是用 Vite 7 构建的，产物面向 **Chrome 107+**：
+
+| 语法 | 线上产物中出现 | 需要浏览器 | Chromium 76 |
+|---|---|---|---|
+| `?.` 可选链 | 469 次 | Chrome 80+ | ❌ |
+| `??` 空值合并 | 190 次 | Chrome 80+ | ❌ |
+| `??=` 逻辑赋值 | 2 次 | Chrome 85+ | ❌ |
+| `.at()` / `Object.hasOwn` | 各 1 次 | Chrome 92/93+ | ❌ 运行时报错 |
+
+→ 电视打开 `/tv` 会**在 JS 解析阶段直接白屏**，但 HTTP 仍是 200，所以**服务端日志里看不到任何异常**（极易误判为“网络问题”）。
+另：Tailwind 4 的 CSS 需要 Chrome 111+，在 Tizen 6 上布局也会崩。
+
+### 9.2 方案内容
+
+- 文件：`public/tv.html`（纯 **ES5** + 手写 CSS + `XMLHttpRequest`，零依赖、无构建步骤）
+- 数据：同源 `GET /rankings/{type}?limit=10`，带 `X-API-Key`；每 30s 刷新全部榜单，每 20s 轮播一个榜单
+- 自愈：失败保留上一次数据 + 显示 `Reconnecting…`；连续失败 6 次（约 3 分钟）自动 `location.reload()`
+- 运维开关：`?t=game4` 可**固定单个榜单**不轮播
+- 安全：`__API_KEY__` 占位符，由 GitHub Actions 在构建前用 `secrets.VITE_API_KEY` 替换（**真实 key 不入库**）
+
+### 9.3 现场排查顺序（电视“连不上”时）
+
+1. 电视自带 **WebBrowser** → 打开 `https://j2i.net/apps/userAgent`，先确认 **Tizen 版本**
+2. 在 WebBrowser 里打开 `https://d24umo4oysfx97.cloudfront.net/tv.html`
+   | 现象 | 结论 |
+   |---|---|
+   | 能显示榜单 | ✅ 页面没问题，故障在 URL Launcher 配置 |
+   | 白屏 | 把 Tizen 版本反馈给开发（可能是更老的内核）|
+   | 提示无法解析主机 | 网络/DNS 问题，与代码无关 |
+3. CloudFront / ALB 的**访问日志目前未开启**，服务端查不到逐请求记录（如需实锤需先开启 CloudFront 标准日志 v2）

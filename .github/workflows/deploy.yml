@@ -21,6 +21,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The TV kiosk page is plain HTML (legacy TV browsers cannot run the SPA),
+      # so its API key has to be injected here instead of via import.meta.env.
+      - name: Inject API key into the TV kiosk page
+        run: sed -i "s|__API_KEY__|${{ secrets.VITE_API_KEY }}|g" public/tv.html
+
       - name: Build
         run: npm run build
         env:

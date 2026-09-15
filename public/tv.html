@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>AI Cyber Arcade — Leaderboard</title>
+<!--
+  TV kiosk page for legacy TV browsers (Samsung Tizen 6 / Chromium 76).
+
+  Why this file exists:
+    The React SPA bundle is built for modern browsers (Chrome 107+) and uses
+    optional chaining / nullish coalescing, which older TV engines cannot even
+    parse -> the TV shows a blank page while the server still answers HTTP 200.
+    This page is plain ES5 + hand written CSS so any TV browser can run it.
+
+  Deploy note:
+    __API_KEY__ is replaced with the real key by the GitHub Actions workflow.
+    Never commit the real key here.
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: #05060f;
+    color: #ffffff;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+  }
+
+  #app {
+    width: 100%;
+    height: 100%;
+    padding: 2.2vh 2.2vw;
+    display: block;
+  }
+
+  /* ---------- header ---------- */
+  #head {
+    width: 100%;
+    border-bottom: 0.35vh solid #1b2b4d;
+    padding-bottom: 1.2vh;
+  }
+
+  #brand {
+    font-size: 3.1vh;
+    font-weight: bold;
+    letter-spacing: 0.35vh;
+    color: #7ce787;
+    text-transform: uppercase;
+  }
+
+  #meta {
+    margin-top: 0.6vh;
+    font-size: 2.1vh;
+    color: #9fb0c9;
+  }
+
+  #live { color: #7ce787; }
+  #live.gone { color: #e07070; }
+  #clock { float: right; color: #9fb0c9; }
+
+  /* ---------- board ---------- */
+  #boardWrap { width: 100%; margin-top: 2vh; }
+
+  #boardName {
+    font-size: 5.2vh;
+    font-weight: bold;
+    letter-spacing: 0.4vh;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  #boardCount {
+    float: right;
+    font-size: 2.2vh;
+    color: #9fb0c9;
+    margin-top: 2.4vh;
+  }
+
+  table {
+    width: 100%;
+    margin-top: 1.4vh;
+    border-collapse: collapse;
+  }
+
+  th {
+    text-align: left;
+    font-size: 1.9vh;
+    color: #9fb0c9;
+    font-weight: normal;
+    padding: 0.7vh 0.8vw;
+    border-bottom: 0.25vh solid #1b2b4d;
+    text-transform: uppercase;
+    letter-spacing: 0.2vh;
+  }
+
+  td {
+    font-size: 3.4vh;
+    padding: 1.15vh 0.8vw;
+    border-bottom: 1px solid #121a2e;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  tr.top1 td { color: #ffe066; font-size: 3.9vh; font-weight: bold; }
+  tr.top2 td { color: #dfe6f0; }
+  tr.top3 td { color: #e0b080; }
+
+  td.rank   { width: 8%;  color: #7f8ea8; }
+  td.name   { width: 42%; }
+  td.region { width: 18%; color: #9fb0c9; font-size: 2.4vh; }
+  td.score  { width: 32%; text-align: right; color: #7ce787; font-weight: bold; }
+
+  tr.top1 td.rank, tr.top2 td.rank, tr.top3 td.rank { color: inherit; }
+  tr.top1 td.score, tr.top2 td.score, tr.top3 td.score { color: inherit; }
+
+  /* ---------- rotation dots ---------- */
+  #dots { margin-top: 2.4vh; text-align: center; }
+
+  #dots span {
+    display: inline-block;
+    width: 1.1vh;
+    height: 1.1vh;
+    margin: 0 0.55vh;
+    background: #223252;
+    border-radius: 50%;
+  }
+
+  #dots span.on { background: #7ce787; }
+
+  /* ---------- status ---------- */
+  #status {
+    margin-top: 1.6vh;
+    text-align: center;
+    font-size: 2vh;
+    color: #9fb0c9;
+    min-height: 2.4vh;
+  }
+
+  #status.warn { color: #ffb347; }
+  #status.bad  { color: #e07070; }
+
+  /* ---------- 720p and below ---------- */
+  @media (max-width: 1366px) {
+    #brand      { font-size: 2.6vh; }
+    #boardName  { font-size: 4.2vh; }
+    td          { font-size: 2.8vh; padding: 0.95vh 0.8vw; }
+    tr.top1 td  { font-size: 3.1vh; }
+  }
+
+  /* ---------- 4K ---------- */
+  @media (min-width: 2400px) {
+    td          { font-size: 3.1vh; }
+    #brand      { font-size: 3.4vh; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="head">
+    <div id="brand">AI Cyber Arcade</div>
+    <div id="meta">
+      <span id="live">&#9679; LIVE</span>
+      <span id="clock">--:--</span>
+    </div>
+  </div>
+
+  <div id="boardWrap">
+    <div id="boardName">TOTAL</div>
+    <div id="boardCount"></div>
+    <table>
+      <thead>
+        <tr>
+          <th class="rank">#</th>
+          <th class="name">Player</th>
+          <th class="region">Region</th>
+          <th class="score">Score</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div id="dots"></div>
+  <div id="status"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- config ---------- */
+  var API_KEY     = '__API_KEY__';   /* injected at deploy time */
+  var LIMIT       = 10;              /* rows per board */
+  var REFRESH_MS  = 30000;           /* refetch all boards */
+  var ROTATE_MS   = 20000;           /* switch board */
+  var RELOAD_AFTER_FAILURES = 6;     /* ~3 minutes offline -> self heal */
+
+  /* Rotate in the same order the main app uses. Pin one board with ?t=game4 . */
+  var TYPES = [
+    { key: 'total', label: 'TOTAL' },
+    { key: 'game4', label: 'PHISHING' },
+    { key: 'game1', label: 'HALLUCINATE' },
+    { key: 'game2', label: 'DATA SHADOWS' },
+    { key: 'game3', label: 'RETAIL' },
+    { key: 'game5', label: 'FINAL' }
+  ];
+
+  var cache = {};        /* key -> rankings payload (kept when a fetch fails) */
+  var loaded = {};       /* key -> true once fetched successfully */
+  var failed = 0;        /* consecutive failure count */
+  var current = 0;       /* index into TYPES */
+
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- helpers ---------- */
+  function text(node, value) {
+    while (node.firstChild) node.removeChild(node.firstChild);
+    node.appendChild(document.createTextNode(value));
+  }
+
+  function flag(region) {
+    if (!region || typeof region !== 'string') return '';
+    var code = region.toUpperCase();
+    if (!/^[A-Z]{2}$/.test(code)) return '';
+    /* regional indicator symbols, built from code points (no ES6 literals) */
+    return String.fromCharCode(code.charCodeAt(0) + 127397) +
+           String.fromCharCode(code.charCodeAt(1) + 127397) + ' ';
+  }
+
+  function displayName(entry) {
+    if (entry.nickname) return entry.nickname;
+    if (entry.firstname) return entry.firstname;
+    return 'Player ' + entry.user_id;
+  }
+
+  function formatScore(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return String(value);
+    if (Math.round(n) === n) return String(n);
+    return n.toFixed(1);
+  }
+
+  function setStatus(message, level) {
+    var box = $('status');
+    text(box, message || '');
+    box.className = level || '';
+  }
+
+  /* ---------- rendering ---------- */
+  function renderDots() {
+    var wrap = $('dots');
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    for (var i = 0; i < TYPES.length; i++) {
+      var dot = document.createElement('span');
+      if (i === current) dot.className = 'on';
+      wrap.appendChild(dot);
+    }
+  }
+
+  function renderBoard() {
+    var type = TYPES[current];
+    var data = cache[type.key];
+    var body = $('rows');
+
+    while (body.firstChild) body.removeChild(body.firstChild);
+    text($('boardName'), type.label);
+
+    if (!data || !data.rankings || !data.rankings.length) {
+      text($('boardCount'), '');
+      setStatus(loaded[type.key] ? 'No entries yet.' : 'Loading…', loaded[type.key] ? '' : 'warn');
+      return;
+    }
+
+    text($('boardCount'), 'TOP ' + data.rankings.length + ' / ' + (data.total_entries || data.rankings.length) + ' players');
+
+    for (var i = 0; i < data.rankings.length; i++) {
+      var entry = data.rankings[i];
+      var row = document.createElement('tr');
+      if (i === 0) row.className = 'top1';
+      else if (i === 1) row.className = 'top2';
+      else if (i === 2) row.className = 'top3';
+
+      var cRank = document.createElement('td');
+      cRank.className = 'rank';
+      text(cRank, String(entry.rank || i + 1));
+
+      var cName = document.createElement('td');
+      cName.className = 'name';
+      text(cName, displayName(entry));
+
+      var cRegion = document.createElement('td');
+      cRegion.className = 'region';
+      text(cRegion, flag(entry.region) + (entry.region ? entry.region : ''));
+
+      var cScore = document.createElement('td');
+      cScore.className = 'score';
+      text(cScore, formatScore(entry.score));
+
+      row.appendChild(cRank);
+      row.appendChild(cName);
+      row.appendChild(cRegion);
+      row.appendChild(cScore);
+      body.appendChild(row);
+    }
+
+    setStatus(lastUpdatedLabel(), '');
+  }
+
+  var lastUpdate = 0;
+  function lastUpdatedLabel() {
+    if (!lastUpdate) return '';
+    var d = new Date(lastUpdate);
+    var hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours();
+    var mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes();
+    return 'Updated ' + hh + ':' + mm;
+  }
+
+  /* ---------- data ---------- */
+  function fetchType(typeKey, done) {
+    var xhr = new XMLHttpRequest();
+    /* relative URL -> same origin, works behind CloudFront */
+    xhr.open('GET', '/rankings/' + typeKey + '?limit=' + LIMIT + '&_=' + new Date().getTime(), true);
+    xhr.setRequestHeader('X-API-Key', API_KEY);
+    xhr.timeout = 15000;
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          done(null, JSON.parse(xhr.responseText));
+        } catch (err) {
+          done(err, null);
+        }
+      } else {
+        done(new Error('HTTP ' + xhr.status), null);
+      }
+    };
+    xhr.ontimeout = function () { done(new Error('timeout'), null); };
+    xhr.onerror = function () { done(new Error('network'), null); };
+
+    try {
+      xhr.send();
+    } catch (err) {
+      done(err, null);
+    }
+  }
+
+  var pending = 0;
+  var batchFailed = 0;
+
+  function fetchAll() {
+    pending = TYPES.length;
+    batchFailed = 0;
+
+    for (var i = 0; i < TYPES.length; i++) {
+      (function (typeKey) {
+        fetchType(typeKey, function (err, data) {
+          if (err) {
+            batchFailed++;
+          } else {
+            cache[typeKey] = data;
+            loaded[typeKey] = true;
+          }
+          pending--;
+          if (pending === 0) onBatchDone();
+        });
+      })(TYPES[i].key);
+    }
+  }
+
+  function onBatchDone() {
+    if (batchFailed === TYPES.length) {
+      failed++;
+      setStatus('Reconnecting… (attempt ' + failed + ')', 'bad');
+      $('live').className = 'gone';
+      if (failed >= RELOAD_AFTER_FAILURES) {
+        /* full reload as a last resort: clears any stuck state on the TV */
+        location.reload();
+      }
+      return;
+    }
+
+    failed = 0;
+    lastUpdate = new Date().getTime();
+    $('live').className = '';
+    renderBoard();
+  }
+
+  function rotate() {
+    current = (current + 1) % TYPES.length;
+    renderDots();
+    renderBoard();
+  }
+
+  function tickClock() {
+    var d = new Date();
+    var hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours();
+    var mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes();
+    text($('clock'), hh + ':' + mm);
+  }
+
+  /* ---------- boot ---------- */
+  function boot() {
+    /* let the operator pin a single board with /tv.html?t=game4 */
+    try {
+      var query = window.location.search;
+      var match = query ? query.match(/[?&]t=([A-Za-z0-9]+)/) : null;
+      if (match) {
+        for (var i = 0; i < TYPES.length; i++) {
+          if (TYPES[i].key === match[1]) { current = i; break; }
+        }
+      }
+    } catch (err) { /* ignore */ }
+
+    if (API_KEY.indexOf('__API') === 0) {
+      setStatus('API key missing — the deploy step did not inject it.', 'bad');
+    }
+
+    renderDots();
+    tickClock();
+    fetchAll();
+
+    window.setInterval(tickClock, 15000);
+    window.setInterval(fetchAll, REFRESH_MS);
+    window.setInterval(rotate, ROTATE_MS);
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    boot();
+  } else {
+    document.addEventListener
+      ? document.addEventListener('DOMContentLoaded', boot, false)
+      : window.attachEvent('onload', boot);
+  }
+})();
+</script>
+</body>
+</html>
