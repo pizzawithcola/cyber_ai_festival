@@ -77,6 +77,8 @@ interface JudgeReply {
   score_details: Record<string, [number, string]>;
   /** 结构化逐项得分（新增：报告逐条展示用；兼容旧版缺失） */
   item_scores?: Record<string, number>;
+  /** 加分项的参考区间（仅展示，不参与计算） */
+  bonus_ranges?: Record<string, [number, number]>;
 }
 
 /**
@@ -105,7 +107,7 @@ const parseJudgeReply = (reply: unknown): JudgeReply | null => {
   }
   if (!parsed || typeof parsed !== 'object') return null;
 
-  const candidate = parsed as { total_score?: unknown; score_details?: unknown; item_scores?: unknown };
+  const candidate = parsed as { total_score?: unknown; score_details?: unknown; item_scores?: unknown; bonus_ranges?: unknown };
   const total = candidate.total_score;
   if (typeof total !== 'number' || !Number.isFinite(total)) return null;
 
@@ -122,10 +124,27 @@ const parseJudgeReply = (reply: unknown): JudgeReply | null => {
     if (entries.length > 0) itemScores = Object.fromEntries(entries);
   }
 
+  // 加分项参考区间（"1.3": [6, 8]）：仅接受 [lo, hi] 两个有限数值
+  const rawRanges = candidate.bonus_ranges;
+  let bonusRanges: Record<string, [number, number]> | undefined;
+  if (rawRanges && typeof rawRanges === 'object') {
+    const entries = Object.entries(rawRanges as Record<string, unknown>)
+      .map(([key, value]) => {
+        if (!/^\d\.\d$/.test(key) || !Array.isArray(value) || value.length < 2) return null;
+        const lo = Number(value[0]);
+        const hi = Number(value[1]);
+        if (!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
+        return [key, [lo, hi] as [number, number]] as const;
+      })
+      .filter((entry): entry is readonly [string, [number, number]] => entry !== null);
+    if (entries.length > 0) bonusRanges = Object.fromEntries(entries);
+  }
+
   return {
     total_score: total,
     score_details: details as Record<string, [number, string]>,
     ...(itemScores ? { item_scores: itemScores } : {}),
+    ...(bonusRanges ? { bonus_ranges: bonusRanges } : {}),
   };
 };
 

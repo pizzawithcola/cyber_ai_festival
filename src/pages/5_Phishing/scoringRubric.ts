@@ -2,36 +2,38 @@
  * Phishing 评分细则（前端单一数据源）
  *
  * 与后端 `app/prompts.py` 的 rubric 一一对应：
- * 4 个维度 × 5 条细则，每条 0 / 2.5 / 5 分，每维 25 分，总分 100。
+ * 4 个维度 × 3 条细则 = 12 项，每维 25 分，总分 100。
  *
- * UI 只需消费这里的数据即可把「2.1=5」翻译成玩家看得懂的：
- * 「✅ 个性化称呼 +5」/「➖ 部分命中 +2.5」/「❌ 漏了 +0」。
+ * v3 结构（底线与加分分离）：
+ *   核心底线 CORE     10 分，档位 0 / 5 / 10     —— 没有它这封邮件就不成立
+ *   标准底线 STANDARD  5 分，档位 0 / 2.5 / 5     —— 有它才像合格的钓鱼邮件
+ *   加分项   BONUS    10 分，档位 0…10 整数       —— 由模型自由裁量，另给参考区间
+ * 8 项底线全部达标 = 60 分（及格线），加分项共 40 分决定上限与区分度。
  *
- * v2 设计原则：
- * 1. 判「效果」不判「手法」——同一效果允许多种写法，只问有没有达成。
- * 2. 每项带 tier：
- *    - core        底线项，硬伤，必计分
- *    - situational 情境项，任务本身不需要该手法时按 2.5 计（不因「没用这招」重罚）
- *    - bonus       加分项，锦上添花，没做不额外扣分
- * 3. 同一句话只计一次，避免重复给分。
+ * 判定原则：判「效果」不判「手法」；同一句话只计一次，避免重复给分。
  */
 
-export const ITEM_MAX = 5;
-
+export const CORE_MAX = 10;
+export const STANDARD_MAX = 5;
+export const BONUS_MAX = 10;
 export const DIMENSION_MAX = 25;
 export const TOTAL_MAX = 100;
+/** 8 项底线全部达标时的分数（及格线） */
+export const BASELINE_TOTAL = 60;
 
-export type RubricTier = 'core' | 'situational' | 'bonus';
+export type RubricTier = 'core' | 'standard' | 'bonus';
 
 export interface RubricItem {
   /** 与后端 prompt 中的编号一致，如 "2.1" */
   id: string;
   /** 人话标签（玩家读懂"考什么"） */
   label: string;
-  /** 一句话可操作建议（玩家知道"下次怎么拿这 5 分"） */
+  /** 一句话可操作建议（玩家知道"下次怎么拿这分"） */
   hint: string;
-  /** 项级别：底线 / 情境 / 加分 */
+  /** 项级别：核心底线 / 标准底线 / 加分项 */
   tier: RubricTier;
+  /** 该项满分：CORE 10 / STANDARD 5 / BONUS 10 */
+  max: number;
 }
 
 export interface RubricDimension {
@@ -48,23 +50,19 @@ export const PHISHING_RUBRIC: RubricDimension[] = [
     label: 'Personalization',
     tagline: 'Make it feel written for them, not for anyone',
     items: [
-      { id: '1.1', tier: 'core', label: 'Uses their name in the greeting', hint: '“Hi Emily,” rather than “Dear User”.' },
-      { id: '1.2', tier: 'core', label: 'Grounded in their real role or business', hint: 'Show you know the work they own — “your client dashboard deck”, not just a job title.' },
-      { id: '1.3', tier: 'situational', label: 'Brings in their personal side for rapport', hint: 'Only for personal/prize missions — hobbies or interests from their profile.' },
-      { id: '1.4', tier: 'situational', label: 'Speaks to what this person cares about', hint: 'Skeptic → technical proof. Career-driven → visibility with leadership. Helpful → being useful.' },
-      { id: '1.5', tier: 'core', label: 'Scenario fits the mission briefing', hint: 'Stay inside the storyline and the mission title.' },
+      { id: '1.1', tier: 'core', max: CORE_MAX, label: 'Greeting fits the recipient', hint: 'Use their name and a tone that matches how you would really write to them.' },
+      { id: '1.2', tier: 'standard', max: STANDARD_MAX, label: 'Anchored in the mission and their role', hint: 'Refer to the work they own or recently did — “your client dashboard deck”, not just a job title.' },
+      { id: '1.3', tier: 'bonus', max: BONUS_MAX, label: 'Feels written for this one person', hint: 'Personal details, or a framing that lands with their personality (skeptic → proof, career-driven → visibility).' },
     ],
   },
   {
     key: '2',
     label: 'Persuasion',
-    tagline: 'Give them a reason to act now',
+    tagline: 'Give them a reason to act',
     items: [
-      { id: '2.1', tier: 'situational', label: 'Creates a sense that acting now matters', hint: 'A time window or closing opportunity. A bare “ASAP” is weak.' },
-      { id: '2.2', tier: 'situational', label: 'Makes the cost of not acting visible', hint: 'Lockout, data loss, missed deal, audit exposure — only if the scenario supports it.' },
-      { id: '2.3', tier: 'situational', label: 'Borrows authority they already respect', hint: 'Executive, IT/HR, policy, a client — or “your manager”. Any credible third party counts.' },
-      { id: '2.4', tier: 'bonus', label: 'Offers something positive in return', hint: 'Credit, visibility with leadership, reciprocity, a perk — anything they gain by complying.' },
-      { id: '2.5', tier: 'core', label: 'One consistent emotional angle throughout', hint: 'Pick a single feeling and carry it — don’t swing between threat and friendliness.' },
+      { id: '2.1', tier: 'core', max: CORE_MAX, label: 'Gives a clear reason to act', hint: 'Urgency, benefit or necessity — any one of them is enough.' },
+      { id: '2.2', tier: 'standard', max: STANDARD_MAX, label: 'Borrows authority they respect', hint: 'Executive, IT/HR, policy, a client — or “your manager”.' },
+      { id: '2.3', tier: 'bonus', max: BONUS_MAX, label: 'Persuasive quality overall', hint: 'One consistent emotional angle, coherent logic, no contradictions, no filler.' },
     ],
   },
   {
@@ -72,11 +70,9 @@ export const PHISHING_RUBRIC: RubricDimension[] = [
     label: 'Sender Credibility',
     tagline: 'Look like someone they already trust',
     items: [
-      { id: '3.1', tier: 'core', label: 'Sender domain fits the mission', hint: 'Internal tasks → @acc.com; prize tasks → a plausible brand domain.' },
-      { id: '3.2', tier: 'core', label: 'Signature is a person, not a team', hint: 'Sign off as a person — not just “IT Team”.' },
-      { id: '3.3', tier: 'core', label: 'Signature carries a title or department', hint: 'e.g. “Head of Financing USA” or “IT Security”.' },
-      { id: '3.4', tier: 'bonus', label: 'Adds verifiable-feeling detail', hint: 'Extension, office location, employee ID, or a meeting/ticket reference. Polish, not required.' },
-      { id: '3.5', tier: 'core', label: 'Claimed identity matches the mission', hint: 'If the task says impersonate a manager, do exactly that — and stay consistent.' },
+      { id: '3.1', tier: 'core', max: CORE_MAX, label: 'Sender identity matches the mission', hint: 'Domain and claimed role both fit, with no contradictions.' },
+      { id: '3.2', tier: 'standard', max: STANDARD_MAX, label: 'Signature is a person with a title', hint: 'A named signer plus a job title or department — not just “IT Team”.' },
+      { id: '3.3', tier: 'bonus', max: BONUS_MAX, label: 'Detail that feels verifiable', hint: 'Extension, office location, employee ID, an internal reference such as a meeting or ticket number.' },
     ],
   },
   {
@@ -84,18 +80,33 @@ export const PHISHING_RUBRIC: RubricDimension[] = [
     label: 'Call to Action',
     tagline: 'Make the next click obvious',
     items: [
-      { id: '4.1', tier: 'core', label: 'Contains a clickable destination', hint: 'Give them something to click.' },
-      { id: '4.2', tier: 'core', label: "Destination matches the mission's target link", hint: 'Use exactly the URL given in your briefing.' },
-      { id: '4.3', tier: 'core', label: 'Uses an explicit action verb', hint: 'Send, share, upload, reset, verify, claim, download.' },
-      { id: '4.4', tier: 'situational', label: 'Steps are structured when there are several', hint: 'A one-step ask only needs a clear sentence; number the steps when there are 2+.' },
-      { id: '4.5', tier: 'bonus', label: 'Lowers the effort to comply', hint: 'Ready-made link, the exact folder, a pre-filled recipient — make doing it effortless.' },
+      { id: '4.1', tier: 'core', max: CORE_MAX, label: "Destination matches the mission's target link", hint: 'Use exactly the URL given in your briefing — a missing or different link scores 0.' },
+      { id: '4.2', tier: 'standard', max: STANDARD_MAX, label: 'Instruction is unambiguous', hint: 'A clear action verb (share, upload, reset); number the steps when there are 2+.' },
+      { id: '4.3', tier: 'bonus', max: BONUS_MAX, label: 'Lowers the effort to comply', hint: 'Ready-made link, the exact folder, a pre-filled recipient, “just reply with the file”.' },
     ],
   },
 ];
 
 export const ALL_RUBRIC_ITEM_IDS: string[] = PHISHING_RUBRIC.flatMap((d) => d.items.map((i) => i.id));
 
+/** 加分项编号（模型会额外给出参考区间） */
+export const BONUS_ITEM_IDS: ReadonlySet<string> = new Set(
+  PHISHING_RUBRIC.flatMap((d) => d.items.filter((i) => i.tier === 'bonus').map((i) => i.id)),
+);
+
+/** 单项满分查表（后端返回的分数按各自满分裁切） */
+const ITEM_MAX_BY_ID: Record<string, number> = Object.fromEntries(
+  PHISHING_RUBRIC.flatMap((d) => d.items.map((i) => [i.id, i.max])),
+);
+
+export const itemMaxOf = (id: string): number => ITEM_MAX_BY_ID[id] ?? BONUS_MAX;
+
+const clampToItem = (id: string, value: number): number =>
+  Math.max(0, Math.min(itemMaxOf(id), value));
+
 // ─── 解析后端返回 ────────────────────────────────────────────────────────────
+
+const roundTo2 = (n: number): number => Math.round(n * 100) / 100;
 
 /** 维度值可能是 [score, reason]（当前）或 {score, reason, items}（未来扩展） */
 export function readDimensionScore(value: unknown): number {
@@ -131,7 +142,7 @@ export function parseItemScoresFromReason(reason: string): Record<string, number
   let m: RegExpExecArray | null;
   while ((m = re.exec(reason)) !== null) {
     const value = Number(m[2]);
-    if (Number.isFinite(value)) out[m[1]] = Math.max(0, Math.min(ITEM_MAX, value));
+    if (Number.isFinite(value)) out[m[1]] = clampToItem(m[1], value);
   }
   return out;
 }
@@ -149,7 +160,9 @@ export function collectItemScores(reply: {
     for (const [id, raw] of Object.entries(structured as Record<string, unknown>)) {
       const value = Number(raw);
       if (/^\d\.\d$/.test(id) && Number.isFinite(value)) {
-        out[id] = Math.max(0, Math.min(ITEM_MAX, value));
+        // 加分项要求整数分（模型偶尔会给 2.5，这里取整守住契约）
+        const normalized = BONUS_ITEM_IDS.has(id) ? Math.round(value) : value;
+        out[id] = clampToItem(id, normalized);
       }
     }
     if (Object.keys(out).length > 0) return out;
@@ -211,12 +224,30 @@ export function toneColor(tone: VerdictTone, alpha = 1): string {
   return alpha >= 1 ? `hsl(${hue} ${sat}% ${light}%)` : `hsl(${hue} ${sat}% ${light}% / ${alpha})`;
 }
 
-/** 单项得分 → 语义色档位 */
-export function verdictTone(score: number | undefined): VerdictTone {
+/** 单项得分 → 语义色档位（满分按该项自身满分判断） */
+export function verdictTone(score: number | undefined, max: number): VerdictTone {
   if (score === undefined) return 'unknown';
-  if (score >= ITEM_MAX) return 'full';
+  if (score >= max) return 'full';
   if (score > 0) return 'partial';
   return 'missing';
+}
+
+/**
+ * 加分项的参考区间（后端可选返回，仅用于展示，不参与计算）。
+ * 模型自己对细分犹豫时，范围能把不确定性诚实地说出来。
+ */
+export function collectBonusRanges(reply: { bonus_ranges?: unknown }): Record<string, [number, number]> {
+  const out: Record<string, [number, number]> = {};
+  const raw = reply.bonus_ranges;
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!BONUS_ITEM_IDS.has(id) || !Array.isArray(value) || value.length < 2) continue;
+    const lo = Number(value[0]);
+    const hi = Number(value[1]);
+    if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
+    out[id] = [clampToItem(id, lo), clampToItem(id, hi)];
+  }
+  return out;
 }
 
 export interface ItemVerdict {
@@ -224,6 +255,8 @@ export interface ItemVerdict {
   dimensionKey: string;
   /** 得分；undefined 表示后端未提供该项（展示为"未评估"） */
   score: number | undefined;
+  /** 加分项：模型给出的参考区间（仅展示，排名仍用 score） */
+  range?: [number, number];
 }
 
 export interface DimensionReport {
@@ -241,21 +274,33 @@ export function buildReport(reply: {
   total_score?: number;
   score_details?: Record<string, unknown>;
   item_scores?: unknown;
+  bonus_ranges?: unknown;
 }): { total: number; dimensions: DimensionReport[]; focus: ItemVerdict[] } {
   const details = reply.score_details ?? {};
   const itemScores = collectItemScores(reply);
+  const ranges = collectBonusRanges(reply);
 
   const dimensions: DimensionReport[] = PHISHING_RUBRIC.map((dim) => {
     const rawValue = details[dim.key];
-    const verdicts: ItemVerdict[] = dim.items.map((item) => ({
-      item,
-      dimensionKey: dim.key,
-      score: itemScores[item.id],
-    }));
+    const verdicts: ItemVerdict[] = dim.items.map((item) => {
+      const score = itemScores[item.id];
+      const rawRange = ranges[item.id];
+      // 区间必须含住分数（模型偶尔给出 lo > score 的矛盾区间）
+      const range: [number, number] | undefined =
+        rawRange && score !== undefined
+          ? [Math.min(rawRange[0], score), Math.max(rawRange[1], score)]
+          : rawRange;
+      return {
+        item,
+        dimensionKey: dim.key,
+        score,
+        ...(range ? { range } : {}),
+      };
+    });
 
-    const summed = verdicts.reduce((sum, v) => sum + (v.score ?? 0), 0);
+    const summed = roundTo2(verdicts.reduce((sum, v) => sum + (v.score ?? 0), 0));
     const reported = rawScoreFor(details, dim.key);
-    // 仅当该维度 5 条细则都有数据时才以逐项求和为准（保证“明细 = 卡片分”自洽）；
+    // 仅当该维度 3 条细则都有数据时才以逐项求和为准（保证“明细 = 卡片分”自洽）；
     // 否则回退后端给的维度分，避免因 LLM 漏项而低估分数。
     const hasAllItems = verdicts.every((v) => v.score !== undefined);
     return {
@@ -268,13 +313,13 @@ export function buildReport(reply: {
     };
   });
 
-  const total = Math.round(dimensions.reduce((sum, d) => sum + d.score, 0) * 10) / 10;
+  const allVerdicts = dimensions.flatMap((d) => d.verdicts);
+  const total = roundTo2(dimensions.reduce((sum, d) => sum + d.score, 0));
 
-  // “下次重点”：漏得最多的前 3 项（0 分优先于部分分）
-  const gaps = dimensions
-    .flatMap((d) => d.verdicts)
-    .filter((v) => (v.score ?? 0) < ITEM_MAX)
-    .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
+  // “下次重点”：按得分率最低的前 3 项（用比率比较，避免 5 分项与 10 分项不等权）
+  const gaps = allVerdicts
+    .filter((v) => (v.score ?? 0) < v.item.max)
+    .sort((a, b) => (a.score ?? 0) / a.item.max - (b.score ?? 0) / b.item.max)
     .slice(0, 3);
 
   return { total, dimensions, focus: gaps };

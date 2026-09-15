@@ -3,8 +3,8 @@ import { Box, Typography, LinearProgress } from '@mui/material';
 import { ArcadeTypography } from '../../../components/ui';
 import { ARCADE_COLORS, GRID_COLOR } from '../../../theme/theme';
 import {
+  BASELINE_TOTAL,
   DIMENSION_MAX,
-  ITEM_MAX,
   TOTAL_MAX,
   getGradeBand,
   scoreGreen,
@@ -12,6 +12,7 @@ import {
   verdictTone,
   type DimensionReport,
   type ItemVerdict,
+  type RubricTier,
 } from '../scoringRubric';
 
 interface PhishingScoreReportProps {
@@ -22,9 +23,9 @@ interface PhishingScoreReportProps {
   itemDataMissing?: boolean;
 }
 
-const statusOf = (score: number | undefined): 'full' | 'partial' | 'missing' | 'unknown' => {
+const statusOf = (score: number | undefined, max: number): 'full' | 'partial' | 'missing' | 'unknown' => {
   if (score === undefined) return 'unknown';
-  if (score >= ITEM_MAX) return 'full';
+  if (score >= max) return 'full';
   if (score > 0) return 'partial';
   return 'missing';
 };
@@ -36,8 +37,17 @@ const STATUS_STYLE: Record<string, { token: string; text: string }> = {
   unknown: { token: '·', text: 'Not rated' },
 };
 
+/** 项级别标签（底线必达，加分项自由裁量） */
+const TIER_TAG: Record<RubricTier, string> = { core: 'CORE', standard: 'STD', bonus: 'BONUS' };
+const TIER_COLOR: Record<RubricTier, string> = {
+  core: ARCADE_COLORS.white,
+  standard: `${ARCADE_COLORS.white}c0`,
+  bonus: `${ARCADE_COLORS.white}78`,
+};
+
 /** 单项语义色：✓ 亮绿 · ± 橙 · ✗ 红 · 未评估 灰绿（alpha 用于高亮底色） */
-const verdictColor = (score: number | undefined, alpha = 1) => toneColor(verdictTone(score), alpha);
+const verdictColor = (score: number | undefined, max: number, alpha = 1) =>
+  toneColor(verdictTone(score, max), alpha);
 
 const Panel: React.FC<{ children: React.ReactNode; sx?: object }> = ({ children, sx = {} }) => (
   <Box
@@ -52,12 +62,13 @@ const Panel: React.FC<{ children: React.ReactNode; sx?: object }> = ({ children,
   </Box>
 );
 
-/** 单行细则：✓/±/✗ · 编号 · 标签 · 得分 */
+/** 单行细则：✓/±/✗ · 编号 · 层级 + 标签 · 得分（加分项带参考区间） */
 const Row: React.FC<{ verdict: ItemVerdict; highlight?: boolean }> = ({ verdict, highlight = false }) => {
-  const status = statusOf(verdict.score);
+  const { item, score, range } = verdict;
+  const status = statusOf(score, item.max);
   const style = STATUS_STYLE[status];
-  const color = verdictColor(verdict.score);
-  const points = verdict.score === undefined ? '—' : `${verdict.score}`;
+  const color = verdictColor(score, item.max);
+  const points = score === undefined ? '—' : `${score}`;
 
   return (
     <Box
@@ -68,14 +79,14 @@ const Row: React.FC<{ verdict: ItemVerdict; highlight?: boolean }> = ({ verdict,
         columnGap: 0.75,
         py: 0.45,
         borderTop: `1px solid ${GRID_COLOR}`,
-        backgroundColor: highlight ? verdictColor(verdict.score, 0.12) : 'transparent',
+        backgroundColor: highlight ? verdictColor(score, item.max, 0.12) : 'transparent',
       }}
     >
       <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.58rem', color }} title={style.text}>
         {style.token}
       </Typography>
       <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.48rem', color: `${ARCADE_COLORS.white}50` }}>
-        {verdict.item.id}
+        {item.id}
       </Typography>
       <Typography
         sx={{
@@ -86,12 +97,20 @@ const Row: React.FC<{ verdict: ItemVerdict; highlight?: boolean }> = ({ verdict,
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
         }}
-        title={`${verdict.item.label} — ${verdict.item.hint}`}
+        title={`${TIER_TAG[item.tier]} ${item.max} pts — ${item.label}: ${item.hint}`}
       >
-        {verdict.item.label}
+        <Box component="span" sx={{ color: TIER_COLOR[item.tier], mr: 0.6 }}>
+          {TIER_TAG[item.tier]}
+        </Box>
+        {item.label}
       </Typography>
       <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color, whiteSpace: 'nowrap' }}>
-        {points}/{ITEM_MAX}
+        {points}/{item.max}
+        {range && (
+          <Box component="span" sx={{ ml: 0.4, color: `${ARCADE_COLORS.white}45`, fontSize: '0.42rem' }}>
+            ({range[0]}–{range[1]})
+          </Box>
+        )}
       </Typography>
     </Box>
   );
@@ -102,6 +121,13 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
   const ratio = Math.max(0, Math.min(1, total / TOTAL_MAX));
   /** 全页唯一绿色来源：分数越高，绿越亮 */
   const accent = scoreGreen(ratio);
+
+  // 底线（60）与加分（40）分开统计，对应方案里的及格线设计
+  const allVerdicts = dimensions.flatMap((d) => d.verdicts);
+  const sumOf = (pred: (v: ItemVerdict) => boolean) =>
+    Math.round(allVerdicts.filter(pred).reduce((sum, v) => sum + (v.score ?? 0), 0) * 10) / 10;
+  const baselineScore = sumOf((v) => v.item.tier !== 'bonus');
+  const bonusScore = sumOf((v) => v.item.tier === 'bonus');
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -133,17 +159,40 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
             <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: `${ARCADE_COLORS.white}95`, mt: 0.5 }}>
               {band.blurb}
             </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={ratio * 100}
-              sx={{
-                mt: 2,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: 'rgba(255,255,255,0.08)',
-                '& .MuiLinearProgress-bar': { backgroundColor: accent, borderRadius: 4 },
-              }}
-            />
+
+            {/* 底线 vs 加分：底线 60 全达标即及格 */}
+            <Box sx={{ display: 'flex', gap: 2, mt: 1.25, flexWrap: 'wrap' }}>
+              <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color: `${ARCADE_COLORS.white}70` }}>
+                BASELINE {baselineScore}/{BASELINE_TOTAL}
+              </Typography>
+              <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color: `${ARCADE_COLORS.white}50` }}>
+                BONUS {bonusScore}/{TOTAL_MAX - BASELINE_TOTAL}
+              </Typography>
+            </Box>
+
+            <Box sx={{ position: 'relative', mt: 1.25 }}>
+              <LinearProgress
+                variant="determinate"
+                value={ratio * 100}
+                sx={{
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  '& .MuiLinearProgress-bar': { backgroundColor: accent, borderRadius: 4 },
+                }}
+              />
+              {/* 及格线：60 分刻度 */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  left: `${(BASELINE_TOTAL / TOTAL_MAX) * 100}%`,
+                  top: -3,
+                  height: 14,
+                  width: '2px',
+                  backgroundColor: `${ARCADE_COLORS.white}70`,
+                }}
+              />
+            </Box>
           </Box>
 
           {/* 右：FOCUS NEXT —— 每条一行 */}
@@ -168,10 +217,10 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
               </Typography>
             ) : (
               focus.map((v) => {
-                const style = STATUS_STYLE[statusOf(v.score)];
+                const style = STATUS_STYLE[statusOf(v.score, v.item.max)];
                 return (
                   <Box key={v.item.id} sx={{ display: 'grid', gridTemplateColumns: '16px 1fr', columnGap: 0.75, py: 0.5 }}>
-                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.58rem', color: verdictColor(v.score) }}>{style.token}</Typography>
+                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.58rem', color: verdictColor(v.score, v.item.max) }}>{style.token}</Typography>
                     <Typography
                       sx={{
                         fontFamily: '"Electrolize", sans-serif',
@@ -194,7 +243,7 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
         </Box>
       </Panel>
 
-      {/* 图例：底线 / 情境 / 加分 */}
+      {/* 图例：核心底线 / 标准底线 / 加分项 */}
       <Typography
         sx={{
           fontFamily: '"Electrolize", sans-serif',
@@ -204,7 +253,7 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
           mt: -0.5,
         }}
       >
-        CORE must be met · SITUATIONAL judged by this mission · BONUS is extra credit
+        CORE 10 + STANDARD 5 are required (60 = pass) · BONUS 10 each is scored 0–10
       </Typography>
 
       {itemDataMissing && (
@@ -213,14 +262,17 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
         </Typography>
       )}
 
-      {/* ── 卡片 2–5：四个维度（每个维度自带 5 条细则，一行一条） ─────────── */}
+      {/* ── 卡片 2–5：四个维度（每个维度自带 3 条细则，一行一条） ─────────── */}
       {/* 固定 2×2：避免 auto-fit 在中等宽度塔成 3+1 */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
         {dimensions.map((dim) => {
           const dimRatio = dim.score / DIMENSION_MAX;
           const color = scoreGreen(dimRatio);
-          const filled = dim.verdicts.filter((v) => statusOf(v.score) === 'full').length;
-          const partial = dim.verdicts.filter((v) => statusOf(v.score) === 'partial').length;
+          // 底线达标数（核心 + 标准）+ 加分得分
+          const baselines = dim.verdicts.filter((v) => v.item.tier !== 'bonus');
+          const met = baselines.filter((v) => (v.score ?? 0) >= v.item.max).length;
+          const bonusVerdict = dim.verdicts.find((v) => v.item.tier === 'bonus');
+          const bonusPoints = bonusVerdict?.score;
 
           return (
             <Panel key={dim.key} sx={{ p: 2, borderColor: scoreGreen(dimRatio, 0.3), display: 'flex', flexDirection: 'column' }}>
@@ -267,7 +319,8 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
               {/* 一行摘要：命中数 + 模型点评（超长省略，hover 看全文） */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1, mb: 0.5 }}>
                 <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.72rem', color: `${ARCADE_COLORS.white}60`, whiteSpace: 'nowrap' }}>
-                  {filled} of 5 full{partial > 0 ? ` · ${partial} partial` : ''}
+                  Baseline {met}/{baselines.length} met
+                  {bonusVerdict ? ` · Bonus ${bonusPoints ?? '—'}/${bonusVerdict.item.max}` : ''}
                 </Typography>
                 {dim.reason && (
                   <Typography
