@@ -21,10 +21,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # VITE_API_KEY has been stored with a trailing newline. That is harmless for
+      # HTTP clients (browsers and curl trim it) but it breaks shell interpolation,
+      # so normalise it once and hand the clean value to the later steps.
+      - name: Normalise the API key
+        env:
+          RAW_API_KEY: ${{ secrets.VITE_API_KEY }}
+        run: |
+          CLEAN_API_KEY=$(printf '%s' "$RAW_API_KEY" | tr -d '\r\n')
+          echo "VITE_API_KEY=$CLEAN_API_KEY" >> "$GITHUB_ENV"
+          echo "API key length after normalisation: ${#CLEAN_API_KEY}"
+
       # The TV kiosk page is plain HTML (legacy TV browsers cannot run the SPA),
       # so its API key has to be injected here instead of via import.meta.env.
+      # The key travels as an env var: never interpolate a secret into shell source.
       - name: Inject API key into the TV kiosk page
-        run: sed -i "s|__API_KEY__|${{ secrets.VITE_API_KEY }}|g" public/tv.html
+        run: |
+          python3 - <<'PY'
+          import os
+          import pathlib
+
+          key = os.environ.get("VITE_API_KEY", "")
+          page = pathlib.Path("public/tv.html")
+          html = page.read_text(encoding="utf-8")
+          page.write_text(html.replace("__API_KEY__", key), encoding="utf-8")
+          print("tv.html: injected API key of length", len(key))
+          if not key:
+              print("::warning::VITE_API_KEY is empty - the TV page will report a missing key")
+          PY
 
       - name: Build
         run: npm run build
@@ -33,7 +57,7 @@ jobs:
           # (/users/*, /scores/*, /rooms/*, /rankings/*, /llm/*, /questions/*, ...)
           # to the backend ALB. Keep VITE_API_URL = the CloudFront domain.
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://d24umo4oysfx97.cloudfront.net' }}
-          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
+          VITE_API_KEY: ${{ env.VITE_API_KEY || secrets.VITE_API_KEY }}
           VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'wss://d24umo4oysfx97.cloudfront.net' }}
 
       - name: Configure AWS credentials
