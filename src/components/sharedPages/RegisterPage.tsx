@@ -18,6 +18,26 @@ import { useClickSound } from '../../hooks/useClickSound';
 
 const color = ARCADE_COLORS.cyan;
 
+/**
+ * Venue queue big screen. Opened in a new tab as soon as registration succeeds
+ * so the player can watch themselves join. Overridable per environment.
+ */
+const QUEUE_BOARD_URL =
+  import.meta.env.VITE_QUEUE_BOARD_URL ||
+  'https://queue-system-e6780.web.app/#queue/Qmu0wnldvywckwcp0fvm';
+
+/**
+ * Auto-generated nicknames (e.g. QueueTest52383A_001) get long, so the
+ * type size steps down with the length and the box wraps instead of overflowing.
+ */
+const nicknameFontSize = (nickname: string): string => {
+  const len = (nickname || '').length;
+  if (len > 18) return '0.95rem';
+  if (len > 15) return '1.1rem';
+  if (len > 12) return '1.3rem';
+  return '1.6rem';
+};
+
 // --- Animations ---
 const matrixDrop = keyframes`
   0% { transform: translateY(-100%); opacity: 0; }
@@ -95,6 +115,8 @@ const RegisterPage: React.FC = () => {
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   const [registered, setRegistered] = useState(false);
+  /** true when the browser refused to open the queue screen in a new tab */
+  const [queueTabBlocked, setQueueTabBlocked] = useState(false);
 
   const handleRegisterClick = () => {
     if (!firstname || !lastname || !country) {
@@ -123,6 +145,17 @@ const RegisterPage: React.FC = () => {
       setRegNickname(reg?.nickname || '');
       setDisclaimerOpen(false);
       setRegistered(true);
+      // Show the venue queue screen right away. Popup blockers can refuse it, in
+      // which case the success card offers an explicit button instead.
+      const queueTab = window.open(QUEUE_BOARD_URL, '_blank');
+      if (queueTab) {
+        try {
+          queueTab.opener = null;
+        } catch {
+          /* cross-origin: nothing to do */
+        }
+      }
+      setQueueTabBlocked(!queueTab);
     } catch (err) {
       setSnack({ open: true, message: String(err instanceof Error ? err.message : err), severity: 'error' });
     } finally {
@@ -211,12 +244,37 @@ const RegisterPage: React.FC = () => {
                 <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}60`, fontSize: '0.65rem', letterSpacing: '0.2em', mb: 1 }}>
                   YOUR NICKNAME
                 </ArcadeTypography>
-                <ArcadeTypography arcadeSize="lg" component="p" sx={{ color, fontSize: '1.6rem', letterSpacing: '0.05em', mb: 2, textShadow: `0 0 16px ${color}70` }}>
+                <ArcadeTypography
+                  arcadeSize="lg"
+                  component="p"
+                  sx={{
+                    color,
+                    fontSize: nicknameFontSize(regNickname),
+                    letterSpacing: '0.05em',
+                    mb: 2,
+                    textShadow: `0 0 16px ${color}70`,
+                    // a long generated nickname must never spill out of the card
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                    lineHeight: 1.25,
+                  }}
+                >
                   {regNickname}
                 </ArcadeTypography>
                 <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}50`, fontSize: '0.6rem', lineHeight: 1.9 }}>
                   Take a screenshot! You will use this nickname to log in at the event.
                 </ArcadeTypography>
+              </Box>
+            )}
+
+            {queueTabBlocked && (
+              <Box sx={{ mt: 0.5 }}>
+                <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}60`, fontSize: '0.6rem', mb: 1.5 }}>
+                  Your browser blocked the queue screen.
+                </ArcadeTypography>
+                <ArcadeButton size="md" onClick={() => window.open(QUEUE_BOARD_URL, '_blank')}>
+                  ▶ OPEN QUEUE SCREEN
+                </ArcadeButton>
               </Box>
             )}
 
