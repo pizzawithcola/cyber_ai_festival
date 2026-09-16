@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Paper,
@@ -7,9 +7,10 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { ArcadeTypography, LightSign } from '../../components/ui';
-import { BrainCircuit, ScanEye, Store, Fish, Trophy } from 'lucide-react';
+import { BrainCircuit, ScanEye, Store, Fish, Trophy, QrCode } from 'lucide-react';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 import { useClickSound } from '../../hooks/useClickSound';
+import RegisterQrDialog from '../../components/common/RegisterQrDialog';
 import pkg from '../../../package.json';
 
 interface HomePageProps {
@@ -126,6 +127,8 @@ const HomePage: React.FC<HomePageProps> = () => {
   const navigate = useNavigate();
   // 主页所有可点击入口（卡片/按钮容器）播放咔嚓按键音
   useClickSound();
+  // Venue helper: players who have no account yet scan the QR to register first.
+  const [registerQrOpen, setRegisterQrOpen] = useState(false);
 
   const games = [
     {
@@ -490,33 +493,82 @@ const HomePage: React.FC<HomePageProps> = () => {
             </ArcadeTypography>
           </Box>
 
-          {/* Coin Slot - Center */}
-          <Box sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 1.5,
-            py: 0.5,
-            border: '2px solid #3a3a5a',
-            borderRadius: '4px',
-            backgroundColor: '#0d0d18',
-          }}>
+          {/* Coin Slot - Center (clickable): venue entry for brand-new players,
+              opens the register QR dialog. Kept small and slot-shaped so the
+              "INSERT COIN TO START" prompt above keeps reading naturally. */}
+          <Box
+            role="button"
+            aria-label="Scan to register"
+            onClick={() => setRegisterQrOpen(true)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1.75,
+              py: 0.6,
+              border: '2px solid #3a3a5a',
+              borderRadius: '4px',
+              backgroundColor: '#0d0d18',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              // A slow breath makes it read as interactive even on touch screens,
+              // where there is no hover state to discover it with.
+              animation: `${neonPulse} 3s ease-in-out infinite`,
+              '&:hover': {
+                borderColor: ARCADE_COLORS.lime,
+                backgroundColor: `${ARCADE_COLORS.lime}10`,
+                boxShadow: `0 0 12px ${ARCADE_COLORS.lime}50, inset 0 0 12px ${ARCADE_COLORS.lime}15`,
+                animation: 'none',
+                '& .coin-label': { color: ARCADE_COLORS.lime },
+                '& .qr-icon': {
+                  transform: 'scale(1.15)',
+                  filter: `drop-shadow(0 0 6px ${ARCADE_COLORS.lime})`,
+                },
+                '& .coin-slot': {
+                  backgroundColor: `${ARCADE_COLORS.lime}30`,
+                  borderColor: ARCADE_COLORS.lime,
+                  boxShadow: `0 0 8px ${ARCADE_COLORS.lime}80`,
+                },
+              },
+            }}
+          >
+            <Box
+              className="qr-icon"
+              sx={{
+                color: `${ARCADE_COLORS.lime}90`,
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <QrCode size={14} strokeWidth={1.5} />
+            </Box>
             <ArcadeTypography
               arcadeSize="xs"
               component="span"
               monospace
-              sx={{ fontSize: '0.45rem', color: `${ARCADE_COLORS.yellow}90`, letterSpacing: '1px' }}
+              className="coin-label"
+              sx={{
+                fontSize: '0.5rem',
+                color: `${ARCADE_COLORS.yellow}90`,
+                letterSpacing: '1px',
+                transition: 'color 0.3s ease',
+              }}
             >
               COIN →
             </ArcadeTypography>
-            <Box sx={{
-              width: '24px',
-              height: '4px',
-              backgroundColor: '#1a1a30',
-              border: '1px solid #4a4a6a',
-              borderRadius: '2px',
-              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)',
-            }} />
+            <Box
+              className="coin-slot"
+              sx={{
+                width: '24px',
+                height: '4px',
+                backgroundColor: '#1a1a30',
+                border: '1px solid #4a4a6a',
+                borderRadius: '2px',
+                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)',
+                transition: 'all 0.3s ease',
+              }}
+            />
           </Box>
 
           {/* Leaderboard Button - Right */}
@@ -574,6 +626,8 @@ const HomePage: React.FC<HomePageProps> = () => {
           © 2025 MENAT AI • ALL RIGHTS RESERVED • v{pkg.version}
         </ArcadeTypography>
       </Box>
+
+      <RegisterQrDialog open={registerQrOpen} onClose={() => setRegisterQrOpen(false)} />
     </Box>
   );
 };
