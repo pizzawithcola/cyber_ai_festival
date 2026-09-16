@@ -39,7 +39,7 @@
 | BE-01 | 启动时自动迁移是 hack（原生 SQL 与 Alembic 混用） | 后端工程 | P2 | open |
 | BE-02 | `create_room` 硬编码 `admin_id=1` | 后端工程 | P1 | open |
 | BE-03 | admin 账号硬编码种子（`admin@admin.com` 无密码） | 后端工程 | P1 | open |
-| BE-04 | 注册后接入外部排队系统（POST participants，key/queue 待澄清） | 后端工程 | P2 | blocked |
+| BE-04 | 注册后接入外部排队系统（POST participants，已上线） | 后端工程 | P2 | done |
 | G1-01 | Hallucinate 计分内联重复、无 clamp、会话校验弱 | 各游戏 | P2 | open |
 | G2-01 | DataShadows `contentScale` 缩放 hack 适配脆弱 | 各游戏 | P2 | open |
 | G3-01 | RetailDemolition 负分/小数 clamp 场景需确认 | 各游戏 | P2 | open |
@@ -285,12 +285,12 @@
 
 #### BE-04 注册后接入外部排队系统（POST participants）
 
-- **状态**：`blocked` ｜ **优先级**：P2 ｜ **分类**：后端工程 ｜ **2026-09-08**：方案已记录，见 [QUEUE_INTEGRATION.md](./QUEUE_INTEGRATION.md)
+- **状态**：`done` ｜ **优先级**：P2 ｜ **分类**：后端工程 ｜ **2026-09-16**：已上线，见 [QUEUE_INTEGRATION.md](./QUEUE_INTEGRATION.md)
 - **背景**：新用户 register 后由后端 POST 用户信息到外部排队系统自动入队（摊位大屏排队场景）。
-- **阻塞原因**：API key 鉴权通过但名下队列为空；文档示例 queueId `Qm9x4k2ptu8` POST 返回 404 `queue_not_found` → 需澄清 key↔queue 归属（换 key 或先建队列），以及 email 去重键方案。
-- **已确认契约**：`POST {BASE}/api/v1/queues/{queueId}/participants`，Header `X-API-Key`，body `email/name/externalId`，201 新增 / 200 已存在。
-- **涉及文件**：后端 `cyber_ai_festival_be` 注册流程（待实施）。
-- **进展**：连通性+鉴权已验（本地 VPN）；真实队列归属待澄清。
+- **已解决**：真实队列为 `Qmu0wnldvywckwcp0fvm`（name `Arcade`）；`email` 已不再是必填，**去重键改为 `externalId`**，因此不再需要假邮箱，同名玩家也不会互相吞掉。
+- **最终契约**：`POST {BASE}/api/v1/queues/{queueId}/participants`，Header `X-API-Key`，body `{name, externalId}`，201 新增 / 200 已存在（alreadyInQueue）。`name` 必填、1–100 字符。
+- **涉及文件**：后端 `cyber_ai_festival_be/app/services/queue_service.py`（已去掉 email 逻辑）、`app/routers/users.py`（BackgroundTasks 触发）。
+- **验证**：契约探测 8/8、服务层测试 10/10（含空名、超长名、同名、幂等、开关关闭），测试数据已清理。
 
 ---
 
