@@ -4,177 +4,322 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>AI Cyber Arcade — Leaderboard</title>
+<title>AI CYBER ARCADE — LEADERBOARD</title>
 <!--
   TV kiosk page for legacy TV browsers (Samsung Tizen 6 / Chromium 76).
 
   Why this file exists:
-    The React SPA bundle is built for modern browsers (Chrome 107+) and uses
+    The React SPA bundle targets modern browsers (Chrome 107+) and uses
     optional chaining / nullish coalescing, which older TV engines cannot even
     parse -> the TV shows a blank page while the server still answers HTTP 200.
-    This page is plain ES5 + hand written CSS so any TV browser can run it.
+    This page is plain ES5 plus hand written CSS so any TV browser can run it.
+
+  Style:
+    Mirrors the arcade design language of the app (see /design): #0a0a1a base
+    with a 40px #1a1a3a grid, CRT scanline overlay, square panels with a 2px
+    #1a1a3a border plus an inner cyan hairline, "Press Start 2P" headings,
+    "Electrolize" body text, and the same per-board accent colours the app's
+    leaderboard uses.
+
+  Compatibility rules for this file (Chromium 76, no transpiling happens):
+    - JS: no optional chaining, no nullish coalescing, no arrow functions, no
+      template literals, no let/const, no spread.
+    - CSS: no inset shorthand, no aspect-ratio, no clamp(), no :is().
 
   Deploy note:
-    The API key placeholder below is replaced with the real key by the GitHub
-    Actions workflow. Never commit the real key here.
+    The API key placeholder inside the script below is swapped for the real key
+    by the GitHub Actions workflow. Never commit the real key here.
 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Electrolize&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   html, body {
     width: 100%;
     height: 100%;
-    background: #05060f;
-    color: #ffffff;
-    font-family: Arial, Helvetica, sans-serif;
     overflow: hidden;
+    background-color: #0a0a1a;
+    color: #ffffff;
+    /* Electrolize matches the app's leaderboard rows; monospace keeps the
+       layout readable if the web font never arrives. */
+    font-family: "Electrolize", "Courier New", Courier, monospace;
+  }
+
+  /* 40px grid, same colour and pitch as the design page background */
+  body {
+    background-image:
+      linear-gradient(90deg, #1a1a3a 1px, transparent 1px),
+      linear-gradient(180deg, #1a1a3a 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* CRT scanlines laid over the whole screen */
+  #scan {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
   }
 
   #app {
+    position: relative;
+    z-index: 1;
     width: 100%;
     height: 100%;
-    padding: 2.2vh 2.2vw;
-    display: block;
+    padding: 1.8vh 1.8vw;
   }
 
   /* ---------- header ---------- */
   #head {
-    width: 100%;
-    border-bottom: 0.35vh solid #1b2b4d;
-    padding-bottom: 1.2vh;
+    position: relative;
+    border: 2px solid #1a1a3a;
+    background: rgba(10, 10, 26, 0.8);
+    padding: 1.2vh 1.4vw 1.3vh 1.4vw;
+  }
+
+  /* inner cyan hairline, exactly like the design page panels */
+  #head:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid rgba(0, 255, 255, 0.19);
+    pointer-events: none;
+  }
+
+  #clock {
+    float: right;
+    font-family: "Press Start 2P", "Courier New", monospace;
+    font-size: 2.2vh;
+    color: #ffff00;
+    text-shadow: 0 0 1vh rgba(255, 255, 0, 0.6);
   }
 
   #brand {
-    font-size: 3.1vh;
-    font-weight: bold;
+    display: inline-block;
+    font-family: "Press Start 2P", "Courier New", monospace;
+    font-size: 2.4vh;
     letter-spacing: 0.35vh;
-    color: #7ce787;
+    color: #00ffff;
     text-transform: uppercase;
+    text-shadow: 0 0 1.2vh #00ffff, 0 0 2.6vh rgba(0, 255, 255, 0.45);
   }
 
   #meta {
-    margin-top: 0.6vh;
-    font-size: 2.1vh;
-    color: #9fb0c9;
+    margin-top: 0.8vh;
+    font-size: 1.8vh;
+    letter-spacing: 0.15vh;
+    color: rgba(255, 255, 255, 0.6);
   }
 
-  #live { color: #7ce787; }
-  #live.gone { color: #e07070; }
-  #clock { float: right; color: #9fb0c9; }
+  #live {
+    color: #00ff00;
+    animation: pulse 2s ease-in-out infinite;
+  }
 
-  /* ---------- board ---------- */
-  #boardWrap { width: 100%; margin-top: 2vh; }
+  #live.gone { color: #ff0040; }
 
+  #updated { margin-left: 1.6vw; }
+
+  /* ---------- board panel ---------- */
+  #board {
+    position: relative;
+    margin-top: 1.6vh;
+    border: 2px solid #1a1a3a;
+    background: rgba(10, 10, 26, 0.8);
+    padding: 1.6vh 1.4vw 1vh 1.4vw;
+  }
+
+  #board:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid rgba(0, 255, 255, 0.19);
+    pointer-events: none;
+  }
+
+  /* lime corner brackets */
+  .corner {
+    position: absolute;
+    width: 2.2vh;
+    height: 2.2vh;
+    pointer-events: none;
+  }
+
+  .corner.tl { left: -2px;  top: -2px;    border-left: 0.45vh solid #00ff00;  border-top: 0.45vh solid #00ff00; }
+  .corner.tr { right: -2px; top: -2px;    border-right: 0.45vh solid #00ff00; border-top: 0.45vh solid #00ff00; }
+  .corner.bl { left: -2px;  bottom: -2px; border-left: 0.45vh solid #00ff00;  border-bottom: 0.45vh solid #00ff00; }
+  .corner.br { right: -2px; bottom: -2px; border-right: 0.45vh solid #00ff00; border-bottom: 0.45vh solid #00ff00; }
+
+  /* board name carries the per-board accent colour (set from JS) */
   #boardName {
-    font-size: 5.2vh;
-    font-weight: bold;
-    letter-spacing: 0.4vh;
-    color: #ffffff;
+    display: inline-block;
+    font-family: "Press Start 2P", "Courier New", monospace;
+    font-size: 3.4vh;
+    letter-spacing: 0.3vh;
+    color: #00ffff;
     text-transform: uppercase;
+    animation: pulse 2.6s ease-in-out infinite;
+  }
+
+  /* "> TITLE", same marker the design page puts in front of section titles */
+  #boardName:before {
+    content: "> ";
+    color: #ffff00;
   }
 
   #boardCount {
     float: right;
-    font-size: 2.2vh;
-    color: #9fb0c9;
-    margin-top: 2.4vh;
+    margin-top: 1.4vh;
+    font-size: 1.7vh;
+    letter-spacing: 0.15vh;
+    color: rgba(255, 255, 255, 0.5);
   }
 
+  /* ---------- table ---------- */
   table {
     width: 100%;
-    margin-top: 1.4vh;
+    margin-top: 1.2vh;
     border-collapse: collapse;
+    table-layout: fixed;
   }
 
   th {
     text-align: left;
-    font-size: 1.9vh;
-    color: #9fb0c9;
     font-weight: normal;
-    padding: 0.7vh 0.8vw;
-    border-bottom: 0.25vh solid #1b2b4d;
+    font-size: 1.6vh;
+    letter-spacing: 0.22vh;
     text-transform: uppercase;
-    letter-spacing: 0.2vh;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 0.6vh 0.6vw;
+    border-bottom: 2px solid #1a1a3a;
   }
 
   td {
-    font-size: 3.4vh;
-    padding: 1.15vh 0.8vw;
-    border-bottom: 1px solid #121a2e;
+    font-size: 2.9vh;
+    padding: 0.85vh 0.6vw;
+    border-bottom: 1px solid #14142c;
     white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  tr.top1 td { color: #ffe066; font-size: 3.9vh; font-weight: bold; }
-  tr.top2 td { color: #dfe6f0; }
-  tr.top3 td { color: #e0b080; }
+  td.rank {
+    width: 7%;
+    font-family: "Press Start 2P", "Courier New", monospace;
+    font-size: 1.7vh;
+    color: rgba(255, 255, 255, 0.45);
+  }
 
-  td.rank   { width: 8%;  color: #7f8ea8; }
-  td.name   { width: 42%; }
-  td.region { width: 18%; color: #9fb0c9; font-size: 2.4vh; }
-  td.score  { width: 32%; text-align: right; color: #7ce787; font-weight: bold; }
+  td.name   { width: 45%; color: #ffffff; }
+  td.region { width: 18%; font-size: 1.9vh; color: rgba(255, 255, 255, 0.5); }
+  td.score  { width: 30%; text-align: right; font-weight: bold; color: #00ff00; }
 
-  tr.top1 td.rank, tr.top2 td.rank, tr.top3 td.rank { color: inherit; }
+  /* podium: gold / white / orange, mirroring the arcade palette */
+  tr.top1 td { font-size: 3.5vh; color: #ffff00; text-shadow: 0 0 1.4vh rgba(255, 255, 0, 0.55); }
+  tr.top2 td { font-size: 3.1vh; color: #ffffff; text-shadow: 0 0 1vh rgba(255, 255, 255, 0.35); }
+  tr.top3 td { font-size: 3.1vh; color: #ff8000; text-shadow: 0 0 1vh rgba(255, 128, 0, 0.45); }
+
+  tr.top1 td.rank { font-size: 2.2vh; }
+  tr.top2 td.rank, tr.top3 td.rank { font-size: 2vh; }
+  tr.top1 td.rank, tr.top2 td.rank, tr.top3 td.rank,
   tr.top1 td.score, tr.top2 td.score, tr.top3 td.score { color: inherit; }
 
+  tr.top1 td { background: rgba(255, 255, 0, 0.06); }
+  tr.top2 td { background: rgba(255, 255, 255, 0.04); }
+
   /* ---------- rotation dots ---------- */
-  #dots { margin-top: 2.4vh; text-align: center; }
+  #dots {
+    margin-top: 1.4vh;
+    text-align: center;
+  }
 
   #dots span {
     display: inline-block;
     width: 1.1vh;
     height: 1.1vh;
-    margin: 0 0.55vh;
+    margin: 0 0.6vh;
     background: #223252;
-    border-radius: 50%;
+    transform: rotate(45deg);
   }
 
-  #dots span.on { background: #7ce787; }
+  #dots span.on {
+    background: #00ff00;
+    box-shadow: 0 0 1.2vh #00ff00;
+  }
 
   /* ---------- status ---------- */
   #status {
-    margin-top: 1.6vh;
+    margin-top: 1vh;
     text-align: center;
-    font-size: 2vh;
-    color: #9fb0c9;
-    min-height: 2.4vh;
+    font-size: 1.7vh;
+    letter-spacing: 0.12vh;
+    color: rgba(255, 255, 255, 0.5);
+    min-height: 2.2vh;
   }
 
-  #status.warn { color: #ffb347; }
-  #status.bad  { color: #e07070; }
+  #status.warn { color: #ffff00; }
+  #status.bad  { color: #ff0040; }
 
   /* ---------- 720p and below ---------- */
   @media (max-width: 1366px) {
-    #brand      { font-size: 2.6vh; }
-    #boardName  { font-size: 4.2vh; }
-    td          { font-size: 2.8vh; padding: 0.95vh 0.8vw; }
-    tr.top1 td  { font-size: 3.1vh; }
+    #brand     { font-size: 2vh; }
+    #clock     { font-size: 1.9vh; }
+    #boardName { font-size: 2.8vh; }
+    td         { font-size: 2.3vh; padding: 0.7vh 0.6vw; }
+    tr.top1 td { font-size: 2.8vh; }
+    tr.top2 td, tr.top3 td { font-size: 2.5vh; }
+    td.rank    { font-size: 1.4vh; }
+    #meta      { font-size: 1.5vh; }
   }
 
   /* ---------- 4K ---------- */
   @media (min-width: 2400px) {
-    td          { font-size: 3.1vh; }
-    #brand      { font-size: 3.4vh; }
+    #brand     { font-size: 2.7vh; }
+    #boardName { font-size: 3.7vh; }
+    td         { font-size: 3.1vh; }
+    tr.top1 td { font-size: 3.7vh; }
   }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="head">
-    <div id="brand">AI Cyber Arcade</div>
+    <span id="clock">--:--</span>
+    <span id="brand">AI Cyber Arcade</span>
     <div id="meta">
       <span id="live">&#9679; LIVE</span>
-      <span id="clock">--:--</span>
+      <span id="updated"></span>
     </div>
   </div>
 
-  <div id="boardWrap">
-    <div id="boardName">TOTAL</div>
-    <div id="boardCount"></div>
+  <div id="board">
+    <span class="corner tl"></span>
+    <span class="corner tr"></span>
+    <span class="corner bl"></span>
+    <span class="corner br"></span>
+    <span id="boardCount"></span>
+    <span id="boardName">TOTAL</span>
     <table>
       <thead>
         <tr>
-          <th class="rank">#</th>
+          <th class="rank">Rank</th>
           <th class="name">Player</th>
           <th class="region">Region</th>
           <th class="score">Score</th>
@@ -187,32 +332,38 @@
   <div id="dots"></div>
   <div id="status"></div>
 </div>
+<div id="scan"></div>
 
 <script>
 (function () {
   'use strict';
 
   /* ---------- config ---------- */
-  var API_KEY     = '__API_KEY__';   /* injected at deploy time */
-  var LIMIT       = 10;              /* rows per board */
-  var REFRESH_MS  = 30000;           /* refetch all boards */
-  var ROTATE_MS   = 20000;           /* switch board */
+  var API_KEY      = '__API_KEY__';  /* injected at deploy time */
+  var LIMIT        = 10;             /* rows per board */
+  var ROTATE_MS    = 5000;           /* switch board every 5s */
+  /* Data is refetched after every full lap instead of on a timer. When the
+     operator pins a single board there is no lap to hook into, so that mode
+     keeps a plain interval. */
+  var PINNED_REFRESH_MS = 30000;
   var RELOAD_AFTER_FAILURES = 6;     /* ~3 minutes offline -> self heal */
 
-  /* Rotate in the same order the main app uses. Pin one board with ?t=game4 . */
+  /* Accent colours are the ones the app's leaderboard uses per board. */
   var TYPES = [
-    { key: 'total', label: 'TOTAL' },
-    { key: 'game4', label: 'PHISHING' },
-    { key: 'game1', label: 'HALLUCINATE' },
-    { key: 'game2', label: 'DATA SHADOWS' },
-    { key: 'game3', label: 'RETAIL' },
-    { key: 'game5', label: 'FINAL' }
+    { key: 'total', label: 'TOTAL',        color: '#00ffff' },
+    { key: 'game4', label: 'PHISHING',     color: '#00ff00' },
+    { key: 'game1', label: 'HALLUCINATE',  color: '#ff00ff' },
+    { key: 'game2', label: 'DATA SHADOWS', color: '#00ffff' },
+    { key: 'game3', label: 'RETAIL',       color: '#ffff00' },
+    { key: 'game5', label: 'FINAL',        color: '#ff8000' }
   ];
 
   var cache = {};        /* key -> rankings payload (kept when a fetch fails) */
   var loaded = {};       /* key -> true once fetched successfully */
   var failed = 0;        /* consecutive failure count */
   var current = 0;       /* index into TYPES */
+  var pinned = false;    /* ?t=xxx asked for a single board */
+  var bootWarning = '';  /* fatal setup problem, shown instead of live status */
 
   function $(id) { return document.getElementById(id); }
 
@@ -246,17 +397,37 @@
 
   function setStatus(message, level) {
     var box = $('status');
+    /* A fatal setup problem must never be hidden behind "Reconnecting…",
+       otherwise a misconfigured deployment looks like a network problem. */
+    if (bootWarning) {
+      text(box, bootWarning);
+      box.className = 'bad';
+      return;
+    }
     text(box, message || '');
     box.className = level || '';
+  }
+
+  function hhmm(timestamp) {
+    var d = new Date(timestamp);
+    var hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours();
+    var mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes();
+    return hh + ':' + mm;
   }
 
   /* ---------- rendering ---------- */
   function renderDots() {
     var wrap = $('dots');
     while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+
     for (var i = 0; i < TYPES.length; i++) {
       var dot = document.createElement('span');
-      if (i === current) dot.className = 'on';
+      if (i === current) {
+        var accent = TYPES[i].color || '#00ff00';
+        dot.className = 'on';
+        dot.style.backgroundColor = accent;
+        dot.style.boxShadow = '0 0 1.2vh ' + accent;
+      }
       wrap.appendChild(dot);
     }
   }
@@ -265,9 +436,15 @@
     var type = TYPES[current];
     var data = cache[type.key];
     var body = $('rows');
+    var accent = type.color || '#00ffff';
 
     while (body.firstChild) body.removeChild(body.firstChild);
-    text($('boardName'), type.label);
+
+    /* the board title takes the colour of the game it belongs to */
+    var title = $('boardName');
+    text(title, type.label);
+    title.style.color = accent;
+    title.style.textShadow = '0 0 1.2vh ' + accent;
 
     if (!data || !data.rankings || !data.rankings.length) {
       text($('boardCount'), '');
@@ -275,7 +452,8 @@
       return;
     }
 
-    text($('boardCount'), 'TOP ' + data.rankings.length + ' / ' + (data.total_entries || data.rankings.length) + ' players');
+    text($('boardCount'), 'TOP ' + data.rankings.length + ' / ' +
+      (data.total_entries || data.rankings.length) + ' PLAYERS');
 
     for (var i = 0; i < data.rankings.length; i++) {
       var entry = data.rankings[i];
@@ -307,16 +485,7 @@
       body.appendChild(row);
     }
 
-    setStatus(lastUpdatedLabel(), '');
-  }
-
-  var lastUpdate = 0;
-  function lastUpdatedLabel() {
-    if (!lastUpdate) return '';
-    var d = new Date(lastUpdate);
-    var hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours();
-    var mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes();
-    return 'Updated ' + hh + ':' + mm;
+    setStatus('', '');
   }
 
   /* ---------- data ---------- */
@@ -351,6 +520,7 @@
 
   var pending = 0;
   var batchFailed = 0;
+  var lastUpdate = 0;
 
   function fetchAll() {
     pending = TYPES.length;
@@ -387,20 +557,22 @@
     failed = 0;
     lastUpdate = new Date().getTime();
     $('live').className = '';
+    text($('updated'), 'UPDATED ' + hhmm(lastUpdate));
     renderBoard();
   }
 
   function rotate() {
     current = (current + 1) % TYPES.length;
+    if (current === 0) {
+      /* a full lap just finished -> pull fresh numbers for the next lap */
+      fetchAll();
+    }
     renderDots();
     renderBoard();
   }
 
   function tickClock() {
-    var d = new Date();
-    var hh = d.getHours() < 10 ? '0' + d.getHours() : '' + d.getHours();
-    var mm = d.getMinutes() < 10 ? '0' + d.getMinutes() : '' + d.getMinutes();
-    text($('clock'), hh + ':' + mm);
+    text($('clock'), hhmm(new Date()));
   }
 
   /* ---------- boot ---------- */
@@ -411,13 +583,14 @@
       var match = query ? query.match(/[?&]t=([A-Za-z0-9]+)/) : null;
       if (match) {
         for (var i = 0; i < TYPES.length; i++) {
-          if (TYPES[i].key === match[1]) { current = i; break; }
+          if (TYPES[i].key === match[1]) { current = i; pinned = true; break; }
         }
       }
     } catch (err) { /* ignore */ }
 
     if (API_KEY.indexOf('__API') === 0) {
-      setStatus('API key missing — the deploy step did not inject it.', 'bad');
+      bootWarning = 'API key missing — the deploy step did not inject it.';
+      setStatus('', 'bad');
     }
 
     renderDots();
@@ -425,8 +598,12 @@
     fetchAll();
 
     window.setInterval(tickClock, 15000);
-    window.setInterval(fetchAll, REFRESH_MS);
-    window.setInterval(rotate, ROTATE_MS);
+    if (pinned) {
+      /* a pinned board never laps, so refresh on its own timer */
+      window.setInterval(fetchAll, PINNED_REFRESH_MS);
+    } else {
+      window.setInterval(rotate, ROTATE_MS);
+    }
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

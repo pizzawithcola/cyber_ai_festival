@@ -24,12 +24,12 @@
 POST {BASE}/v1/queues/{queueId}/participants
 Body:
   name        string  required  1–100   — 大屏公开显示；**不是**去重键
-  externalId  string  optional  Max128  — 我方 user id，服务端按此去重
-  email       string  optional          — 已不再是必填；保留仅为向后兼容
+  externalId  string  optional  Max128  — 我方 user id；**无 email 时按此去重**
+  email       string  optional          — 非必填，但**语义完整保留**（见下方红线）
 Response:
   201 = 新加入（alreadyInQueue=false）
-  200 = 该 externalId 已在队里（alreadyInQueue=true，返回同一个 participantId）
-  400 = {"error":"name_required"} / {"error":"name_too_long"}（超过 100 字符）
+  200 = 命中同一身份（alreadyInQueue=true，返回同一个 participantId）
+  400 = {"error":"name_required"} / {"error":"name_too_long"} / {"error":"email_invalid"}
 
 响应字段：participantId / state / name / position / rank / peopleAhead /
           totalInQueue / joinedAt / externalId / alreadyInQueue / queueBoardUrl
@@ -52,28 +52,53 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
 | Queue 字段 | 来源 | 说明 |
 |---|---|---|
 | `name` | 用户 nickname | 截断到 100 字符；为空时兜底 `Player <id>`（服务端强制非空且不得超 100）|
-| `externalId` | 我方 user id | **去重键**，天然唯一，不可能碰撞 |
-| `email` | **不再发送** | 系统已改为可选；发它是多余的，且会涉及隐私 |
+| `externalId` | 我方 user id | 我方身份键；**无 email 时**服务端按此去重 |
+| `email` | 🚫 **永不发送** | 见下方红线 —— 一旦发出，同一人会落到另一个身份空间，两条记录永远合不回来 |
 
-> ✅ 去重键从 `email` 改成 `externalId` 之后：
-> - 不再需要“假邮箱”（`nickname@gmail.com`），也随之去掉了字符清洗、同名冲突这一整类问题；
+> ✅ 因为我方**从不发送 email**，去重完全落在 `externalId` 空间，因此：
+> - 不再需要旧版的“假邮箱”（`nickname@gmail.com`），字符清洗、同名冲突这一整类问题一并消失；
 > - 请求体里**再没有任何玩家邮箱**离开我方系统；
 > - 同一 user 重复注册/重复调用是幂等的，绝不会在大屏上出现两次。
 
-## 四、实测证据（2026-09-16，打生产队列，非 mock）
+> 🚫🚫 **两条红线（违反必然产生脏数据）**
+> 1. **绝不向请求添加 `email`**。实测（2026-09-18）：带 email 创建的记录**无法被同 `externalId` 的无 email 请求命中**，会新建第二条，而且这两条**永远合不回去**。
+> 2. 万一将来确实要带 email，必须**每次固定同一个值**，绝不能“有时带有时不带”——否则同一个人会被拆成两条。
+>
+> 回归防线：后端 `tests/test_queue_payload.py` 断言请求体**恰好只有** `{name, externalId}`，多一个字段测试就变红。
 
-### 4.1 契约探测（httpx 直连）
+## 四、实测证据（打生产队列，非 mock）
+
+### 4.1 契约探测（2026-09-16，httpx 直连）
 
 | 用例 | 结果 | 结论 |
 |---|---|---|
 | POST **不带** `email` | **201** | email 已非必填 |
-| POST 带 `email` | **201** | 向后兼容仍在 |
-| 同 `externalId` 再 POST | **200** `alreadyInQueue=true`，**同一 participantId** | **去重键 = `externalId`** |
+| POST 带 `email` | **201** | 兼容，但会切到另一个身份空间（见 4.1b）|
+| 同 `externalId`、**不带** email 再 POST | **200** `alreadyInQueue=true`，**同一 participantId** | 无 email 时去重键 = `externalId` |
 | 同 `name` 不同 `externalId` | **201** | `name` **不是**去重键，同名玩家不会互相吞掉 |
-| `name` 含 `@`（`admin@admin.com`）| **201** | 旧版会 400 `email_invalid`，现已不是问题 |
+| `name` 含 `@`（`admin@admin.com`）| **201** | 昵称形态不再受限（但非法的 **email 字段**仍会 400，见 4.1b）|
 | `name` 含空格 | **201** | 同上 |
 | `name` 长度 50 / 100 / 200 / 500 | 201 / 201 / **400 name_too_long** / 400 | 上限就是 100，与代码截断值一致 |
 | `name` 为空 / 缺失 | **400 name_required** | 必须兜底非空 |
+
+### 4.1b 复测（2026-09-18）：`email` 的真实语义 —— 它**并没有被移除**
+
+| 用例 | 结果 | 结论 |
+|---|---|---|
+| `{name}`，不给 email | **201** | ✅ email 不是必填 |
+| `{email}`，不给 name | **400 name_required** | 只校验 name |
+| **`{name, email:"not-an-email"}`** | **400 `email_invalid`** | 🔴 **字段仍在 schema 内，且被严格校验** |
+| `{name, email:"a@"}` ／ `{name, email:"a b@x.com"}` | 400 `email_invalid` | 同上 |
+| `{name, email:""}` ／ `{name, email:null}` | 201 | 空串 / null 视为未提供 |
+| 无 email：同 `externalId` 提交两次 | 201 → **200 同 pid** | `externalId` 空间幂等 |
+| 带 email 建（pid **X**）→ 同 `externalId` 不带 email | **201 新 pid** | 🔴 **查不到 X：两个身份空间不互通** |
+| 带 email 建（pid **X**）→ 同 email 换 `externalId` | **200，pid 仍是 X** | 🔴 **有 email 时按 email 去重** |
+| 带 email 建（pid **X**）→ 同 email 且不给 `externalId` | **200，pid 仍是 X** | email 单独即可去重 |
+| 幂等命中时再提交不同 `name` | RTDB 里的 `name` **被覆盖** | 大屏名字以最后一次提交为准 |
+
+> RTDB 成员记录只存 `{joinedAt, name, position, source}` —— **email 不会出现在大屏数据里**（隐私友好），但服务端另建了索引，所以去重仍然生效。
+>
+> 线上反证（2026-09-20）：通过线上后端注册一名真实用户后，用**同一 `externalId` 不带 email** 再 POST → **200 `alreadyInQueue=true` 且 pid 相同**。若后端当初带了 email，这次必然变成 201 新记录。
 
 ### 4.2 服务层测试（`app/services/queue_service.py` → 真实队列）
 
@@ -149,7 +174,8 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
 ## 八、待办
 
 - [x] 澄清 key↔queue 归属 → 队列 `Qmu0wnldvywckwcp0fvm`
-- [x] 确认去重方案 → `externalId`（email 已可不传）
+- [x] 确认去重方案 → 无 email 时按 `externalId`（我方**刻意永不发送** email）
+- [x] 回归防线：`tests/test_queue_payload.py` 断言请求体恰好为 `{name, externalId}`（9 项全绿）
 - [x] curl 冒烟（201/200）
 - [x] 后端接入代码上线
 - [ ] 现场真机：注册一名真实玩家 → 大屏应立刻出现该昵称（线上已用测试用户验到入队 + RTDB 数据落地，仅差现场目视）
@@ -160,6 +186,7 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
 | 问题 | 结论 |
 |---|---|
 | 2026-09-08 `GET /v1/queues` 返回空数组，`Qm9x4k2ptu8` 404 | 文档里的 id 只是示例；真实队列为 `Qmu0wnldvywckwcp0fvm` |
-| 旧版 `email` 必填且严格校验（含空格 / `@` 直接 400 `email_invalid`） | 新版已改为可选，我方也不再发送 |
-| 担心“按 email 去重 → 全员同邮箱只有 1 人能入队” | 去重键已换成 `externalId`，该陷阱彻底消失 |
+| 旧版 `email` 必填且严格校验（含空格 / `@` 直接 400 `email_invalid`） | email 已**非必填**，但**并未移除**：给了仍会校验，且会切换身份空间（见 4.1b）|
+| ~~“email 已被移除”~~（2026-09-16 的过早结论） | **更正**：email 仍在 schema 内。我方策略改为“**刻意永不发送**”，而不是“对方已删除” |
+| 担心“按 email 去重 → 全员同邮箱只有 1 人能入队” | 我方不发 email，去重只发生在 `externalId` 空间，该陷阱与我们无关 |
 | 担心“同名玩家被静默去重” | 实测同名不同 `externalId` 各自入队，无此风险 |
