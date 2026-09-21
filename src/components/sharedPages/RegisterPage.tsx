@@ -19,8 +19,8 @@ import { useClickSound } from '../../hooks/useClickSound';
 const color = ARCADE_COLORS.cyan;
 
 /**
- * Venue queue big screen. Opened in a new tab as soon as registration succeeds
- * so the player can watch themselves join. Overridable per environment.
+ * Fallback venue queue big screen, used only until the backend tells us which
+ * queue is live. Overridable per environment.
  */
 const QUEUE_BOARD_URL =
   import.meta.env.VITE_QUEUE_BOARD_URL ||
@@ -115,8 +115,25 @@ const RegisterPage: React.FC = () => {
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   const [registered, setRegistered] = useState(false);
-  /** true when the browser refused to open the queue screen in a new tab */
-  const [queueTabBlocked, setQueueTabBlocked] = useState(false);
+  /** brief "copied" confirmation on the nickname card */
+  const [copiedNickname, setCopiedNickname] = useState(false);
+  /** Live board link, resolved from the backend once registration succeeds. */
+  const [queueBoardUrl, setQueueBoardUrl] = useState(QUEUE_BOARD_URL);
+
+  /**
+   * The organiser deletes and recreates queues, so a hardcoded board link goes
+   * stale and would open a dead board. Ask the backend which queue is live.
+   */
+  const loadQueueBoardUrl = async () => {
+    try {
+      const response = await apiFetch('/queue/');
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data?.queueBoardUrl) setQueueBoardUrl(data.queueBoardUrl);
+    } catch {
+      // Keep the configured fallback: the button must still work offline.
+    }
+  };
 
   const handleRegisterClick = () => {
     if (!firstname || !lastname || !country) {
@@ -145,21 +162,53 @@ const RegisterPage: React.FC = () => {
       setRegNickname(reg?.nickname || '');
       setDisclaimerOpen(false);
       setRegistered(true);
-      // Show the venue queue screen right away. Popup blockers can refuse it, in
-      // which case the success card offers an explicit button instead.
-      const queueTab = window.open(QUEUE_BOARD_URL, '_blank');
-      if (queueTab) {
-        try {
-          queueTab.opener = null;
-        } catch {
-          /* cross-origin: nothing to do */
-        }
-      }
-      setQueueTabBlocked(!queueTab);
+      // The queue screen is deliberately NOT opened here: the nickname is the only
+      // credential the player has, so they must read it off this screen first and
+      // open the queue themselves with the button below.
+      void loadQueueBoardUrl();
     } catch (err) {
       setSnack({ open: true, message: String(err instanceof Error ? err.message : err), severity: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  /** The nickname is the only thing the player has to carry, so offer an easy copy. */
+  const handleCopyNickname = async () => {
+    const text = regNickname;
+    if (!text) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Older venue tablets and non-secure contexts have no Clipboard API.
+        const field = document.createElement('textarea');
+        field.value = text;
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.top = '-1000px';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.select();
+        document.execCommand('copy');
+        document.body.removeChild(field);
+      }
+      setCopiedNickname(true);
+      window.setTimeout(() => setCopiedNickname(false), 2000);
+    } catch {
+      setSnack({ open: true, message: 'Copy failed — please write the nickname down.', severity: 'warning' });
+    }
+  };
+
+  /** Manual step on purpose: the player notes the nickname down, then leaves. */
+  const handleOpenQueue = () => {
+    const tab = window.open(queueBoardUrl, '_blank');
+    if (tab) {
+      try {
+        tab.opener = null;
+      } catch {
+        /* cross-origin: nothing we can do */
+      }
     }
   };
 
@@ -240,9 +289,9 @@ const RegisterPage: React.FC = () => {
             </ArcadeTypography>
 
             {regNickname && (
-              <Box sx={{ p: 2.5, mb: 3, border: `2px solid ${color}60`, borderRadius: '8px', backgroundColor: `${color}08`, boxShadow: `0 0 20px ${color}30` }}>
+              <Box sx={{ p: 3, mb: 3, border: `2px solid ${color}60`, borderRadius: '8px', backgroundColor: `${color}08`, boxShadow: `0 0 20px ${color}30` }}>
                 <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}60`, fontSize: '0.65rem', letterSpacing: '0.2em', mb: 1 }}>
-                  YOUR NICKNAME
+                  STEP 1 — YOUR NICKNAME
                 </ArcadeTypography>
                 <ArcadeTypography
                   arcadeSize="lg"
@@ -261,22 +310,30 @@ const RegisterPage: React.FC = () => {
                 >
                   {regNickname}
                 </ArcadeTypography>
-                <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}50`, fontSize: '0.6rem', lineHeight: 1.9 }}>
-                  Take a screenshot! You will use this nickname to log in at the event.
+
+                <ArcadeButton size="sm" color="yellow" variant="outline" onClick={handleCopyNickname}>
+                  {copiedNickname ? '✓ COPIED' : 'COPY NICKNAME'}
+                </ArcadeButton>
+
+                <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}70`, fontSize: '0.65rem', mt: 2, lineHeight: 1.9 }}>
+                  Write it down or screenshot it now — you will type it to log in at every game.
                 </ArcadeTypography>
               </Box>
             )}
 
-            {queueTabBlocked && (
-              <Box sx={{ mt: 0.5 }}>
-                <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}60`, fontSize: '0.6rem', mb: 1.5 }}>
-                  Your browser blocked the queue screen.
-                </ArcadeTypography>
-                <ArcadeButton size="md" onClick={() => window.open(QUEUE_BOARD_URL, '_blank')}>
-                  ▶ OPEN QUEUE SCREEN
-                </ArcadeButton>
-              </Box>
-            )}
+            {/* Step 2 is a manual click on purpose, so nobody leaves this page before
+                reading the nickname above. */}
+            <Box sx={{ borderTop: `1px solid ${color}25`, pt: 3 }}>
+              <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}60`, fontSize: '0.6rem', letterSpacing: '0.2em', mb: 1.5 }}>
+                STEP 2 — CHECK YOUR PLACE IN THE QUEUE
+              </ArcadeTypography>
+              <ArcadeButton size="md" color="lime" glowing onClick={handleOpenQueue}>
+                ▶ GO TO QUEUE SCREEN
+              </ArcadeButton>
+              <ArcadeTypography arcadeSize="xs" component="p" monospace glow={false} sx={{ color: `${ARCADE_COLORS.white}45`, fontSize: '0.58rem', mt: 1.5, lineHeight: 1.8 }}>
+                Opens in a new tab — this tab keeps your nickname on screen.
+              </ArcadeTypography>
+            </Box>
 
           </Box>
         </Box>

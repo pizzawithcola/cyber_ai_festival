@@ -80,16 +80,6 @@ const RegisterQrDialog: React.FC<RegisterQrDialogProps> = ({ open, onClose }) =>
       <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
         <QRCode value={url} size={190} />
       </Box>
-
-      <ArcadeTypography
-        arcadeSize="xs"
-        component="p"
-        monospace
-        glow={false}
-        sx={{ color, fontSize: '0.65rem', mt: 1.5, width: '100%', letterSpacing: '0.05em', wordBreak: 'break-all' }}
-      >
-        {url}
-      </ArcadeTypography>
     </Dialog>
   );
 };

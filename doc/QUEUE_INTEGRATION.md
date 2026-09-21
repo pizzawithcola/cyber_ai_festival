@@ -128,6 +128,31 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
 > 因此“返回 True + 人数 +1”本身就证明了兜底与截断生效。
 > 测试脚本 `/tmp/queue_service_test2.py`（临时文件，不入库），**10/10 通过**。
 
+### 4.4 队列 id 必须动态解析（2026-09-21）
+
+主办方会在排队系统后台**删掉旧队列、新建队列**，写死的 id 就会 404；而 `enqueue_user` 设计为
+永不抛异常 → **玩家静默丢队**。当天真实发生：
+
+| 证据 | 内容 |
+|---|---|
+| 线上日志 | `ERROR Queue rejected user 210 (name='JamieT_002'): HTTP 404 {"error":"queue_not_found","message":"No queue with id \"Qmu0wnldvywckwcp0fvm\"."}` |
+| 结果 | `Queue: could not enrol user 210` —— 该玩家注册成功但**从未出现在大屏** |
+| `GET /v1/queues` | 只剩一个队列：`Qmuat79gwnuw7hiwski`（"Sep 21 Test"，createdAt `1789968789680`）|
+| 旧 id 复测 | `GET /v1/queues/Qmu0wnldvywckwcp0fvm` → **404** |
+| 连带故障 | 前端 `▶ GO TO QUEUE SCREEN` 按钮也指向旧 id → **注册完点按钮进的是死页面** |
+
+修复：`resolve_queue_id()` 每次入队前 `GET /v1/queues` → `max(createdAt)` → 最新队列 id；
+前端看板链接改由 `GET /queue/` 提供（与入队路径共用同一套解析）。
+
+| 验证 | 结果 |
+|---|---|
+| 服务层打真实 API（非 mock）| `describe_current_queue() -> {"queueId": "Qmuat79gwnuw7hiwski", "queueBoardUrl": "https://queue-system-e6780.web.app/#queue/Qmuat79gwnuw7hiwski"}` |
+| 一致性 | `resolve_queue_id()` 与 `describe_current_queue()` 返回**同一个队列**，看板链接与入队目标不可能分叉 |
+| 单测 | `tests/test_queue_payload.py` **17 项全绿**，全量离线 **111 项全绿** |
+
+> 注意：`QUEUE_QUEUE_ID` 现在只是兜底（列表接口不可用时才用）。**任何写死的 queueId 都会过期**，
+> 排查时一律先 `GET /v1/queues` 或 `GET /queue/` 取当前值。
+
 ## 五、后端实现（已上线）
 
 `app/services/queue_service.py`：
@@ -139,6 +164,15 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
   - 4xx = 永久失败不重试（`name_required` / `name_too_long` / key 错）；网络 / 5xx 重试 3 次（1s、2s 退避）；
   - 去重交给服务端：重复提交幂等，不会产生第二条。
 - **日志埋点**：`Queue: user <id> (<name>) -> HTTP <code> (id=..., rank=..., ahead=..., already=..., total=...)`。
+- **队列 id 每次动态解析**（见 4.4）：入队前先 `GET /v1/queues`，取 `createdAt` 最大的队列。
+  解析失败（网络 / 列表为空）才退回 `QUEUE_QUEUE_ID`。
+
+### `GET /queue/`（给前端的只读接口）
+
+- 返回 `{queueId, name, queueBoardUrl}`，与入队路径**共用同一套解析逻辑**，保证「玩家被排进的队列」
+  和「按钮打开的看板」永远不会是两个不同队列；
+- 队列系统不可达 / 没有队列时返回 **503**（不猜一个），前端保留自己的兜底链接；
+- 鉴权与其它路由一致：`X-API-Key`。
 
 配置（env / `infra/cloudformation.yml` + `fixed-task-def.json`）：
 
@@ -146,17 +180,21 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
 |---|---|
 | `QUEUE_ENABLED` | `true` |
 | `QUEUE_BASE_URL` | `https://queue-system-e6780.web.app/api` |
-| `QUEUE_QUEUE_ID` | `Qmu0wnldvywckwcp0fvm` |
+| `QUEUE_QUEUE_ID` | `Qmu0wnldvywckwcp0fvm`（**仅兜底**：正常流程每次动态解析最新队列，此值过期不影响入队） |
 | `QUEUE_API_KEY` | Secrets Manager `cyber-ai-festival/queue-api-key` |
 | `QUEUE_TIMEOUT_SECONDS` | `10` |
 
 ## 六、前端行为
 
-注册成功后（`src/components/sharedPages/RegisterPage.tsx`）：
+注册成功后（`src/components/sharedPages/RegisterPage.tsx`）**不自动跳转**：昵称是玩家唯一的登录凭证，
+必须先让他在当前页面看到并记下来。
 
-1. 新标签页打开排队大屏 `VITE_QUEUE_BOARD_URL`（默认 `https://queue-system-e6780.web.app/#queue/Qmu0wnldvywckwcp0fvm`）；
-2. 若被浏览器拦截，页面提供 `▶ OPEN QUEUE SCREEN` 手动按钮兜底；
-3. 昵称使用响应式字号（`nicknameFontSize()`），长昵称不再溢出。
+1. 成功卡片分两步：`STEP 1 — YOUR NICKNAME`（大字号昵称 + `COPY NICKNAME`）、`STEP 2 — CHECK YOUR PLACE IN THE QUEUE`；
+2. 注册成功的同时后台 `GET /queue/` 取当前队列，`▶ GO TO QUEUE SCREEN` 用它打开大屏（新标签页，本页保留昵称便于回看）；
+3. 接口不可用时退回 `VITE_QUEUE_BOARD_URL` 常量；
+4. 昵称使用响应式字号（`nicknameFontSize()`），长昵称不再溢出。
+
+首页金币机的 `RegisterQrDialog` 只展示注册二维码（`/register`），不含大屏链接。
 
 ## 七、遗留风险 / 注意事项
 
@@ -165,7 +203,8 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
 2. **没有公开的参与者查询接口**：大屏是否显示正确只能看大屏本身 + `totalInQueue`；
    排查时用「同 externalId 再 POST」取回 `participantId`。
    - 💡 **最快的现场排查手段**：大屏本质是 Firebase RTDB，**只读无需鉴权**，直接看
-     `https://queue-system-e6780-default-rtdb.firebaseio.com/queues/Qmu0wnldvywckwcp0fvm/members.json`
+     `https://queue-system-e6780-default-rtdb.firebaseio.com/queues/<当前 queueId>/members.json`
+     （当前 queueId 以 `GET /queue/` 或 `GET /v1/queues` 为准，**别再用文档里写过的旧 id**）
      就能看到大屏真正渲染的成员（字段 `name` / `position` / `joinedAt` / `source`，`source:"api"` 即我方 API 入队）。
      `nextPosition.json` 是下一个入队序号。
 3. `DELETE` 路由未在文档中出现，**随时可能变更**；仅用于测试清理，不写进业务流程。
@@ -175,7 +214,8 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
 
 - [x] 澄清 key↔queue 归属 → 队列 `Qmu0wnldvywckwcp0fvm`
 - [x] 确认去重方案 → 无 email 时按 `externalId`（我方**刻意永不发送** email）
-- [x] 回归防线：`tests/test_queue_payload.py` 断言请求体恰好为 `{name, externalId}`（9 项全绿）
+- [x] 回归防线：`tests/test_queue_payload.py` 断言请求体恰好为 `{name, externalId}`（17 项全绿）
+- [x] 队列 id 动态解析（永不写死）+ `GET /queue/` 供前端取看板链接（2026-09-21）
 - [x] curl 冒烟（201/200）
 - [x] 后端接入代码上线
 - [ ] 现场真机：注册一名真实玩家 → 大屏应立刻出现该昵称（线上已用测试用户验到入队 + RTDB 数据落地，仅差现场目视）
@@ -190,3 +230,4 @@ DELETE {BASE}/v1/queues/{queueId}/participants/{participantId}   # 未公开文�
 | ~~“email 已被移除”~~（2026-09-16 的过早结论） | **更正**：email 仍在 schema 内。我方策略改为“**刻意永不发送**”，而不是“对方已删除” |
 | 担心“按 email 去重 → 全员同邮箱只有 1 人能入队” | 我方不发 email，去重只发生在 `externalId` 空间，该陷阱与我们无关 |
 | 担心“同名玩家被静默去重” | 实测同名不同 `externalId` 各自入队，无此风险 |
+| **2026-09-21 队列被重建**：`Qmu0wnldvywckwcp0fvm` → 404，玩家 210（`JamieT_002`）注册成功但没进队 | 主办方会删队列重建 → 写死 id 必然失效。改为**每次入队前动态取最新队列**（4.4）；前端看板链接改由 `GET /queue/` 提供 |
