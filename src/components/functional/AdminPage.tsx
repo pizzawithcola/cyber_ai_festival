@@ -176,6 +176,22 @@ const API_ENDPOINTS = [
 
 interface ApiStatus { name: string; status: 'idle' | 'loading' | 'normal' | 'error'; latency?: number; error?: string; }
 interface UserScore  { id: number; firstname: string; lastname: string; nickname?: string; region: string; role: string; game1_score: number; game2_score: number; game3_score: number; game4_score: number; game5_score: number; total_score: number; }
+interface EventItem  { id: number; name: string; description: string | null; start_at: string; end_at: string; created_at: string; }
+interface EventCountry { region: string; count: number; }
+interface EventDay { date: string; count: number; }
+interface EventTopPlayer { nickname: string; firstname: string; lastname: string; region: string; total_score: number; }
+interface EventGameStat { players: number; avg: number; max: number; }
+interface EventReport {
+  event: EventItem;
+  total_participants: number;
+  country_count: number;
+  countries: EventCountry[];
+  registrations_per_day: EventDay[];
+  active_players: number;
+  top_players: EventTopPlayer[];
+  games: Record<string, EventGameStat>;
+  showdown: { rooms: number; players: number; answers: number };
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const AdminPage: React.FC = () => {
@@ -208,7 +224,7 @@ const AdminPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [apiStatuses, setApiStatuses] = useState<ApiStatus[]>(API_ENDPOINTS.map(ep => ({ name: ep.name, status: 'idle' as const })));
   const [isTestingApis, setIsTestingApis] = useState(false);
-  const [activeTab, setActiveTab] = useState<'personnel' | 'rooms' | 'scoring' | 'api'>('personnel');
+  const [activeTab, setActiveTab] = useState<'personnel' | 'rooms' | 'scoring' | 'api' | 'events'>('personnel');
 
   // ─── Final Rooms state ──────────────────────────────────────────────────────
   interface RoomPlayer {
@@ -226,6 +242,90 @@ const AdminPage: React.FC = () => {
   const [questionBankOpen, setQuestionBankOpen] = useState(false);
   const [balanceOpen, setBalanceOpen] = useState(false);
   const [balanceForm, setBalanceForm] = useState<BalanceConfig>(() => loadBalance() ?? DEFAULT_BALANCE);
+
+  // ─── Events (time-window reports) ──────────────────────────────────────────
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [evName, setEvName] = useState('');
+  const [evDesc, setEvDesc] = useState('');
+  const [evStart, setEvStart] = useState('');
+  const [evEnd, setEvEnd] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [report, setReport] = useState<EventReport | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+
+  const loadEvents = async () => {
+    setEventsLoading(true);
+    try {
+      const res = await apiFetch('/events/');
+      if (!res.ok) throw new Error('Failed to load events');
+      setEvents(await res.json());
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  const handleCreateEvent = async () => {
+    if (!evName.trim() || !evStart || !evEnd) {
+      setSnackbar({ open: true, message: 'Name, start and end are required.', severity: 'warning' });
+      return;
+    }
+    try {
+      const res = await apiFetch('/events/', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: evName.trim(),
+          description: evDesc.trim() || null,
+          start_at: new Date(evStart).toISOString(),
+          end_at: new Date(evEnd).toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || 'Failed to create event');
+      }
+      setEvName(''); setEvDesc(''); setEvStart(''); setEvEnd('');
+      setSnackbar({ open: true, message: 'Event created.', severity: 'success' });
+      loadEvents();
+    } catch (e) {
+      setSnackbar({ open: true, message: String(e), severity: 'error' });
+    }
+  };
+
+  const openReport = async (ev: EventItem) => {
+    setSelectedEvent(ev);
+    setReportLoading(true);
+    setReport(null);
+    try {
+      const res = await apiFetch(`/events/${ev.id}/report`);
+      if (!res.ok) throw new Error('Report unavailable');
+      setReport(await res.json());
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async (ev: EventItem) => {
+    try {
+      const res = await apiFetch(`/events/${ev.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete event');
+      setSnackbar({ open: true, message: 'Event deleted.', severity: 'success' });
+      if (selectedEvent?.id === ev.id) { setSelectedEvent(null); setReport(null); }
+      loadEvents();
+    } catch (e) {
+      setSnackbar({ open: true, message: String(e), severity: 'error' });
+    }
+  };
+
+  // Load events whenever the Events tab is opened
+  useEffect(() => {
+    if (activeTab === 'events') loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   // ─── Check token on mount ───────────────────────────────────────────────────
   useEffect(() => {
@@ -665,6 +765,7 @@ const AdminPage: React.FC = () => {
           <ToggleButton value="rooms">Ultimate Rooms</ToggleButton>
           <ToggleButton value="scoring">Scoring System</ToggleButton>
           <ToggleButton value="api">API DIAGNOSTICS</ToggleButton>
+          <ToggleButton value="events">Events</ToggleButton>
         </ToggleButtonGroup>
       </Box>
 
@@ -1030,6 +1131,134 @@ const AdminPage: React.FC = () => {
           }}
         />
       </Box>
+      )}
+
+      {/* ── Events ── */}
+      {activeTab === 'events' && (
+        <Box sx={{ mb: 4 }}>
+          <SFSectionHeader label="Create Event" color={SF.magenta} />
+          <Box sx={{ ...hudPanel(SF.magenta), borderRadius: '4px', p: 2, mb: 3 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <TextField size="small" label="EVENT NAME" value={evName} onChange={e => setEvName(e.target.value)} sx={{ minWidth: 200, ...sfInputSx }} />
+              <TextField size="small" label="DESCRIPTION" value={evDesc} onChange={e => setEvDesc(e.target.value)} sx={{ minWidth: 240, ...sfInputSx }} />
+              <TextField size="small" type="datetime-local" label="START (local)" value={evStart} onChange={e => setEvStart(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 220, ...sfInputSx }} />
+              <TextField size="small" type="datetime-local" label="END (local)" value={evEnd} onChange={e => setEvEnd(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 220, ...sfInputSx }} />
+              <SFButton color={SF.magenta} variant="filled" onClick={handleCreateEvent}>+ CREATE EVENT</SFButton>
+            </Box>
+            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim, mt: 1 }}>
+              Times are entered in your local timezone; membership is matched against the registration timestamp (UTC).
+            </Box>
+          </Box>
+
+          <SFSectionHeader label="Events" color={SF.cyan} right={
+            <SFButton color={SF.cyan} onClick={loadEvents} startIcon={<RefreshIcon sx={{ fontSize: '0.9rem !important' }} />}>REFRESH</SFButton>
+          } />
+          {eventsLoading ? (
+            <Box sx={{ p: 2, fontFamily: SF.fontBody, color: SF.dim }}>Loading…</Box>
+          ) : (
+            <Box sx={{ ...hudPanel(SF.cyan), borderRadius: '4px', overflow: 'hidden', mb: 3 }}>
+              {events.length === 0 && <Box sx={{ p: 3, fontFamily: SF.fontBody, color: SF.dim }}>No events yet — create one above.</Box>}
+              {events.map(ev => (
+                <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, px: 2, py: 1.5, borderBottom: `1px solid ${SF.border}40`, '&:last-of-type': { borderBottom: 'none' } }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', color: SF.white }}>{ev.name}</Box>
+                    <Box sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: SF.dim }}>
+                      {new Date(ev.start_at).toLocaleString()} → {new Date(ev.end_at).toLocaleString()}
+                      {ev.description ? ` · ${ev.description}` : ''}
+                    </Box>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 0.75 }}>
+                    <SFButton color={SF.cyan} onClick={() => openReport(ev)}>REPORT</SFButton>
+                    <SFButton color={SF.red} onClick={() => handleDeleteEvent(ev)}>DELETE</SFButton>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          {selectedEvent && (
+            <Box sx={{ ...hudPanel(SF.magenta), borderRadius: '4px', p: 2.5, mb: 3 }}>
+              <SFSectionHeader label={`Report — ${selectedEvent.name}`} color={SF.magenta} right={
+                <SFButton color={SF.dim} onClick={() => { setSelectedEvent(null); setReport(null); }}>CLOSE</SFButton>
+              } />
+              {reportLoading ? (
+                <Box sx={{ fontFamily: SF.fontBody, color: SF.dim }}>Loading report…</Box>
+              ) : report && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 1.5 }}>
+                    {([
+                      ['PARTICIPANTS', report.total_participants, SF.cyan],
+                      ['COUNTRIES', report.country_count, SF.lime],
+                      ['ACTIVE PLAYERS', report.active_players, SF.yellow],
+                      ['QUIZ ROOMS', report.showdown.rooms, SF.magenta],
+                      ['QUIZ PLAYERS', report.showdown.players, SF.magenta],
+                      ['ANSWERS', report.showdown.answers, SF.magenta],
+                    ] as [string, number, string][]).map(([label, value, color]) => (
+                      <Box key={label} sx={{ border: `1px solid ${color}30`, p: 1.5, borderRadius: '4px', backgroundColor: `${color}06` }}>
+                        <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.65rem', letterSpacing: '0.15em', color }}>{label}</Box>
+                        <Box sx={{ fontFamily: SF.fontTitle, fontSize: '1.4rem', color: SF.white }}>{value}</Box>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  <Box>
+                    <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', color: SF.lime, letterSpacing: '0.15em', mb: 1 }}>TOP COUNTRIES</Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                      {report.countries.slice(0, 12).map(c => (
+                        <Box key={c.region} sx={{ px: 1, py: 0.4, border: `1px solid ${SF.lime}25`, borderRadius: '3px', fontFamily: SF.fontBody, fontSize: '0.75rem', color: SF.white }}>
+                          {c.region} <Box component="span" sx={{ color: SF.lime, fontFamily: SF.fontMono }}>{c.count}</Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+
+                  <Box>
+                    <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', color: SF.yellow, letterSpacing: '0.15em', mb: 1 }}>GAME STATS (played = score &gt; 0)</Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 1 }}>
+                      {Object.entries(report.games).map(([k, g]) => (
+                        <Box key={k} sx={{ border: `1px solid ${SF.yellow}20`, p: 1, borderRadius: '3px' }}>
+                          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.65rem', color: SF.yellow, textTransform: 'uppercase' }}>{k}</Box>
+                          <Box sx={{ fontFamily: SF.fontMono, fontSize: '0.75rem', color: SF.white }}>players {g.players}</Box>
+                          <Box sx={{ fontFamily: SF.fontMono, fontSize: '0.75rem', color: SF.dim }}>avg {g.avg} · max {g.max}</Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+
+                  <Box>
+                    <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', color: SF.cyan, letterSpacing: '0.15em', mb: 1 }}>TOP PLAYERS</Box>
+                    {report.top_players.length === 0 ? (
+                      <Box sx={{ fontFamily: SF.fontBody, color: SF.dim, fontSize: '0.8rem' }}>No scores yet.</Box>
+                    ) : (
+                      <TableContainer>
+                        <Table size="small" sx={{ minWidth: 500 }}>
+                          <TableHead>
+                            <TableRow>
+                              {['#', 'NICKNAME', 'NAME', 'COUNTRY', 'TOTAL'].map(h => (
+                                <TableCell key={h} sx={{ ...thSx, color: `${SF.white}85 !important` }}>{h}</TableCell>
+                              ))}
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {report.top_players.map((p, i) => (
+                              <TableRow key={p.nickname + i}>
+                                <TableCell sx={tdSx}>{i + 1}</TableCell>
+                                <TableCell sx={tdSx}>{p.nickname}</TableCell>
+                                <TableCell sx={tdSx}>{p.firstname} {p.lastname}</TableCell>
+                                <TableCell sx={tdSx}>{p.region}</TableCell>
+                                <TableCell sx={{ ...tdSx, color: scoreColor(p.total_score) }}>{p.total_score}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
       )}
 
       {/* ── Delete Dialog ── */}
