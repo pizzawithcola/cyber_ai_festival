@@ -46,6 +46,44 @@ body,
   min-height: 100%;
 }
 
+/* ── Themed, thin scrollbars + no layout shift from the vertical bar ── */
+/* Reserve the gutter so the vertical scrollbar never squeezes content into a
+   horizontal overflow (the "vertical bar causes horizontal bar" artifact). */
+html {
+  scrollbar-gutter: stable;
+  overflow-x: hidden;
+}
+body {
+  overflow-x: hidden;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(74, 122, 155, 0.45) #060f1e;
+}
+
+/* WebKit / Chromium */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(74, 122, 155, 0.4);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 122, 155, 0.6);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Arcade fonts for retail demolition hint panel and intro */
 .font-arcade {
   font-family: 'Press Start 2P', monospace;

@@ -253,6 +253,7 @@ const AdminPage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [report, setReport] = useState<EventReport | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [openCreateEventDialog, setOpenCreateEventDialog] = useState(false);
 
   const loadEvents = async () => {
     setEventsLoading(true);
@@ -287,6 +288,7 @@ const AdminPage: React.FC = () => {
         throw new Error(err?.detail || 'Failed to create event');
       }
       setEvName(''); setEvDesc(''); setEvStart(''); setEvEnd('');
+      setOpenCreateEventDialog(false);
       setSnackbar({ open: true, message: 'Event created.', severity: 'success' });
       loadEvents();
     } catch (e) {
@@ -617,8 +619,8 @@ const AdminPage: React.FC = () => {
   const paginatedRooms = rooms.slice(roomsPage * roomsRowsPerPage, roomsPage * roomsRowsPerPage + roomsRowsPerPage);
 
   // ─── shared cell sx ───────────────────────────────────────────────────────
-  const thSx = { backgroundColor: '#030e1a', borderBottom: `1px solid ${SF.cyan}25`, py: 1.2, px: 1.5 };
-  const tdSx = { borderBottom: `1px solid ${SF.white}06`, py: 0, px: 1.5, height: 51 };
+  const thSx = { backgroundColor: '#030e1a', borderBottom: `1px solid ${SF.cyan}25`, py: 1.2, px: 1.5, color: `${SF.white}E6` };
+  const tdSx = { borderBottom: `1px solid ${SF.white}06`, py: 0, px: 1.5, height: 51, color: `${SF.white}E6` };
 
   // ─── dialog panel sx ─────────────────────────────────────────────────────
   const dlgPaper = (accent: string) => ({
@@ -698,12 +700,11 @@ const AdminPage: React.FC = () => {
         repeating-linear-gradient(90deg, transparent, transparent 39px, ${SF.cyan}08 39px, ${SF.cyan}08 40px)
       `,
       backgroundSize: '100% 100%, 100% 100%, 40px 40px, 40px 40px',
-      p: { xs: 2, md: 3 },
       boxSizing: 'border-box',
     }}>
 
       {/* ── Top header ── */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3, pb: 2, borderBottom: `1px solid ${SF.cyan}20` }}>
+      <Box sx={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: SF.bg, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', px: { xs: 2, md: 3 }, py: 2, borderBottom: `1px solid ${SF.cyan}20` }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
             {/* HUD corner brackets */}
@@ -735,6 +736,9 @@ const AdminPage: React.FC = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* ── Content (max width 1200) ── */}
+      <Box sx={{ maxWidth: 1200, width: '100%', mx: 'auto', px: { xs: 2, md: 3 }, py: 3 }}>
 
       {/* ── Tab Toggle ── */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
@@ -816,7 +820,7 @@ const AdminPage: React.FC = () => {
                 {[['NICKNAME','nickname'],['FIRST NAME','firstname'],['LAST NAME','lastname'],['REGION','region'],['ROLE','role'],['G1/AH','game1_score'],['G2/DS','game2_score'],['G3/RD','game3_score'],['G4/FA','game4_score'],['G5/FS','game5_score'],['TOTAL','total_score']].map(([label, field]) => (
                   <TableCell key={field} sx={thSx}>
                     <TableSortLabel active={orderBy === field} direction={orderBy === field ? order : 'asc'} onClick={() => handleRequestSort(field)} IconComponent={ArrowUpward}
-                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
+                      sx={{ fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}E6 !important`, '&.Mui-active': { color: `${SF.cyan} !important` }, '& .MuiTableSortLabel-icon': { color: `${SF.cyan}70 !important`, fontSize: '0.85rem' } }}>
                       {label}
                     </TableSortLabel>
                   </TableCell>
@@ -832,7 +836,7 @@ const AdminPage: React.FC = () => {
                       sx={{ color: `${SF.cyan}30`, '&.Mui-checked': { color: SF.cyan }, p: 0 }} />
                   </TableCell>
                   {[u.nickname || '—', u.firstname, u.lastname, u.region].map((val, i) => (
-                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.9rem', color: `${SF.white}85`, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
+                    <TableCell key={i} sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.9rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</TableCell>
                   ))}
                   <TableCell sx={{ ...tdSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: u.role === 'admin' ? SF.lime : SF.dim, textAlign: 'center' }}>{u.role?.toUpperCase() || 'PLAYER'}</TableCell>
                   {[u.game1_score, u.game2_score, u.game3_score, u.game4_score, u.game5_score].map((s, i) => (
@@ -878,7 +882,7 @@ const AdminPage: React.FC = () => {
               <TableHead>
                 <TableRow>
                   {['SIG','ENDPOINT','METHOD','PATH','LATENCY','STATUS'].map(h => (
-                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.cyan}25`, fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.1em', color: `${SF.white}85` }}>{h}</TableCell>
+                    <TableCell key={h} sx={{ ...thSx, borderBottomColor: `${SF.cyan}25`, fontFamily: SF.fontTitle, fontSize: '0.75rem', letterSpacing: '0.1em' }}>{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHead>
@@ -891,13 +895,13 @@ const AdminPage: React.FC = () => {
                       <TableCell sx={tdSx}>
                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dot, boxShadow: s.status !== 'idle' ? `0 0 8px ${dot}` : 'none', transition: 'all 0.3s' }} />
                       </TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.9rem', color: `${SF.white}80` }}>{ep.name}</TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontBody, fontSize: '0.9rem' }}>{ep.name}</TableCell>
                       <TableCell sx={tdSx}>
                         <Box component="span" sx={{ px: 1, py: 0.2, fontFamily: SF.fontTitle, fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', backgroundColor: ep.method === 'GET' ? `${SF.cyan}15` : `${SF.lime}15`, color: ep.method === 'GET' ? SF.cyan : SF.lime, border: `1px solid ${ep.method === 'GET' ? SF.cyan : SF.lime}30` }}>
                           {ep.method}
                         </Box>
                       </TableCell>
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.9rem', color: SF.dim }}>{ep.path}</TableCell>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.9rem' }}>{ep.path}</TableCell>
                       <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.9rem', color: SF.cyan, textAlign: 'right' }}>
                         {s.latency !== undefined ? `${s.latency}ms` : '—'}
                       </TableCell>
@@ -905,7 +909,7 @@ const AdminPage: React.FC = () => {
                         {s.status === 'loading' ? <CircularProgress size={10} sx={{ color: SF.cyan }} /> :
                          s.status === 'normal'  ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.lime }}>NOMINAL</Box> :
                          s.status === 'error'   ? <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: SF.red }}>FAULT — {s.error}</Box> :
-                         <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: `${SF.white}85` }}>STANDBY</Box>}
+                         <Box component="span" sx={{ fontFamily: SF.fontBody, fontSize: '0.88rem', color: `${SF.white}E6` }}>STANDBY</Box>}
                       </TableCell>
                     </TableRow>
                   );
@@ -964,11 +968,11 @@ const AdminPage: React.FC = () => {
           <Table sx={{ tableLayout: 'fixed' }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, width: 150 }}>ROOM CODE</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, width: 170 }}>STATUS</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85` }}>PLAYERS</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, width: 240 }}>CREATED</TableCell>
-                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: `${SF.white}85`, width: 110 }}>ACTIONS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', width: 150 }}>ROOM CODE</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', width: 170 }}>STATUS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em' }}>PLAYERS</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', width: 240 }}>CREATED</TableCell>
+                <TableCell sx={{ ...thSx, fontFamily: SF.fontTitle, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', width: 110 }}>ACTIONS</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1043,7 +1047,7 @@ const AdminPage: React.FC = () => {
                                   border: `1px solid ${c}25`,
                                   backgroundColor: `${c}06`,
                                 }}>
-                                  <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: `${SF.white}80`, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.75rem', color: `${SF.white}E6`, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {p.player_name}
                                   </Box>
                                   <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', fontWeight: 700, color: c }}>
@@ -1062,7 +1066,7 @@ const AdminPage: React.FC = () => {
                       </TableCell>
 
                       {/* Created */}
-                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', color: `${SF.white}85`, whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ ...tdSx, fontFamily: SF.fontMono, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                         {room.created_at ? new Date(room.created_at).toLocaleString() : '—'}
                       </TableCell>
 
@@ -1136,22 +1140,11 @@ const AdminPage: React.FC = () => {
       {/* ── Events ── */}
       {activeTab === 'events' && (
         <Box sx={{ mb: 4 }}>
-          <SFSectionHeader label="Create Event" color={SF.magenta} />
-          <Box sx={{ ...hudPanel(SF.magenta), borderRadius: '4px', p: 2, mb: 3 }}>
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <TextField size="small" label="EVENT NAME" value={evName} onChange={e => setEvName(e.target.value)} sx={{ minWidth: 200, ...sfInputSx }} />
-              <TextField size="small" label="DESCRIPTION" value={evDesc} onChange={e => setEvDesc(e.target.value)} sx={{ minWidth: 240, ...sfInputSx }} />
-              <TextField size="small" type="datetime-local" label="START (local)" value={evStart} onChange={e => setEvStart(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 220, ...sfInputSx }} />
-              <TextField size="small" type="datetime-local" label="END (local)" value={evEnd} onChange={e => setEvEnd(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 220, ...sfInputSx }} />
-              <SFButton color={SF.magenta} variant="filled" onClick={handleCreateEvent}>+ CREATE EVENT</SFButton>
-            </Box>
-            <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim, mt: 1 }}>
-              Times are entered in your local timezone; membership is matched against the registration timestamp (UTC).
-            </Box>
-          </Box>
-
           <SFSectionHeader label="Events" color={SF.cyan} right={
-            <SFButton color={SF.cyan} onClick={loadEvents} startIcon={<RefreshIcon sx={{ fontSize: '0.9rem !important' }} />}>REFRESH</SFButton>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <SFButton color={SF.magenta} variant="filled" onClick={() => setOpenCreateEventDialog(true)}>+ CREATE EVENT</SFButton>
+              <SFButton color={SF.cyan} onClick={loadEvents} startIcon={<RefreshIcon sx={{ fontSize: '0.9rem !important' }} />}>REFRESH</SFButton>
+            </Box>
           } />
           {eventsLoading ? (
             <Box sx={{ p: 2, fontFamily: SF.fontBody, color: SF.dim }}>Loading…</Box>
@@ -1235,7 +1228,7 @@ const AdminPage: React.FC = () => {
                           <TableHead>
                             <TableRow>
                               {['#', 'NICKNAME', 'NAME', 'COUNTRY', 'TOTAL'].map(h => (
-                                <TableCell key={h} sx={{ ...thSx, color: `${SF.white}85 !important` }}>{h}</TableCell>
+                                <TableCell key={h} sx={{ ...thSx, color: `${SF.white}E6 !important` }}>{h}</TableCell>
                               ))}
                             </TableRow>
                           </TableHead>
@@ -1260,6 +1253,44 @@ const AdminPage: React.FC = () => {
           )}
         </Box>
       )}
+
+      </Box>
+
+      {/* ── Create Event Dialog ── */}
+      <Dialog open={openCreateEventDialog} onClose={() => setOpenCreateEventDialog(false)} PaperProps={{ sx: { width: 520, height: 480, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 32px)', backgroundColor: SF.panel, border: `1px solid ${SF.magenta}50`, backgroundImage: 'none', display: 'flex', flexDirection: 'column' } }}>
+        <DialogTitle sx={{ borderBottom: `1px solid ${SF.magenta}25`, py: 1.5, px: 2.5, flexShrink: 0 }}>
+          <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.2em', color: SF.magenta, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            NEW EVENT
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2, pb: 1, px: 2.5, display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1, overflowY: 'auto' }}>
+          <Box>
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', letterSpacing: '0.15em', color: SF.magenta, mb: 0.75 }}>EVENT NAME</Box>
+            <TextField size="small" fullWidth value={evName} onChange={e => setEvName(e.target.value)} sx={sfInputSx} />
+          </Box>
+          <Box>
+            <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', letterSpacing: '0.15em', color: SF.magenta, mb: 0.75 }}>DESCRIPTION</Box>
+            <TextField size="small" fullWidth multiline rows={4} value={evDesc} onChange={e => setEvDesc(e.target.value)} sx={sfInputSx} />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', letterSpacing: '0.15em', color: SF.magenta, mb: 0.75 }}>START (local)</Box>
+              <TextField size="small" fullWidth type="datetime-local" value={evStart} onChange={e => setEvStart(e.target.value)} InputLabelProps={{ shrink: true }} sx={sfInputSx} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.7rem', letterSpacing: '0.15em', color: SF.magenta, mb: 0.75 }}>END (local)</Box>
+              <TextField size="small" fullWidth type="datetime-local" value={evEnd} onChange={e => setEvEnd(e.target.value)} InputLabelProps={{ shrink: true }} sx={sfInputSx} />
+            </Box>
+          </Box>
+          <Box sx={{ fontFamily: SF.fontBody, fontSize: '0.7rem', color: SF.dim }}>
+            Times use your local timezone; membership matches the registration timestamp (UTC).
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2, gap: 1.5, flexShrink: 0 }}>
+          <SFButton color={SF.dim} onClick={() => setOpenCreateEventDialog(false)}>CANCEL</SFButton>
+          <SFButton color={SF.magenta} variant="filled" onClick={handleCreateEvent}>CREATE EVENT</SFButton>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Delete Dialog ── */}
       <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} PaperProps={{ sx: dlgPaper(SF.red) }}>
