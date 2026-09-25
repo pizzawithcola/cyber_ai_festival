@@ -383,8 +383,9 @@
   }
 
   function displayName(entry) {
+    var full = ((entry.firstname || '') + ' ' + (entry.lastname || '')).replace(/\s+/g, ' ').trim();
+    if (full) return full;
     if (entry.nickname) return entry.nickname;
-    if (entry.firstname) return entry.firstname;
     return 'Player ' + entry.user_id;
   }
 
