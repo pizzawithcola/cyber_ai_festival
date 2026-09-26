@@ -676,7 +676,7 @@ const LoginPage: React.FC = () => {
                       ) : (
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <ArcadeTypography arcadeSize="xs" component="p" sx={{ color: `${theme.color}90` }}>
-                            正在生成二维码…
+                            Generating QR code…
                           </ArcadeTypography>
                         </Box>
                       )}
@@ -686,7 +686,7 @@ const LoginPage: React.FC = () => {
                       component="p"
                       sx={{ textAlign: 'center', color: `${ARCADE_COLORS.white}70` }}
                     >
-                      {qrWaiting ? '用手机「玩家面板」扫码，自动登录' : '等待二维码…'}
+                      {qrWaiting ? "Scan with your phone's Player Panel to sign in" : 'Waiting for QR code…'}
                     </ArcadeTypography>
                     <ArcadeButton
                       color={theme.colorKey}
@@ -695,7 +695,7 @@ const LoginPage: React.FC = () => {
                       onClick={() => setQrMode(false)}
                       sx={{ width: '100%' }}
                     >
-                      改用昵称登录
+                      USE NICKNAME INSTEAD
                     </ArcadeButton>
                   </>
                 ) : (
@@ -728,7 +728,7 @@ const LoginPage: React.FC = () => {
                       onClick={() => setQrMode(true)}
                       sx={{ width: '100%', mt: 0 }}
                     >
-                      扫码登录
+                      SCAN TO LOGIN
                     </ArcadeButton>
                     <Box sx={{ textAlign: 'center', mt: 0.5 }}>
                       <Box

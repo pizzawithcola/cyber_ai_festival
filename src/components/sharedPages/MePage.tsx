@@ -58,9 +58,9 @@ const MePage: React.FC = () => {
       const contentType = res.headers.get('content-type') || '';
       if (!res.ok || !contentType.includes('application/json')) {
         const err = await res.json().catch(() => null);
-        throw new Error(err?.detail || '配对失败，请重试');
+        throw new Error(err?.detail || 'Pairing failed — please try again.');
       }
-      setSnack({ open: true, message: '配对了！游戏机会自动登录。', severity: 'success' });
+      setSnack({ open: true, message: 'Paired! The game station will sign you in automatically.', severity: 'success' });
     } catch (e) {
       setSnack({
         open: true,
@@ -74,7 +74,7 @@ const MePage: React.FC = () => {
     if (scanning) return;
     const identity = getPersistentUser();
     if (!identity?.nickname) {
-      setSnack({ open: true, message: '请先注册。', severity: 'warning' });
+      setSnack({ open: true, message: 'Please register first.', severity: 'warning' });
       navigate('/register');
       return;
     }
@@ -86,7 +86,7 @@ const MePage: React.FC = () => {
     } catch (e) {
       setSnack({
         open: true,
-        message: `摄像头不可用：${e instanceof Error ? e.message : String(e)}`,
+        message: `Camera unavailable: ${e instanceof Error ? e.message : String(e)}`,
         severity: 'error',
       });
       return;
@@ -123,7 +123,7 @@ const MePage: React.FC = () => {
           setScanning(false);
           setSnack({
             open: true,
-            message: `摄像头不可用：${e instanceof Error ? e.message : String(e)}`,
+            message: `Camera unavailable: ${e instanceof Error ? e.message : String(e)}`,
             severity: 'error',
           });
         }
@@ -168,10 +168,10 @@ const MePage: React.FC = () => {
         {!user ? (
           <>
             <ArcadeTypography arcadeSize="sm" component="p" sx={{ mb: 3, textAlign: 'center' }}>
-              还没有身份？先注册，再回来扫码登录游戏。
+              No identity yet? Register first, then come back to scan and sign in.
             </ArcadeTypography>
             <ArcadeButton color="lime" size="lg" onClick={() => navigate('/register')}>
-              去注册
+              REGISTER
             </ArcadeButton>
           </>
         ) : (
@@ -189,7 +189,7 @@ const MePage: React.FC = () => {
               }}
             >
               <ArcadeTypography arcadeSize="sm" arcadeColor="white" sx={{ opacity: 0.7 }}>
-                你的身份
+                YOUR IDENTITY
               </ArcadeTypography>
               <ArcadeTypography arcadeSize="lg" arcadeColor="lime" sx={{ mt: 1 }}>
                 {fullName}
@@ -201,7 +201,7 @@ const MePage: React.FC = () => {
 
             <ArcadeButton color="lime" size="lg" glowing animation={scanning ? 'pulse' : 'none'} onClick={startScan}>
               <QrCode size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
-              {scanning ? '扫描中…' : '扫码登录游戏'}
+              {scanning ? 'SCANNING…' : 'SCAN TO LOG IN'}
             </ArcadeButton>
 
             {scanning ? (
@@ -218,23 +218,23 @@ const MePage: React.FC = () => {
               >
                 <Box id="qr-reader" sx={{ width: '100%', minHeight: 240 }} />
                 <ArcadeButton color="red" variant="outline" size="sm" sx={{ mt: 1.5, width: '100%' }} onClick={() => setScanning(false)}>
-                  取消
+                  CANCEL
                 </ArcadeButton>
               </Box>
             ) : (
               <ArcadeTypography arcadeSize="xs" component="p" sx={{ mt: 2, opacity: 0.6, textAlign: 'center' }}>
-                对准游戏机登录页上的二维码即可自动登录
+                Point at the QR code on the game station's login screen to sign in automatically
               </ArcadeTypography>
             )}
 
             <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
               <ArcadeButton color="cyan" variant="ghost" size="sm" onClick={() => navigate('/')}>
                 <ArrowLeft size={14} style={{ marginRight: 6, verticalAlign: '-2px' }} />
-                首页
+                HOME
               </ArcadeButton>
               <ArcadeButton color="red" variant="ghost" size="sm" onClick={logout}>
                 <LogOut size={14} style={{ marginRight: 6, verticalAlign: '-2px' }} />
-                退出
+                LOGOUT
               </ArcadeButton>
             </Box>
           </>
