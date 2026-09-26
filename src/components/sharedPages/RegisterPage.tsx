@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { COUNTRIES } from '../common/Countries';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { apiFetch } from '../../services/api';
+import { setPersistentUser } from '../../utils/userStorage';
 import {
   Box,
   TextField,
@@ -162,10 +163,19 @@ const RegisterPage: React.FC = () => {
       setRegNickname(reg?.nickname || '');
       setDisclaimerOpen(false);
       setRegistered(true);
+      // Remember the player on their own phone (localStorage), then go straight
+      // to the personal panel: the nickname no longer needs to be noted down.
+      setPersistentUser({
+        id: reg?.id,
+        firstname: reg?.firstname,
+        lastname: reg?.lastname,
+        nickname: reg?.nickname,
+      });
       // The queue screen is deliberately NOT opened here: the nickname is the only
       // credential the player has, so they must read it off this screen first and
       // open the queue themselves with the button below.
       void loadQueueBoardUrl();
+      navigate('/me');
     } catch (err) {
       setSnack({ open: true, message: String(err instanceof Error ? err.message : err), severity: 'error' });
     } finally {

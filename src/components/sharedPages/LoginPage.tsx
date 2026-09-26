@@ -4,6 +4,7 @@ import { setStoredUser } from '../../utils/userStorage';
 import { COUNTRIES } from '../common/Countries';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { apiFetch } from '../../services/api';
+import QRCode from '../functional/QRCode';
 import {
   Box,
   TextField,
@@ -261,6 +262,34 @@ const LoginPage: React.FC = () => {
     return () => window.removeEventListener('resize', updatePortrait);
   }, []);
 
+  // Finalize a successful login (shared by nickname login and QR pairing):
+  // store the identity for this game station, then enter the game.
+  const finalizeLogin = (user: {
+    id?: number;
+    user_id?: number;
+    firstname?: string;
+    first_name?: string;
+    lastname?: string;
+    last_name?: string;
+    nickname?: string;
+    region?: string;
+    country?: string;
+  }) => {
+    const userId = user?.id ?? user?.user_id;
+    const firstname = user?.firstname ?? user?.first_name;
+    const lastname = user?.lastname ?? user?.last_name;
+    const nickname = user?.nickname;
+    const region = user?.region ?? user?.country;
+    const countryCode =
+      region && region.length === 2
+        ? region.toUpperCase()
+        : region
+          ? COUNTRY_NAME_TO_CODE[region]
+          : undefined;
+    if (firstname) setStoredUser({ id: userId, firstname, lastname, nickname, countryCode });
+    navigate(gameRoute);
+  };
+
   const handleLogin = async () => {
     if (!loginNickname.trim()) {
       setSnack({ open: true, message: 'Please enter your nickname.', severity: 'warning' });
@@ -277,25 +306,68 @@ const LoginPage: React.FC = () => {
         throw new Error(err.detail || 'Login failed');
       }
       const user = await res.json();
-      const userId = user?.id;
-      const firstname = user?.firstname ?? user?.first_name;
-      const lastname = user?.lastname ?? user?.last_name;
-      const nickname = user?.nickname;
-      const region = user?.region ?? user?.country;
-      const countryCode =
-        region && region.length === 2
-          ? region.toUpperCase()
-          : region
-            ? COUNTRY_NAME_TO_CODE[region]
-            : undefined;
-      if (firstname) setStoredUser({ id: userId, firstname, lastname, nickname, countryCode });
-      navigate(gameRoute);
+      finalizeLogin(user);
     } catch (err) {
       setSnack({ open: true, message: String(err instanceof Error ? err.message : err), severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
+
+  // --- QR login mode: render a station QR code and poll for a phone pairing ---
+  const [qrMode, setQrMode] = useState(false);
+  const [stationCode, setStationCode] = useState('');
+  const [qrWaiting, setQrWaiting] = useState(false);
+
+  useEffect(() => {
+    if (!qrMode) {
+      setStationCode('');
+      setQrWaiting(false);
+      return;
+    }
+    let cancelled = false;
+    let interval: number | undefined;
+    let code = '';
+
+    const poll = async () => {
+      if (!code) return;
+      try {
+        const res = await apiFetch(`/qr-login/status/${code}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.user) {
+            if (interval) window.clearInterval(interval);
+            finalizeLogin(data.user);
+          }
+        }
+      } catch {
+        /* transient network error — keep polling */
+      }
+    };
+
+    (async () => {
+      try {
+        const res = await apiFetch('/qr-login/session', { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to start QR login');
+        const data = await res.json();
+        if (cancelled) return;
+        code = data.station_code;
+        setStationCode(code);
+        setQrWaiting(true);
+        interval = window.setInterval(poll, 2000);
+      } catch (e) {
+        if (!cancelled) {
+          setSnack({ open: true, message: String(e instanceof Error ? e.message : e), severity: 'error' });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (interval) window.clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrMode, gameRoute]);
 
   const handleRegisterClick = () => {
     setDisclaimerOpen(true);
@@ -590,51 +662,94 @@ const LoginPage: React.FC = () => {
                 monospace
                 sx={{ color: theme.color, fontSize: '0.65rem', letterSpacing: '0.2em' }}
               >
-                {isRegister ? '[ NEW PLAYER ]' : '[ INSERT CREDENTIALS ]'}
+                {isRegister ? '[ NEW PLAYER ]' : qrMode ? '[ SCAN TO LOGIN ]' : '[ INSERT CREDENTIALS ]'}
               </ArcadeTypography>
             </Box>
 
             {!isRegister ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TextField
-                  label='NICKNAME'
-                  fullWidth
-                  size='small'
-                  value={loginNickname}
-                  onChange={e => setLoginNickname(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                  sx={tfSx}
-                  placeholder='e.g. JamieL_001'
-                />
-                <ArcadeButton
-                  color={theme.colorKey}
-                  variant="filled"
-                  size="md"
-                  glowing
-                  onClick={handleLogin}
-                  disabled={loading}
-                  sx={{ width: '100%', mt: 1 }}
-                >
-                  {loading ? 'LOADING...' : 'INSERT COIN'}
-                </ArcadeButton>
-                <Box sx={{ textAlign: 'center', mt: 0.5 }}>
-                  <Box
-                    component="button"
-                    onClick={() => setIsRegister(true)}
-                    sx={{
-                      background: 'none',
-                      border: 'none',
-                      color: `${ARCADE_COLORS.white}60`,
-                      fontFamily: '"Courier New", monospace',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer',
-                      letterSpacing: '0.1em',
-                      '&:hover': { color: theme.color, textShadow: `0 0 6px ${theme.color}` },
-                    }}
-                  >
-                    NEW PLAYER? REGISTER HERE
-                  </Box>
-                </Box>
+                {qrMode ? (
+                  <>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', minHeight: 190 }}>
+                      {stationCode ? (
+                        <QRCode value={stationCode} size={190} />
+                      ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <ArcadeTypography arcadeSize="xs" component="p" sx={{ color: `${theme.color}90` }}>
+                            正在生成二维码…
+                          </ArcadeTypography>
+                        </Box>
+                      )}
+                    </Box>
+                    <ArcadeTypography
+                      arcadeSize="xs"
+                      component="p"
+                      sx={{ textAlign: 'center', color: `${ARCADE_COLORS.white}70` }}
+                    >
+                      {qrWaiting ? '用手机「玩家面板」扫码，自动登录' : '等待二维码…'}
+                    </ArcadeTypography>
+                    <ArcadeButton
+                      color={theme.colorKey}
+                      variant="outline"
+                      size="md"
+                      onClick={() => setQrMode(false)}
+                      sx={{ width: '100%' }}
+                    >
+                      改用昵称登录
+                    </ArcadeButton>
+                  </>
+                ) : (
+                  <>
+                    <TextField
+                      label='NICKNAME'
+                      fullWidth
+                      size='small'
+                      value={loginNickname}
+                      onChange={e => setLoginNickname(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                      sx={tfSx}
+                      placeholder='e.g. JamieL_001'
+                    />
+                    <ArcadeButton
+                      color={theme.colorKey}
+                      variant="filled"
+                      size="md"
+                      glowing
+                      onClick={handleLogin}
+                      disabled={loading}
+                      sx={{ width: '100%', mt: 1 }}
+                    >
+                      {loading ? 'LOADING...' : 'INSERT COIN'}
+                    </ArcadeButton>
+                    <ArcadeButton
+                      color="lime"
+                      variant="outline"
+                      size="md"
+                      onClick={() => setQrMode(true)}
+                      sx={{ width: '100%', mt: 0 }}
+                    >
+                      扫码登录
+                    </ArcadeButton>
+                    <Box sx={{ textAlign: 'center', mt: 0.5 }}>
+                      <Box
+                        component="button"
+                        onClick={() => setIsRegister(true)}
+                        sx={{
+                          background: 'none',
+                          border: 'none',
+                          color: `${ARCADE_COLORS.white}60`,
+                          fontFamily: '"Courier New", monospace',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          letterSpacing: '0.1em',
+                          '&:hover': { color: theme.color, textShadow: `0 0 6px ${theme.color}` },
+                        }}
+                      >
+                        NEW PLAYER? REGISTER HERE
+                      </Box>
+                    </Box>
+                  </>
+                )}
               </Box>
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

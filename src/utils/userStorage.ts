@@ -1,5 +1,8 @@
 const USER_STORAGE_KEY = 'cyber_ai_user';
 const ADMIN_TOKEN_KEY = 'cyber_ai_admin_token';
+// Phone-side identity that survives browser restarts, so the player never has
+// to re-type (or even remember) their nickname at the venue.
+const PERSISTENT_USER_KEY = 'cyber_ai_user_persistent';
 
 export interface StoredUser {
   id?: number;
@@ -69,6 +72,39 @@ export function getStoredUser(): StoredUser | null {
 export function clearStoredUser(): void {
   try {
     sessionStorage.removeItem(USER_STORAGE_KEY);
+  } catch {
+    // ignore storage errors
+  }
+}
+
+
+// ─── Persistent identity (phone / personal panel) ──────────────────────────
+// Game stations keep using sessionStorage (shared device, auto-clears), while
+// the player's own phone remembers them in localStorage across browser
+// restarts — that is what actually solves "I forgot my nickname".
+
+export function setPersistentUser(user: StoredUser): void {
+  try {
+    localStorage.setItem(PERSISTENT_USER_KEY, JSON.stringify(user));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function getPersistentUser(): StoredUser | null {
+  try {
+    const raw = localStorage.getItem(PERSISTENT_USER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredUser;
+    return parsed?.firstname ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPersistentUser(): void {
+  try {
+    localStorage.removeItem(PERSISTENT_USER_KEY);
   } catch {
     // ignore storage errors
   }

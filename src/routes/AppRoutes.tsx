@@ -18,6 +18,7 @@ import AdminPage from '../components/functional/AdminPage';
 import LoginPage from '../components/sharedPages/LoginPage';
 import DesignPage from '../components/sharedPages/DesignPage';
 import RegisterPage from '../components/sharedPages/RegisterPage';
+import MePage from '../components/sharedPages/MePage';
 import UltimateShowdown from '../pages/6_UltimateShowdown/UltimateShowdown';
 import AdminConsole from '../pages/6_UltimateShowdown/AdminConsole';
 
@@ -49,6 +50,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/tv" element={<LeaderboardPage kiosk />} />
       <Route path="/design" element={<DesignPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/me" element={<MePage />} />
       <Route path="/final" element={<UltimateShowdown />} />
       <Route path="/final/admin" element={<AdminConsole />} />
       <Route path="/admin" element={<AdminPage />} />
