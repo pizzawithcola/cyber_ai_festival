@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Box, Snackbar, Alert } from '@mui/material';
-import { QrCode, LogOut, ArrowLeft } from 'lucide-react';
+import { QrCode, LogOut, Users } from 'lucide-react';
 import { ArcadeButton, ArcadeTypography } from '../ui';
 import { ARCADE_COLORS } from '../../theme/theme';
 import { apiFetch } from '../../services/api';
@@ -11,6 +11,14 @@ import {
   clearPersistentUser,
   type StoredUser,
 } from '../../utils/userStorage';
+
+/**
+ * Fallback venue queue big screen, used only until the backend tells us which
+ * queue is live. Overridable per environment.
+ */
+const QUEUE_BOARD_URL =
+  import.meta.env.VITE_QUEUE_BOARD_URL ||
+  'https://queue-system-e6780.web.app/#queue/Qmu0wnldvywckwcp0fvm';
 
 /**
  * Personal player panel on the player's own phone.
@@ -30,9 +38,34 @@ const MePage: React.FC = () => {
   }>({ open: false, message: '', severity: 'info' });
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const handledRef = useRef(false);
+  const [queueBoardUrl, setQueueBoardUrl] = useState(QUEUE_BOARD_URL);
+
+  const loadQueueBoardUrl = async () => {
+    try {
+      const res = await apiFetch('/queue/');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.queueBoardUrl) setQueueBoardUrl(data.queueBoardUrl);
+    } catch {
+      // keep the fallback: the queue button must still work offline
+    }
+  };
+
+  const openQueue = () => {
+    const tab = window.open(queueBoardUrl, '_blank');
+    if (tab) {
+      try {
+        tab.opener = null;
+      } catch {
+        /* cross-origin: nothing we can do */
+      }
+    }
+  };
 
   useEffect(() => {
     setUser(getPersistentUser());
+    void loadQueueBoardUrl();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleScan = async (decodedText: string) => {
@@ -161,7 +194,7 @@ const MePage: React.FC = () => {
       }}
     >
       <Box sx={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <ArcadeTypography arcadeSize="lg" arcadeColor="cyan" component="h1" sx={{ letterSpacing: '0.2em', mb: 2 }}>
+        <ArcadeTypography arcadeSize="md" arcadeColor="cyan" component="h1" sx={{ letterSpacing: '0.08em', mb: 2 }}>
           PLAYER PANEL
         </ArcadeTypography>
 
@@ -176,35 +209,21 @@ const MePage: React.FC = () => {
           </>
         ) : (
           <>
-            <Box
-              sx={{
-                width: '100%',
-                border: `2px solid ${ARCADE_COLORS.cyan}60`,
-                borderRadius: '6px',
-                px: 3,
-                py: 2.5,
-                mb: 3,
-                textAlign: 'center',
-                backgroundColor: `${ARCADE_COLORS.cyan}08`,
-              }}
+            <ArcadeTypography
+              arcadeSize="md"
+              arcadeColor="lime"
+              component="p"
+              sx={{ textAlign: 'center', mb: 3, wordBreak: 'break-word' }}
             >
-              <ArcadeTypography arcadeSize="sm" arcadeColor="white" sx={{ opacity: 0.7 }}>
-                YOUR IDENTITY
-              </ArcadeTypography>
-              <ArcadeTypography arcadeSize="lg" arcadeColor="lime" sx={{ mt: 1 }}>
-                {fullName}
-              </ArcadeTypography>
-              <ArcadeTypography arcadeSize="sm" arcadeColor="cyan" sx={{ mt: 0.5 }}>
-                {user.nickname}
-              </ArcadeTypography>
-            </Box>
+              Hi {fullName} ({user.nickname})
+            </ArcadeTypography>
 
             <ArcadeButton color="lime" size="lg" glowing animation={scanning ? 'pulse' : 'none'} onClick={startScan}>
               <QrCode size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
               {scanning ? 'SCANNING…' : 'SCAN TO LOG IN'}
             </ArcadeButton>
 
-            {scanning ? (
+            {scanning && (
               <Box
                 sx={{
                   mt: 3,
@@ -221,22 +240,17 @@ const MePage: React.FC = () => {
                   CANCEL
                 </ArcadeButton>
               </Box>
-            ) : (
-              <ArcadeTypography arcadeSize="xs" component="p" sx={{ mt: 2, opacity: 0.6, textAlign: 'center' }}>
-                Point at the QR code on the game station's login screen to sign in automatically
-              </ArcadeTypography>
             )}
 
-            <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-              <ArcadeButton color="cyan" variant="ghost" size="sm" onClick={() => navigate('/')}>
-                <ArrowLeft size={14} style={{ marginRight: 6, verticalAlign: '-2px' }} />
-                HOME
-              </ArcadeButton>
-              <ArcadeButton color="red" variant="ghost" size="sm" onClick={logout}>
-                <LogOut size={14} style={{ marginRight: 6, verticalAlign: '-2px' }} />
-                LOGOUT
-              </ArcadeButton>
-            </Box>
+            <ArcadeButton color="cyan" variant="outline" size="md" sx={{ mt: 3 }} onClick={openQueue}>
+              <Users size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
+              JOIN QUEUE
+            </ArcadeButton>
+
+            <ArcadeButton color="red" variant="ghost" size="sm" sx={{ mt: 3 }} onClick={logout}>
+              <LogOut size={14} style={{ marginRight: 6, verticalAlign: '-2px' }} />
+              LOGOUT
+            </ArcadeButton>
           </>
         )}
       </Box>
