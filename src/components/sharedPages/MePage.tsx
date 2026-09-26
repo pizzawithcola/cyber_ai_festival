@@ -66,9 +66,12 @@ const MePage: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ station_code: stationCode, nickname: identity.nickname }),
       });
-      if (!res.ok) {
+      // CloudFront masks API 4xx into the SPA's index.html + 200, so treat a
+      // non-JSON body as a failure instead of a false success.
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
         const err = await res.json().catch(() => null);
-        throw new Error(err?.detail || 'Pairing failed');
+        throw new Error(err?.detail || '配对失败，请重试');
       }
       setSnack({ open: true, message: '配对了！游戏机会自动登录。', severity: 'success' });
     } catch (e) {

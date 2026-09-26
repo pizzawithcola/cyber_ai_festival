@@ -333,12 +333,12 @@ const LoginPage: React.FC = () => {
       if (!code) return;
       try {
         const res = await apiFetch(`/qr-login/status/${code}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.ok && data.user) {
-            if (interval) window.clearInterval(interval);
-            finalizeLogin(data.user);
-          }
+        const contentType = res.headers.get('content-type') || '';
+        if (!res.ok || !contentType.includes('application/json')) return;
+        const data = await res.json();
+        if (data.ok && data.user) {
+          if (interval) window.clearInterval(interval);
+          finalizeLogin(data.user);
         }
       } catch {
         /* transient network error — keep polling */
