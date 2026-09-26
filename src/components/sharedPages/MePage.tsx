@@ -29,29 +29,16 @@ const MePage: React.FC = () => {
     severity: 'success' | 'error' | 'warning' | 'info';
   }>({ open: false, message: '', severity: 'info' });
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const handledRef = useRef(false);
 
   useEffect(() => {
     setUser(getPersistentUser());
-    return () => {
-      scannerRef.current?.stop().catch(() => undefined);
-    };
   }, []);
 
-  const stopScanner = async () => {
-    const scanner = scannerRef.current;
-    scannerRef.current = null;
-    if (scanner) {
-      try {
-        await scanner.stop();
-      } catch {
-        /* already stopped */
-      }
-    }
+  const handleScan = async (decodedText: string) => {
+    // Stop the viewfinder first: setting scanning=false tears the scanner down
+    // via the lifecycle effect below.
     setScanning(false);
-  };
-
-  const pairWithStation = async (decodedText: string) => {
-    await stopScanner();
     const identity = getPersistentUser();
     if (!identity?.nickname) return;
 
@@ -92,33 +79,66 @@ const MePage: React.FC = () => {
       return;
     }
 
+    // Probe the camera before showing the viewfinder; a denial/absence should
+    // surface as a clear error instead of a stuck "scanning" screen.
     try {
-      await Html5Qrcode.getCameras(); // probe for camera/permission early
-      const scanner = new Html5Qrcode('qr-reader');
-      scannerRef.current = scanner;
-      setScanning(true);
-      await scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
-        (decodedText) => {
-          void pairWithStation(decodedText);
-        },
-        () => {
-          /* per-frame decode misses are expected; ignore */
-        }
-      );
+      await Html5Qrcode.getCameras();
     } catch (e) {
-      setScanning(false);
       setSnack({
         open: true,
         message: `摄像头不可用：${e instanceof Error ? e.message : String(e)}`,
         severity: 'error',
       });
+      return;
     }
+
+    handledRef.current = false;
+    setScanning(true); // renders <div id="qr-reader"> — see lifecycle effect below
   };
 
+  // The viewfinder is mounted only while `scanning` is true. Html5Qrcode needs
+  // that DOM node to exist at construction time, so we create and start the
+  // scanner in an effect that runs after React commits <div id="qr-reader">.
+  useEffect(() => {
+    if (!scanning) return;
+    let active = true;
+    const scanner = new Html5Qrcode('qr-reader');
+    scannerRef.current = scanner;
+
+    scanner
+      .start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        (decodedText) => {
+          if (!active || handledRef.current) return;
+          handledRef.current = true;
+          void handleScan(decodedText);
+        },
+        () => {
+          /* per-frame decode misses are expected; ignore */
+        }
+      )
+      .catch((e) => {
+        if (active) {
+          setScanning(false);
+          setSnack({
+            open: true,
+            message: `摄像头不可用：${e instanceof Error ? e.message : String(e)}`,
+            severity: 'error',
+          });
+        }
+      });
+
+    return () => {
+      active = false;
+      scanner.stop().catch(() => undefined);
+      scannerRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanning]);
+
   const logout = () => {
-    void stopScanner();
+    setScanning(false);
     clearPersistentUser();
     setUser(null);
     navigate('/register');
@@ -197,7 +217,7 @@ const MePage: React.FC = () => {
                 }}
               >
                 <Box id="qr-reader" sx={{ width: '100%', minHeight: 240 }} />
-                <ArcadeButton color="red" variant="outline" size="sm" sx={{ mt: 1.5, width: '100%' }} onClick={() => void stopScanner()}>
+                <ArcadeButton color="red" variant="outline" size="sm" sx={{ mt: 1.5, width: '100%' }} onClick={() => setScanning(false)}>
                   取消
                 </ArcadeButton>
               </Box>
