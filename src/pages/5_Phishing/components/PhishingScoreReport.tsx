@@ -63,7 +63,7 @@ const Panel: React.FC<{ children: React.ReactNode; sx?: object }> = ({ children,
 );
 
 /** 单行细则：✓/±/✗ · 编号 · 层级 + 标签 · 得分（加分项带参考区间） */
-const Row: React.FC<{ verdict: ItemVerdict; highlight?: boolean }> = ({ verdict, highlight = false }) => {
+const Row: React.FC<{ verdict: ItemVerdict }> = ({ verdict }) => {
   const { item, score, range } = verdict;
   const status = statusOf(score, item.max);
   const style = STATUS_STYLE[status];
@@ -79,7 +79,6 @@ const Row: React.FC<{ verdict: ItemVerdict; highlight?: boolean }> = ({ verdict,
         columnGap: 0.75,
         py: 0.45,
         borderTop: `1px solid ${GRID_COLOR}`,
-        backgroundColor: highlight ? verdictColor(score, item.max, 0.12) : 'transparent',
       }}
     >
       <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.705rem', color }} title={style.text}>
@@ -278,7 +277,7 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
               {/* 该维度的 5 条细则 */}
               <Box sx={{ mt: 0.5 }}>
                 {dim.verdicts.map((v) => (
-                  <Row key={v.item.id} verdict={v} highlight={focus.some((f) => f.item.id === v.item.id)} />
+                  <Row key={v.item.id} verdict={v} />
                 ))}
               </Box>
             </Panel>
