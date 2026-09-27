@@ -192,7 +192,8 @@ const MePage: React.FC = () => {
           flexDirection: 'column',
           alignItems: 'center',
           px: 2,
-          py: 4,
+          pt: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+          pb: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
           boxSizing: 'border-box',
         }}
       >
