@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { COUNTRIES } from '../common/Countries';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { apiFetch } from '../../services/api';
-import { setPersistentUser } from '../../utils/userStorage';
+import { setPersistentUser, getPersistentUser } from '../../utils/userStorage';
 import {
   Box,
   TextField,
@@ -106,6 +106,13 @@ const RegisterPage: React.FC = () => {
   // 注册页所有按钮播放咔嚓按键音
   useClickSound();
   const navigate = useNavigate();
+
+  // If the phone already remembers a player, take them straight to their panel
+  // instead of showing the registration form again (identity never expires).
+  useEffect(() => {
+    if (getPersistentUser()) navigate('/me');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [firstname, setFirstname] = useState('');
   const [lastname, setLastname] = useState('');
