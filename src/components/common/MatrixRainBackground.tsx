@@ -17,8 +17,10 @@ const MatrixRainBackground: React.FC<MatrixRainBackgroundProps> = ({ children })
 
     // Set canvas size
     const updateCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      // Match the bitmap to the *rendered* size (100vw × 100vh) so the rain is
+      // never stretched, even when the iOS toolbars collapse/expand.
+      canvas.width = canvas.clientWidth || window.innerWidth;
+      canvas.height = canvas.clientHeight || window.innerHeight;
     };
     updateCanvasSize();
 
@@ -80,12 +82,16 @@ const MatrixRainBackground: React.FC<MatrixRainBackgroundProps> = ({ children })
       <canvas
         ref={canvasRef}
         style={{
-          position: 'absolute',
+          // Fixed to the physical screen so the rain bleeds under the iOS
+          // Dynamic Island / Safari toolbar (100vh = large viewport), while the
+          // page layout itself stays at 100dvh and never scrolls.
+          position: 'fixed',
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
+          width: '100vw',
+          height: '100vh',
           zIndex: 0,
+          pointerEvents: 'none',
         }}
       />
       <Box sx={{ position: 'relative', zIndex: 1, height: '100%' }}>
