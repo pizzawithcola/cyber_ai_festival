@@ -82,16 +82,16 @@ const Row: React.FC<{ verdict: ItemVerdict; highlight?: boolean }> = ({ verdict,
         backgroundColor: highlight ? verdictColor(score, item.max, 0.12) : 'transparent',
       }}
     >
-      <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.58rem', color }} title={style.text}>
+      <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.705rem', color }} title={style.text}>
         {style.token}
       </Typography>
-      <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.48rem', color: `${ARCADE_COLORS.white}50` }}>
+      <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.605rem', color: `${ARCADE_COLORS.white}50` }}>
         {item.id}
       </Typography>
       <Typography
         sx={{
           fontFamily: '"Electrolize", sans-serif',
-          fontSize: '0.78rem',
+          fontSize: '0.905rem',
           color: ARCADE_COLORS.white,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -104,10 +104,10 @@ const Row: React.FC<{ verdict: ItemVerdict; highlight?: boolean }> = ({ verdict,
         </Box>
         {item.label}
       </Typography>
-      <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color, whiteSpace: 'nowrap' }}>
+      <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.625rem', color, whiteSpace: 'nowrap' }}>
         {points}/{item.max}
         {range && (
-          <Box component="span" sx={{ ml: 0.4, color: `${ARCADE_COLORS.white}45`, fontSize: '0.42rem' }}>
+          <Box component="span" sx={{ ml: 0.4, color: `${ARCADE_COLORS.white}45`, fontSize: '0.545rem' }}>
             ({range[0]}–{range[1]})
           </Box>
         )}
@@ -139,11 +139,11 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
               <ArcadeTypography font="electrolize" arcadeSize="xl" sx={{ color: accent }}>
                 {total}
               </ArcadeTypography>
-              <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '1rem', color: `${ARCADE_COLORS.white}60` }}>
+              <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '1.125rem', color: `${ARCADE_COLORS.white}60` }}>
                 / {TOTAL_MAX}
               </Typography>
             </Box>
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.76rem', color: accent, mt: 0.5 }}>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.885rem', color: accent, mt: 0.5 }}>
               {band.label}
             </Typography>
 
@@ -175,18 +175,21 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
           {/* 右：FOCUS NEXT —— 每条一行 */}
           <Box
             sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
               borderTop: { xs: `1px solid ${GRID_COLOR}`, md: 'none' },
               borderLeft: { md: `1px solid ${GRID_COLOR}` },
               pt: { xs: 2, md: 0 },
               pl: { md: 3 },
             }}
           >
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.62rem', color: scoreGreen(1), mb: 0.75 }}>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.745rem', color: scoreGreen(1), mb: 0.75 }}>
               ▶ FOCUS NEXT
             </Typography>
 
             {focus.length === 0 ? (
-              <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.82rem', color: `${ARCADE_COLORS.white}80` }}>
+              <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.945rem', color: `${ARCADE_COLORS.white}80` }}>
                 Nothing major left to fix — clean run.
               </Typography>
             ) : (
@@ -194,11 +197,11 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
                 const style = STATUS_STYLE[statusOf(v.score, v.item.max)];
                 return (
                   <Box key={v.item.id} sx={{ display: 'grid', gridTemplateColumns: '16px 1fr', columnGap: 0.75, py: 0.5 }}>
-                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.58rem', color: verdictColor(v.score, v.item.max) }}>{style.token}</Typography>
+                    <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.705rem', color: verdictColor(v.score, v.item.max) }}>{style.token}</Typography>
                     <Typography
                       sx={{
                         fontFamily: '"Electrolize", sans-serif',
-                        fontSize: '0.82rem',
+                        fontSize: '0.945rem',
                         color: ARCADE_COLORS.white,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -218,7 +221,7 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
       </Panel>
 
       {itemDataMissing && (
-        <Typography sx={{ gridColumn: '1 / -1', fontFamily: '"Electrolize", sans-serif', fontSize: '0.78rem', color: `${ARCADE_COLORS.white}60`, textAlign: 'center' }}>
+        <Typography sx={{ gridColumn: '1 / -1', fontFamily: '"Electrolize", sans-serif', fontSize: '0.905rem', color: `${ARCADE_COLORS.white}60`, textAlign: 'center' }}>
           Per-item verdicts weren’t included this round — showing dimension scores only.
         </Typography>
       )}
@@ -234,13 +237,13 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
               {/* 维度头：名称 / 定位 / 分数 */}
               <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', color: ARCADE_COLORS.white }}>
+                  <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.725rem', color: ARCADE_COLORS.white }}>
                     {dim.label}
                   </Typography>
                   <Typography
                     sx={{
                       fontFamily: '"Electrolize", sans-serif',
-                      fontSize: '0.72rem',
+                      fontSize: '0.845rem',
                       color: `${ARCADE_COLORS.white}60`,
                       mt: 0.25,
                       overflow: 'hidden',
@@ -252,9 +255,9 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
                     {dim.tagline}
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontWeight: 700, fontSize: '1.2rem', color, whiteSpace: 'nowrap' }}>
+                <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontWeight: 700, fontSize: '1.325rem', color, whiteSpace: 'nowrap' }}>
                   {dim.score}
-                  <Box component="span" sx={{ fontSize: '0.75rem', color: `${ARCADE_COLORS.white}50` }}> / {DIMENSION_MAX}</Box>
+                  <Box component="span" sx={{ fontSize: '0.875rem', color: `${ARCADE_COLORS.white}50` }}> / {DIMENSION_MAX}</Box>
                 </Typography>
               </Box>
 
