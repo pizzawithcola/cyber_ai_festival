@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { COUNTRIES } from '../common/Countries';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { apiFetch } from '../../services/api';
@@ -106,13 +106,18 @@ const RegisterPage: React.FC = () => {
   // 注册页所有按钮播放咔嚓按键音
   useClickSound();
   const navigate = useNavigate();
+  const location = useLocation();
+  // /login is the standalone "back to my panel" login; /register is the
+  // new-player form. Both live in this one component and toggle via small text.
+  const isLoginMode = location.pathname === '/login';
 
   // If the phone already remembers a player, take them straight to their panel
   // instead of showing the registration form again (identity never expires).
+  // Login mode intentionally stays put, so another player can log in.
   useEffect(() => {
-    if (getPersistentUser()) navigate('/me');
+    if (!isLoginMode && getPersistentUser()) navigate('/me');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isLoginMode]);
 
   const [firstname, setFirstname] = useState('');
   const [lastname, setLastname] = useState('');
@@ -127,6 +132,8 @@ const RegisterPage: React.FC = () => {
   const [copiedNickname, setCopiedNickname] = useState(false);
   /** Live board link, resolved from the backend once registration succeeds. */
   const [queueBoardUrl, setQueueBoardUrl] = useState(QUEUE_BOARD_URL);
+  const [loginNickname, setLoginNickname] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
 
   /**
    * The organiser deletes and recreates queues, so a hardcoded board link goes
@@ -228,6 +235,118 @@ const RegisterPage: React.FC = () => {
       }
     }
   };
+
+  const handleLogin = async () => {
+    const nickname = loginNickname.trim();
+    if (!nickname) {
+      setSnack({ open: true, message: 'Please enter your nickname.', severity: 'warning' });
+      return;
+    }
+    setLoginLoading(true);
+    try {
+      const res = await apiFetch('/users/login', {
+        method: 'POST',
+        body: JSON.stringify({ nickname }),
+      });
+      // CloudFront masks API 4xx into the SPA's index.html + 200, so treat a
+      // non-JSON body as a failure instead of a false success.
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || 'Invalid nickname. Please try again.');
+      }
+      const data = await res.json();
+      setPersistentUser({
+        id: data?.id,
+        firstname: data?.firstname,
+        lastname: data?.lastname,
+        nickname: data?.nickname,
+      });
+      navigate('/me');
+    } catch (e) {
+      setSnack({ open: true, message: String(e instanceof Error ? e.message : e), severity: 'error' });
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  if (isLoginMode) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#050510',
+          backgroundImage: `
+            repeating-linear-gradient(0deg, transparent, transparent 2px, ${GRID_COLOR}60 2px, ${GRID_COLOR}60 4px),
+            repeating-linear-gradient(90deg, transparent, transparent 2px, ${GRID_COLOR}60 2px, ${GRID_COLOR}60 4px)
+          `,
+          backgroundSize: '40px 40px',
+          p: 3,
+        }}
+      >
+        <Box
+          sx={{
+            maxWidth: 420,
+            width: '100%',
+            backgroundColor: '#0a0a1a',
+            border: `2px solid ${color}`,
+            borderRadius: '12px',
+            p: 4,
+            boxShadow: `0 0 40px ${color}30, 0 0 80px ${color}15`,
+          }}
+        >
+          <ArcadeTypography arcadeSize="md" arcadeColor="cyan" component="h1" sx={{ textAlign: 'center', mb: 3, letterSpacing: '0.08em' }}>
+            PLAYER LOGIN
+          </ArcadeTypography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="NICKNAME"
+              fullWidth
+              size="small"
+              value={loginNickname}
+              onChange={e => setLoginNickname(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              sx={tfSx}
+              placeholder="e.g. JL1"
+            />
+            <ArcadeButton color="cyan" variant="filled" size="md" glowing onClick={handleLogin} disabled={loginLoading} sx={{ width: '100%' }}>
+              {loginLoading ? 'LOGGING IN…' : 'LOG IN'}
+            </ArcadeButton>
+            <Box sx={{ textAlign: 'center', mt: 1 }}>
+              <Box
+                component="button"
+                onClick={() => navigate('/register')}
+                sx={{
+                  background: 'none', border: 'none',
+                  color: `${ARCADE_COLORS.white}70`,
+                  fontFamily: '"Courier New", monospace',
+                  fontSize: '0.7rem', cursor: 'pointer', letterSpacing: '0.1em',
+                  '&:hover': { color: ARCADE_COLORS.lime, textShadow: `0 0 6px ${ARCADE_COLORS.lime}` },
+                }}
+              >
+                NEW PLAYER? REGISTER HERE
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+
+        <Snackbar
+          open={snack.open}
+          autoHideDuration={4000}
+          onClose={() => setSnack(prev => ({ ...prev, open: false }))}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Alert onClose={() => setSnack(prev => ({ ...prev, open: false }))} severity={snack.severity} variant='filled'>
+            {snack.message}
+          </Alert>
+        </Snackbar>
+      </Box>
+    );
+  }
 
   if (registered) {
     return (
@@ -616,7 +735,20 @@ const RegisterPage: React.FC = () => {
                 REGISTER
               </ArcadeButton>
 
-              <Box sx={{ textAlign: 'center', mt: 0.5 }}>
+              <Box sx={{ textAlign: 'center', mt: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box
+                  component="button"
+                  onClick={() => navigate('/login')}
+                  sx={{
+                    background: 'none', border: 'none',
+                    color: `${ARCADE_COLORS.white}70`,
+                    fontFamily: '"Courier New", monospace',
+                    fontSize: '0.7rem', cursor: 'pointer', letterSpacing: '0.1em',
+                    '&:hover': { color: ARCADE_COLORS.lime, textShadow: `0 0 6px ${ARCADE_COLORS.lime}` },
+                  }}
+                >
+                  ALREADY REGISTERED? LOG IN
+                </Box>
                 <Box
                   component="button"
                   onClick={() => navigate('/')}

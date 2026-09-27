@@ -32,6 +32,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
     <Routes>
       <Route path="/" element={<HomePage toggleColorMode={toggleColorMode} />} />
       <Route path="/login/:game" element={<LoginPage />} />
+      <Route path="/login" element={<RegisterPage />} />
       <Route path="/phishing/edu" element={<PhishingEducationPage />} />
       <Route path="/hallucinate" element={<Hallucinate />} />
       <Route path="/datashadows" element={<DataShadows />} />
