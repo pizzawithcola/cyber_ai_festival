@@ -130,22 +130,19 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
   const bonusScore = sumOf((v) => v.item.tier === 'bonus');
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      {/* ── 卡片 1：左=总分与评价 ｜ 右=三条最该改进的点 ─────────────────── */}
-      <Panel sx={{ p: 3, borderColor: scoreGreen(ratio, 0.45), boxShadow: `0 0 24px ${scoreGreen(ratio, 0.14)}` }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
+      {/* ── 卡片 1：左=总分与评价 ｜ 右=三条最该改进的点（跨两列，一行一张） ── */}
+      <Panel sx={{ gridColumn: '1 / -1', p: 3, borderColor: scoreGreen(ratio, 0.45), boxShadow: `0 0 24px ${scoreGreen(ratio, 0.14)}` }}>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'minmax(240px, 1fr) minmax(300px, 1.05fr)' },
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
             gap: { xs: 2.5, md: 3 },
           }}
         >
           {/* 左：总分 + 评价 + 进度条 */}
           <Box>
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.58rem', color: `${ARCADE_COLORS.white}70`, letterSpacing: '2px' }}>
-              YOUR SCORE
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.75 }}>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
               <ArcadeTypography font="electrolize" arcadeSize="xl" sx={{ color: accent }}>
                 {total}
               </ArcadeTypography>
@@ -243,29 +240,15 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
         </Box>
       </Panel>
 
-      {/* 图例：核心底线 / 标准底线 / 加分项 */}
-      <Typography
-        sx={{
-          fontFamily: '"Electrolize", sans-serif',
-          fontSize: '0.72rem',
-          color: `${ARCADE_COLORS.white}55`,
-          textAlign: 'center',
-          mt: -0.5,
-        }}
-      >
-        CORE 10 + STANDARD 5 are required (60 = pass) · BONUS 10 each is scored 0–10
-      </Typography>
-
       {itemDataMissing && (
-        <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.78rem', color: `${ARCADE_COLORS.white}60`, textAlign: 'center' }}>
+        <Typography sx={{ gridColumn: '1 / -1', fontFamily: '"Electrolize", sans-serif', fontSize: '0.78rem', color: `${ARCADE_COLORS.white}60`, textAlign: 'center' }}>
           Per-item verdicts weren’t included this round — showing dimension scores only.
         </Typography>
       )}
 
       {/* ── 卡片 2–5：四个维度（每个维度自带 3 条细则，一行一条） ─────────── */}
-      {/* 固定 2×2：避免 auto-fit 在中等宽度塔成 3+1 */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-        {dimensions.map((dim) => {
+      {/* 直接作为上层 2 列栅格子项，保持 2×2 */}
+      {dimensions.map((dim) => {
           const dimRatio = dim.score / DIMENSION_MAX;
           const color = scoreGreen(dimRatio);
           // 底线达标数（核心 + 标准）+ 加分得分
@@ -350,7 +333,6 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
             </Panel>
           );
         })}
-      </Box>
     </Box>
   );
 };
