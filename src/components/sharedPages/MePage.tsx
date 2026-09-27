@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Box, Snackbar, Alert } from '@mui/material';
-import { QrCode, LogOut, Users } from 'lucide-react';
+import { QrCode, Users } from 'lucide-react';
 import { ArcadeButton, ArcadeTypography } from '../ui';
 import { ARCADE_COLORS } from '../../theme/theme';
+import MatrixRainBackground from '../common/MatrixRainBackground';
 import { apiFetch } from '../../services/api';
 import {
   getPersistentUser,
@@ -180,85 +181,110 @@ const MePage: React.FC = () => {
   const fullName = user ? `${user.firstname} ${user.lastname ?? ''}`.trim() : '';
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        backgroundColor: '#050510',
-        color: ARCADE_COLORS.white,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        px: 2,
-        py: 4,
-        boxSizing: 'border-box',
-      }}
-    >
-      <Box sx={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <ArcadeTypography arcadeSize="md" arcadeColor="cyan" component="h1" sx={{ letterSpacing: '0.08em', mb: 2 }}>
-          PLAYER PANEL
-        </ArcadeTypography>
-
-        {!user ? (
-          <>
-            <ArcadeTypography arcadeSize="sm" component="p" sx={{ mb: 3, textAlign: 'center' }}>
-              Already registered? Log back in.
-            </ArcadeTypography>
-            <ArcadeButton color="lime" size="lg" glowing onClick={() => navigate('/login')}>
-              LOG IN
-            </ArcadeButton>
-            <ArcadeTypography arcadeSize="xs" component="p" sx={{ my: 2, opacity: 0.5 }}>
-              — OR —
-            </ArcadeTypography>
-            <ArcadeButton color="cyan" variant="outline" size="md" onClick={() => navigate('/register')}>
-              NEW PLAYER? REGISTER
-            </ArcadeButton>
-          </>
-        ) : (
-          <>
-            <ArcadeTypography
-              arcadeSize="md"
-              arcadeColor="lime"
-              component="p"
-              sx={{ textAlign: 'center', mb: 3, wordBreak: 'break-word' }}
-            >
-              Hi {fullName} ({user.nickname})
-            </ArcadeTypography>
-
-            <ArcadeButton color="lime" size="lg" glowing animation={scanning ? 'pulse' : 'none'} onClick={startScan}>
-              <QrCode size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
-              {scanning ? 'SCANNING…' : 'SCAN TO LOG IN'}
-            </ArcadeButton>
-
-            {scanning && (
-              <Box
-                sx={{
-                  mt: 3,
-                  width: '100%',
-                  maxWidth: 360,
-                  border: `2px dashed ${ARCADE_COLORS.lime}80`,
-                  borderRadius: '8px',
-                  p: 1,
-                  '& video': { borderRadius: '6px', width: '100%' },
-                }}
-              >
-                <Box id="qr-reader" sx={{ width: '100%', minHeight: 240 }} />
-                <ArcadeButton color="red" variant="outline" size="sm" sx={{ mt: 1.5, width: '100%' }} onClick={() => setScanning(false)}>
-                  CANCEL
+    <MatrixRainBackground>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          px: 2,
+          py: 4,
+          boxSizing: 'border-box',
+        }}
+      >
+        <Box sx={{ width: '100%', maxWidth: 480, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {!user ? (
+            <>
+              <Box sx={{ textAlign: 'center', mt: 8 }}>
+                <ArcadeTypography arcadeSize="xs" arcadeColor="cyan" component="p" sx={{ letterSpacing: '0.25em', opacity: 0.75, mb: 1.5 }}>
+                  PLAYER PANEL
+                </ArcadeTypography>
+                <ArcadeTypography arcadeSize="sm" component="p" sx={{ color: `${ARCADE_COLORS.white}70`, lineHeight: 1.8 }}>
+                  Already registered? Log back in.
+                </ArcadeTypography>
+              </Box>
+              <Box sx={{ mt: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+                <ArcadeButton color="lime" size="md" glowing onClick={() => navigate('/login')} sx={{ width: '100%', maxWidth: 320 }}>
+                  LOG IN
+                </ArcadeButton>
+                <ArcadeButton color="cyan" variant="outline" size="md" onClick={() => navigate('/register')} sx={{ width: '100%', maxWidth: 320 }}>
+                  NEW PLAYER? REGISTER
                 </ArcadeButton>
               </Box>
-            )}
+            </>
+          ) : (
+            <>
+              <Box sx={{ textAlign: 'center', mt: 6 }}>
+                <ArcadeTypography arcadeSize="xs" arcadeColor="cyan" component="p" sx={{ letterSpacing: '0.25em', opacity: 0.75, mb: 1.5 }}>
+                  PLAYER PANEL
+                </ArcadeTypography>
+                <ArcadeTypography
+                  arcadeSize="lg"
+                  arcadeColor="lime"
+                  component="p"
+                  sx={{ wordBreak: 'break-word', textShadow: `0 0 14px ${ARCADE_COLORS.lime}60` }}
+                >
+                  Hi {fullName}
+                </ArcadeTypography>
+                <ArcadeTypography arcadeSize="sm" arcadeColor="cyan" component="p" sx={{ letterSpacing: '0.2em', mt: 0.5 }}>
+                  {user.nickname}
+                </ArcadeTypography>
+              </Box>
 
-            <ArcadeButton color="cyan" variant="outline" size="md" sx={{ mt: 3 }} onClick={openQueue}>
-              <Users size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
-              JOIN QUEUE
-            </ArcadeButton>
+              {scanning && (
+                <Box
+                  sx={{
+                    mt: 3,
+                    width: '100%',
+                    maxWidth: 360,
+                    border: `2px dashed ${ARCADE_COLORS.lime}80`,
+                    borderRadius: '8px',
+                    p: 1,
+                    '& video': { borderRadius: '6px', width: '100%' },
+                  }}
+                >
+                  <Box id="qr-reader" sx={{ width: '100%', minHeight: 240 }} />
+                  <ArcadeButton color="red" variant="outline" size="sm" sx={{ mt: 1.5, width: '100%' }} onClick={() => setScanning(false)}>
+                    CANCEL
+                  </ArcadeButton>
+                </Box>
+              )}
 
-            <ArcadeButton color="red" variant="ghost" size="sm" sx={{ mt: 3 }} onClick={logout}>
-              <LogOut size={14} style={{ marginRight: 6, verticalAlign: '-2px' }} />
-              LOGOUT
-            </ArcadeButton>
-          </>
-        )}
+              <Box sx={{ mt: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+                {!scanning && (
+                  <ArcadeButton color="lime" size="md" glowing onClick={startScan} sx={{ width: '100%', maxWidth: 320 }}>
+                    <QrCode size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
+                    SCAN TO LOG IN
+                  </ArcadeButton>
+                )}
+                <ArcadeButton color="cyan" variant="outline" size="md" onClick={openQueue} sx={{ width: '100%', maxWidth: 320 }}>
+                  <Users size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
+                  JOIN QUEUE
+                </ArcadeButton>
+                <Box
+                  component="button"
+                  onClick={logout}
+                  sx={{
+                    mt: 1,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: `${ARCADE_COLORS.white}45`,
+                    fontFamily: '"Courier New", monospace',
+                    fontSize: '0.75rem',
+                    letterSpacing: '0.15em',
+                    padding: '4px 8px',
+                    transition: 'color 0.2s ease',
+                    '&:hover': { color: ARCADE_COLORS.red, textDecoration: 'underline' },
+                  }}
+                >
+                  LOGOUT
+                </Box>
+              </Box>
+            </>
+          )}
+        </Box>
       </Box>
 
       <Snackbar
@@ -271,7 +297,7 @@ const MePage: React.FC = () => {
           {snack.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </MatrixRainBackground>
   );
 };
 
