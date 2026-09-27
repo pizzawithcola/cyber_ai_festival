@@ -122,21 +122,14 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
   /** 全页唯一绿色来源：分数越高，绿越亮 */
   const accent = scoreGreen(ratio);
 
-  // 底线（60）与加分（40）分开统计，对应方案里的及格线设计
-  const allVerdicts = dimensions.flatMap((d) => d.verdicts);
-  const sumOf = (pred: (v: ItemVerdict) => boolean) =>
-    Math.round(allVerdicts.filter(pred).reduce((sum, v) => sum + (v.score ?? 0), 0) * 10) / 10;
-  const baselineScore = sumOf((v) => v.item.tier !== 'bonus');
-  const bonusScore = sumOf((v) => v.item.tier === 'bonus');
-
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 2.5 }}>
       {/* ── 卡片 1：左=总分与评价 ｜ 右=三条最该改进的点（跨两列，一行一张） ── */}
       <Panel sx={{ gridColumn: '1 / -1', p: 3, borderColor: scoreGreen(ratio, 0.45), boxShadow: `0 0 24px ${scoreGreen(ratio, 0.14)}` }}>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1fr)' },
             gap: { xs: 2.5, md: 3 },
           }}
         >
@@ -156,16 +149,6 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
             <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: `${ARCADE_COLORS.white}95`, mt: 0.5 }}>
               {band.blurb}
             </Typography>
-
-            {/* 底线 vs 加分：底线 60 全达标即及格 */}
-            <Box sx={{ display: 'flex', gap: 2, mt: 1.25, flexWrap: 'wrap' }}>
-              <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color: `${ARCADE_COLORS.white}70` }}>
-                BASELINE {baselineScore}/{BASELINE_TOTAL}
-              </Typography>
-              <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color: `${ARCADE_COLORS.white}50` }}>
-                BONUS {bonusScore}/{TOTAL_MAX - BASELINE_TOTAL}
-              </Typography>
-            </Box>
 
             <Box sx={{ position: 'relative', mt: 1.25 }}>
               <LinearProgress
@@ -201,11 +184,8 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
               pl: { md: 3 },
             }}
           >
-            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.62rem', color: scoreGreen(1) }}>
+            <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.62rem', color: scoreGreen(1), mb: 0.75 }}>
               ▶ FOCUS NEXT
-            </Typography>
-            <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.78rem', color: `${ARCADE_COLORS.white}65`, mt: 0.5, mb: 0.75 }}>
-              Three quickest wins for your next attempt
             </Typography>
 
             {focus.length === 0 ? (
@@ -251,11 +231,6 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
       {dimensions.map((dim) => {
           const dimRatio = dim.score / DIMENSION_MAX;
           const color = scoreGreen(dimRatio);
-          // 底线达标数（核心 + 标准）+ 加分得分
-          const baselines = dim.verdicts.filter((v) => v.item.tier !== 'bonus');
-          const met = baselines.filter((v) => (v.score ?? 0) >= v.item.max).length;
-          const bonusVerdict = dim.verdicts.find((v) => v.item.tier === 'bonus');
-          const bonusPoints = bonusVerdict?.score;
 
           return (
             <Panel key={dim.key} sx={{ p: 3, borderColor: scoreGreen(dimRatio, 0.3), display: 'flex', flexDirection: 'column' }}>
@@ -298,31 +273,6 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
                   '& .MuiLinearProgress-bar': { backgroundColor: color, borderRadius: 3 },
                 }}
               />
-
-              {/* 一行摘要：命中数 + 模型点评（超长省略，hover 看全文） */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1, mb: 0.5 }}>
-                <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.72rem', color: `${ARCADE_COLORS.white}60`, whiteSpace: 'nowrap' }}>
-                  Baseline {met}/{baselines.length} met
-                  {bonusVerdict ? ` · Bonus ${bonusPoints ?? '—'}/${bonusVerdict.item.max}` : ''}
-                </Typography>
-                {dim.reason && (
-                  <Typography
-                    sx={{
-                      fontFamily: '"Electrolize", sans-serif',
-                      fontSize: '0.7rem',
-                      color: `${ARCADE_COLORS.white}55`,
-                      fontStyle: 'italic',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                    title={dim.reason}
-                  >
-                    {dim.reason}
-                  </Typography>
-                )}
-              </Box>
 
               {/* 该维度的 5 条细则 */}
               <Box sx={{ mt: 0.5 }}>
