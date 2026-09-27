@@ -125,7 +125,7 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 2.5 }}>
       {/* ── 卡片 1：左=总分与评价 ｜ 右=三条最该改进的点（跨两列，一行一张） ── */}
-      <Panel sx={{ gridColumn: '1 / -1', p: 3, borderColor: scoreGreen(ratio, 0.45), boxShadow: `0 0 24px ${scoreGreen(ratio, 0.14)}` }}>
+      <Panel sx={{ gridColumn: '1 / -1', px: 3, pt: 1, pb: 3, borderColor: scoreGreen(ratio, 0.45), boxShadow: `0 0 24px ${scoreGreen(ratio, 0.14)}` }}>
         <Box
           sx={{
             display: 'grid',
@@ -145,9 +145,6 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
             </Box>
             <Typography sx={{ fontFamily: '"Press Start 2P", monospace', fontSize: '0.76rem', color: accent, mt: 1 }}>
               {band.label}
-            </Typography>
-            <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.9rem', color: `${ARCADE_COLORS.white}95`, mt: 0.5 }}>
-              {band.blurb}
             </Typography>
 
             <Box sx={{ position: 'relative', mt: 1.25 }}>
