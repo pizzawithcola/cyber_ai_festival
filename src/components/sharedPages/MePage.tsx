@@ -184,7 +184,10 @@ const MePage: React.FC = () => {
     <MatrixRainBackground>
       <Box
         sx={{
-          minHeight: '100vh',
+          // 100dvh tracks the *visible* viewport on mobile — plain 100vh on iOS
+          // Safari includes the browser chrome and pushed the bottom buttons
+          // below the fold.
+          minHeight: '100dvh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
