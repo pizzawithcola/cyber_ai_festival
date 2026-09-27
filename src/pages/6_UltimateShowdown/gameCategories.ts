@@ -1,5 +1,5 @@
 // Shared category definitions for the Ultimate Showdown game balance.
-// Categories mirror the curated quiz doc: 4 theme categories + general AI + bonus.
+// 7 categories: 5 theme categories + bonus (×2) + UAE (×3).
 export const GAME_CATEGORIES = [
   { key: 'ai', label: 'AI General' },
   { key: 'hallucination', label: 'Hallucination' },
@@ -7,25 +7,27 @@ export const GAME_CATEGORIES = [
   { key: 'agent', label: 'Agent' },
   { key: 'phishing', label: 'Phishing' },
   { key: 'bonus', label: 'Bonus (Hard)' },
+  { key: 'uae', label: 'UAE' },
 ] as const;
 
 export type GameCategoryKey = (typeof GAME_CATEGORIES)[number]['key'];
 
 // localStorage key holding the admin-configured per-category balance.
-// v2: balance layout changed to the 7-question structure (5 theme ×1 + bonus ×2).
-export const BALANCE_STORAGE_KEY = 'cyber_ai_ultimate_balance_v2';
+// v3: 7-question structure (5 theme ×1 + bonus ×1 + UAE ×1).
+export const BALANCE_STORAGE_KEY = 'cyber_ai_ultimate_balance_v3';
 
 export type BalanceConfig = Record<GameCategoryKey, number>;
 
-// Default per-game draw = 7 questions: each of the 5 theme categories gets 1
-// question + 2 bonus. Bonus are forced to the LAST two questions (x2, then x3).
+// Default per-game draw = 7 questions: one from each of the 7 categories.
+// Bonus ×2 and UAE ×3 are forced to the last two positions by the backend.
 export const DEFAULT_BALANCE: BalanceConfig = {
   ai: 1,
   hallucination: 1,
   data: 1,
   agent: 1,
   phishing: 1,
-  bonus: 2,
+  bonus: 1,
+  uae: 1,
 };
 
 // Total questions drawn when using the default balance.
@@ -46,6 +48,7 @@ export function loadBalance(): BalanceConfig | null {
       agent: Number(parsed.agent) || 0,
       phishing: Number(parsed.phishing) || 0,
       bonus: Number(parsed.bonus) || 0,
+      uae: Number(parsed.uae) || 0,
     };
   } catch {
     return null;
