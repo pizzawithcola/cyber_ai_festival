@@ -219,19 +219,13 @@ const MePage: React.FC = () => {
           ) : (
             <>
               <Box sx={{ textAlign: 'center', mt: 6 }}>
-                <ArcadeTypography arcadeSize="xs" arcadeColor="cyan" component="p" sx={{ letterSpacing: '0.25em', opacity: 0.75, mb: 1.5 }}>
-                  PLAYER PANEL
-                </ArcadeTypography>
                 <ArcadeTypography
-                  arcadeSize="lg"
+                  arcadeSize="md"
                   arcadeColor="lime"
                   component="p"
                   sx={{ wordBreak: 'break-word', textShadow: `0 0 14px ${ARCADE_COLORS.lime}60` }}
                 >
-                  Hi {fullName}
-                </ArcadeTypography>
-                <ArcadeTypography arcadeSize="sm" arcadeColor="cyan" component="p" sx={{ letterSpacing: '0.2em', mt: 0.5 }}>
-                  {user.nickname}
+                  Hi {fullName} ({user.nickname})
                 </ArcadeTypography>
               </Box>
 
