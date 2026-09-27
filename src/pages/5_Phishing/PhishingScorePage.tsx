@@ -146,7 +146,7 @@ const PhishingScorePage: React.FC = () => {
           countryCode={user?.countryCode}
         />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
-          <Box sx={{ maxWidth: 1400, width: '90%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ maxWidth: 1400, width: '96%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Benchmark Banner */}
             {isBenchmark && (
               <Box
