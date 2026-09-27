@@ -258,7 +258,7 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
           const bonusPoints = bonusVerdict?.score;
 
           return (
-            <Panel key={dim.key} sx={{ p: 2, borderColor: scoreGreen(dimRatio, 0.3), display: 'flex', flexDirection: 'column' }}>
+            <Panel key={dim.key} sx={{ p: 3, borderColor: scoreGreen(dimRatio, 0.3), display: 'flex', flexDirection: 'column' }}>
               {/* 维度头：名称 / 定位 / 分数 */}
               <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
                 <Box sx={{ minWidth: 0 }}>
