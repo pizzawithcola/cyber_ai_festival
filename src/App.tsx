@@ -17,7 +17,10 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div style={{ width: '100vw', height: '100vh' }}>
+      {/* 100dvh = the *visible* viewport height on mobile (plain 100vh on iOS
+          Safari includes the browser chrome, which shifted the matrix-rain
+          canvas and cut off bottom-anchored buttons). */}
+      <div style={{ width: '100vw', height: '100dvh' }}>
         <Router>
           <AppRoutes toggleColorMode={toggleColorMode} />
         </Router>
