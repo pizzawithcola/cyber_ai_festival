@@ -77,7 +77,7 @@ const Row: React.FC<{ verdict: ItemVerdict }> = ({ verdict }) => {
         gridTemplateColumns: '16px 26px 1fr auto',
         alignItems: 'baseline',
         columnGap: 0.75,
-        py: 0.45,
+        py: 0.75,
         borderTop: `1px solid ${GRID_COLOR}`,
       }}
     >
