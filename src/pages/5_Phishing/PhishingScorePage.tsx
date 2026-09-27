@@ -146,7 +146,7 @@ const PhishingScorePage: React.FC = () => {
           countryCode={user?.countryCode}
         />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
-          <Box sx={{ maxWidth: 1200, width: '100%' }}>
+          <Box sx={{ maxWidth: 1400, width: '90%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Benchmark Banner */}
             {isBenchmark && (
               <Box
@@ -165,12 +165,14 @@ const PhishingScorePage: React.FC = () => {
                 </ArcadeTypography>
               </Box>
             )}
-            <PhishingScoreReport
-              total={total_score}
-              dimensions={report.dimensions}
-              focus={report.focus}
-              itemDataMissing={itemDataMissing}
-            />
+            <Box sx={{ flex: '0 0 80%', minHeight: 0 }}>
+              <PhishingScoreReport
+                total={total_score}
+                dimensions={report.dimensions}
+                focus={report.focus}
+                itemDataMissing={itemDataMissing}
+              />
+            </Box>
           {/* Maximum attempts message */}
           {attemptCount >= 2 && (
             <Typography variant="body2" sx={{ mt: 2, mb: 4, color: `${ARCADE_COLORS.white}60`, textAlign: 'center', fontFamily: '"Electrolize", sans-serif' }}>
@@ -179,7 +181,7 @@ const PhishingScorePage: React.FC = () => {
           )}
           
           {/* Buttons section */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 'auto', pt: 2 }}>
             {attemptCount < 2 ? (
               <ArcadeButton
                 color="lime"

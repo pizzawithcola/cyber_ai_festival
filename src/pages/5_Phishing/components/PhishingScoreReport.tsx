@@ -123,9 +123,9 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
   const accent = scoreGreen(ratio);
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 2.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, width: '100%', height: '100%' }}>
       {/* ── 卡片 1：左=总分与评价 ｜ 右=三条最该改进的点（跨两列，一行一张） ── */}
-      <Panel sx={{ gridColumn: '1 / -1', px: 3, pt: 0.5, pb: 3, borderColor: scoreGreen(ratio, 0.45), boxShadow: `0 0 24px ${scoreGreen(ratio, 0.14)}` }}>
+      <Panel sx={{ flexShrink: 0, px: 3, pt: 0.5, pb: 3, borderColor: scoreGreen(ratio, 0.45), boxShadow: `0 0 24px ${scoreGreen(ratio, 0.14)}` }}>
         <Box
           sx={{
             display: 'grid',
@@ -221,14 +221,15 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
       </Panel>
 
       {itemDataMissing && (
-        <Typography sx={{ gridColumn: '1 / -1', fontFamily: '"Electrolize", sans-serif', fontSize: '0.905rem', color: `${ARCADE_COLORS.white}60`, textAlign: 'center' }}>
+        <Typography sx={{ flexShrink: 0, fontFamily: '"Electrolize", sans-serif', fontSize: '0.905rem', color: `${ARCADE_COLORS.white}60`, textAlign: 'center' }}>
           Per-item verdicts weren’t included this round — showing dimension scores only.
         </Typography>
       )}
 
       {/* ── 卡片 2–5：四个维度（每个维度自带 3 条细则，一行一条） ─────────── */}
-      {/* 直接作为上层 2 列栅格子项，保持 2×2 */}
-      {dimensions.map((dim) => {
+      {/* 填满剩余高度，保持 2×2 */}
+      <Box sx={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gridAutoRows: '1fr', gap: 2.5 }}>
+        {dimensions.map((dim) => {
           const dimRatio = dim.score / DIMENSION_MAX;
           const color = scoreGreen(dimRatio);
 
@@ -283,6 +284,7 @@ const PhishingScoreReport: React.FC<PhishingScoreReportProps> = ({ total, dimens
             </Panel>
           );
         })}
+      </Box>
     </Box>
   );
 };
