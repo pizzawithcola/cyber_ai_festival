@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Box, Snackbar, Alert } from '@mui/material';
+import { Box, Snackbar, Alert, TextField } from '@mui/material';
 import { QrCode, LogOut, Users } from 'lucide-react';
 import { ArcadeButton, ArcadeTypography } from '../ui';
 import { ARCADE_COLORS } from '../../theme/theme';
 import { apiFetch } from '../../services/api';
 import {
   getPersistentUser,
+  setPersistentUser,
   clearPersistentUser,
   type StoredUser,
 } from '../../utils/userStorage';
@@ -19,6 +20,15 @@ import {
 const QUEUE_BOARD_URL =
   import.meta.env.VITE_QUEUE_BOARD_URL ||
   'https://queue-system-e6780.web.app/#queue/Qmu0wnldvywckwcp0fvm';
+
+const tfSx = {
+  '& .MuiInputBase-root': { color: ARCADE_COLORS.white, fontFamily: '"Courier New", monospace' },
+  '& .MuiOutlinedInput-notchedOutline': { borderColor: `${ARCADE_COLORS.cyan}40` },
+  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: `${ARCADE_COLORS.cyan}80` },
+  '& .Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: ARCADE_COLORS.cyan },
+  '& .MuiInputLabel-root': { color: `${ARCADE_COLORS.cyan}80`, fontFamily: '"Courier New", monospace', fontSize: '0.8rem' },
+  '& .MuiInputLabel-root.Mui-focused': { color: ARCADE_COLORS.cyan },
+};
 
 /**
  * Personal player panel on the player's own phone.
@@ -39,6 +49,8 @@ const MePage: React.FC = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const handledRef = useRef(false);
   const [queueBoardUrl, setQueueBoardUrl] = useState(QUEUE_BOARD_URL);
+  const [loginNickname, setLoginNickname] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const loadQueueBoardUrl = async () => {
     try {
@@ -59,6 +71,42 @@ const MePage: React.FC = () => {
       } catch {
         /* cross-origin: nothing we can do */
       }
+    }
+  };
+
+  const handleLogin = async () => {
+    const nickname = loginNickname.trim();
+    if (!nickname) {
+      setSnack({ open: true, message: 'Please enter your nickname.', severity: 'warning' });
+      return;
+    }
+    setLoginLoading(true);
+    try {
+      const res = await apiFetch('/users/login', {
+        method: 'POST',
+        body: JSON.stringify({ nickname }),
+      });
+      // CloudFront masks API 4xx into the SPA's index.html + 200, so treat a
+      // non-JSON body as a failure instead of a false success.
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || 'Invalid nickname. Please try again.');
+      }
+      const data = await res.json();
+      const identity: StoredUser = {
+        id: data?.id,
+        firstname: data?.firstname,
+        lastname: data?.lastname,
+        nickname: data?.nickname,
+      };
+      setPersistentUser(identity);
+      setUser(identity);
+      setLoginNickname('');
+    } catch (e) {
+      setSnack({ open: true, message: String(e instanceof Error ? e.message : e), severity: 'error' });
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -201,10 +249,28 @@ const MePage: React.FC = () => {
         {!user ? (
           <>
             <ArcadeTypography arcadeSize="sm" component="p" sx={{ mb: 3, textAlign: 'center' }}>
-              No identity yet? Register first, then come back to scan and sign in.
+              Already registered? Log back in with your nickname.
             </ArcadeTypography>
-            <ArcadeButton color="lime" size="lg" onClick={() => navigate('/register')}>
-              REGISTER
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', maxWidth: 320 }}>
+              <TextField
+                label="NICKNAME"
+                fullWidth
+                size="small"
+                value={loginNickname}
+                onChange={e => setLoginNickname(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                sx={tfSx}
+                placeholder="e.g. JL1"
+              />
+              <ArcadeButton color="lime" size="md" glowing onClick={handleLogin} disabled={loginLoading}>
+                {loginLoading ? 'LOGGING IN…' : 'LOG IN'}
+              </ArcadeButton>
+            </Box>
+            <ArcadeTypography arcadeSize="xs" component="p" sx={{ my: 2, opacity: 0.5 }}>
+              — OR —
+            </ArcadeTypography>
+            <ArcadeButton color="cyan" variant="outline" size="md" onClick={() => navigate('/register')}>
+              NEW PLAYER? REGISTER
             </ArcadeButton>
           </>
         ) : (
