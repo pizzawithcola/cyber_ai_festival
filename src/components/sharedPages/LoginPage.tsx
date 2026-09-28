@@ -317,12 +317,10 @@ const LoginPage: React.FC = () => {
   // --- QR login mode: render a station QR code and poll for a phone pairing ---
   const [qrMode, setQrMode] = useState(true);
   const [stationCode, setStationCode] = useState('');
-  const [qrWaiting, setQrWaiting] = useState(false);
 
   useEffect(() => {
     if (!qrMode) {
       setStationCode('');
-      setQrWaiting(false);
       return;
     }
     let cancelled = false;
@@ -353,7 +351,6 @@ const LoginPage: React.FC = () => {
         if (cancelled) return;
         code = data.station_code;
         setStationCode(code);
-        setQrWaiting(true);
         interval = window.setInterval(poll, 2000);
       } catch (e) {
         if (!cancelled) {
@@ -681,13 +678,6 @@ const LoginPage: React.FC = () => {
                         </Box>
                       )}
                     </Box>
-                    <ArcadeTypography
-                      arcadeSize="xs"
-                      component="p"
-                      sx={{ textAlign: 'center', color: `${ARCADE_COLORS.white}70` }}
-                    >
-                      {qrWaiting ? "Scan with your phone's Player Panel to sign in" : 'Waiting for QR code…'}
-                    </ArcadeTypography>
                     <ArcadeButton
                       color={theme.colorKey}
                       variant="outline"
@@ -695,7 +685,7 @@ const LoginPage: React.FC = () => {
                       onClick={() => setQrMode(false)}
                       sx={{ width: '100%' }}
                     >
-                      USE NICKNAME INSTEAD
+                      Nickname Login
                     </ArcadeButton>
                   </>
                 ) : (
