@@ -315,7 +315,7 @@ const LoginPage: React.FC = () => {
   };
 
   // --- QR login mode: render a station QR code and poll for a phone pairing ---
-  const [qrMode, setQrMode] = useState(false);
+  const [qrMode, setQrMode] = useState(true);
   const [stationCode, setStationCode] = useState('');
   const [qrWaiting, setQrWaiting] = useState(false);
 
@@ -722,7 +722,7 @@ const LoginPage: React.FC = () => {
                       {loading ? 'LOADING...' : 'INSERT COIN'}
                     </ArcadeButton>
                     <ArcadeButton
-                      color="lime"
+                      color={theme.colorKey}
                       variant="outline"
                       size="md"
                       onClick={() => setQrMode(true)}
