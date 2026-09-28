@@ -4,6 +4,7 @@ import { Box, LinearProgress, Snackbar, Alert, keyframes } from '@mui/material';
 import { Trophy, Pause, Play, XCircle } from 'lucide-react';
 import { ArcadeButton } from '../../components/ui';
 import QRCode from '../../components/functional/QRCode';
+import { BonusIntroView } from './BonusIntro';
 import { apiFetch } from '../../services/api';
 import { getAdminToken } from '../../utils/userStorage';
 import { loadBalance, DEFAULT_BALANCE, BALANCE_TOTAL } from './gameCategories';
@@ -259,6 +260,16 @@ const AdminResultView: React.FC<{ result: ResultData; question: QuestionData; le
       }}>
         {result.correct_option}
       </Box>
+      {/* The answer text itself, so the room can read what was right */}
+      {(() => {
+        const correctOpt = question.options.find(o => o.id === result.correct_option);
+        if (!correctOpt) return null;
+        return (
+          <Box sx={{ mt: 1.5, fontFamily: '"Audiowide", sans-serif', fontSize: '1rem', color: ARCADE_COLORS.lime, lineHeight: 1.5 }}>
+            {correctOpt.icon} {correctOpt.label}
+          </Box>
+        );
+      })()}
     </Box>
     {/* Distribution */}
     {result.distribution && (
@@ -308,6 +319,35 @@ const AdminResultView: React.FC<{ result: ResultData; question: QuestionData; le
         </Box>
       </Box>
     )}
+  </Box>
+);
+
+// ─── Reading View (Admin — question + read-time countdown) ─────────────────
+const AdminReadingView: React.FC<{ question: QuestionData; timeRemaining: number }> = ({ question, timeRemaining }) => (
+  <Box sx={{ width: '100%', maxWidth: 720, textAlign: 'center', animation: `${fadeIn} 0.3s ease` }}>
+    <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', color: `${ARCADE_COLORS.cyan}60`, letterSpacing: '0.2em', mb: 1.5 }}>
+      QUESTION {question.number} / {question.total}
+      {question.multiplier && question.multiplier > 1 ? `  ·  ×${question.multiplier} BONUS` : ''}
+    </Box>
+    <Box sx={{
+      p: 4, mb: 3, borderRadius: '8px',
+      border: `2px solid ${ARCADE_COLORS.cyan}40`,
+      backgroundColor: `${ARCADE_COLORS.cyan}08`,
+      boxShadow: `0 0 30px ${ARCADE_COLORS.cyan}15`,
+    }}>
+      <Box sx={{ fontFamily: '"Audiowide", sans-serif', fontSize: '1.5rem', color: ARCADE_COLORS.white, lineHeight: 1.6 }}>
+        {question.text}
+      </Box>
+    </Box>
+    <Box sx={{
+      fontFamily: '"Press Start 2P", monospace', fontSize: '4rem',
+      color: ARCADE_COLORS.cyan, textShadow: `0 0 40px ${ARCADE_COLORS.cyan}70`, lineHeight: 1.1,
+    }}>
+      {timeRemaining}
+    </Box>
+    <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.7rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '0.25em', mt: 1.5 }}>
+      READ TIME — ANSWERS OPEN AFTER THE COUNTDOWN
+    </Box>
   </Box>
 );
 
@@ -591,6 +631,8 @@ const AdminConsole: React.FC = () => {
     switch (state.phase) {
       case 'idle': case 'waiting': return 'lobby';
       case 'countdown': return 'countdown';
+      case 'bonus': return 'bonus';
+      case 'reading': return 'reading';
       case 'question': return 'question';
       case 'result': return 'result';
       case 'leaderboard': return 'leaderboard';
@@ -647,6 +689,10 @@ const AdminConsole: React.FC = () => {
           <LobbyView roomCode={roomCode} playerCount={state.playerCount} players={state.players} onStart={handleStartGame} isConnected={isConnected} />
         )}
         {view === 'countdown' && <CountdownView value={state.countdownValue} />}
+        {view === 'bonus' && <BonusIntroView multiplier={state.bonusMultiplier} />}
+        {view === 'reading' && state.question && (
+          <AdminReadingView question={state.question} timeRemaining={state.timeRemaining} />
+        )}
         {view === 'question' && state.question && (
           <QuestionControlPanel
             question={state.question} timeRemaining={state.timeRemaining}

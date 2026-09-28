@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type GamePhase = 'idle' | 'waiting' | 'countdown' | 'question' | 'result' | 'leaderboard' | 'finished';
+export type GamePhase = 'idle' | 'waiting' | 'countdown' | 'bonus' | 'reading' | 'question' | 'result' | 'leaderboard' | 'finished';
 
 export interface OptionItem {
   id: string;
@@ -54,6 +54,10 @@ export interface GameState {
   timeRemaining: number;
   answeredCount: number;
   isPaused: boolean;
+  // Seconds left in the question-reading window (0 once answering starts)
+  readTime: number;
+  // 2 or 3 while the slot-machine teaser for a bonus question is on screen
+  bonusMultiplier: number;
 }
 
 type MessageHandler = (msg: Record<string, unknown>) => void;
@@ -94,6 +98,8 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
     timeRemaining: 0,
     answeredCount: 0,
     isPaused: false,
+    readTime: 0,
+    bonusMultiplier: 0,
   });
 
   // Message handlers by type
@@ -139,15 +145,46 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
         }));
         break;
 
-      case 'question':
+      case 'question': {
+        // read_time > 0 starts the reading window: the question is shown without
+        // its options and the answer timer has not begun yet.
+        const readTime = (msg.read_time as number) || 0;
         setState(prev => ({
           ...prev,
-          phase: 'question',
+          phase: readTime > 0 ? 'reading' : 'question',
           question: msg as unknown as QuestionData,
-          timeRemaining: (msg as unknown as QuestionData).time_limit,
+          timeRemaining: readTime > 0 ? readTime : (msg as unknown as QuestionData).time_limit,
+          readTime,
           answeredCount: 0,
           result: null,
           isPaused: false,
+        }));
+        break;
+      }
+
+      case 'reading':
+        setState(prev => ({
+          ...prev,
+          phase: 'reading',
+          readTime: msg.remaining as number,
+          timeRemaining: msg.remaining as number,
+        }));
+        break;
+
+      case 'answer_start':
+        setState(prev => ({
+          ...prev,
+          phase: 'question',
+          readTime: 0,
+          timeRemaining: msg.remaining as number,
+        }));
+        break;
+
+      case 'bonus_intro':
+        setState(prev => ({
+          ...prev,
+          phase: 'bonus',
+          bonusMultiplier: (msg.multiplier as number) || 2,
         }));
         break;
 

@@ -366,6 +366,95 @@ const CountdownView: React.FC<{ value: number }> = ({ value }) => (
   </Box>
 );
 
+// ─── Bonus teaser (slot-machine style, full screen) ───────────────────────
+const BONUS_REEL = ['×2', '★', '×3', '◆', '×2', '7', '×3', '✦'];
+
+const BonusIntroView: React.FC<{ multiplier: number }> = ({ multiplier }) => {
+  const [spin, setSpin] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setSpin((n) => n + 1), 90);
+    return () => window.clearInterval(t);
+  }, []);
+  const settled = spin > 12;
+  const symbol = BONUS_REEL[spin % BONUS_REEL.length];
+
+  return (
+    <Box sx={{
+      position: 'fixed', inset: 0, zIndex: 60,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      backgroundColor: 'rgba(5,5,16,0.95)', animation: `${fadeIn} 0.2s ease`,
+    }}>
+      <Box sx={{
+        fontFamily: '"Press Start 2P", monospace', fontSize: '0.9rem', letterSpacing: '0.3em',
+        color: ARCADE_COLORS.yellow, textShadow: `0 0 20px ${ARCADE_COLORS.yellow}80`, mb: 3,
+      }}>
+        BONUS ROUND
+      </Box>
+      <Box sx={{
+        width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: `6px solid ${ARCADE_COLORS.yellow}`, borderRadius: '12px', backgroundColor: '#0a0a1a',
+        boxShadow: `0 0 60px ${ARCADE_COLORS.yellow}60, inset 0 0 40px ${ARCADE_COLORS.yellow}20`,
+      }}>
+        <Box sx={{
+          fontFamily: '"Press Start 2P", monospace',
+          fontSize: settled ? '4rem' : '2.6rem',
+          color: settled ? ARCADE_COLORS.lime : ARCADE_COLORS.yellow,
+          textShadow: `0 0 30px currentColor`, transition: 'font-size 0.15s',
+        }}>
+          {settled ? `×${multiplier}` : symbol}
+        </Box>
+      </Box>
+      <Box sx={{ mt: 3, fontFamily: '"Audiowide", sans-serif', fontSize: '1rem', color: ARCADE_COLORS.white, letterSpacing: '0.15em', opacity: settled ? 1 : 0.45 }}>
+        {settled ? `NEXT ANSWER IS WORTH ×${multiplier}` : 'SPINNING…'}
+      </Box>
+    </Box>
+  );
+};
+
+// ─── Reading View (Player — question only, options are not shown yet) ─────
+const ReadingView: React.FC<{ question: QuestionData; timeRemaining: number }> = ({ question, timeRemaining }) => (
+  <Box sx={{ width: '100%', maxWidth: 860, textAlign: 'center', animation: `${fadeIn} 0.3s ease` }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+      <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.75rem', color: `${ARCADE_COLORS.white}50` }}>
+        Q {question.number} / {question.total}
+      </Box>
+      {question.multiplier && question.multiplier > 1 && (
+        <Box sx={{
+          fontFamily: '"Press Start 2P", monospace', fontSize: '0.6rem', px: 1.5, py: 0.5,
+          color: '#050510', backgroundColor: ARCADE_COLORS.yellow,
+          borderRadius: '4px', boxShadow: `0 0 12px ${ARCADE_COLORS.yellow}70`,
+        }}>
+          ×{question.multiplier} BONUS
+        </Box>
+      )}
+    </Box>
+
+    <Box sx={{
+      ...cardSx, mb: 3, textAlign: 'center',
+      borderColor: `${ARCADE_COLORS.cyan}40`,
+      boxShadow: `0 0 30px ${ARCADE_COLORS.cyan}15`,
+    }}>
+      <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', color: `${ARCADE_COLORS.cyan}60`, letterSpacing: '0.2em', mb: 1.5 }}>
+        QUESTION {question.number}
+      </Box>
+      <Box sx={{ fontFamily: '"Audiowide", sans-serif', fontSize: '1.1rem', color: ARCADE_COLORS.white, lineHeight: 1.6 }}>
+        {question.text}
+      </Box>
+    </Box>
+
+    <Box sx={{
+      fontFamily: '"Press Start 2P", monospace', fontSize: '2rem',
+      color: ARCADE_COLORS.cyan, textShadow: `0 0 25px ${ARCADE_COLORS.cyan}70`,
+      animation: `${pulseScale} 1s ease infinite`,
+    }}>
+      {timeRemaining}
+    </Box>
+    <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '0.2em', mt: 1 }}>
+      READ THE QUESTION
+    </Box>
+  </Box>
+);
+
 // ─── Question View (Player — 4 clickable options) ────────────────────────────
 const QuestionView: React.FC<{
   question: QuestionData;
@@ -628,36 +717,6 @@ const ResultView: React.FC<{
         </Box>
       </Box>
 
-      {/* Answer distribution */}
-      {result.distribution && (
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '0.15em', mb: 1.5, textAlign: 'left' }}>
-            PLAYER DISTRIBUTION
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {question.options.map(opt => {
-              const count = result.distribution?.[opt.id] ?? 0;
-              const total = Object.values(result.distribution ?? {}).reduce((a, b) => a + b, 0);
-              const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-              const isCorrectOpt = opt.id === result.correct_option;
-              return (
-                <Box key={opt.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 28, fontFamily: '"Press Start 2P", monospace', fontSize: '0.5rem', color: opt.color, textAlign: 'center', flexShrink: 0 }}>{opt.icon}</Box>
-                  <Box sx={{ flex: 1, height: 16, backgroundColor: `${opt.color}15`, borderRadius: '2px', overflow: 'hidden', border: `1px solid ${opt.color}20` }}>
-                    <Box sx={{
-                      width: `${pct}%`, height: '100%',
-                      backgroundColor: isCorrectOpt ? ARCADE_COLORS.lime : `${opt.color}60`,
-                      transition: 'width 0.6s ease',
-                    }} />
-                  </Box>
-                  <Box sx={{ width: 36, fontFamily: '"Courier New", monospace', fontSize: '0.7rem', color: `${ARCADE_COLORS.white}60`, textAlign: 'right', flexShrink: 0 }}>{pct}%</Box>
-                </Box>
-              );
-            })}
-          </Box>
-        </Box>
-      )}
-
       <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.7rem', color: `${ARCADE_COLORS.white}25`, letterSpacing: '0.1em' }}>
         Next question in 3s...
       </Box>
@@ -850,6 +909,10 @@ const UltimateShowdown: React.FC = () => {
         return 'waiting';
       case 'countdown':
         return 'countdown';
+      case 'bonus':
+        return 'bonus';
+      case 'reading':
+        return 'reading';
       case 'question':
         return 'question';
       case 'result':
@@ -1012,6 +1075,10 @@ const UltimateShowdown: React.FC = () => {
         )}
         {view === 'countdown' && (
           <CountdownView value={state.countdownValue} />
+        )}
+        {view === 'bonus' && <BonusIntroView multiplier={state.bonusMultiplier} />}
+        {view === 'reading' && state.question && (
+          <ReadingView question={state.question} timeRemaining={state.timeRemaining} />
         )}
         {view === 'question' && state.question && (
           <QuestionView
