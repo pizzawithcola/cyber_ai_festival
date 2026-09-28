@@ -5,12 +5,10 @@ import { ArcadeButton } from '../../../../components/ui';
 import { NEON_CYAN, READABLE_FONT, TITLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
 
 export function ChapterComplete({
-  onReviewResults,
   onViewRanking,
   isNavigatingToRanking = false,
-  onStartFromBeginning,
 }: {
-  onReviewResults: () => void;
+  onReviewResults?: () => void;
   onViewRanking?: () => void;
   isNavigatingToRanking?: boolean;
   onStartFromBeginning?: () => void;
@@ -118,32 +116,6 @@ export function ChapterComplete({
               mx: 'auto',
             }}
           >
-            <ArcadeButton
-              variant="outline"
-              color="magenta"
-              size="md"
-              onClick={onReviewResults}
-              sx={{ minHeight: 56, width: { xs: '100%', sm: 230 } }}
-              disabled={isNavigatingToRanking}
-            >
-              Review Results
-            </ArcadeButton>
-            <ArcadeButton
-              variant="outline"
-              color="magenta"
-              size="md"
-              onClick={onStartFromBeginning}
-              sx={{
-                minHeight: 56,
-                width: { xs: '100%', sm: 230 },
-                whiteSpace: 'normal',
-                lineHeight: 1.5,
-                fontSize: { xs: '0.62rem', sm: '0.82rem' },
-              }}
-              disabled={!onStartFromBeginning || isNavigatingToRanking}
-            >
-              Next Player Login
-            </ArcadeButton>
             <ArcadeButton
               color="magenta"
               size="md"

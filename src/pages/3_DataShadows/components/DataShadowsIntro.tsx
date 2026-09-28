@@ -43,8 +43,8 @@ const INTRO_LINES: { label: string; line: React.ReactNode }[] = [
   },
 ]
 
-const INTRO_FADE_MS = 6500
-const INTRO_STEP_MS = 7500
+const INTRO_FADE_MS = 9000
+const INTRO_STEP_MS = 10000
 
 const DataShadowsIntro: React.FC<DataShadowsIntroProps> = ({ onComplete }) => {
   const [visible, setVisible] = useState(false)

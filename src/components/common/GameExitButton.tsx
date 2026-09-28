@@ -31,7 +31,7 @@ const GameExitButton = ({ game }: GameExitButtonProps) => {
         border: 'none',
         outline: 'none',
         cursor: 'pointer',
-        color: ARCADE_COLORS.red,
+        color: ARCADE_COLORS.white,
         fontFamily: '"Courier New", monospace',
         fontSize: '0.7rem',
         letterSpacing: '0.18em',

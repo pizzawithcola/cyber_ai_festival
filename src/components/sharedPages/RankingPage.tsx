@@ -31,6 +31,14 @@ const GAME_TO_SCORE_TYPE: Record<string, string> = {
   final: 'game5',
 };
 
+// 每个游戏结算后回登录页的路由（Ranking 页底部按钮用）
+const GAME_LOGIN_ROUTE: Record<string, string> = {
+  hallucinate: '/login/hallucinate',
+  datashadows: '/login/datashadows',
+  retaildemolition: '/login/retaildemolition',
+  phishing: '/login/phishing',
+};
+
 const SCORE_TYPE_LABELS: Record<string, string> = {
   game1: 'Hallucinate & Watch Me Detonate',
   game2: 'DATA SHADOWS',
@@ -70,6 +78,7 @@ const RankingPage: React.FC = () => {
   const user = getStoredUser();
 
   const scoreType = (game && GAME_TO_SCORE_TYPE[game]) || 'total';
+  const loginRoute = game ? GAME_LOGIN_ROUTE[game] : undefined;
   const rankingTitle = SCORE_TYPE_LABELS[scoreType] || 'RANKINGS';
   const themeColor = GAME_THEME_COLORS[scoreType] || ARCADE_COLORS.cyan;
 
@@ -353,8 +362,8 @@ const RankingPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Back Button */}
-      <Box sx={{ pb: 4 }}>
+      {/* Back Buttons */}
+      <Box sx={{ pb: 4, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
         <ArcadeButton
           color="white"
           variant="outline"
@@ -376,6 +385,22 @@ const RankingPage: React.FC = () => {
         >
           BACK TO HOME
         </ArcadeButton>
+        {loginRoute && (
+          <ArcadeButton
+            color="white"
+            variant="outline"
+            onClick={() => navigate(loginRoute)}
+            sx={{
+              fontFamily: '"Electrolize", sans-serif',
+              letterSpacing: '1px',
+              borderColor: `${themeColor}80`,
+              color: themeColor,
+              '&:hover': { borderColor: themeColor, backgroundColor: `${themeColor}15` },
+            }}
+          >
+            BACK TO LOGIN
+          </ArcadeButton>
+        )}
       </Box>
     </Box>
   );
