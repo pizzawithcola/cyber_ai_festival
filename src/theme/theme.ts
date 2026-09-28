@@ -54,7 +54,7 @@ export const getTheme = (paletteMode: PaletteMode) => {
         main: '#dc004e',
       },
       background: {
-        default: paletteMode === 'light' ? '#f5f5f5' : '#0a1929',
+        default: paletteMode === 'light' ? '#f5f5f5' : '#050510',
         paper: paletteMode === 'light' ? '#ffffff' : '#102233',
       },
       text: {

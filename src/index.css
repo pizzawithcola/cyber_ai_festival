@@ -37,7 +37,6 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
-  background-color: #050510;
 }
 
 html,
@@ -45,6 +44,13 @@ body,
 #root {
   width: 100%;
   min-height: 100dvh;
+  background-color: #050510;
+}
+
+/* Higher specificity than MUI CssBaseline's `body` rule (which paints
+   palette.background.default), so the outer canvas behind the iOS notch /
+   home-indicator safe areas always matches the page background. */
+html body {
   background-color: #050510;
 }
 
