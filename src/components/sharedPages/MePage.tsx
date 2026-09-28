@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Box, Snackbar, Alert } from '@mui/material';
-import { QrCode, Users } from 'lucide-react';
+import { QrCode, Users, Sparkles, Database, ShoppingCart, Mail, Trophy, type LucideIcon } from 'lucide-react';
 import { ArcadeButton, ArcadeTypography } from '../ui';
 import { ARCADE_COLORS } from '../../theme/theme';
 import MatrixRainBackground from '../common/MatrixRainBackground';
@@ -20,6 +20,20 @@ import {
 const QUEUE_BOARD_URL =
   import.meta.env.VITE_QUEUE_BOARD_URL ||
   'https://queue-system-e6780.web.app/#queue/Qmu0wnldvywckwcp0fvm';
+
+/** 五个游戏的分数格子：图标 + 主题色，与各游戏登录页保持一致。 */
+const GAME_SCORE_TILES: { key: string; label: string; color: string; Icon: LucideIcon }[] = [
+  { key: 'game1_score', label: 'HALLUCINATE', color: ARCADE_COLORS.magenta, Icon: Sparkles },
+  { key: 'game2_score', label: 'DATA SHADOWS', color: ARCADE_COLORS.cyan, Icon: Database },
+  { key: 'game3_score', label: 'RETAIL DEMO', color: ARCADE_COLORS.yellow, Icon: ShoppingCart },
+  { key: 'game4_score', label: 'PHISHING', color: ARCADE_COLORS.lime, Icon: Mail },
+];
+
+/** 分数展示：整数直出，小数留 1 位；无数据显示 — */
+const formatScore = (value: number | null | undefined): string => {
+  if (value === undefined || value === null) return '—';
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+};
 
 /**
  * Personal player panel on the player's own phone.
@@ -40,6 +54,7 @@ const MePage: React.FC = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const handledRef = useRef(false);
   const [queueBoardUrl, setQueueBoardUrl] = useState(QUEUE_BOARD_URL);
+  const [scores, setScores] = useState<Record<string, number> | null>(null);
 
   const loadQueueBoardUrl = async () => {
     try {
@@ -49,6 +64,18 @@ const MePage: React.FC = () => {
       if (data?.queueBoardUrl) setQueueBoardUrl(data.queueBoardUrl);
     } catch {
       // keep the fallback: the queue button must still work offline
+    }
+  };
+
+  const loadScores = async (userId: number) => {
+    try {
+      const res = await apiFetch(`/scores/${userId}`);
+      // CloudFront masks API 4xx into index.html + 200; require a JSON body.
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) return;
+      setScores(await res.json());
+    } catch {
+      // no score row yet — the tiles fall back to "—"
     }
   };
 
@@ -64,8 +91,10 @@ const MePage: React.FC = () => {
   };
 
   useEffect(() => {
-    setUser(getPersistentUser());
+    const stored = getPersistentUser();
+    setUser(stored);
     void loadQueueBoardUrl();
+    if (stored?.id) void loadScores(stored.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -228,6 +257,93 @@ const MePage: React.FC = () => {
                 >
                   Hi {fullName} ({user.nickname})
                 </ArcadeTypography>
+              </Box>
+
+              {/* 五个游戏分数：上面 2×2，下面 Ultimate 横跨两列 */}
+              <Box
+                sx={{
+                  mt: 4,
+                  width: '100%',
+                  maxWidth: 360,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 1.5,
+                }}
+              >
+                {GAME_SCORE_TILES.map(({ key, label, color, Icon }) => (
+                  <Box
+                    key={key}
+                    sx={{
+                      border: `2px solid ${color}45`,
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(5, 5, 15, 0.72)',
+                      p: 1.25,
+                      minHeight: 92,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 0.75,
+                      boxShadow: `0 0 12px ${color}18`,
+                    }}
+                  >
+                    <Icon size={22} color={color} strokeWidth={1.75} />
+                    <ArcadeTypography
+                      arcadeSize="xs"
+                      component="span"
+                      sx={{ fontSize: '0.46rem', color: `${color}c0`, letterSpacing: '0.08em', textAlign: 'center', lineHeight: 1.3 }}
+                    >
+                      {label}
+                    </ArcadeTypography>
+                    <ArcadeTypography
+                      arcadeSize="md"
+                      component="span"
+                      sx={{ color, fontSize: '1.05rem', textShadow: `0 0 10px ${color}60` }}
+                    >
+                      {formatScore(scores?.[key])}
+                    </ArcadeTypography>
+                  </Box>
+                ))}
+
+                {/* Ultimate Showdown — 下方大格子，横跨两列 */}
+                <Box
+                  sx={{
+                    gridColumn: '1 / -1',
+                    border: `2px solid ${ARCADE_COLORS.orange}55`,
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(5, 5, 15, 0.72)',
+                    p: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    boxShadow: `0 0 14px ${ARCADE_COLORS.orange}22`,
+                  }}
+                >
+                  <Trophy size={30} color={ARCADE_COLORS.orange} strokeWidth={1.75} />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <ArcadeTypography
+                      arcadeSize="xs"
+                      component="p"
+                      sx={{ fontSize: '0.5rem', color: `${ARCADE_COLORS.orange}c0`, letterSpacing: '0.1em' }}
+                    >
+                      ULTIMATE SHOWDOWN
+                    </ArcadeTypography>
+                    <ArcadeTypography
+                      arcadeSize="xs"
+                      component="p"
+                      sx={{ fontSize: '0.42rem', color: `${ARCADE_COLORS.white}50`, mt: 0.25, letterSpacing: '0.1em' }}
+                    >
+                      FINAL EVENT
+                    </ArcadeTypography>
+                  </Box>
+                  <ArcadeTypography
+                    arcadeSize="md"
+                    component="span"
+                    sx={{ color: ARCADE_COLORS.orange, fontSize: '1.3rem', textShadow: `0 0 12px ${ARCADE_COLORS.orange}60` }}
+                  >
+                    {formatScore(scores?.game5_score)}
+                  </ArcadeTypography>
+                </Box>
               </Box>
 
               {scanning && (
