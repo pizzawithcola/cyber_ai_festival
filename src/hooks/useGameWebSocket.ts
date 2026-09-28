@@ -33,6 +33,9 @@ export interface ResultData {
   is_correct?: boolean;
   score_earned?: number;
   distribution?: Record<string, number>;
+  // Admin-only: the x2/x3 multiplier of this question and what each player earned
+  multiplier?: number;
+  scores?: Array<{ player_id: number; player_name: string; score_earned: number; is_correct: boolean }>;
 }
 
 export interface LeaderboardEntry {

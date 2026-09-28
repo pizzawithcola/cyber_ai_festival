@@ -308,6 +308,45 @@ const AdminResultView: React.FC<{ result: ResultData; question: QuestionData; le
         })}
       </Box>
     </Box>
+    {/* What each player just earned — this is where x2/x3 pays off */}
+    {result.scores && result.scores.length > 0 && (
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+          <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.6rem', color: `${ARCADE_COLORS.white}40`, letterSpacing: '0.15em' }}>THIS QUESTION</Box>
+          {result.multiplier && result.multiplier > 1 && (
+            <Box sx={{
+              fontFamily: '"Press Start 2P", monospace', fontSize: '0.55rem', px: 1.5, py: 0.5,
+              color: '#050510', backgroundColor: ARCADE_COLORS.yellow, borderRadius: '4px',
+              boxShadow: `0 0 12px ${ARCADE_COLORS.yellow}70`,
+            }}>
+              ×{result.multiplier} BONUS
+            </Box>
+          )}
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {result.scores.map(s => (
+            <Box key={s.player_id} sx={{
+              display: 'flex', alignItems: 'center', gap: 2, p: 1.5, borderRadius: '4px',
+              backgroundColor: '#08081a',
+              border: `1px solid ${s.is_correct ? `${ARCADE_COLORS.lime}30` : `${ARCADE_COLORS.white}08`}`,
+            }}>
+              <Box sx={{ flex: 1, fontFamily: '"Audiowide", sans-serif', fontSize: '0.9rem', color: ARCADE_COLORS.white }}>
+                {s.player_name}
+              </Box>
+              <Box sx={{
+                fontFamily: '"Press Start 2P", monospace',
+                fontSize: s.score_earned >= 200 ? '0.95rem' : '0.75rem',
+                color: s.score_earned > 0 ? ARCADE_COLORS.yellow : `${ARCADE_COLORS.white}30`,
+                textShadow: s.score_earned >= 200 ? `0 0 15px ${ARCADE_COLORS.yellow}70` : 'none',
+              }}>
+                +{s.score_earned}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    )}
+
     {/* Mini leaderboard */}
     {leaderboard.length > 0 && (
       <Box>
