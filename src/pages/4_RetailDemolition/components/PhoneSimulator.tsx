@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronRight, ChevronUp, Globe, Loader2, Bot, Smartphone, X, Star, ShieldCheck, CheckCircle, RefreshCw, Send } from 'lucide-react';
+import { ChevronRight, ChevronUp, Globe, Loader2, Bot, Smartphone, X, Star, ShieldCheck, CheckCircle, Send } from 'lucide-react';
 import QuizComponent from './QuizComponent';
 import BillingInfo from './BillingInfo';
 import ManualStorefront from './ManualStorefront';
@@ -570,17 +570,11 @@ const PhoneSimulator: React.FC<PhoneSimulatorProps> = (props) => {
               disabled={isSubmittingScore}
               className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors disabled:opacity-60"
             >
-              {isSubmittingScore ? 'Submitting...' : 'Submit Score & View Leaderboard'}
+              {isSubmittingScore ? 'Submitting...' : 'View Ranking'}
             </button>
             {submitError && (
               <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl p-3">{submitError}</div>
             )}
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors"
-            >
-              <RefreshCw size={18} /> Try Again
-            </button>
           </div>
         </div>
       );

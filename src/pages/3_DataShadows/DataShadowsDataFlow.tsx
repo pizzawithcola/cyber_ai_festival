@@ -180,7 +180,7 @@ function DataFlowContent() {
           </span>
         </div>
 
-        {/* 右上角：Try Again（左） / Next（右） */}
+        {/* 右上角：View Ranking（去 game-specific 排行榜） */}
         <div className="data-flow-hero-actions" style={{ justifySelf: 'end' }}>
           <button
             type="button"
