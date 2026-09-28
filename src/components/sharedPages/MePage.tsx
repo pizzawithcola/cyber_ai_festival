@@ -303,118 +303,130 @@ const MePage: React.FC = () => {
                 </ArcadeTypography>
               </Box>
 
-              {scanning ? (
-                <Box
-                  sx={{
-                    mt: 4,
-                    width: '100%',
-                    maxWidth: 360,
-                    border: `2px dashed ${ARCADE_COLORS.lime}80`,
-                    borderRadius: '8px',
-                    p: 1,
-                    '& video': { borderRadius: '6px', width: '100%' },
-                  }}
-                >
-                  <Box id="qr-reader" sx={{ width: '100%', minHeight: 240 }} />
-                  <ArcadeButton color="red" variant="outline" size="sm" sx={{ mt: 1.5, width: '100%' }} onClick={() => setScanning(false)}>
-                    CANCEL
-                  </ArcadeButton>
-                </Box>
-              ) : (
-                <Box
-                  sx={{
-                    mt: 4,
-                    width: '100%',
-                    maxWidth: 360,
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 1.5,
-                  }}
-                >
-                  {GAME_SCORE_TILES.map(({ key, label, color, Icon }) => (
+              {/* Hi 与按钮之间的区域：分数卡片/相机在此纵向居中 */}
+              <Box
+                sx={{
+                  flex: 1,
+                  width: '100%',
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {scanning ? (
+                  <Box
+                    sx={{
+                      width: '100%',
+                      maxWidth: 360,
+                      border: `2px dashed ${ARCADE_COLORS.lime}80`,
+                      borderRadius: '8px',
+                      p: 1,
+                      '& video': { borderRadius: '6px', width: '100%' },
+                    }}
+                  >
+                    <Box id="qr-reader" sx={{ width: '100%', minHeight: 240 }} />
+                    <ArcadeButton color="red" variant="outline" size="sm" sx={{ mt: 1.5, width: '100%' }} onClick={() => setScanning(false)}>
+                      CANCEL
+                    </ArcadeButton>
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      width: '100%',
+                      maxWidth: 360,
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 1.5,
+                    }}
+                  >
+                    {GAME_SCORE_TILES.map(({ key, label, color, Icon }) => (
+                      <Box
+                        key={key}
+                        sx={{
+                          border: `2px solid ${color}45`,
+                          borderRadius: '8px',
+                          backgroundColor: 'rgba(5, 5, 15, 0.72)',
+                          p: 1.5,
+                          minHeight: 96,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 0.75,
+                          boxShadow: `0 0 12px ${color}18`,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, maxWidth: '100%', minWidth: 0 }}>
+                          <Box sx={{ display: 'flex', flexShrink: 0 }}>
+                            <Icon size={22} color={color} strokeWidth={1.75} />
+                          </Box>
+                          <ArcadeTypography
+                            arcadeSize="xs"
+                            component="span"
+                            sx={{
+                              fontSize: '0.5rem',
+                              color: `${color}c0`,
+                              letterSpacing: '0.06em',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {label}
+                          </ArcadeTypography>
+                        </Box>
+                        <ArcadeTypography
+                          arcadeSize="md"
+                          component="span"
+                          sx={{ color, fontSize: '1.5rem', textShadow: `0 0 10px ${color}60` }}
+                        >
+                          {formatScore(scores?.[key])}
+                        </ArcadeTypography>
+                      </Box>
+                    ))}
+
+                    {/* Ultimate Showdown — 下方大格子，横跨两列 */}
                     <Box
-                      key={key}
                       sx={{
-                        border: `2px solid ${color}45`,
+                        gridColumn: '1 / -1',
+                        border: `2px solid ${ARCADE_COLORS.orange}55`,
                         borderRadius: '8px',
                         backgroundColor: 'rgba(5, 5, 15, 0.72)',
-                        p: 1.25,
-                        minHeight: 78,
+                        p: 1.5,
+                        minHeight: 96,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: 0.75,
-                        boxShadow: `0 0 12px ${color}18`,
+                        boxShadow: `0 0 14px ${ARCADE_COLORS.orange}22`,
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, maxWidth: '100%', minWidth: 0 }}>
-                        <Box sx={{ display: 'flex', flexShrink: 0 }}>
-                          <Icon size={16} color={color} strokeWidth={1.75} />
-                        </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Trophy size={22} color={ARCADE_COLORS.orange} strokeWidth={1.75} />
                         <ArcadeTypography
                           arcadeSize="xs"
                           component="span"
-                          sx={{
-                            fontSize: '0.4rem',
-                            color: `${color}c0`,
-                            letterSpacing: '0.04em',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
+                          sx={{ fontSize: '0.5rem', color: `${ARCADE_COLORS.orange}c0`, letterSpacing: '0.1em' }}
                         >
-                          {label}
+                          ULTIMATE SHOWDOWN
                         </ArcadeTypography>
                       </Box>
                       <ArcadeTypography
                         arcadeSize="md"
                         component="span"
-                        sx={{ color, fontSize: '1.15rem', textShadow: `0 0 10px ${color}60` }}
+                        sx={{ color: ARCADE_COLORS.orange, fontSize: '1.5rem', textShadow: `0 0 14px ${ARCADE_COLORS.orange}60` }}
                       >
-                        {formatScore(scores?.[key])}
+                        {formatScore(scores?.game5_score)}
                       </ArcadeTypography>
                     </Box>
-                  ))}
-
-                  {/* Ultimate Showdown — 下方大格子，横跨两列 */}
-                  <Box
-                    sx={{
-                      gridColumn: '1 / -1',
-                      border: `2px solid ${ARCADE_COLORS.orange}55`,
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(5, 5, 15, 0.72)',
-                      p: 1.5,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 0.75,
-                      boxShadow: `0 0 14px ${ARCADE_COLORS.orange}22`,
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <Trophy size={22} color={ARCADE_COLORS.orange} strokeWidth={1.75} />
-                      <ArcadeTypography
-                        arcadeSize="xs"
-                        component="span"
-                        sx={{ fontSize: '0.5rem', color: `${ARCADE_COLORS.orange}c0`, letterSpacing: '0.1em' }}
-                      >
-                        ULTIMATE SHOWDOWN
-                      </ArcadeTypography>
-                    </Box>
-                    <ArcadeTypography
-                      arcadeSize="md"
-                      component="span"
-                      sx={{ color: ARCADE_COLORS.orange, fontSize: '1.5rem', textShadow: `0 0 14px ${ARCADE_COLORS.orange}60` }}
-                    >
-                      {formatScore(scores?.game5_score)}
-                    </ArcadeTypography>
                   </Box>
-                </Box>
-              )}
+                )}
+              </Box>
 
-              <Box sx={{ mt: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+              <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
                 {!scanning && (
                   <ArcadeButton color="lime" size="md" glowing onClick={startScan} sx={{ width: '100%', maxWidth: 320 }}>
                     <QrCode size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
