@@ -123,7 +123,11 @@ export function useGameWebSocket(): UseGameWebSocketReturn {
           ...prev,
           playerCount: msg.count as number,
           players: (msg.players as PlayerEntry[]) || prev.players,
-          phase: 'waiting',
+          // Only settle into the waiting phase while the room has not started
+          // yet. The server re-sends player_count whenever an admin socket
+          // (re)connects, so downgrading the phase mid-game would flash the
+          // lobby view and restart the waiting-room music.
+          phase: prev.phase === 'idle' || prev.phase === 'waiting' ? 'waiting' : prev.phase,
         }));
         break;
 
