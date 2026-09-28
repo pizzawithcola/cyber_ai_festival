@@ -184,17 +184,10 @@ function DataFlowContent() {
         <div className="data-flow-hero-actions" style={{ justifySelf: 'end' }}>
           <button
             type="button"
-            className="data-flow-retry-button"
-            onClick={() => navigate('/datashadows')}
-          >
-            Try Again
-          </button>
-          <button
-            type="button"
             className="data-flow-leaderboard-button"
             onClick={() => navigate('/ranking/game/datashadows')}
           >
-            Next
+            View Ranking
           </button>
         </div>
       </div>

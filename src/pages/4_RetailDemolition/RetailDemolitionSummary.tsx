@@ -4,7 +4,7 @@ import { getStoredUser } from '../../utils/userStorage';
 import { submitGameScoreMax } from '../../services/scoreSubmission';
 import GameSummary from './components/GameSummary';
 import ArcadeBackground from './components/ui/ArcadeBackground';
-import { loadRetailResult, clearRetailResult } from './retailSession';
+import { loadRetailResult } from './retailSession';
 import { useClickSound } from '../../hooks/useClickSound';
 
 /**
@@ -66,11 +66,6 @@ const RetailDemolitionSummary = () => {
     }
   };
 
-  const handleTryAgain = () => {
-    clearRetailResult();
-    navigate('/retaildemolition');
-  };
-
   if (!hasVerifiedSession || !result) return null;
 
   return (
@@ -92,19 +87,13 @@ const RetailDemolitionSummary = () => {
               disabled={isSubmittingScore}
               className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors disabled:opacity-60"
             >
-              {isSubmittingScore ? 'Submitting...' : 'Submit Score & View Leaderboard'}
+              {isSubmittingScore ? 'Submitting...' : 'View Ranking'}
             </button>
             {submitError && (
               <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl p-3">
                 {submitError}
               </div>
             )}
-            <button
-              onClick={handleTryAgain}
-              className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors"
-            >
-              Try Again
-            </button>
           </div>
         </div>
       </div>

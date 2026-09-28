@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 import { submitGameScoreMax } from '../../services/scoreSubmission';
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import Header from '../../components/common/Header';
 import { ArcadeButton, ArcadeTypography } from '../../components/ui';
@@ -16,13 +16,12 @@ const PhishingScorePage: React.FC = () => {
   useClickSound();
   const location = useLocation();
   const navigate = useNavigate();
-  const [attemptCount, setAttemptCount] = useState(() => {
-    // Get initial attempt count from state or sessionStorage
-    // Start from 0, increment after each submission
+  // 单次机会：attempt 计数仅保留写入 sessionStorage 的兼容性，不再驱动重试 UI
+  const attemptCount = (() => {
     const stateAttempts = (location.state as { attemptCount?: number })?.attemptCount || 0;
     const storedAttempts = sessionStorage.getItem('phishing_attempt_count');
     return stateAttempts > 0 ? stateAttempts : parseInt(storedAttempts || '0', 10);
-  });
+  })();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
     // Check if this is a benchmark attempt (score won't be recorded)
@@ -173,44 +172,15 @@ const PhishingScorePage: React.FC = () => {
                 itemDataMissing={itemDataMissing}
               />
             </Box>
-          {/* Maximum attempts message */}
-          {attemptCount >= 2 && (
-            <Typography variant="body2" sx={{ mt: 2, mb: 4, color: `${ARCADE_COLORS.white}60`, textAlign: 'center', fontFamily: '"Electrolize", sans-serif' }}>
-              Maximum attempts reached. Click "Next" to finish the challenge.
-            </Typography>
-          )}
-          
           {/* Buttons section */}
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 'auto', pt: 2 }}>
-            {attemptCount < 2 ? (
-              <ArcadeButton
-                color="lime"
-                variant="outline"
-                onClick={() => {
-                  // Update session high score before going back
-                  const thisScore = total_score;
-                  if (thisScore > sessionHighScore) {
-                    sessionStorage.setItem(`phishing_session_highscore_${userId}`, thisScore.toString());
-                    console.log('[PhishingScorePage] Try Again - Updated session high to:', thisScore);
-                  }
-                  const newCount = attemptCount + 1;
-                  setAttemptCount(newCount);
-                  sessionStorage.setItem('phishing_attempt_count', newCount.toString());
-                  navigate('/phishing');
-                  sessionStorage.removeItem('phishing_is_benchmark');
-                }}
-                sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
-              >
-                Try Again ({2 - attemptCount} left)
-              </ArcadeButton>
-            ) : null}
             <ArcadeButton
               color="lime"
               onClick={handleSubmitScoreAndNavigate}
               disabled={isSubmitting}
               sx={{ fontFamily: '"Electrolize", sans-serif', letterSpacing: '0.5px' }}
             >
-              {isSubmitting ? 'Submitting...' : 'Next'} <ArrowForward sx={{ ml: 1 }} />
+              {isSubmitting ? 'Submitting...' : 'View Ranking'} <ArrowForward sx={{ ml: 1 }} />
             </ArcadeButton>
           </Box>
         </Box>
