@@ -55,40 +55,71 @@ export const SENTENCE_POOL: SentenceItem[] = [
     type: 'CITATION_FABRICATION',
     reason: 'This combines a plausible institution, a journal-like title, and a precise statistic. That is exactly the kind of claim that needs source verification.',
   },
+  {
+    id: 'p6',
+    text: 'Studies show remote workers are more productive, so your team will be more productive if you let them work from home.',
+    isPitfall: true,
+    severity: 'high',
+    type: 'MISSING_SCOPE',
+    reason: '"Studies show" has no source, and it applies a group average to your specific team — a classic scope error.',
+  },
+  {
+    id: 'p7',
+    text: 'Drinking eight glasses of water a day is a medical requirement, so you should follow it exactly.',
+    isPitfall: true,
+    severity: 'medium',
+    type: 'MIXED_FACT_OPINION',
+    reason: 'It presents a popular saying as a hard medical rule. There is no single universal requirement — needs vary by person, climate, and activity.',
+  },
+  {
+    id: 'p8',
+    text: 'The contract is a standard template, so you don’t need to read it carefully before signing.',
+    isPitfall: true,
+    severity: 'critical',
+    type: 'OVERCLAIM_FIRST',
+    reason: 'Calling it "standard" downplays the risk. Templates still contain terms worth checking, and telling someone not to read a contract before signing is dangerous.',
+  },
+  {
+    id: 'p9',
+    text: 'Most doctors agree you should take vitamin C at the first sign of a cold.',
+    isPitfall: true,
+    severity: 'high',
+    type: 'AUTHORITY_TONE',
+    reason: 'A fabricated consensus. "Most doctors agree" is an appeal to authority with no verifiable source.',
+  },
 
-  // Safe
-  { id: 's1', text: 'I can help compare options, but you should confirm local rules on the official city website before acting.', isPitfall: false, severity: 'medium' },
-  { id: 's2', text: 'If you need decision-grade accuracy, cross-check key claims against primary sources or official documentation.', isPitfall: false, severity: 'medium' },
-  { id: 's3', text: 'I do not have enough context to know whether this advice fits your situation, so I would ask one clarifying question first.', isPitfall: false, severity: 'medium' },
-  { id: 's4', text: 'We should treat this as a hypothesis until a reliable source confirms it.', isPitfall: false, severity: 'medium' },
+  // Safe — careful, well-calibrated answers: the model shows uncertainty and points to sources
+  { id: 's1', text: 'I’m not certain about your city’s exact rules, so take this as a starting point — most districts want a short form, but please confirm with the permit office before you pay anything.', isPitfall: false, severity: 'medium' },
+  { id: 's2', text: 'That figure might be out of date, and I’d rather not guess at a number this important. It’s worth checking the official statistics page — I can point you to where it lives.', isPitfall: false, severity: 'medium' },
+  { id: 's3', text: 'I don’t have enough detail yet to be sure which option fits you. If you tell me whether this is personal or business, I can give you a much more accurate answer.', isPitfall: false, severity: 'medium' },
 
-  // Decoys (safe)
+  // Decoys (safe) — confident tone, but the content is actually correct
   {
     id: 'd1',
-    text: 'I cannot verify this claim without sources. A safer answer would mark it as uncertain and ask for a source.',
+    text: 'No — a triangle’s interior angles always add up to exactly 180 degrees. You can rely on that in any exam.',
     isPitfall: false,
     isDecoySafe: true,
     severity: 'medium',
     type: 'DEC0Y_SAFE',
-    reason: 'Actually good practice: it marks uncertainty and avoids asserting unverified facts.',
+    reason: 'A confident tone, but the statement is a true geometric fact — being certain is not the same as hallucinating.',
   },
   {
     id: 'd2',
-    text: 'Instead of inventing citations I cannot confirm, I can suggest search terms for finding authoritative sources.',
+    text: 'Use boiling water to calibrate it. At sea level water boils at exactly 100 °C, so it’s a reliable fixed point.',
     isPitfall: false,
     isDecoySafe: true,
     severity: 'medium',
     type: 'DEC0Y_SAFE',
-    reason: 'Good practice: avoids fabricated citations and suggests verification steps.',
+    reason: 'Precise and confident, but the boiling point of water at sea level is a verifiable fact.',
   },
   {
     id: 'd3',
-    text: 'One possible explanation is X; however, other explanations are possible and should be checked.',
+    text: 'As an EU citizen you don’t need a work visa for Germany — you already have the right to work in any member state, so no separate application is required.',
     isPitfall: false,
     isDecoySafe: true,
     severity: 'medium',
     type: 'DEC0Y_SAFE',
-    reason: 'Balanced language reduces overclaiming; not a hallucination sign by itself.',
+    reason: 'Stated as a firm rule, but EU freedom of movement makes it true — confident wording does not equal a hallucination.',
   },
 ];
 
