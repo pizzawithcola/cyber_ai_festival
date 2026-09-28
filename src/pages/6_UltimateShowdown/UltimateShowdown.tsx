@@ -14,6 +14,7 @@ import type { QuestionData, ResultData, LeaderboardEntry, PlayerEntry } from '..
 import { getStoredUser, setStoredUser } from '../../utils/userStorage';
 import { apiFetch } from '../../services/api';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
+import QRCode from '../../components/functional/QRCode';
 import { COUNTRIES } from '../../components/common/Countries';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { useClickSound } from '../../hooks/useClickSound';
@@ -56,7 +57,8 @@ const JoinScreen: React.FC<{
   loading: boolean;
   error: string;
   onHostLogin: () => void;
-}> = ({ onJoin, loading, error, onHostLogin }) => {
+  onUseQr?: () => void;
+}> = ({ onJoin, loading, error, onHostLogin, onUseQr }) => {
   const [code, setCode] = useState('');
 
   return (
@@ -104,6 +106,21 @@ const JoinScreen: React.FC<{
       >
         {loading ? 'JOINING...' : 'JOIN ROOM'}
       </ArcadeButton>
+      {onUseQr && (
+        <Box
+          onClick={onUseQr}
+          sx={{
+            mt: 1.5, cursor: 'pointer',
+            fontFamily: '"Courier New", monospace', fontSize: '0.675rem',
+            color: ARCADE_COLORS.cyan,
+            letterSpacing: '0.15em',
+            '&:hover': { color: ARCADE_COLORS.lime },
+            transition: 'color 0.2s',
+          }}
+        >
+          ← SCAN QR TO LOG IN
+        </Box>
+      )}
       <Box
         onClick={onHostLogin}
         sx={{
@@ -120,6 +137,92 @@ const JoinScreen: React.FC<{
     </Box>
   );
 };
+
+// ─── QR Login Screen (scan with /me → auto-join the current room) ──────────────
+const QrLoginScreen: React.FC<{
+  roomCode: string;
+  searchingRoom: boolean;
+  stationCode: string;
+  qrError: string;
+  onManual: () => void;
+  onRefreshQR: () => void;
+}> = ({ roomCode, searchingRoom, stationCode, qrError, onManual, onRefreshQR }) => (
+  <Box sx={{ width: '100%', maxWidth: 460, textAlign: 'center', ...cardSx }}>
+    <Box sx={{
+      fontFamily: '"Press Start 2P", monospace', fontSize: '0.8rem',
+      color: ARCADE_COLORS.orange, textShadow: `0 0 15px ${ARCADE_COLORS.orange}60`,
+      mb: 2.5, letterSpacing: '0.1em',
+    }}>
+      SCAN TO PLAY
+    </Box>
+
+    {roomCode ? (
+      <>
+        <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', color: `${ARCADE_COLORS.white}50`, letterSpacing: '0.2em', mb: 0.75 }}>
+          ROOM
+        </Box>
+        <Box sx={{
+          display: 'inline-block', px: 3, py: 1, mb: 2.5,
+          fontFamily: '"Press Start 2P", monospace', fontSize: '1.4rem', fontWeight: 900,
+          letterSpacing: '0.3em', color: ARCADE_COLORS.yellow,
+          textShadow: `0 0 20px ${ARCADE_COLORS.yellow}80`,
+          border: `2px solid ${ARCADE_COLORS.yellow}40`, backgroundColor: `${ARCADE_COLORS.yellow}08`, borderRadius: '4px',
+        }}>
+          {roomCode}
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          {stationCode ? (
+            <QRCode value={stationCode} size={190} />
+          ) : (
+            <Box sx={{ width: 190, height: 190, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px dashed ${ARCADE_COLORS.orange}50`, borderRadius: '6px' }}>
+              <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.7rem', color: `${ARCADE_COLORS.white}60` }}>
+                Generating QR…
+              </Box>
+            </Box>
+          )}
+        </Box>
+
+        <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.72rem', color: `${ARCADE_COLORS.white}70`, lineHeight: 1.7, mb: 2 }}>
+          Open <Box component="span" sx={{ color: ARCADE_COLORS.cyan }}>/me</Box> on your phone and tap{' '}
+          <Box component="span" sx={{ color: ARCADE_COLORS.lime }}>SCAN TO LOG IN</Box>
+          <br />You&apos;ll join this room automatically.
+        </Box>
+      </>
+    ) : (
+      <Box sx={{ py: 4 }}>
+        <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.8rem', color: `${ARCADE_COLORS.white}70`, lineHeight: 1.8 }}>
+          {searchingRoom ? 'Looking for the current room…' : 'Waiting for the host to open a room…'}
+        </Box>
+      </Box>
+    )}
+
+    {qrError && (
+      <Box sx={{ color: ARCADE_COLORS.red, fontFamily: '"Courier New", monospace', fontSize: '0.7rem', mb: 1.5 }}>
+        {qrError}
+      </Box>
+    )}
+
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, mt: 1, alignItems: 'center' }}>
+      <ArcadeButton color="orange" variant="outline" size="md" onClick={onRefreshQR} disabled={!roomCode} sx={{ width: '100%' }}>
+        REFRESH QR CODE
+      </ArcadeButton>
+      <Box
+        component="button"
+        onClick={onManual}
+        sx={{
+          background: 'none', border: 'none', mt: 0.5,
+          color: `${ARCADE_COLORS.white}45`,
+          fontFamily: '"Courier New", monospace', fontSize: '0.72rem',
+          cursor: 'pointer', letterSpacing: '0.12em',
+          '&:hover': { color: ARCADE_COLORS.cyan },
+        }}
+      >
+        ENTER ROOM CODE MANUALLY
+      </Box>
+    </Box>
+  </Box>
+);
 
 // ─── Login Screen (Step 2: Login with existing account or register) ──────────
 const LoginScreen: React.FC<{
@@ -794,6 +897,12 @@ const UltimateShowdown: React.FC = () => {
   const [joinError, setJoinError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  // QR-first flow: default view shows a station QR bound to the current room
+  const [manualMode, setManualMode] = useState(false);
+  const [stationCode, setStationCode] = useState('');
+  const [qrError, setQrError] = useState('');
+  const [searchingRoom, setSearchingRoom] = useState(false);
+  const [qrNonce, setQrNonce] = useState(0);
 
   const user = getStoredUser();
 
@@ -827,8 +936,12 @@ const UltimateShowdown: React.FC = () => {
 
   // Determine current view
   const getView = useCallback((): string => {
+    if (!user?.id) {
+      // 默认：扫码登录（二维码绑定当前房间）；手动模式才走旧的输码/昵称流程
+      if (manualMode) return roomCode ? 'login' : 'join';
+      return 'qr';
+    }
     if (!roomCode) return 'join';
-    if (!user?.id) return 'login';
     switch (state.phase) {
       case 'idle':
       case 'waiting':
@@ -846,7 +959,7 @@ const UltimateShowdown: React.FC = () => {
       default:
         return 'waiting';
     }
-  }, [roomCode, user, state.phase]);
+  }, [roomCode, user, state.phase, manualMode]);
 
   const view = getView();
 
@@ -939,6 +1052,103 @@ const UltimateShowdown: React.FC = () => {
     }
   }, [searchParams, user, roomCode, handleJoinRoom]);
 
+  // ── Room discovery: find the current active room while not yet logged in ──
+  useEffect(() => {
+    if (manualMode || user?.id) return;
+
+    const codeParam = searchParams.get('code');
+    if (codeParam) {
+      // URL 指定房间（admin 大屏二维码/固定链接）
+      if (roomCode !== codeParam) setRoomCode(codeParam);
+      return;
+    }
+
+    let cancelled = false;
+    const findRoom = async () => {
+      setSearchingRoom(true);
+      try {
+        const res = await apiFetch('/rooms/');
+        const contentType = res.headers.get('content-type') || '';
+        if (!res.ok || !contentType.includes('application/json')) return;
+        const rooms = (await res.json()) as Array<{ room_code: string; status: string }>;
+        // /rooms/ 按 created_at desc 返回 → 取最新的活跃房间
+        const active = rooms.find(
+          (r) => r.status === 'waiting' || r.status === 'playing' || r.status === 'paused',
+        );
+        if (!cancelled && active && active.room_code !== roomCode) {
+          setRoomCode(active.room_code);
+        }
+      } catch {
+        /* keep waiting for the host */
+      } finally {
+        if (!cancelled) setSearchingRoom(false);
+      }
+    };
+
+    void findRoom();
+    const timer = window.setInterval(findRoom, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [manualMode, user?.id, roomCode, searchParams]);
+
+  // ── QR pairing: show a station QR for the current room, auto-join on scan ──
+  useEffect(() => {
+    if (manualMode || !roomCode || user?.id) return;
+
+    let cancelled = false;
+    let interval: number | undefined;
+    setStationCode('');
+    setQrError('');
+
+    (async () => {
+      try {
+        const res = await apiFetch('/qr-login/session', { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to start QR login');
+        const data = await res.json();
+        if (cancelled) return;
+        const code = data.station_code as string;
+        setStationCode(code);
+
+        interval = window.setInterval(async () => {
+          try {
+            const statusRes = await apiFetch(`/qr-login/status/${code}`);
+            const contentType = statusRes.headers.get('content-type') || '';
+            if (!statusRes.ok || !contentType.includes('application/json')) return;
+            const statusData = await statusRes.json();
+            if (statusData.ok && statusData.user) {
+              if (interval) window.clearInterval(interval);
+              const u = statusData.user as Record<string, unknown>;
+              const uid = (u.id ?? u.user_id) as number;
+              const fname = (u.firstname ?? u.first_name) as string;
+              const region = (u.region ?? u.country) as string | undefined;
+              setStoredUser({
+                id: uid,
+                firstname: fname,
+                lastname: (u.lastname ?? u.last_name) as string | undefined,
+                nickname: u.nickname as string | undefined,
+                countryCode: region && region.length === 2 ? region.toUpperCase() : undefined,
+              });
+              // 扫码成功 → 直接进入当前房间，等待游戏开始
+              await handleJoinRoom(roomCode, uid, fname);
+            }
+          } catch {
+            /* transient network error — keep polling */
+          }
+        }, 2000);
+      } catch (e) {
+        if (!cancelled) setQrError(e instanceof Error ? e.message : String(e));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (interval) window.clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualMode, roomCode, user?.id, qrNonce]);
+
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <Box sx={pageBg}>
@@ -971,12 +1181,23 @@ const UltimateShowdown: React.FC = () => {
 
       {/* Content */}
       <Box sx={{ width: '100%', maxWidth: 900, display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        {view === 'qr' && (
+          <QrLoginScreen
+            roomCode={roomCode}
+            searchingRoom={searchingRoom}
+            stationCode={stationCode}
+            qrError={qrError}
+            onManual={() => setManualMode(true)}
+            onRefreshQR={() => setQrNonce((n) => n + 1)}
+          />
+        )}
         {view === 'join' && (
           <JoinScreen
             onJoin={handleEnterCode}
             loading={joinLoading}
             error={joinError}
             onHostLogin={() => navigate('/final/admin')}
+            onUseQr={() => setManualMode(false)}
           />
         )}
         {view === 'login' && (
