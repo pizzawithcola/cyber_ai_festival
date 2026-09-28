@@ -63,9 +63,9 @@ const FloatingIconsBackground: React.FC = () => (
   </Box>
 );
 
-/** 分数展示：整数直出，小数留 1 位；无数据显示 — */
+/** 分数展示：0 或缺失表示还没参加过，显示 -；整数直出，小数留 1 位。 */
 const formatScore = (value: number | null | undefined): string => {
-  if (value === undefined || value === null) return '—';
+  if (value === undefined || value === null || value === 0) return '-';
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 };
 
@@ -447,7 +447,7 @@ const MePage: React.FC = () => {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: `${ARCADE_COLORS.white}45`,
+                    color: ARCADE_COLORS.white,
                     fontFamily: '"Courier New", monospace',
                     fontSize: '0.75rem',
                     letterSpacing: '0.15em',
