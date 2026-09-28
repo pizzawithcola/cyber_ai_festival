@@ -1105,12 +1105,35 @@ const UltimateShowdown: React.FC = () => {
         const code = data.station_code as string;
         setStationCode(code);
 
+        let invalidHits = 0;
+        let lastRebuild = 0;
+        // A station code lives only in the server's memory, so a backend deploy
+        // silently invalidates the QR this screen is showing. When the server
+        // says the code is unknown (or keeps failing), re-issue a fresh one.
+        const rebuildQr = () => {
+          const now = Date.now();
+          if (now - lastRebuild < 30000) return; // at most once per 30s
+          lastRebuild = now;
+          if (interval) window.clearInterval(interval);
+          setQrNonce((n) => n + 1);
+        };
+
         interval = window.setInterval(async () => {
           try {
             const statusRes = await apiFetch(`/qr-login/status/${code}`);
             const contentType = statusRes.headers.get('content-type') || '';
-            if (!statusRes.ok || !contentType.includes('application/json')) return;
+            if (!statusRes.ok || !contentType.includes('application/json')) {
+              invalidHits += 1;
+              if (invalidHits >= 3) rebuildQr();
+              return;
+            }
+            invalidHits = 0;
             const statusData = await statusRes.json();
+            if (statusData.valid === false) {
+              // Code expired (e.g. the backend restarted): show a new QR.
+              rebuildQr();
+              return;
+            }
             if (statusData.ok && statusData.user) {
               if (interval) window.clearInterval(interval);
               const u = statusData.user as Record<string, unknown>;

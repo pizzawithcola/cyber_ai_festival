@@ -139,11 +139,19 @@ const MePage: React.FC = () => {
     const identity = getPersistentUser();
     if (!identity?.nickname) return;
 
-    const stationCode = (decodedText || '').trim().toUpperCase();
-    if (!stationCode) {
-      setSnack({ open: true, message: 'Scanned an empty code — try again.', severity: 'warning' });
+    const raw = (decodedText || '').trim();
+    // A game station shows a bare 6-character code. Anything else (typically the
+    // lobby's room-join URL) belongs to a different flow and cannot be paired —
+    // say so instead of failing with a generic error.
+    if (!/^[A-Za-z0-9]{6}$/.test(raw)) {
+      setSnack({
+        open: true,
+        message: 'That QR is not a game-station code. Scan the code shown on the station screen.',
+        severity: 'warning',
+      });
       return;
     }
+    const stationCode = raw.toUpperCase();
 
     try {
       const res = await apiFetch('/qr-login/pair', {

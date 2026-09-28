@@ -317,6 +317,9 @@ const LoginPage: React.FC = () => {
   // --- QR login mode: render a station QR code and poll for a phone pairing ---
   const [qrMode, setQrMode] = useState(true);
   const [stationCode, setStationCode] = useState('');
+  // Bumped to re-issue the station QR when the server forgets our code
+  // (station codes live in backend memory, so a deploy wipes them).
+  const [stationNonce, setStationNonce] = useState(0);
 
   useEffect(() => {
     if (!qrMode) {
@@ -326,14 +329,33 @@ const LoginPage: React.FC = () => {
     let cancelled = false;
     let interval: number | undefined;
     let code = '';
+    let invalidHits = 0;
+    let lastRebuild = 0;
+
+    const rebuildQr = () => {
+      const now = Date.now();
+      if (now - lastRebuild < 30000) return; // at most once per 30s
+      lastRebuild = now;
+      if (interval) window.clearInterval(interval);
+      setStationNonce((n) => n + 1);
+    };
 
     const poll = async () => {
       if (!code) return;
       try {
         const res = await apiFetch(`/qr-login/status/${code}`);
         const contentType = res.headers.get('content-type') || '';
-        if (!res.ok || !contentType.includes('application/json')) return;
+        if (!res.ok || !contentType.includes('application/json')) {
+          invalidHits += 1;
+          if (invalidHits >= 3) rebuildQr();
+          return;
+        }
+        invalidHits = 0;
         const data = await res.json();
+        if (data.valid === false) {
+          rebuildQr();
+          return;
+        }
         if (data.ok && data.user) {
           if (interval) window.clearInterval(interval);
           finalizeLogin(data.user);
@@ -364,7 +386,7 @@ const LoginPage: React.FC = () => {
       if (interval) window.clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrMode, gameRoute]);
+  }, [qrMode, gameRoute, stationNonce]);
 
   const handleRegisterClick = () => {
     setDisclaimerOpen(true);
