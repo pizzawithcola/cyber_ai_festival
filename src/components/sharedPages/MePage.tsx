@@ -140,9 +140,14 @@ const MePage: React.FC = () => {
     if (!identity?.nickname) return;
 
     const raw = (decodedText || '').trim();
-    // A game station shows a bare 6-character code. Anything else (typically the
-    // lobby's room-join URL) belongs to a different flow and cannot be paired —
-    // say so instead of failing with a generic error.
+    // The admin screen's QR is a room-join link: open it here and the game signs
+    // this player in from their persistent identity, dropping them in the room.
+    if (/^https?:\/\//i.test(raw)) {
+      window.location.href = raw;
+      return;
+    }
+    // A game station shows a bare 6-character code. Anything else belongs to a
+    // different flow and cannot be paired — say so instead of a generic error.
     if (!/^[A-Za-z0-9]{6}$/.test(raw)) {
       setSnack({
         open: true,

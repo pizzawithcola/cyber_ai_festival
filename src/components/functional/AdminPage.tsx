@@ -590,8 +590,25 @@ const AdminPage: React.FC = () => {
   };
 
   // ─── Room Actions ───────────────────────────────────────────────────────
-  const handleRoomAction = async (code: string, action: 'pause' | 'resume' | 'end') => {
+  // Permanently remove a room (players and answers inside it go with it). Used
+  // to clear the stage before an event; the backend cascades those rows.
+  const handleDeleteRoom = async (code: string) => {
+    if (!window.confirm(`Delete room ${code}? Its players and answers are removed too.`)) return;
     try {
+      const res = await apiFetch(`/rooms/${code}`, { method: 'DELETE' });
+      // CloudFront rewrites API 4xx/404 to index.html + 200, so a non-JSON body
+      // must be treated as a failure instead of a false success.
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) throw new Error(`HTTP ${res.status}`);
+      setSnackbar({ open: true, message: `Room ${code} deleted`, severity: 'success' });
+      const roomsRes = await apiFetch('/rooms/');
+      if (roomsRes.ok) setRooms(await roomsRes.json());
+    } catch {
+      setSnackbar({ open: true, message: `Room ${code}: delete failed`, severity: 'error' });
+    }
+  };
+
+  const handleRoomAction = async (code: string, action: 'pause' | 'resume' | 'end') => {    try {
       const res = await apiFetch(`/rooms/${code}/${action}`, { method: 'POST' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSnackbar({ open: true, message: `Room ${code}: ${action} successful`, severity: 'success' });
@@ -1108,6 +1125,11 @@ const AdminPage: React.FC = () => {
                               </Box>
                             </SFButton>
                           )}
+                          {/* Available in every state so old (finished) rooms
+                              can be cleared from the list. */}
+                          <SFButton color={SF.red} variant="filled" onClick={() => handleDeleteRoom(room.room_code)}>
+                            DELETE
+                          </SFButton>
                         </Box>
                       </TableCell>
                     </TableRow>
