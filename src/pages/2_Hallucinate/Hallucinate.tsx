@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import GameExitButton from '../../components/common/GameExitButton';
 import {
   Typography,
   Box,
@@ -639,6 +640,7 @@ const Hallucinate: React.FC = () => {
           pt: 0.5,
         }}
       >
+          <GameExitButton game="hallucinate" />
           <Container maxWidth="xl" sx={{ pt: 2, pb: 3 }}>
             <Stack spacing={2} sx={{ width: '100%', alignItems: 'center' }}>
               {showChallengeGame ? (

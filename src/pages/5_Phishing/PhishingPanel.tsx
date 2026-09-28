@@ -8,6 +8,7 @@ import PhishingMailSpace from './PhishingMailSpace';
 import { targets, missions } from './phishingData';
 import { ARCADE_COLORS } from '../../theme/theme';
 import { useClickSound } from '../../hooks/useClickSound';
+import GameExitButton from '../../components/common/GameExitButton';
 
 
 const PhishingPanel: React.FC = () => {
@@ -25,6 +26,7 @@ const PhishingPanel: React.FC = () => {
   return (
     <MatrixRainBackground>
       <Box className='phishing-panel' sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
+        <GameExitButton game="phishing" />
         <Header
           title='MISSION V: PHISHING ATTACK'
           firstname={user?.firstname}

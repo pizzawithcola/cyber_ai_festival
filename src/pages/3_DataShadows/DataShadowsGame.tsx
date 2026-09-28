@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import RealApplePhone from './components/RealApplePhone'
 import { useClickSound } from '../../hooks/useClickSound'
+import GameExitButton from '../../components/common/GameExitButton'
 import './DataShadows.css'
 
 const PHONE_BASE_WIDTH = 390
@@ -56,6 +57,7 @@ function DataShadowsGameContent() {
 
   return (
     <div className="data-shadows-diagram-shell">
+      <GameExitButton game="datashadows" />
       <div className="data-shadows-diagram-canvas">
         <div
           className={[

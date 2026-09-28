@@ -7,6 +7,7 @@ import { useRetailDemolition } from './hooks/useRetailDemolition';
 import ArcadeBackground from './components/ui/ArcadeBackground';
 import { saveRetailResult } from './retailSession';
 import { useClickSound } from '../../hooks/useClickSound';
+import GameExitButton from '../../components/common/GameExitButton';
 
 /** 整体布局常量：顶部提示框 + 间距(1% 视口高) + 手机视为一个整体，整体占屏高 94% 且横纵居中 */
 const PHONE_W = 375;
@@ -89,6 +90,7 @@ const RetailDemolitionGame = () => {
   return (
     <div className="relative flex h-screen w-full text-slate-300 font-sans overflow-hidden px-2">
       <ArcadeBackground />
+      <GameExitButton game="retaildemolition" />
 
       {/* 整体（提示 + 间距 1%vh + 手机）：提示与手机同 scale 缩放，间距恒定 = 视口高 1%；
           整体视觉高 = 94% 视口高，以整体几何中心钉在视口正中 → 横纵居中 */}
