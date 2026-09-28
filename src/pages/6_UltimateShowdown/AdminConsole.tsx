@@ -50,9 +50,9 @@ const ADMIN_ROOM_KEY = 'ultimate_admin_room_code';
 
 // ─── BGM 曲目映射（仅 Admin 端播放）──────────────────────────────────────
 const BGM_SOURCES: Record<string, string> = {
-  lobby: '/audio/final_wait_room.mp3', // 等待室
-  game: '/audio/final_bgm.mp3',        // 游戏中
-  podium: '/audio/final_podium.ogg',   // 游戏后排行榜
+  lobby: '/audio/final_wait_room.mp3', // Waiting room (before the game starts)
+  game: '/audio/final_bgm.mp3',        // Game: countdown + answering + score reveal + per-question board
+  podium: '/audio/final_podium.ogg',   // Final overall results only
 };
 
 // ─── Idle View ────────────────────────────────────────────────────────────────
@@ -452,17 +452,23 @@ const AdminConsole: React.FC = () => {
     };
   }, []);
 
-  // 根据游戏阶段决定应播放的曲目
+  // Three stages only:
+  //   1. waiting room  -> idle / waiting
+  //   2. game          -> countdown, question, per-question score reveal (result)
+  //                       AND the per-question leaderboard, which is still part
+  //                       of the game loop (broadcast after every single question)
+  //   3. final results -> finished (the overall standings at the very end)
   const activeBgmKey = (() => {
     if (!roomCode) return null;
     switch (state.phase) {
+      case 'idle':
       case 'waiting':
         return 'lobby';
       case 'countdown':
       case 'question':
       case 'result':
-        return 'game';
       case 'leaderboard':
+        return 'game';
       case 'finished':
         return 'podium';
       default:
