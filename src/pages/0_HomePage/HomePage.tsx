@@ -470,10 +470,10 @@ const HomePage: React.FC<HomePageProps> = () => {
               backgroundColor: '#0a0a15',
               transition: 'all 0.3s ease',
               '&:hover': {
-                borderColor: `${ARCADE_COLORS.magenta}80`,
-                backgroundColor: `${ARCADE_COLORS.magenta}08`,
-                boxShadow: `0 0 8px ${ARCADE_COLORS.magenta}20`,
-                '& .nav-label': { color: ARCADE_COLORS.magenta },
+                borderColor: `${ARCADE_COLORS.white}80`,
+                backgroundColor: `${ARCADE_COLORS.white}08`,
+                boxShadow: `0 0 8px ${ARCADE_COLORS.white}20`,
+                '& .nav-label': { color: ARCADE_COLORS.white },
               },
             }}
           >
@@ -515,19 +515,19 @@ const HomePage: React.FC<HomePageProps> = () => {
               // where there is no hover state to discover it with.
               animation: `${neonPulse} 3s ease-in-out infinite`,
               '&:hover': {
-                borderColor: ARCADE_COLORS.lime,
-                backgroundColor: `${ARCADE_COLORS.lime}10`,
-                boxShadow: `0 0 12px ${ARCADE_COLORS.lime}50, inset 0 0 12px ${ARCADE_COLORS.lime}15`,
+                borderColor: ARCADE_COLORS.white,
+                backgroundColor: `${ARCADE_COLORS.white}10`,
+                boxShadow: `0 0 12px ${ARCADE_COLORS.white}50, inset 0 0 12px ${ARCADE_COLORS.white}15`,
                 animation: 'none',
-                '& .coin-label': { color: ARCADE_COLORS.lime },
+                '& .coin-label': { color: ARCADE_COLORS.white },
                 '& .qr-icon': {
                   transform: 'scale(1.15)',
-                  filter: `drop-shadow(0 0 6px ${ARCADE_COLORS.lime})`,
+                  filter: `drop-shadow(0 0 6px ${ARCADE_COLORS.white})`,
                 },
                 '& .coin-slot': {
-                  backgroundColor: `${ARCADE_COLORS.lime}30`,
-                  borderColor: ARCADE_COLORS.lime,
-                  boxShadow: `0 0 8px ${ARCADE_COLORS.lime}80`,
+                  backgroundColor: `${ARCADE_COLORS.white}30`,
+                  borderColor: ARCADE_COLORS.white,
+                  boxShadow: `0 0 8px ${ARCADE_COLORS.white}80`,
                 },
               },
             }}
@@ -586,10 +586,10 @@ const HomePage: React.FC<HomePageProps> = () => {
               backgroundColor: '#0a0a15',
               transition: 'all 0.3s ease',
               '&:hover': {
-                borderColor: `${ARCADE_COLORS.yellow}80`,
-                backgroundColor: `${ARCADE_COLORS.yellow}08`,
-                boxShadow: `0 0 8px ${ARCADE_COLORS.yellow}20`,
-                '& .nav-label': { color: ARCADE_COLORS.yellow },
+                borderColor: `${ARCADE_COLORS.white}80`,
+                backgroundColor: `${ARCADE_COLORS.white}08`,
+                boxShadow: `0 0 8px ${ARCADE_COLORS.white}20`,
+                '& .nav-label': { color: ARCADE_COLORS.white },
               },
             }}
           >
