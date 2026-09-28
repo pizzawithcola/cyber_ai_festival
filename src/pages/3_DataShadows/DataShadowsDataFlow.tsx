@@ -7,6 +7,8 @@ import {
   type DataShadowsChoices,
 } from './dataShadowsSession'
 import { useClickSound } from '../../hooks/useClickSound'
+import { getStoredUser } from '../../utils/userStorage'
+import { useScoreSubmitAndGo } from '../../hooks/useScoreSubmitAndGo'
 import './DataShadows.css'
 
 /**
@@ -16,6 +18,7 @@ import './DataShadows.css'
  */
 function DataFlowContent() {
   const navigate = useNavigate()
+  const { submitAndGo, isSubmitting, error: submitError } = useScoreSubmitAndGo()
   // 全部按钮点击播放咔嚓按键音
   useClickSound()
 
@@ -47,6 +50,15 @@ function DataFlowContent() {
     const surveyScore = typeof choices.surveyScore === 'number' ? choices.surveyScore : 0
     return Math.max(0, Math.min(100, termsReadingScore + educationCardsScore + privacyOptionsScore + detailExpansionScore + surveyScore))
   }, [choices])
+
+  // View Ranking：确保分数已成功上传，成功后才跳排行榜；失败则停留报错、可重试
+  const handleViewRanking = () => {
+    const userId = getStoredUser()?.id
+    const sessionHigh = userId
+      ? Number(sessionStorage.getItem(`datashadows_session_highscore_${userId}`) || 0)
+      : 0
+    void submitAndGo({ userId, game: 'datashadows', score: Math.max(privacyScore, sessionHigh) })
+  }
 
   // 构造数据流图参数
   const termsConsent: TermsConsent = useMemo(
@@ -185,10 +197,26 @@ function DataFlowContent() {
           <button
             type="button"
             className="data-flow-leaderboard-button"
-            onClick={() => navigate('/ranking/game/datashadows')}
+            onClick={handleViewRanking}
+            disabled={isSubmitting}
           >
-            View Ranking
+            {isSubmitting ? 'Submitting…' : 'View Ranking'}
           </button>
+          {submitError && (
+            <span
+              style={{
+                display: 'block',
+                marginTop: 8,
+                color: '#ff5f7a',
+                fontSize: 12,
+                fontWeight: 700,
+                maxWidth: 360,
+                textAlign: 'right',
+              }}
+            >
+              ⚠ {submitError}
+            </span>
+          )}
         </div>
       </div>
 

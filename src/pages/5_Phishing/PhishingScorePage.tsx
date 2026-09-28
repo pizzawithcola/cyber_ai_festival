@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
-import { submitGameScoreMax } from '../../services/scoreSubmission';
-import { Box } from '@mui/material';
+import { useScoreSubmitAndGo } from '../../hooks/useScoreSubmitAndGo';
+import { Box, Typography } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import Header from '../../components/common/Header';
 import { ArcadeButton, ArcadeTypography } from '../../components/ui';
@@ -22,7 +22,7 @@ const PhishingScorePage: React.FC = () => {
     const storedAttempts = sessionStorage.getItem('phishing_attempt_count');
     return stateAttempts > 0 ? stateAttempts : parseInt(storedAttempts || '0', 10);
   })();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { submitAndGo, isSubmitting, error: submitError } = useScoreSubmitAndGo();
   
     // Check if this is a benchmark attempt (score won't be recorded)
     const isBenchmark = sessionStorage.getItem('phishing_is_benchmark') === 'true';
@@ -79,60 +79,26 @@ const PhishingScorePage: React.FC = () => {
   const total_score = report.total;
   const itemDataMissing = report.dimensions.every((d) => d.verdicts.every((v) => v.score === undefined));
 
-  const handleSubmitScoreAndNavigate = async () => {
-    // Check if this is a benchmark attempt — skip score submission
-    const isBenchmark = sessionStorage.getItem('phishing_is_benchmark') === 'true';
-    if (isBenchmark) {
+  const handleSubmitScoreAndNavigate = () => {
+    // benchmark（不计分的练习模式）—— 当前流程已无入口
+    const isBenchmarkAttempt = sessionStorage.getItem('phishing_is_benchmark') === 'true';
+    if (isBenchmarkAttempt) {
       sessionStorage.removeItem('phishing_is_benchmark');
       navigate('/ranking/game/phishing');
       return;
     }
 
-    if (!userId) {
-      console.error('No user_id provided');
-      navigate('/ranking/game/phishing');
-      return;
-    }
-
-    // Current score from this attempt
     const currentScore = total_score;
-    
-    console.log('[PhishingScorePage] Submitting score...', {
-      userId,
-      currentScore,
-      sessionHighScore,
-    });
+    const thisSessionHigh = Math.max(currentScore, sessionHighScore);
 
-    setIsSubmitting(true);
-    try {
-      // Calculate the highest score from this session (current vs session high)
-      const thisSessionHigh = Math.max(currentScore, sessionHighScore);
-
-      // Update session high score if current is higher
-      console.log('[PhishingScorePage] Before update:', { currentScore, sessionHighScore, willUpdate: currentScore > sessionHighScore });
-      if (currentScore > sessionHighScore) {
-        sessionStorage.setItem(`phishing_session_highscore_${userId}`, currentScore.toString());
-        sessionStorage.setItem('phishing_attempt_count', attemptCount.toString());
-        console.log('[PhishingScorePage] Updated sessionStorage to:', currentScore);
-      }
-
-      // Submit the highest score from this session via the shared max-submission helper
-      const submitResult = await submitGameScoreMax({
-        userId,
-        game: 'phishing',
-        currentScore: thisSessionHigh,
-      });
-      console.log('[PhishingScorePage] Submitting score:', thisSessionHigh);
-
-      if (!submitResult.ok) {
-        console.error('[PhishingScorePage] Score submission failed:', submitResult.responseStatus);
-      }
-    } catch (err) {
-      console.error('Error submitting score:', err);
-    } finally {
-      setIsSubmitting(false);
-      navigate('/ranking/game/phishing');
+    // 记录本局最高分（展示 + 兼容）
+    if (userId && currentScore > sessionHighScore) {
+      sessionStorage.setItem(`phishing_session_highscore_${userId}`, currentScore.toString());
+      sessionStorage.setItem('phishing_attempt_count', attemptCount.toString());
     }
+
+    // 提交成功后才跳排行榜；失败则停留报错、可重试
+    void submitAndGo({ userId, game: 'phishing', score: thisSessionHigh });
   };
 
   return (
@@ -173,7 +139,7 @@ const PhishingScorePage: React.FC = () => {
               />
             </Box>
           {/* Buttons section */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 'auto', pt: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, mt: 'auto', pt: 2 }}>
             <ArcadeButton
               color="lime"
               onClick={handleSubmitScoreAndNavigate}
@@ -182,6 +148,11 @@ const PhishingScorePage: React.FC = () => {
             >
               {isSubmitting ? 'Submitting...' : 'View Ranking'} <ArrowForward sx={{ ml: 1 }} />
             </ArcadeButton>
+            {submitError && (
+              <Typography sx={{ color: ARCADE_COLORS.red, fontFamily: '"Electrolize", sans-serif', fontSize: '0.85rem', textAlign: 'center', maxWidth: 700 }}>
+                ⚠ {submitError}
+              </Typography>
+            )}
           </Box>
         </Box>
       </Box>

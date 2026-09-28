@@ -13,8 +13,8 @@ import { SCENARIOS } from './scenarios';
 import { InteractiveScenarioChat } from './components/InteractiveScenarioChat';
 import { TrainingArena } from './components/TrainingArena';
 import { ARCADE_FONT, READABLE_FONT, TITLE_FONT } from './hallucinateUi';
-import { clearStoredUser, getStoredUser } from '../../utils/userStorage';
-import { submitGameScoreMax } from '../../services/scoreSubmission';
+import { getStoredUser } from '../../utils/userStorage';
+import { useScoreSubmitAndGo } from '../../hooks/useScoreSubmitAndGo';
 import { ArcadeButton } from '../../components/ui';
 import { useClickSound } from '../../hooks/useClickSound';
 
@@ -51,6 +51,7 @@ const wrapTerminalText = (text = '', maxChars = 44) => {
 const Hallucinate: React.FC = () => {
   useClickSound();
   const navigate = useNavigate();
+  const { submitAndGo, error: rankingError } = useScoreSubmitAndGo();
   const [showAnimatedIntro, setShowAnimatedIntro] = useState(true);
   const [currentIntroTextIndex, setCurrentIntroTextIndex] = useState(0);
   const [isIntroFadingOut, setIsIntroFadingOut] = useState(false);
@@ -426,33 +427,12 @@ const Hallucinate: React.FC = () => {
   }, [showScenarioChat]);
 
   const handleViewRanking = async (finalScore: number) => {
-    const storedUser = getStoredUser();
-    const userId = storedUser?.id;
-
-    if (!userId) {
-      navigate('/login/hallucinate', { replace: true });
-      return;
-    }
-
-    try {
-      const submitResult = await submitGameScoreMax({
-        userId,
-        game: 'hallucinate',
-        currentScore: finalScore,
-      });
-      if (!submitResult.ok) {
-        console.error('[Hallucinate] Failed to submit score:', submitResult.responseStatus);
-      }
-    } catch (err) {
-      console.error('[Hallucinate] Error submitting score:', err);
-    } finally {
-      navigate('/ranking/game/hallucinate');
-    }
-  };
-
-  const handleStartNextPlayer = () => {
-    clearStoredUser();
-    navigate('/login/hallucinate', { replace: true });
+    // 提交成功后才跳排行榜；失败则停留并由 ChapterComplete 报错 + 可重试
+    await submitAndGo({
+      userId: getStoredUser()?.id,
+      game: 'hallucinate',
+      score: finalScore,
+    });
   };
 
   const handlePrevIntro = () => {
@@ -646,7 +626,7 @@ const Hallucinate: React.FC = () => {
               {showChallengeGame ? (
                 <TrainingArena
                   onViewRanking={handleViewRanking}
-                  onExitToScenarios={handleStartNextPlayer}
+                  rankingError={rankingError}
                 />
               ) : !showScenarioChat && (
                 <Box

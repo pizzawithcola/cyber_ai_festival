@@ -138,11 +138,11 @@ const getScoreDelta = (isCorrect: boolean, confidenceValue: number) => {
 export function TrainingArena({
   autoStart = false,
   onViewRanking,
-  onExitToScenarios,
+  rankingError,
 }: {
   autoStart?: boolean;
   onViewRanking?: (score: number) => Promise<void> | void;
-  onExitToScenarios?: () => void;
+  rankingError?: string | null;
 }) {
   const [isRunning, setIsRunning] = useState(false);
   const [showIntro, setShowIntro] = useState(!autoStart);
@@ -624,10 +624,9 @@ export function TrainingArena({
   if (showResults && resultPage === 'complete') {
     return (
       <ChapterComplete
-        onReviewResults={() => setResultPage('summary')}
         onViewRanking={onViewRanking ? handleViewRanking : undefined}
         isNavigatingToRanking={isNavigatingToRanking}
-        onStartFromBeginning={onExitToScenarios}
+        rankingError={rankingError}
       />
     );
   }

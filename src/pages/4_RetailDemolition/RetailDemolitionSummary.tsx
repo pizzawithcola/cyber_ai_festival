@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStoredUser } from '../../utils/userStorage';
-import { submitGameScoreMax } from '../../services/scoreSubmission';
+import { useScoreSubmitAndGo } from '../../hooks/useScoreSubmitAndGo';
 import GameSummary from './components/GameSummary';
 import ArcadeBackground from './components/ui/ArcadeBackground';
 import { loadRetailResult } from './retailSession';
@@ -16,8 +16,7 @@ const RetailDemolitionSummary = () => {
   // 本页所有按钮播放咔嚓按键音
   useClickSound();
   const [hasVerifiedSession, setHasVerifiedSession] = useState(false);
-  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { submitAndGo, isSubmitting, error: submitError } = useScoreSubmitAndGo();
 
   const resultRef = useRef(loadRetailResult());
   const result = resultRef.current;
@@ -38,32 +37,14 @@ const RetailDemolitionSummary = () => {
     }
   }, [result, navigate]);
 
-  const handleSubmitScore = async (): Promise<void> => {
-    if (isSubmittingScore || !result) return;
-    const storedUser = getStoredUser();
-    const userId = storedUser?.id;
-    if (!userId) {
-      navigate('/login/retaildemolition', { replace: true });
-      return;
-    }
-    setSubmitError(null);
-    setIsSubmittingScore(true);
-    try {
-      const submitResult = await submitGameScoreMax({
-        userId,
-        game: 'retaildemolition',
-        currentScore: result.score,
-      });
-      if (!submitResult.ok) {
-        setSubmitError('Failed to sync score. Redirecting to leaderboard.');
-      }
-    } catch (error) {
-      console.error('[RetailDemolition] Error submitting score:', error);
-      setSubmitError('Network error. Redirecting to leaderboard.');
-    } finally {
-      setIsSubmittingScore(false);
-      navigate('/ranking/game/retaildemolition');
-    }
+  const handleSubmitScore = (): void => {
+    if (isSubmitting || !result) return;
+    // 提交成功后才跳排行榜；失败则停留报错、可重试
+    void submitAndGo({
+      userId: getStoredUser()?.id,
+      game: 'retaildemolition',
+      score: result.score,
+    });
   };
 
   if (!hasVerifiedSession || !result) return null;
@@ -83,15 +64,15 @@ const RetailDemolitionSummary = () => {
           {/* 操作按钮 */}
           <div className="flex flex-col gap-3 shrink-0">
             <button
-              onClick={() => void handleSubmitScore()}
-              disabled={isSubmittingScore}
+              onClick={handleSubmitScore}
+              disabled={isSubmitting}
               className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors disabled:opacity-60"
             >
-              {isSubmittingScore ? 'Submitting...' : 'View Ranking'}
+              {isSubmitting ? 'Submitting...' : 'View Ranking'}
             </button>
             {submitError && (
-              <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                {submitError}
+              <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+                ⚠ {submitError}
               </div>
             )}
           </div>

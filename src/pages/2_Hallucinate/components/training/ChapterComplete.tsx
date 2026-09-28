@@ -2,15 +2,18 @@ import { Typography, Box, Stack } from '@mui/material';
 import { Celebration as CelebrationIcon } from '@mui/icons-material';
 
 import { ArcadeButton } from '../../../../components/ui';
+import { ARCADE_COLORS } from '../../../../theme/theme';
 import { NEON_CYAN, READABLE_FONT, TITLE_FONT, arcadeKickerSx, arcadeScreenSx } from '../../hallucinateUi';
 
 export function ChapterComplete({
   onViewRanking,
   isNavigatingToRanking = false,
+  rankingError,
 }: {
   onReviewResults?: () => void;
   onViewRanking?: () => void;
   isNavigatingToRanking?: boolean;
+  rankingError?: string | null;
   onStartFromBeginning?: () => void;
 }) {
   const animationCss = `
@@ -133,6 +136,22 @@ export function ChapterComplete({
               {isNavigatingToRanking ? 'Loading Ranking...' : 'View Ranking'}
             </ArcadeButton>
           </Stack>
+          {rankingError && (
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 2,
+                color: ARCADE_COLORS.red,
+                fontFamily: READABLE_FONT,
+                fontSize: { xs: '0.9rem', sm: '1rem' },
+                textAlign: 'center',
+                maxWidth: 700,
+                mx: 'auto',
+              }}
+            >
+              ⚠ {rankingError}
+            </Typography>
+          )}
         </Box>
       </Stack>
     </Box>
