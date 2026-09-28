@@ -406,6 +406,9 @@ const AdminConsole: React.FC = () => {
   const [roomCode, setRoomCode] = useState<string>('');
   const [creating, setCreating] = useState(false);
   const [snack, setSnack] = useState<SnackState>({ open: false, message: '', severity: 'success' });
+  // Two-step guard for the destructive "delete this room" action
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Auth check：无 token 跳回登录页，并携带 redirect 让登录后自动回到控制台
   useEffect(() => {
@@ -540,6 +543,42 @@ const AdminConsole: React.FC = () => {
     sessionStorage.removeItem(ADMIN_ROOM_KEY);
   };
 
+  // Delete the current room (and everyone/answers inside it). Two-step: the
+  // first tap arms the button, a second tap within 4s actually deletes.
+  const handleDeleteRoom = async () => {
+    if (!roomCode || deleting) return;
+    if (!deleteArmed) {
+      setDeleteArmed(true);
+      window.setTimeout(() => setDeleteArmed(false), 4000);
+      return;
+    }
+    setDeleting(true);
+    const code = roomCode;
+    try {
+      const res = await apiFetch(`/rooms/${code}`, { method: 'DELETE' });
+      // CloudFront rewrites unknown API paths to index.html with a 200, so a
+      // non-JSON body has to be treated as a failure, not a successful delete.
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error(`Delete failed (HTTP ${res.status})`);
+      }
+      disconnect();
+      sessionStorage.removeItem(ADMIN_ROOM_KEY);
+      setRoomCode('');
+      setDeleteArmed(false);
+      setSnack({ open: true, message: `Room ${code} deleted`, severity: 'success' });
+      navigate('/admin');
+    } catch (e) {
+      setSnack({
+        open: true,
+        message: e instanceof Error ? e.message : 'Failed to delete room',
+        severity: 'error',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // Determine view
   const getView = () => {
     if (!roomCode) return 'idle';
@@ -567,6 +606,28 @@ const AdminConsole: React.FC = () => {
           <Box onClick={() => { disconnect(); sessionStorage.removeItem(ADMIN_ROOM_KEY); navigate('/admin'); }} sx={{ ml: 'auto', cursor: 'pointer', fontFamily: '"Courier New", monospace', fontSize: '0.7rem', color: `${ARCADE_COLORS.white}40`, '&:hover': { color: ARCADE_COLORS.red }, transition: 'color 0.2s' }}>
             ← DASHBOARD
           </Box>
+          {roomCode && (
+            <Box
+              component="button"
+              onClick={handleDeleteRoom}
+              disabled={deleting}
+              sx={{
+                background: 'none',
+                border: 'none',
+                p: 0,
+                cursor: deleting ? 'wait' : 'pointer',
+                fontFamily: '"Courier New", monospace',
+                fontSize: '0.7rem',
+                letterSpacing: '0.1em',
+                color: deleteArmed ? ARCADE_COLORS.red : `${ARCADE_COLORS.red}60`,
+                opacity: deleting ? 0.6 : 1,
+                transition: 'color 0.2s',
+                '&:hover': { color: ARCADE_COLORS.red },
+              }}
+            >
+              {deleting ? 'DELETING…' : deleteArmed ? 'SURE? TAP AGAIN' : 'DELETE ROOM'}
+            </Box>
+          )}
           {roomCode && <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.65rem', color: `${ARCADE_COLORS.white}30` }}>Room: {roomCode}</Box>}
         </Box>
       </Box>

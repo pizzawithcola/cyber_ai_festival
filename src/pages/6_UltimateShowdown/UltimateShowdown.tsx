@@ -171,7 +171,7 @@ const QrLoginScreen: React.FC<{
           {roomCode}
         </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
           {stationCode ? (
             <QRCode value={stationCode} size={190} />
           ) : (
@@ -181,12 +181,6 @@ const QrLoginScreen: React.FC<{
               </Box>
             </Box>
           )}
-        </Box>
-
-        <Box sx={{ fontFamily: '"Courier New", monospace', fontSize: '0.72rem', color: `${ARCADE_COLORS.white}70`, lineHeight: 1.7, mb: 2 }}>
-          Open <Box component="span" sx={{ color: ARCADE_COLORS.cyan }}>/me</Box> on your phone and tap{' '}
-          <Box component="span" sx={{ color: ARCADE_COLORS.lime }}>SCAN TO LOG IN</Box>
-          <br />You&apos;ll join this room automatically.
         </Box>
       </>
     ) : (
