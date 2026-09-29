@@ -486,7 +486,7 @@ const MePage: React.FC = () => {
                 {!scanning && (
                   <ArcadeButton color="lime" variant="outline" size="md" onClick={() => navigate('/ranking')} sx={{ width: '100%', maxWidth: 320 }}>
                     <Trophy size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
-                    {userRank ? `RANKING #${userRank} (TOTAL)` : 'RANKING #– (TOTAL)'}
+                    {userRank ? `RANKING #${userRank}` : 'RANKING #–'}
                   </ArcadeButton>
                 )}
                 <Box
