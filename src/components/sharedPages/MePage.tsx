@@ -89,6 +89,8 @@ const MePage: React.FC = () => {
   const handledRef = useRef(false);
   const [queueBoardUrl, setQueueBoardUrl] = useState(QUEUE_BOARD_URL);
   const [scores, setScores] = useState<Record<string, number> | null>(null);
+  // Overall-rank position (1-based) on the TOTAL board; null until they score.
+  const [userRank, setUserRank] = useState<number | null>(null);
 
   const loadQueueBoardUrl = async () => {
     try {
@@ -124,11 +126,37 @@ const MePage: React.FC = () => {
     }
   };
 
+  // Where this player currently sits on the overall (total) board.
+  const loadRanking = async (userId: number) => {
+    try {
+      const res = await apiFetch('/rankings/total?limit=500');
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) return;
+      const data = await res.json();
+      const mine = (data?.rankings ?? []).find(
+        (e: { user_id: number }) => e.user_id === userId,
+      );
+      setUserRank(mine ? mine.rank : null);
+    } catch {
+      /* keep the previous rank */
+    }
+  };
+
   useEffect(() => {
     const stored = getPersistentUser();
     setUser(stored);
     void loadQueueBoardUrl();
-    if (stored?.id) void loadScores(stored.id);
+    if (!stored?.id) return;
+
+    // Scores and standing both move while the player waits between games, so the
+    // panel refreshes itself once a minute.
+    const refresh = () => {
+      void loadScores(stored.id);
+      void loadRanking(stored.id);
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60000);
+    return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -441,12 +469,6 @@ const MePage: React.FC = () => {
 
               <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
                 {!scanning && (
-                  <ArcadeButton color="cyan" variant="outline" size="md" onClick={() => navigate('/ranking')} sx={{ width: '100%', maxWidth: 320 }}>
-                    <Trophy size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
-                    MY RANKING
-                  </ArcadeButton>
-                )}
-                {!scanning && (
                   <ArcadeButton color="lime" size="md" glowing onClick={startScan} sx={{ width: '100%', maxWidth: 320 }}>
                     <QrCode size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
                     SCAN TO LOG IN
@@ -456,6 +478,12 @@ const MePage: React.FC = () => {
                   <ArcadeButton color="lime" variant="outline" size="md" onClick={openQueue} sx={{ width: '100%', maxWidth: 320 }}>
                     <Users size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
                     CHECK QUEUE
+                  </ArcadeButton>
+                )}
+                {!scanning && (
+                  <ArcadeButton color="lime" variant="outline" size="md" onClick={() => navigate('/ranking')} sx={{ width: '100%', maxWidth: 320 }}>
+                    <Trophy size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
+                    {userRank ? `RANKING #${userRank} (TOTAL)` : 'RANKING #– (TOTAL)'}
                   </ArcadeButton>
                 )}
                 <Box
