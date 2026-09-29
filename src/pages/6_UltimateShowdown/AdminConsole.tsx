@@ -558,6 +558,11 @@ const AdminConsole: React.FC = () => {
       case 'waiting':
         return 'lobby';
       case 'countdown':
+      // The reading window and the x2/x3 slot-machine teaser are part of the
+      // game loop, so the game track keeps playing straight through them: the
+      // music only changes once, when the final podium is shown.
+      case 'bonus':
+      case 'reading':
       case 'question':
       case 'result':
       case 'leaderboard':
