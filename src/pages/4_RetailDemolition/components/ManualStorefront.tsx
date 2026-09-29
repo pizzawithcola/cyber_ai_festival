@@ -37,6 +37,7 @@ const ManualStorefront: React.FC<ManualStorefrontProps> = ({ onSelectProduct }) 
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
+            autoComplete="off"
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

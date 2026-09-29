@@ -358,6 +358,7 @@ const RegistrationSurvey: React.FC = () => {
               </label>
               <input
                 type="text"
+                autoComplete="off"
                 placeholder="Enter your name"
                 value={data.name || ''}
                 onChange={(e) => setData({ ...data, name: e.target.value })}
@@ -1004,6 +1005,7 @@ const RegistrationSurvey: React.FC = () => {
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                       <input
                         type="text"
+                        autoComplete="off"
                         placeholder="Enter your home address"
                         value={data.homeAddress || ''}
                         onChange={(e) => setData({ ...data, homeAddress: e.target.value })}

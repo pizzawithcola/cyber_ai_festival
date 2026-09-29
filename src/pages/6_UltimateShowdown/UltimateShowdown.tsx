@@ -169,7 +169,7 @@ const LoginScreen: React.FC<{
             onChange={e => setNickname(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && nickname.trim() && onLogin(nickname)}
             sx={tfSx}
-            placeholder="e.g. JamieL_001"
+            placeholder="e.g. JL1"
           />
           {error && (
             <Box sx={{ color: ARCADE_COLORS.red, fontFamily: '"Courier New", monospace', fontSize: '0.7rem' }}>

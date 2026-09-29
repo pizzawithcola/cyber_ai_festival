@@ -77,6 +77,15 @@ export const getTheme = (paletteMode: PaletteMode) => {
       ].join(','),
     },
     components: {
+      // Never let the browser auto-fill our inputs: the fields here are either
+      // the player's own nickname or deliberately fake forms inside the games
+      // (Data Shadows' sign-up survey, Retail Demolition's checkout), and
+      // auto-filled real data would break the experience.
+      MuiTextField: {
+        defaultProps: {
+          autoComplete: 'off',
+        },
+      },
       MuiAppBar: {
         styleOverrides: {
           root: {

@@ -720,7 +720,7 @@ const LoginPage: React.FC = () => {
                       onChange={e => setLoginNickname(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleLogin()}
                       sx={tfSx}
-                      placeholder='e.g. JamieL_001'
+                      placeholder='e.g. JL1'
                     />
                     <ArcadeButton
                       color={theme.colorKey}

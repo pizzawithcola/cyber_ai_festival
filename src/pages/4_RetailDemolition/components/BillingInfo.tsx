@@ -42,6 +42,7 @@ const BillingInfo: React.FC<BillingInfoProps> = ({ onContinue }) => {
                 <User size={16} className="absolute left-3 top-3 text-slate-400" />
                 <input
                   type="text"
+                  autoComplete="off"
                   placeholder="First Name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
@@ -50,6 +51,7 @@ const BillingInfo: React.FC<BillingInfoProps> = ({ onContinue }) => {
               </div>
               <input
                 type="text"
+                autoComplete="off"
                 placeholder="Last Name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
