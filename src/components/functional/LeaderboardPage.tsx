@@ -38,6 +38,9 @@ const ROTATION_INTERVAL_MS = 5000;
 
 // kiosk 模式下重新拉取榜单的间隔（ms）：保持大屏数据新鲜
 const KIOSK_REFRESH_INTERVAL_MS = 30000;
+// 普通模式（直接打开 /leaderboard，例如现场投屏）也用同样节奏轮询，
+// 否则页面会永远停留在打开那一刻的快照上。
+const PAGE_REFRESH_INTERVAL_MS = 30000;
 
 // Each game has its own theme color
 const SCORE_TYPE_COLORS: Record<string, string> = {
@@ -196,12 +199,12 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ kiosk = false }) => {
     };
 
     void fetchAllRankings();
-    const pollTimer = kiosk
-      ? window.setInterval(() => void fetchAllRankings(), KIOSK_REFRESH_INTERVAL_MS)
-      : null;
+    // 无论是否 kiosk 都保持数据新鲜：/leaderboard 同样被当作现场大屏使用。
+    const refreshInterval = kiosk ? KIOSK_REFRESH_INTERVAL_MS : PAGE_REFRESH_INTERVAL_MS;
+    const pollTimer = window.setInterval(() => void fetchAllRankings(), refreshInterval);
     return () => {
       cancelled = true;
-      if (pollTimer !== null) window.clearInterval(pollTimer);
+      window.clearInterval(pollTimer);
     };
   }, [kiosk]);
 

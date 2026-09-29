@@ -83,20 +83,36 @@ const RankingPage: React.FC = () => {
   const themeColor = GAME_THEME_COLORS[scoreType] || ARCADE_COLORS.cyan;
 
   useEffect(() => {
+    let cancelled = false;
+    // Only the very first load toggles the loading state; the periodic refresh
+    // below must not make the table flicker.
+    let firstLoad = true;
+
     const fetchRankings = async () => {
+      if (firstLoad) setLoading(true);
       try {
-        setLoading(true);
         const response = await apiFetch(`/rankings/${scoreType}?limit=50`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data: RankingData = await response.json();
-        setRankingData(data);
+        if (!cancelled) setRankingData(data);
       } catch (err) {
         console.error('Failed to fetch rankings:', err);
       } finally {
-        setLoading(false);
+        if (firstLoad) {
+          firstLoad = false;
+          if (!cancelled) setLoading(false);
+        }
       }
     };
-    fetchRankings();
+
+    void fetchRankings();
+    // Keep the ranking fresh while the page stays open (phones often sit on it
+    // between games, and the venue screen may use it too).
+    const pollTimer = window.setInterval(() => void fetchRankings(), 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(pollTimer);
+    };
   }, [scoreType]);
 
   const top10 = rankingData?.rankings.slice(0, 10) || [];
