@@ -39,7 +39,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onStart }) => {
     <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 md:px-8 py-6 text-center max-w-3xl mx-auto relative z-10 w-full">
       {/* Title */}
       <ArcadeTypography arcadeColor="yellow" arcadeSize="sm" font="pressstart2p" sx={{ mb: 1.5 }}>
-        CYBER AI FESTIVAL
+        AI CYBER ARCADE
       </ArcadeTypography>
       <ArcadeTypography
         arcadeColor="yellow"

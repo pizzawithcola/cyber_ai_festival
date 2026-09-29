@@ -593,7 +593,7 @@ const RegisterPage: React.FC = () => {
                   wordBreak: 'keep-all',
                 }}
               >
-                CYBER AI FESTIVAL
+                AI CYBER ARCADE
               </ArcadeTypography>
               <ArcadeTypography
                 arcadeSize="xs"

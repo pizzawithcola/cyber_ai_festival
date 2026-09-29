@@ -59,7 +59,7 @@ const GAME_THEMES: Record<string, GameTheme> = {
 };
 
 const DEFAULT_THEME: GameTheme = {
-  title: 'CYBER AI FESTIVAL',
+  title: 'AI CYBER ARCADE',
   subtitle: 'SIGN IN TO PLAY',
   color: ARCADE_COLORS.cyan,
   colorKey: 'cyan',

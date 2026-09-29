@@ -78,7 +78,10 @@ const RankingPage: React.FC = () => {
   const user = getStoredUser();
 
   const scoreType = (game && GAME_TO_SCORE_TYPE[game]) || 'total';
-  const loginRoute = game ? GAME_LOGIN_ROUTE[game] : undefined;
+  // Ranking is the end of a round: the only way out is a login screen (and only
+  // the login screen offers a way back home). Games map to their own login page;
+  // the overall board falls back to the generic player login.
+  const loginRoute = (game && GAME_LOGIN_ROUTE[game]) || '/login';
   const rankingTitle = SCORE_TYPE_LABELS[scoreType] || 'RANKINGS';
   const themeColor = GAME_THEME_COLORS[scoreType] || ARCADE_COLORS.cyan;
 
@@ -378,7 +381,7 @@ const RankingPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Back Buttons */}
+      {/* Only way out is a login screen — the home page is reachable from there */}
       <Box sx={{ pb: 4, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
         <ArcadeButton
           color="white"
@@ -389,7 +392,7 @@ const RankingPage: React.FC = () => {
               sessionStorage.removeItem(`phishing_session_highscore_${storedUser.id}`);
             }
             sessionStorage.removeItem('phishing_attempt_count');
-            navigate('/');
+            navigate(loginRoute);
           }}
           sx={{
             fontFamily: '"Electrolize", sans-serif',
@@ -399,24 +402,8 @@ const RankingPage: React.FC = () => {
             '&:hover': { borderColor: themeColor, backgroundColor: `${themeColor}15` },
           }}
         >
-          BACK TO HOME
+          BACK TO LOGIN
         </ArcadeButton>
-        {loginRoute && (
-          <ArcadeButton
-            color="white"
-            variant="outline"
-            onClick={() => navigate(loginRoute)}
-            sx={{
-              fontFamily: '"Electrolize", sans-serif',
-              letterSpacing: '1px',
-              borderColor: `${themeColor}80`,
-              color: themeColor,
-              '&:hover': { borderColor: themeColor, backgroundColor: `${themeColor}15` },
-            }}
-          >
-            BACK TO LOGIN
-          </ArcadeButton>
-        )}
       </Box>
     </Box>
   );

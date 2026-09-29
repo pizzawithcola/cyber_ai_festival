@@ -556,7 +556,8 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ kiosk = false }) => {
               sessionStorage.removeItem(`phishing_session_highscore_${storedUser.id}`);
             }
             sessionStorage.removeItem('phishing_attempt_count');
-            navigate('/');
+            // Only the login screen goes back home.
+            navigate('/login');
           }}
           sx={{
             fontFamily: '"Electrolize", sans-serif',
@@ -566,7 +567,7 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ kiosk = false }) => {
             '&:hover': { borderColor: themeColor, backgroundColor: `${themeColor}15` },
           }}
         >
-          BACK TO HOME
+          BACK TO LOGIN
         </ArcadeButton>
       </Box>
       )}
