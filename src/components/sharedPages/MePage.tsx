@@ -146,13 +146,16 @@ const MePage: React.FC = () => {
     const stored = getPersistentUser();
     setUser(stored);
     void loadQueueBoardUrl();
-    if (!stored?.id) return;
+    // Narrow to a plain number: the id is re-read inside the interval callback,
+    // where a `stored?.id` check would no longer be narrowed.
+    const userId = stored?.id;
+    if (!userId) return;
 
     // Scores and standing both move while the player waits between games, so the
     // panel refreshes itself once a minute.
     const refresh = () => {
-      void loadScores(stored.id);
-      void loadRanking(stored.id);
+      void loadScores(userId);
+      void loadRanking(userId);
     };
     refresh();
     const timer = window.setInterval(refresh, 60000);
