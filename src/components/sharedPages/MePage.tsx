@@ -441,6 +441,12 @@ const MePage: React.FC = () => {
 
               <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
                 {!scanning && (
+                  <ArcadeButton color="cyan" variant="outline" size="md" onClick={() => navigate('/ranking')} sx={{ width: '100%', maxWidth: 320 }}>
+                    <Trophy size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
+                    MY RANKING
+                  </ArcadeButton>
+                )}
+                {!scanning && (
                   <ArcadeButton color="lime" size="md" glowing onClick={startScan} sx={{ width: '100%', maxWidth: 320 }}>
                     <QrCode size={16} style={{ marginRight: 8, verticalAlign: '-2px' }} />
                     SCAN TO LOG IN

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Chip, IconButton, Tooltip } from '@mui/material';
-import { Autorenew } from '@mui/icons-material';
+import { Autorenew, Check, ContentCopy } from '@mui/icons-material';
 import type { Target, Mission } from './phishingData';
 import { ArcadeTypography } from '../../components/ui';
 import { ARCADE_COLORS } from '../../theme/theme';
@@ -10,6 +10,43 @@ interface PhishingTargetProps {
   mission: Mission;
   onSwitch?: () => void;
 }
+
+// One-tap copy for the target email / phishing link, so a player can paste it
+// into their attempt instead of retyping it on a phone.
+const CopyTextButton: React.FC<{ value: string; title?: string }> = ({ value, title = 'Copy' }) => {
+  const [done, setDone] = React.useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // Older browsers: fall back to a temporary selection
+      const ta = document.createElement('textarea');
+      ta.value = value;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setDone(true);
+    window.setTimeout(() => setDone(false), 1500);
+  };
+
+  return (
+    <Tooltip title={done ? 'Copied!' : title}>
+      <IconButton
+        size="small"
+        onClick={handleCopy}
+        sx={{
+          color: done ? ARCADE_COLORS.lime : `${ARCADE_COLORS.white}70`,
+          '&:hover': { color: ARCADE_COLORS.lime },
+        }}
+      >
+        {done ? <Check sx={{ fontSize: '0.95rem' }} /> : <ContentCopy sx={{ fontSize: '0.95rem' }} />}
+      </IconButton>
+    </Tooltip>
+  );
+};
 
 const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, mission: currentMission, onSwitch }) => {
 
@@ -78,7 +115,10 @@ const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, 
               </Box>
               <Box>
                 <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontWeight: 600, fontSize: '0.8rem', color: ARCADE_COLORS.white }}>Email:</Typography>
-                <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.85rem', color: `${ARCADE_COLORS.white}CC` }}>{currentTarget.email}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.85rem', color: `${ARCADE_COLORS.white}CC` }}>{currentTarget.email}</Typography>
+                  <CopyTextButton value={currentTarget.email} title="Copy email" />
+                </Box>
               </Box>
             </Box>
           </Box>
@@ -137,9 +177,12 @@ const PhishingTarget: React.FC<PhishingTargetProps> = ({ target: currentTarget, 
             <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.85rem', color: ARCADE_COLORS.white, mb: 1.5 }}>
               {currentMission.description}
             </Typography>
-            <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.8rem', color: `${ARCADE_COLORS.white}80`, mb: 1 }}>
-              Target Link: {currentMission.targetLink}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+              <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.8rem', color: `${ARCADE_COLORS.white}80` }}>
+                Target Link: {currentMission.targetLink}
+              </Typography>
+              <CopyTextButton value={currentMission.targetLink} title="Copy link" />
+            </Box>
             <Typography sx={{ fontFamily: '"Electrolize", sans-serif', fontSize: '0.8rem', fontStyle: 'italic', color: `${ARCADE_COLORS.white}80` }}>
               <strong>Strategy Hint:</strong> {currentMission.hint}
             </Typography>
