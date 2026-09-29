@@ -548,6 +548,9 @@ const AdminPage: React.FC = () => {
     try {
       const ur = await apiFetch(`/users/${editingUser.id}`,  { method: 'PUT', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, region: formData.region, role: formData.role }) });
       if (!ur.ok) throw new Error(`User update ${ur.status}`);
+      // CloudFront turns origin 4xx/5xx into a 200 HTML page, so a success status
+      // alone is not enough — the body has to actually be JSON.
+      if (!(ur.headers.get('content-type') || '').includes('application/json')) throw new Error(`User update: API returned ${ur.headers.get('content-type') || 'no content-type'} instead of JSON`);
       const sr = await apiFetch(`/scores/${editingUser.id}`, { method: 'PUT', body: JSON.stringify({ game1_score: formData.game1_score, game2_score: formData.game2_score, game3_score: formData.game3_score, game4_score: formData.game4_score, game5_score: formData.game5_score }) });
       if (!sr.ok) throw new Error(`Score update ${sr.status}`);
       setUsers(p => p.map(u => u.id === editingUser.id ? { ...u, ...formData, total_score: calcTotal(formData) } : u));
@@ -559,8 +562,13 @@ const AdminPage: React.FC = () => {
   const handleAddSubmit = async () => {
     if (!validateForm()) return;
     try {
-      const ur = await apiFetch('/users', { method: 'POST', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, region: formData.region, role: formData.role }) });
+      // The trailing slash is required: CloudFront only routes /users/ and
+      // /users/* to the API origin. A bare /users misses every API behavior and
+      // falls through to the S3 origin, which answers with a 200 HTML page and
+      // makes res.json() throw an opaque parsing error.
+      const ur = await apiFetch('/users/', { method: 'POST', body: JSON.stringify({ firstname: formData.firstname, lastname: formData.lastname, region: formData.region, role: formData.role }) });
       if (!ur.ok) throw new Error(`Create ${ur.status}`);
+      if (!(ur.headers.get('content-type') || '').includes('application/json')) throw new Error(`Create: API returned ${ur.headers.get('content-type') || 'no content-type'} instead of JSON`);
       const newUser = await ur.json();
       const sr = await apiFetch(`/scores/${newUser.id}`, { method: 'PUT', body: JSON.stringify({ game1_score: formData.game1_score, game2_score: formData.game2_score, game3_score: formData.game3_score, game4_score: formData.game4_score, game5_score: formData.game5_score }) });
       if (!sr.ok) throw new Error(`Score update ${sr.status}`);
