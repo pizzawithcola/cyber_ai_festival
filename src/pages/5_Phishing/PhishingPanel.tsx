@@ -5,6 +5,7 @@ import { getStoredUser } from '../../utils/userStorage';
 import MatrixRainBackground from '../../components/common/MatrixRainBackground';
 import PhishingTarget from './PhishingTarget';
 import PhishingMailSpace from './PhishingMailSpace';
+import { PHISHING_DEADLINE_KEY } from './PhishingMailSpace';
 import { targets, missions } from './phishingData';
 import { ARCADE_COLORS } from '../../theme/theme';
 import { useClickSound } from '../../hooks/useClickSound';
@@ -26,7 +27,10 @@ const PhishingPanel: React.FC = () => {
   return (
     <MatrixRainBackground>
       <Box className='phishing-panel' sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
-        <GameExitButton game="phishing" />
+        <GameExitButton
+          game="phishing"
+          onExit={() => sessionStorage.removeItem(PHISHING_DEADLINE_KEY)}
+        />
         <Header
           title='MISSION V: PHISHING ATTACK'
           firstname={user?.firstname}

@@ -42,7 +42,10 @@ import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 // page opens. The deadline is persisted in sessionStorage so refreshing the tab
 // cannot hand out extra time.
 const GAME_DURATION_MS = 8 * 60 * 1000;
-const DEADLINE_KEY = 'phishing_deadline';
+// Exported so the panel can drop it when the player exits mid-round; a stale
+// deadline must never leak into the next round.
+export const PHISHING_DEADLINE_KEY = 'phishing_deadline';
+const DEADLINE_KEY = PHISHING_DEADLINE_KEY;
 const AUTO_SUBMIT_MAX_ATTEMPTS = 3;
 const AUTO_SUBMIT_RETRY_DELAY_MS = 3000;
 // How long "TIME'S UP" holds the screen before the analysing view takes over.
@@ -377,6 +380,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
           try {
             const reply = await requestScore();
             if (reply) {
+              sessionStorage.removeItem(DEADLINE_KEY);
               navigate('/phishing/score', { state: { reply, attemptCount } });
               return;
             }
@@ -388,6 +392,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
         // Scoring never came back. Fall back to a zeroed report so the round is
         // still closed out and the player is not stranded.
         console.warn('[phishing] auto-submit exhausted retries; recording a zero score');
+        sessionStorage.removeItem(DEADLINE_KEY);
         navigate('/phishing/score', {
           state: { reply: { total_score: 0, score_details: {} }, attemptCount, autoFailed: true },
         });
@@ -405,6 +410,9 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
         return;
       }
 
+      // The round is over either way, so drop the deadline instead of letting it
+      // leak into the player's next attempt.
+      sessionStorage.removeItem(DEADLINE_KEY);
       navigate('/phishing/score', {
         state: {
           reply,

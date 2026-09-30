@@ -5,6 +5,11 @@ import { ARCADE_COLORS } from '../../theme/theme';
 interface GameExitButtonProps {
   /** 该游戏的登录路由段，例如 "hallucinate" → /login/hallucinate */
   game: string;
+  /**
+   * 可选：游戏自己需要的中断清理（比如丢弃本局的倒计时 deadline）。
+   * 不传则保持原有行为，不影响其他游戏。
+   */
+  onExit?: () => void;
 }
 
 /**
@@ -13,14 +18,17 @@ interface GameExitButtonProps {
  * - 用 Portal 挂到 document.body，避免被游戏容器的 transform / overflow 影响 fixed 定位。
  * - 点击后 replace 回到该游戏的登录页，避免浏览器返回键回到已中断的游戏。
  */
-const GameExitButton = ({ game }: GameExitButtonProps) => {
+const GameExitButton = ({ game, onExit }: GameExitButtonProps) => {
   const navigate = useNavigate();
 
   return createPortal(
     <button
       type="button"
       aria-label="Exit game"
-      onClick={() => navigate(`/login/${game}`, { replace: true })}
+      onClick={() => {
+        onExit?.();
+        navigate(`/login/${game}`, { replace: true });
+      }}
       style={{
         position: 'fixed',
         bottom: 8,
