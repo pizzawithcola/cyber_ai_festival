@@ -37,6 +37,32 @@ import { apiFetch } from '../../services/api';
 import { ArcadeButton, ArcadeTypography } from '../../components/ui';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 
+// ─── Round timer ─────────────────────────────────────────────────────────────
+// A round is a single submission, capped at 8 minutes from the moment the editor
+// page opens. The deadline is persisted in sessionStorage so refreshing the tab
+// cannot hand out extra time.
+const GAME_DURATION_MS = 8 * 60 * 1000;
+const DEADLINE_KEY = 'phishing_deadline';
+const AUTO_SUBMIT_MAX_ATTEMPTS = 3;
+const AUTO_SUBMIT_RETRY_DELAY_MS = 3000;
+// How long "TIME'S UP" holds the screen before the analysing view takes over.
+const TIME_UP_HOLD_MS = 2500;
+// Clock colour thresholds: orange under 4 minutes, red under 1 minute.
+const CLOCK_WARN_MS = 4 * 60 * 1000;
+const CLOCK_CRITICAL_MS = 1 * 60 * 1000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
+const formatClock = (ms: number): string => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+};
+
 // Neon pulse animation for Benchmark button
 const neonPulse = keyframes`
   0%, 100% {
@@ -222,6 +248,24 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
 
   const prevTargetId = useRef(target.id);
 
+  // ─── Round timer state ────────────────────────────────────────────────────────
+  // Created once per round and persisted, so refreshing reuses the original clock.
+  const [deadline] = useState<number>(() => {
+    const saved = Number(sessionStorage.getItem(DEADLINE_KEY) || 0);
+    if (saved > Date.now()) return saved;
+    const next = Date.now() + GAME_DURATION_MS;
+    sessionStorage.setItem(DEADLINE_KEY, String(next));
+    return next;
+  });
+  const [remainingMs, setRemainingMs] = useState<number>(() => deadline - Date.now());
+  // Raised the instant the clock hits zero so the TIME'S UP card can hold the
+  // screen while the auto-submit spins up.
+  const [timeUp, setTimeUp] = useState(false);
+
+  // Synchronous guard. `isLoading` is React state and updates asynchronously, so it
+  // cannot stop the timer and a manual click from submitting twice in one tick.
+  const submittingRef = useRef(false);
+
   useEffect(() => {
     if (prevTargetId.current !== target.id) {
       prevTargetId.current = target.id;
@@ -266,58 +310,91 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
     setSnackbar({ open: true, message: 'Draft loaded!', severity: 'success' });
   }, [editor, target.id, getDraftKey]);
 
-  const handleSend = useCallback(async () => {
-    if (!editor) return;
+  // Ask the scoring service for a verdict, or null when the response was not
+  // usable. The draft is persisted before the call so a failure never loses work.
+  const requestScore = useCallback(async () => {
+    if (!editor) return null;
+    const html = editor.getHTML();
+    const markdown = turndown.turndown(html);
+
+    const prompt = `From: ${senderEmail}\nTo: ${recipient}\nSubject: ${subject}\n\n${markdown}`;
+
+    console.log('=== Email Sent ===');
+    console.log('Prompt:', prompt);
+
+    const targetInformation = {
+      name: target.name,
+      email: target.email,
+      department: target.department,
+      position: target.position,
+      hobbies: target.hobbies,
+      personality: target.personality,
+      mission: {
+        title: mission.title,
+        description: mission.description,
+        targetLink: mission.targetLink,
+        difficulty: mission.difficulty,
+        hint: mission.hint,
+      },
+    };
+
+    sessionStorage.setItem(getDraftKey(target.id), JSON.stringify({
+      senderEmail,
+      recipient,
+      subject,
+      content: html,
+    }));
+
+    const res = await apiFetch('/llm/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt,
+        model: 'deepseek-chat',
+        target_information: targetInformation,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    console.log('LLM Response:', data);
+
+    return parseJudgeReply(data.reply);
+  }, [editor, senderEmail, recipient, subject, getDraftKey, target.id, target.name, target.email, target.department, target.position, target.hobbies, target.personality, mission.title, mission.description, mission.targetLink, mission.difficulty, mission.hint]);
+
+  const handleSend = useCallback(async (opts?: { auto?: boolean }) => {
+    if (!editor || submittingRef.current) return;
+    submittingRef.current = true;
     setIsLoading(true);
-    
+
+    const attemptCount = parseInt(sessionStorage.getItem('phishing_attempt_count') || '0', 10);
+
     try {
-      const html = editor.getHTML();
-      const markdown = turndown.turndown(html);
+      if (opts?.auto) {
+        // The clock ran out: an attempt must always be recorded, so keep retrying
+        // instead of leaving the player on a page whose time is already up.
+        for (let attempt = 1; attempt <= AUTO_SUBMIT_MAX_ATTEMPTS; attempt++) {
+          try {
+            const reply = await requestScore();
+            if (reply) {
+              navigate('/phishing/score', { state: { reply, attemptCount } });
+              return;
+            }
+          } catch (err) {
+            console.error(`[phishing] auto-submit attempt ${attempt} failed:`, err);
+          }
+          if (attempt < AUTO_SUBMIT_MAX_ATTEMPTS) await sleep(AUTO_SUBMIT_RETRY_DELAY_MS);
+        }
+        // Scoring never came back. Fall back to a zeroed report so the round is
+        // still closed out and the player is not stranded.
+        console.warn('[phishing] auto-submit exhausted retries; recording a zero score');
+        navigate('/phishing/score', {
+          state: { reply: { total_score: 0, score_details: {} }, attemptCount, autoFailed: true },
+        });
+        return;
+      }
 
-      const prompt = `From: ${senderEmail}\nTo: ${recipient}\nSubject: ${subject}\n\n${markdown}`;
-
-      console.log('=== Email Sent ===');
-      console.log('Prompt:', prompt);
-
-      const targetInformation = {
-        name: target.name,
-        email: target.email,
-        department: target.department,
-        position: target.position,
-        hobbies: target.hobbies,
-        personality: target.personality,
-        mission: {
-          title: mission.title,
-          description: mission.description,
-          targetLink: mission.targetLink,
-          difficulty: mission.difficulty,
-          hint: mission.hint,
-        },
-      };
-
-      const res = await apiFetch('/llm/chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          prompt,
-          model: 'deepseek-chat',
-          target_information: targetInformation,
-        }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-      console.log('LLM Response:', data);
-
-      const draft = {
-        senderEmail,
-        recipient,
-        subject,
-        content: editor.getHTML(),
-      };
-      sessionStorage.setItem(getDraftKey(target.id), JSON.stringify(draft));
-
-      const reply = parseJudgeReply(data.reply);
+      const reply = await requestScore();
       if (!reply) {
         // 评分服务返回不可解析/字段缺失：不跳转、不清空草稿，提示用户重试
         setSnackbar({
@@ -327,23 +404,49 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
         });
         return;
       }
-      
-      // Get current attempt count from sessionStorage
-      const attemptCount = parseInt(sessionStorage.getItem('phishing_attempt_count') || '0', 10);
-      
-      navigate('/phishing/score', { 
-        state: { 
+
+      navigate('/phishing/score', {
+        state: {
           reply,
-          attemptCount 
-        } 
+          attemptCount
+        }
       });
     } catch (err) {
       console.error('Failed to send:', err);
       alert(`Failed to send email: ${err}`);
     } finally {
+      submittingRef.current = false;
       setIsLoading(false);
     }
-  }, [editor, senderEmail, recipient, subject, navigate, getDraftKey, target.id, mission, target.name, target.email, target.department, target.position, target.hobbies, target.personality]);
+  }, [editor, requestScore, navigate]);
+
+  // The interval below must always call the newest handleSend, otherwise the
+  // auto-submit would capture the first render's empty fields.
+  const sendRef = useRef(handleSend);
+  useEffect(() => { sendRef.current = handleSend; }, [handleSend]);
+
+  // Tick against an absolute deadline rather than decrementing a counter, because
+  // browsers throttle timers in background tabs and a counter would drift.
+  useEffect(() => {
+    let holdTimer = 0;
+    const tick = () => {
+      const left = deadline - Date.now();
+      setRemainingMs(left);
+      if (left <= 0) {
+        window.clearInterval(timer);
+        setTimeUp(true);
+        // Hold on the TIME'S UP card for a beat, then hand over to the analysing
+        // view so the two screens never render at the same time.
+        holdTimer = window.setTimeout(() => { void sendRef.current({ auto: true }); }, TIME_UP_HOLD_MS);
+      }
+    };
+    const timer = window.setInterval(tick, 1000);
+    tick();
+    return () => {
+      window.clearInterval(timer);
+      if (holdTimer) window.clearTimeout(holdTimer);
+    };
+  }, [deadline]);
 
   const handleColorChange = useCallback((color: string) => {
     if (!editor) return;
@@ -356,11 +459,72 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
 
   const currentColor = editor?.getAttributes('textStyle')?.color || 'unset';
 
+  // Green normally, orange under 10s, red under 5s.
+  const clockColor = remainingMs <= CLOCK_CRITICAL_MS
+    ? ARCADE_COLORS.red
+    : remainingMs <= CLOCK_WARN_MS
+      ? ARCADE_COLORS.orange
+      : ARCADE_COLORS.lime;
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: 2, overflow: 'hidden' }}>
-      <ArcadeTypography font="audiowide" arcadeColor="lime" arcadeSize="md" sx={{ mb: 1 }}>
-        PHISHING EMAIL EDITOR
-      </ArcadeTypography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <ArcadeTypography font="audiowide" arcadeColor="lime" arcadeSize="md">
+          PHISHING EMAIL EDITOR
+        </ArcadeTypography>
+        <Box
+          component="span"
+          aria-label="time remaining"
+          sx={{
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+            fontFamily: '"Courier New", monospace',
+            fontWeight: 700,
+            fontSize: '1.05rem',
+            letterSpacing: '0.08em',
+            color: clockColor,
+            textShadow: `0 0 8px ${clockColor}80`,
+            transition: 'color 0.3s ease',
+          }}
+        >
+          TIME LEFT {formatClock(remainingMs)}
+        </Box>
+      </Box>
+
+      {/* Time's up — full-screen takeover, then the analysing view replaces it. */}
+      {timeUp && !isLoading && (
+        <Box sx={{
+          position: 'fixed', inset: 0, zIndex: 70,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: 'rgba(5,5,16,0.95)',
+          animation: `${fadeIn} 0.2s ease`,
+        }}>
+          <Box sx={{
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: { xs: '1.6rem', md: '3rem' },
+            letterSpacing: '0.15em',
+            color: ARCADE_COLORS.lime,
+            textShadow: `0 0 30px ${ARCADE_COLORS.lime}, 0 0 60px ${ARCADE_COLORS.lime}80`,
+            animation: 'timeUpPulse 0.7s ease-in-out infinite',
+            '@keyframes timeUpPulse': {
+              '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+              '50%': { opacity: 0.55, transform: 'scale(1.04)' },
+            },
+          }}>
+            TIME'S UP
+          </Box>
+          <Box sx={{
+            mt: 3,
+            fontFamily: '"Audiowide", sans-serif',
+            fontSize: '0.95rem',
+            letterSpacing: '0.2em',
+            color: ARCADE_COLORS.lime,
+            textShadow: `0 0 12px ${ARCADE_COLORS.lime}70`,
+          }}>
+            SUBMITTING YOUR ATTEMPT
+          </Box>
+        </Box>
+      )}
       
       {isLoading ? (
         <Box 
@@ -482,7 +646,7 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
             </Box>
             <ArcadeButton
               color="lime"
-              onClick={handleSend}
+              onClick={() => void handleSend()}
               sx={{
                 width: 60,
                 minWidth: 50,
