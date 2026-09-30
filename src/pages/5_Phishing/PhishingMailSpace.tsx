@@ -249,7 +249,9 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
     },
   });
 
-  const prevTargetId = useRef(target.id);
+  // Switching the target must NOT wipe the composer: players routinely draft the
+  // email first and then re-read who they are writing to, and losing the text on
+  // every switch also burns the round clock for nothing.
 
   // ─── Round timer state ────────────────────────────────────────────────────────
   // Created once per round and persisted, so refreshing reuses the original clock.
@@ -268,16 +270,6 @@ const PhishingMailSpace: React.FC<PhishingMailSpaceProps> = ({ target, mission }
   // Synchronous guard. `isLoading` is React state and updates asynchronously, so it
   // cannot stop the timer and a manual click from submitting twice in one tick.
   const submittingRef = useRef(false);
-
-  useEffect(() => {
-    if (prevTargetId.current !== target.id) {
-      prevTargetId.current = target.id;
-      setSenderEmail('');
-      setRecipient('');
-      setSubject('');
-      editor?.commands.clearContent();
-    }
-  }, [target.id, editor]);
 
   const getDraftKey = useCallback((id: number) => `phishing_draft_${id}`, []);
 
