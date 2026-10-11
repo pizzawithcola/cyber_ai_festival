@@ -25,7 +25,6 @@ const GAME_SCORE_TILES: { key: string; label: string; color: string; Icon: Lucid
   { key: 'game1_score', label: 'HALLUCINATION', color: ARCADE_COLORS.magenta, Icon: Sparkles },
   { key: 'game2_score', label: 'DATA', color: ARCADE_COLORS.cyan, Icon: Database },
   { key: 'game3_score', label: 'AGENT', color: ARCADE_COLORS.yellow, Icon: Bot },
-  { key: 'game4_score', label: 'PHISHING', color: ARCADE_COLORS.lime, Icon: Mail },
 ];
 
 /** 背景浮动图标的淡入淡出动画。 */

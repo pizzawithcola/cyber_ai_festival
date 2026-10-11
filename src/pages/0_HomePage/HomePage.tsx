@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { ArcadeTypography, LightSign } from '../../components/ui';
-import { BrainCircuit, ScanEye, Store, Fish, Trophy, QrCode } from 'lucide-react';
+import { BrainCircuit, ScanEye, Store, Trophy, QrCode } from 'lucide-react';
 import { ARCADE_COLORS, GRID_COLOR } from '../../theme/theme';
 import { useClickSound } from '../../hooks/useClickSound';
 import RegisterQrDialog from '../../components/common/RegisterQrDialog';
@@ -151,13 +151,6 @@ const HomePage: React.FC<HomePageProps> = () => {
       description: 'Break the system',
       icon: <Store size={30} strokeWidth={1.5} />,
       color: ARCADE_COLORS.yellow,
-    },
-    {
-      id: 'phishing',
-      title: 'PHISHING ATTACK',
-      description: 'Don\'t take the bait',
-      icon: <Fish size={30} strokeWidth={1.5} />,
-      color: ARCADE_COLORS.lime,
     }
   ];
 

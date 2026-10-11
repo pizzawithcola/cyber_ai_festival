@@ -29,7 +29,6 @@ const SCORE_TYPES = [
   { key: 'game1', label: 'HALLUCINATE' },
   { key: 'game2', label: 'DATA' },
   { key: 'game3', label: 'RETAIL' },
-  { key: 'game4', label: 'PHISHING' },
   { key: 'game5', label: 'FINAL' },
 ];
 

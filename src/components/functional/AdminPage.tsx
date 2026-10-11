@@ -176,7 +176,7 @@ const API_ENDPOINTS = [
 
 interface ApiStatus { name: string; status: 'idle' | 'loading' | 'normal' | 'error'; latency?: number; error?: string; }
 interface UserScore  { id: number; firstname: string; lastname: string; nickname?: string; region: string; role: string; game1_score: number; game2_score: number; game3_score: number; game4_score: number; game5_score: number; total_score: number; }
-interface EventItem  { id: number; name: string; description: string | null; start_at: string; end_at: string; created_at: string; }
+interface EventItem  { id: number; name: string; description: string | null; start_at: string; end_at: string; created_at: string; is_current: boolean; }
 interface EventCountry { region: string; count: number; }
 interface EventDay { date: string; count: number; }
 interface EventTopPlayer { nickname: string; firstname: string; lastname: string; region: string; total_score: number; }
@@ -317,6 +317,19 @@ const AdminPage: React.FC = () => {
       if (!res.ok) throw new Error('Failed to delete event');
       setSnackbar({ open: true, message: 'Event deleted.', severity: 'success' });
       if (selectedEvent?.id === ev.id) { setSelectedEvent(null); setReport(null); }
+      loadEvents();
+    } catch (e) {
+      setSnackbar({ open: true, message: String(e), severity: 'error' });
+    }
+  };
+
+  // Mark one event as the active one; leaderboard/ranking/admin lists are
+  // scoped to its time window.
+  const handleSetCurrentEvent = async (ev: EventItem) => {
+    try {
+      const res = await apiFetch(`/events/${ev.id}/set-current`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to set current event');
+      setSnackbar({ open: true, message: `Current event: ${ev.name}`, severity: 'success' });
       loadEvents();
     } catch (e) {
       setSnackbar({ open: true, message: String(e), severity: 'error' });
@@ -1184,7 +1197,12 @@ const AdminPage: React.FC = () => {
               {events.map(ev => (
                 <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, px: 2, py: 1.5, borderBottom: `1px solid ${SF.border}40`, '&:last-of-type': { borderBottom: 'none' } }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', color: SF.white }}>{ev.name}</Box>
+                    <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', color: SF.white }}>
+                      {ev.name}
+                      {ev.is_current && (
+                        <Box component="span" sx={{ ml: 1, fontFamily: SF.fontMono, fontSize: '0.65rem', color: SF.lime }}>● CURRENT</Box>
+                      )}
+                    </Box>
                     <Box sx={{ fontFamily: SF.fontMono, fontSize: '0.7rem', color: SF.dim }}>
                       {new Date(ev.start_at).toLocaleString()} → {new Date(ev.end_at).toLocaleString()}
                       {ev.description ? ` · ${ev.description}` : ''}
@@ -1192,6 +1210,9 @@ const AdminPage: React.FC = () => {
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.75 }}>
                     <SFButton color={SF.cyan} onClick={() => openReport(ev)}>REPORT</SFButton>
+                    {!ev.is_current && (
+                      <SFButton color={SF.lime} onClick={() => handleSetCurrentEvent(ev)}>SET CURRENT</SFButton>
+                    )}
                     <SFButton color={SF.red} onClick={() => handleDeleteEvent(ev)}>DELETE</SFButton>
                   </Box>
                 </Box>

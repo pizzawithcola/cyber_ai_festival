@@ -27,7 +27,6 @@ const GAME_TO_SCORE_TYPE: Record<string, string> = {
   hallucinate: 'game1',
   datashadows: 'game2',
   retaildemolition: 'game3',
-  phishing: 'game4',
   final: 'game5',
 };
 
@@ -36,14 +35,12 @@ const GAME_LOGIN_ROUTE: Record<string, string> = {
   hallucinate: '/login/hallucinate',
   datashadows: '/login/datashadows',
   retaildemolition: '/login/retaildemolition',
-  phishing: '/login/phishing',
 };
 
 const SCORE_TYPE_LABELS: Record<string, string> = {
   game1: 'Hallucinate & Watch Me Detonate',
   game2: 'DATA SHADOWS',
   game3: 'RETAIL DEMOLITION',
-  game4: 'PHISHING ATTACK',
   game5: 'FINAL SHOWDOWN',
   total: 'TOTAL SCORE',
 };
@@ -53,7 +50,6 @@ const GAME_THEME_COLORS: Record<string, string> = {
   game1: ARCADE_COLORS.magenta,
   game2: ARCADE_COLORS.cyan,
   game3: ARCADE_COLORS.yellow,
-  game4: ARCADE_COLORS.lime,
   game5: ARCADE_COLORS.orange,
   total: ARCADE_COLORS.cyan,
 };

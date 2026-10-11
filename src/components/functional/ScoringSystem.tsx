@@ -149,24 +149,6 @@ const GAMES: GameRules[] = [
     ],
   },
   {
-    key: 'phishing',
-    name: 'PHISHING',
-    tagline: 'Rate phishing emails across 4 persuasion dimensions',
-    accent: SF.lime,
-    total: '/100',
-    blocks: [
-      {
-        label: 'Scoring Dimensions',
-        items: [
-          { label: 'Personalization', points: 'max 25' },
-          { label: 'Persuasion', points: 'max 25' },
-          { label: 'Sender Credibility', points: 'max 25' },
-          { label: 'Call to Action', points: 'max 25' },
-        ],
-      },
-    ],
-  },
-  {
     key: 'ultimate',
     name: 'ULTIMATE SHOWDOWN',
     tagline: 'Live 12-question arena — 10 normal + 2 bonus',

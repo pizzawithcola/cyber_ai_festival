@@ -9,9 +9,6 @@ import DataShadowsDataFlow from '../pages/3_DataShadows/DataShadowsDataFlow';
 import RetailDemolition from '../pages/4_RetailDemolition/RetailDemolition.tsx';
 import RetailDemolitionGame from '../pages/4_RetailDemolition/RetailDemolitionGame';
 import RetailDemolitionSummary from '../pages/4_RetailDemolition/RetailDemolitionSummary';
-import PhishingPanel from '../pages/5_Phishing/PhishingPanel';
-import PhishingScorePage from '../pages/5_Phishing/PhishingScorePage';
-import PhishingEducationPage from '../pages/5_Phishing/PhishingEducationPage';
 import RankingPage from '../components/sharedPages/RankingPage';
 import LeaderboardPage from '../components/functional/LeaderboardPage';
 import AdminPage from '../components/functional/AdminPage';
@@ -33,7 +30,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/" element={<HomePage toggleColorMode={toggleColorMode} />} />
       <Route path="/login/:game" element={<LoginPage />} />
       <Route path="/login" element={<RegisterPage />} />
-      <Route path="/phishing/edu" element={<PhishingEducationPage />} />
       <Route path="/hallucinate" element={<Hallucinate />} />
       <Route path="/datashadows" element={<DataShadows />} />
       <Route path="/datashadows/game" element={<DataShadowsGame />} />
@@ -42,8 +38,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ toggleColorMode }) => {
       <Route path="/retaildemolition" element={<RetailDemolition />} />
       <Route path="/retaildemolition/game" element={<RetailDemolitionGame />} />
       <Route path="/retaildemolition/summary" element={<RetailDemolitionSummary />} />
-      <Route path="/phishing" element={<PhishingPanel />} />
-      <Route path="/phishing/score" element={<PhishingScorePage />} />
       <Route path="/ranking" element={<RankingPage />} />
       <Route path="/ranking/game/:game" element={<RankingPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />

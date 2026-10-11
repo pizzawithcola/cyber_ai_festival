@@ -49,13 +49,6 @@ const GAME_THEMES: Record<string, GameTheme> = {
     colorKey: 'yellow',
     bgEffect: 'pixel',
   },
-  phishing: {
-    title: 'PHISHING ATTACK',
-    subtitle: 'DON\'T TAKE THE BAIT',
-    color: ARCADE_COLORS.lime,
-    colorKey: 'lime',
-    bgEffect: 'phishing',
-  },
 };
 
 const DEFAULT_THEME: GameTheme = {
@@ -302,8 +295,14 @@ const LoginPage: React.FC = () => {
         body: JSON.stringify({ nickname: loginNickname }),
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || 'Login failed');
+        const err = await res.json().catch(() => null);
+        // The player belongs to a previous event: ask them to register anew.
+        if (err?.detail === 'Registration expired, please register again') {
+          setSnack({ open: true, message: '个人信息已过期，请重新注册', severity: 'warning' });
+          window.setTimeout(() => navigate('/register'), 1500);
+          return;
+        }
+        throw new Error(err?.detail || 'Login failed');
       }
       const user = await res.json();
       finalizeLogin(user);
