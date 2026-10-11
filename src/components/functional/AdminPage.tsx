@@ -1197,7 +1197,7 @@ const AdminPage: React.FC = () => {
               {events.map(ev => (
                 <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, px: 2, py: 1.5, borderBottom: `1px solid ${SF.border}40`, '&:last-of-type': { borderBottom: 'none' } }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', color: SF.white }}>
+                    <Box sx={{ fontFamily: SF.fontTitle, fontSize: '0.8rem', color: ev.is_current ? SF.white : SF.dim }}>
                       {ev.name}
                       {ev.is_current && (
                         <Box component="span" sx={{ ml: 1, fontFamily: SF.fontMono, fontSize: '0.65rem', color: SF.lime }}>● CURRENT</Box>
@@ -1209,10 +1209,10 @@ const AdminPage: React.FC = () => {
                     </Box>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.75 }}>
-                    <SFButton color={SF.cyan} onClick={() => openReport(ev)}>REPORT</SFButton>
                     {!ev.is_current && (
                       <SFButton color={SF.lime} onClick={() => handleSetCurrentEvent(ev)}>SET CURRENT</SFButton>
                     )}
+                    <SFButton color={SF.cyan} onClick={() => openReport(ev)}>REPORT</SFButton>
                     <SFButton color={SF.red} onClick={() => handleDeleteEvent(ev)}>DELETE</SFButton>
                   </Box>
                 </Box>
