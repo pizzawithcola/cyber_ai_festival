@@ -24,7 +24,7 @@ interface GameTheme {
   subtitle: string;
   color: string;
   colorKey: 'magenta' | 'cyan' | 'yellow' | 'lime';
-  bgEffect: 'glitch' | 'matrix' | 'pixel' | 'phishing';
+  bgEffect: 'glitch' | 'matrix' | 'pixel';
 }
 
 const GAME_THEMES: Record<string, GameTheme> = {
@@ -83,11 +83,6 @@ const matrixDrop = keyframes`
 const pixelPop = keyframes`
   0%, 100% { opacity: 0.2; }
   50% { opacity: 0.8; }
-`;
-
-const warningBlink = keyframes`
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
 `;
 
 const cursorBlink = keyframes`
@@ -166,34 +161,11 @@ const PixelBg: React.FC<{ color: string }> = ({ color }) => (
   </Box>
 );
 
-const PhishingBg: React.FC<{ color: string }> = ({ color }) => (
-  <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-    {[...Array(4)].map((_, i) => (
-      <Box key={`w-${i}`} sx={{
-        position: 'absolute',
-        left: `${15 + i * 22}%`, top: `${20 + (i * 31) % 50}%`,
-        fontSize: '20px', opacity: 0.2,
-        animation: `${warningBlink} ${2 + i * 0.4}s ease-in-out infinite`,
-        animationDelay: `${i * 0.5}s`,
-      }}>⚠</Box>
-    ))}
-    {[...Array(3)].map((_, i) => (
-      <Box key={`e-${i}`} sx={{
-        position: 'absolute',
-        right: `${10 + i * 25}%`, bottom: `${15 + (i * 27) % 40}%`,
-        width: '32px', height: '22px',
-        border: `1px solid ${color}25`, borderRadius: '2px', opacity: 0.4,
-      }} />
-    ))}
-  </Box>
-);
-
 const ScreenEffect: React.FC<{ effect: string; color: string }> = ({ effect, color }) => {
   switch (effect) {
     case 'glitch': return <GlitchBg color={color} />;
     case 'matrix': return <MatrixBg color={color} />;
     case 'pixel': return <PixelBg color={color} />;
-    case 'phishing': return <PhishingBg color={color} />;
     default: return null;
   }
 };
@@ -203,7 +175,6 @@ const GAME_ROUTES: Record<string, string> = {
   hallucinate: '/hallucinate',
   datashadows: '/datashadows',
   retaildemolition: '/retaildemolition',
-  phishing: '/phishing/edu',
 };
 
 const COUNTRY_NAME_TO_CODE = Object.fromEntries(COUNTRIES.map(c => [c.name, c.code])) as Record<string, string>;
