@@ -268,6 +268,26 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch('/users/userscores');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setUsers(await res.json());
+      setError(null);
+    } catch (err) {
+      setError('Failed to load user scores.');
+      setSnackbar({ open: true, message: 'Load error: ' + (err instanceof Error ? err.message : ''), severity: 'error' });
+    } finally { setLoading(false); }
+  };
+
+  const loadRooms = async () => {
+    try {
+      const res = await apiFetch('/rooms/');
+      if (res.ok) setRooms(await res.json());
+    } catch { /* ignore */ }
+  };
+
   const handleCreateEvent = async () => {
     if (!evName.trim() || !evStart || !evEnd) {
       setSnackbar({ open: true, message: 'Name, start and end are required.', severity: 'warning' });
@@ -331,6 +351,8 @@ const AdminPage: React.FC = () => {
       if (!res.ok) throw new Error('Failed to set current event');
       setSnackbar({ open: true, message: `Current event: ${ev.name}`, severity: 'success' });
       loadEvents();
+      loadUsers();
+      loadRooms();
     } catch (e) {
       setSnackbar({ open: true, message: String(e), severity: 'error' });
     }
@@ -392,39 +414,19 @@ const AdminPage: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    (async () => {
-      try {
-        setLoading(true);
-        const res = await apiFetch('/users/userscores');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        setUsers(await res.json());
-        setError(null);
-      } catch (err) {
-        setError('Failed to load user scores.');
-        setSnackbar({ open: true, message: 'Load error: ' + (err instanceof Error ? err.message : ''), severity: 'error' });
-      } finally { setLoading(false); }
-    })();
+    loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // ─── Fetch Final Rooms ────────────────────────────────────────────────────
   useEffect(() => {
     if (!isAuthenticated) return;
-    (async () => {
-      try {
-        setRoomsLoading(true);
-        const res = await apiFetch('/rooms/');
-        if (res.ok) setRooms(await res.json());
-      } catch { /* ignore */ }
-      finally { setRoomsLoading(false); }
-    })();
+    setRoomsLoading(true);
+    loadRooms().finally(() => setRoomsLoading(false));
     // Poll every 5s
-    const interval = setInterval(async () => {
-      try {
-        const res = await apiFetch('/rooms/');
-        if (res.ok) setRooms(await res.json());
-      } catch { /* ignore */ }
-    }, 5000);
+    const interval = setInterval(loadRooms, 5000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // ─── Login Screen (if not authenticated) ────────────────────────────────────
